@@ -18,6 +18,9 @@ interface CartContextType {
   itemCount: number
   checkout: (discountCode?: string, email?: string) => Promise<void>
   isCheckingOut: boolean
+  isDrawerOpen: boolean
+  openDrawer: () => void
+  closeDrawer: () => void
 }
 
 const CartContext = createContext<CartContextType | null>(null)
@@ -25,6 +28,10 @@ const CartContext = createContext<CartContextType | null>(null)
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
   const [isCheckingOut, setIsCheckingOut] = useState(false)
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+
+  const openDrawer = useCallback(() => setIsDrawerOpen(true), [])
+  const closeDrawer = useCallback(() => setIsDrawerOpen(false), [])
 
   // Persistir carrito en localStorage
   useEffect(() => {
@@ -98,7 +105,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   return (
     <CartContext.Provider
-      value={{ items, addItem, removeItem, updateQuantity, clearCart, total, itemCount, checkout, isCheckingOut }}
+      value={{ items, addItem, removeItem, updateQuantity, clearCart, total, itemCount, checkout, isCheckingOut, isDrawerOpen, openDrawer, closeDrawer }}
     >
       {children}
     </CartContext.Provider>

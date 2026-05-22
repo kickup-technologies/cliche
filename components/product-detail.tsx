@@ -14,6 +14,7 @@ import type { Product } from "@/lib/supabase"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { WhatsAppButton } from "@/components/whatsapp-button"
+import { ReviewsSection } from "@/components/reviews-section"
 
 interface Props {
   product: Product
@@ -290,9 +291,12 @@ export function ProductDetail({ product, related }: Props) {
             )}
           </div>
 
+          {/* Reviews */}
+          <ReviewsSection productId={product.id} />
+
           {/* Related products */}
           {related.length > 0 && (
-            <div>
+            <div className="mt-20">
               <h2 className="text-2xl font-serif font-bold text-foreground mb-8">También te puede gustar</h2>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {related.map((p) => (

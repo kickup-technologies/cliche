@@ -23,7 +23,7 @@ export function FeaturedProducts() {
   const [hoveredProduct, setHoveredProduct] = useState<string | null>(null)
   const [addedToCart, setAddedToCart] = useState<string | null>(null)
   const sectionRef = useRef<HTMLDivElement>(null)
-  const { addItem } = useCart()
+  const { addItem, openDrawer } = useCart()
 
   // Cargar productos reales desde Supabase via API
   useEffect(() => {
@@ -46,7 +46,10 @@ export function FeaturedProducts() {
   const handleAddToCart = (product: Product) => {
     addItem(product)
     setAddedToCart(product.id)
-    setTimeout(() => setAddedToCart(null), 2000)
+    setTimeout(() => {
+      setAddedToCart(null)
+      openDrawer()
+    }, 600)
   }
 
   return (
@@ -63,10 +66,11 @@ export function FeaturedProducts() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {products.map((product, index) => (
-            <div
+            <Link
               key={product.id}
+              href={`/productos/${product.slug}`}
               className={cn(
-                "group bg-white border border-border rounded-2xl overflow-hidden transition-all duration-500 hover:shadow-xl hover:border-primary/20",
+                "group bg-white border border-border rounded-2xl overflow-hidden transition-all duration-500 hover:shadow-xl hover:border-primary/20 block",
                 isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
               )}
               style={{ transitionDelay: `${index * 100}ms` }}
@@ -108,10 +112,10 @@ export function FeaturedProducts() {
                 )}>
                   <Button
                     className="w-full rounded-full font-semibold"
-                    onClick={() => handleAddToCart(product)}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleAddToCart(product) }}
                     disabled={product.stock === 0}
                   >
-                    {addedToCart === product.id ? "¡Agregado! ✓" : (
+                    {addedToCart === product.id ? "¡Agregado!" : (
                       <><ShoppingCart className="w-4 h-4 mr-2" />Agregar al carrito</>
                     )}
                   </Button>
@@ -119,9 +123,9 @@ export function FeaturedProducts() {
               </div>
 
               <div className="p-4 space-y-2">
-                <Link href={`/productos/${product.slug}`} className="block hover:text-primary transition-colors">
-                  <h3 className="font-semibold text-foreground text-sm leading-tight">{product.name}</h3>
-                </Link>
+                <h3 className="font-semibold text-foreground text-sm leading-tight group-hover:text-primary transition-colors">
+                  {product.name}
+                </h3>
                 <div className="flex items-center gap-1">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <Star key={i} className={cn("w-3.5 h-3.5",
@@ -136,14 +140,9 @@ export function FeaturedProducts() {
                     <span className="text-sm text-muted-foreground line-through">{formatPrice(product.original_price)}</span>
                   )}
                 </div>
-                <Link
-                  href={`/productos/${product.slug}`}
-                  className="text-xs text-primary hover:underline"
-                >
-                  Ver detalles →
-                </Link>
+                <span className="text-xs text-primary font-medium">Ver detalles →</span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </div>

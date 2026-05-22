@@ -50,6 +50,16 @@ export interface CartItem {
   product?: Product
 }
 
+export interface Review {
+  id: string
+  product_id: string
+  reviewer_name: string
+  rating: number
+  comment: string | null
+  is_approved: boolean
+  created_at: string
+}
+
 export interface Order {
   id: string
   stripe_session_id: string

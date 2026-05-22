@@ -1,16 +1,21 @@
 "use client"
 
 import { useState } from "react"
-import { MessageCircle, X } from "lucide-react"
+import { MessageCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useCart } from "@/context/cart-context"
 
 export function WhatsAppButton() {
   const [isHovered, setIsHovered] = useState(false)
+  const { itemCount } = useCart()
   const phoneNumber = "573194565463"
-  const message = "Hola! Vi sus productos en la tienda online y me gustaría saber más 🌿"
+  const message = "Hola! Vi sus productos en la tienda online y me gustaría saber más"
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className={cn(
+      "fixed right-6 z-50 transition-all duration-300",
+      itemCount > 0 ? "bottom-24" : "bottom-6"
+    )}>
       {/* Tooltip */}
       <div
         className={cn(

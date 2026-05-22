@@ -28,7 +28,7 @@ const heroSlides = [
 
 export function Hero() {
   const [currentSlide, setCurrentSlide] = useState(0)
-  const [timeLeft, setTimeLeft] = useState({ hours: 1, minutes: 59, seconds: 59 })
+  const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 })
 
   useEffect(() => {
     const slideTimer = setInterval(() => {
@@ -39,22 +39,25 @@ export function Hero() {
   }, [])
 
   useEffect(() => {
+    // Oferta siempre termina esta noche a medianoche — urgencia real y consistente
     const endTime = new Date()
-    endTime.setHours(endTime.getHours() + 2)
+    endTime.setHours(23, 59, 59, 0)
 
-    const timer = setInterval(() => {
-      const now = new Date()
-      const diff = endTime.getTime() - now.getTime()
-
-      if (diff <= 0) return
-
+    const tick = () => {
+      const diff = endTime.getTime() - Date.now()
+      if (diff <= 0) {
+        setTimeLeft({ hours: 0, minutes: 0, seconds: 0 })
+        return
+      }
       setTimeLeft({
         hours: Math.floor(diff / (1000 * 60 * 60)),
         minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
-        seconds: Math.floor((diff % (1000 * 60)) / 1000)
+        seconds: Math.floor((diff % (1000 * 60)) / 1000),
       })
-    }, 1000)
+    }
 
+    tick()
+    const timer = setInterval(tick, 1000)
     return () => clearInterval(timer)
   }, [])
 

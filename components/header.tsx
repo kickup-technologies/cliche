@@ -35,7 +35,7 @@ const navigation = [
 export function Header() {
   const [isOpen, setIsOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
-  const { items } = useCart()
+  const { items, openDrawer } = useCart()
   const cartCount = items.reduce((acc, i) => acc + i.quantity, 0)
 
   useEffect(() => {
@@ -207,13 +207,14 @@ export function Header() {
               <User className="h-5 w-5" />
               <span className="sr-only">Cuenta</span>
             </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className={`relative ${isScrolled ? "text-foreground hover:text-primary" : "text-white/90 hover:text-white hover:bg-white/10"}`}
+              onClick={openDrawer}
             >
               <ShoppingBag className="h-5 w-5" />
-              {cartCount >= 0 && (
+              {cartCount > 0 && (
                 <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center">
                   {cartCount}
                 </span>

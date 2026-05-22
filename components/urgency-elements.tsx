@@ -1,18 +1,18 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ShoppingCart, Flame, Clock } from "lucide-react"
+import { ShoppingBag, Flame, Clock, MapPin, Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useCart } from "@/context/cart-context"
 import type { Promotion } from "@/lib/supabase"
 
 // ─── Compras recientes simuladas (social proof) ───────────────────────────────
 const purchases = [
-  { name: "Valentina R.", city: "Bogotá",    product: "Difusor Nebulizador Bambu", time: "Hace 2 minutos" },
-  { name: "Camila M.",   city: "Medellín",   product: "Kit Relajación Completo",   time: "Hace 5 minutos" },
-  { name: "Sofía L.",    city: "Cali",       product: "Esencia Lavanda Premium",   time: "Hace 8 minutos" },
-  { name: "Daniela P.",  city: "Cartagena",  product: "Vela Aromática Eucalipto",  time: "Hace 12 minutos" },
-  { name: "Isabella T.", city: "Barranquilla", product: "Difusor Nebulizador Bambu", time: "Hace 15 minutos" },
+  { name: "Valentina R.", city: "Bogotá",      product: "Difusor Nebulizador Bambú",   rating: 5, time: "Hace 2 min",  color: "bg-[#EDD5CF]" },
+  { name: "Camila M.",   city: "Medellín",     product: "Kit Armonía x3",              rating: 5, time: "Hace 5 min",  color: "bg-[#D9B5AC]" },
+  { name: "Sofía L.",    city: "Cali",         product: "Aroma Lavanda Premium",        rating: 5, time: "Hace 8 min",  color: "bg-[#C4958A]" },
+  { name: "Daniela P.",  city: "Cartagena",    product: "Vela Aromática Eucalipto",     rating: 4, time: "Hace 11 min", color: "bg-[#EDD5CF]" },
+  { name: "Isabella T.", city: "Barranquilla", product: "Difusor Nebulizador Bambú",    rating: 5, time: "Hace 14 min", color: "bg-[#D9B5AC]" },
 ]
 
 // ─── Social Proof Toast ───────────────────────────────────────────────────────
@@ -27,31 +27,44 @@ export function SocialProofToast() {
         setIsVisible(false)
         setTimeout(() => {
           setCurrentIndex((i) => (i + 1) % purchases.length)
-        }, 500)
-      }, 4000)
+        }, 400)
+      }, 4500)
     }
 
     const initial = setTimeout(showNext, 8000)
-    const interval = setInterval(showNext, 12000)
+    const interval = setInterval(showNext, 13000)
     return () => { clearTimeout(initial); clearInterval(interval) }
   }, [])
 
   const p = purchases[currentIndex]
 
   return (
-    <div className={`fixed bottom-24 left-4 z-40 transition-all duration-500 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"}`}>
-      <div className="bg-card border border-border rounded-xl shadow-lg px-4 py-3 flex items-center gap-3 max-w-xs">
-        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-          <ShoppingCart className="w-5 h-5 text-primary" />
+    <div className={`fixed bottom-28 left-4 z-40 transition-all duration-500 ${isVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 pointer-events-none"}`}>
+      <div className="bg-card border border-border/60 rounded-2xl shadow-xl px-4 py-3 flex items-center gap-3 max-w-[280px]">
+        {/* Product color swatch */}
+        <div className={`w-12 h-12 ${p.color} rounded-xl flex items-center justify-center flex-shrink-0`}>
+          <ShoppingBag className="w-5 h-5 text-[#2D1A14]/60" />
         </div>
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-foreground truncate">
-            {p.name} de {p.city}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1 mb-0.5">
+            <p className="text-xs font-semibold text-foreground">{p.name}</p>
+            <span className="text-muted-foreground/40 text-xs">·</span>
+            <div className="flex items-center gap-0.5">
+              <MapPin className="w-2.5 h-2.5 text-muted-foreground" />
+              <span className="text-[10px] text-muted-foreground">{p.city}</span>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground leading-tight truncate">
+            Compró <span className="font-medium text-foreground">{p.product}</span>
           </p>
-          <p className="text-xs text-muted-foreground truncate">
-            compró <span className="font-medium text-foreground">{p.product}</span>
-          </p>
-          <p className="text-xs text-muted-foreground mt-0.5">{p.time}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <div className="flex">
+              {Array.from({ length: p.rating }).map((_, i) => (
+                <Star key={i} className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+              ))}
+            </div>
+            <span className="text-[10px] text-muted-foreground">{p.time}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -110,7 +123,7 @@ export function CountdownTimer({ endTime }: { endTime: Date }) {
 export function StickyAddToCart() {
   const [isVisible, setIsVisible] = useState(false)
   const [promotion, setPromotion] = useState<Promotion | null>(null)
-  const { itemCount, checkout, isCheckingOut } = useCart()
+  const { itemCount, checkout, isCheckingOut, openDrawer } = useCart()
 
   // Mostrar al hacer scroll
   useEffect(() => {
@@ -137,7 +150,13 @@ export function StickyAddToCart() {
       <div className="container mx-auto flex items-center justify-between gap-4">
         <div className="hidden sm:block">
           {promotion?.end_time ? (
-            <CountdownTimer endTime={new Date(promotion.end_time)} />
+            <CountdownTimer endTime={(() => {
+              // Cap al máximo medianoche esta noche — evita mostrar "719 horas"
+              const promoEnd = new Date(promotion.end_time!)
+              const tonightMidnight = new Date()
+              tonightMidnight.setHours(23, 59, 59, 0)
+              return promoEnd > tonightMidnight ? tonightMidnight : promoEnd
+            })()} />
           ) : (
             <>
               <p className="text-sm text-muted-foreground">Oferta especial</p>
@@ -155,11 +174,11 @@ export function StickyAddToCart() {
           <Button
             size="lg"
             className="font-semibold px-8"
-            onClick={() => checkout(promotion?.code)}
+            onClick={() => itemCount > 0 ? openDrawer() : undefined}
             disabled={isCheckingOut || itemCount === 0}
           >
-            <ShoppingCart className="w-5 h-5 mr-2" />
-            {isCheckingOut ? "PROCESANDO..." : itemCount > 0 ? "PAGAR AHORA" : "COMPRAR AHORA"}
+            <ShoppingBag className="w-5 h-5 mr-2" />
+            {isCheckingOut ? "PROCESANDO..." : itemCount > 0 ? `VER CARRITO (${itemCount})` : "COMPRAR AHORA"}
           </Button>
         </div>
       </div>
