@@ -182,7 +182,18 @@ export function Header() {
           </div>
 
           {/* Icons */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
+            {/* Catálogo — acceso rápido a todos los productos */}
+            <Link
+              href="/#productos"
+              className={`hidden lg:flex items-center gap-1.5 text-xs font-semibold border rounded-full px-3 py-1.5 transition-colors ${
+                isScrolled
+                  ? "border-border text-foreground hover:border-primary hover:text-primary"
+                  : "border-white/30 text-white hover:border-white hover:bg-white/10"
+              }`}
+            >
+              Catálogo
+            </Link>
             <Link
               href="/#productos"
               className={`hidden sm:flex w-9 h-9 items-center justify-center rounded-md transition-colors ${isScrolled ? "text-foreground hover:text-primary" : "text-white/90 hover:text-white hover:bg-white/10"}`}

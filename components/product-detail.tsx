@@ -23,12 +23,34 @@ interface Props {
 }
 
 const NOTES_MAP: Record<string, string[]> = {
-  "aroma-agua":          ["Bergamota Italia", "Lirio Acuático", "Cáscara de Lima"],
-  "aroma-aire":          ["Musgo Blanco", "Bambú Verde", "Almizcle Fresco"],
-  "aroma-tierra":        ["Pachulí", "Cedro Virginia", "Vetiver"],
-  "aroma-fuego":         ["Canela", "Vainilla Bourbon", "Sándalo"],
-  "aroma-brillos-seda":  ["Seda", "Flores Blancas", "Almizcle Suave"],
-  "aroma-indigo-profundo": ["Lavanda", "Iris Azul", "Madera Oscura"],
+  // Elementos básicos
+  "aroma-agua":              ["Bergamota Italia", "Lirio Acuático", "Almizcle Marino"],
+  "aroma-aire":              ["Ozono Fresco", "Bambú Verde", "Almizcle Blanco"],
+  "aroma-tierra":            ["Pachulí", "Cedro Virginia", "Vetiver"],
+  "aroma-fuego":             ["Canela", "Ámbar Dorado", "Sándalo"],
+  // Florales y sedosos
+  "aroma-brillos-de-seda":   ["Flores Blancas", "Seda Natural", "Almizcle Suave"],
+  "aroma-brillos-seda":      ["Flores Blancas", "Seda Natural", "Almizcle Suave"],
+  "aroma-indigo-profundo":   ["Lavanda", "Violeta", "Cedro Oscuro"],
+  "aroma-eternamente-indigo":["Iris Azul", "Violeta Intensa", "Almizcle Profundo"],
+  "aroma-hilos-de-seda":     ["Seda Blanca", "Polvos Suaves", "Almizcle Cremoso"],
+  // Amaderados y cálidos
+  "aroma-tao":               ["Sándalo Zen", "Bambú", "Agua de Rosas"],
+  "aroma-mahai":             ["Coco Tropical", "Vainilla", "Flor de Tiaré"],
+  "aroma-calor-de-lana":     ["Cachemir", "Ámbar Cálido", "Vainilla Suave"],
+  "aroma-dulce-lana":        ["Ámbar Dorado", "Lana Suave", "Vainilla"],
+  "aroma-crema":             ["Vainilla Cremosa", "Leche de Almendra", "Azúcar Moscabado"],
+  "aroma-sello-de-dios":     ["Incienso", "Mirra", "Madera Sagrada"],
+  "aroma-luxury":            ["Oud Árabe", "Ámbar Oriental", "Especias Exóticas"],
+  // Frescos y ligeros
+  "aroma-vientos-de-lino":   ["Lino Limpio", "Algodón Fresco", "Brisa Marina"],
+  "aroma-frescura-de-lino":  ["Lino Suave", "Cedro Blanco", "Brisa Fresca"],
+  "aroma-lycra-de-verano":   ["Cítricos Vibrantes", "Sal Marina", "Vetiver"],
+  // Especiales / colección
+  "aroma-romeo-y-julieta":   ["Rosa Roja", "Jazmín", "Almizcle Blanco"],
+  "aroma-best-friends":      ["Frambuesa", "Flores Dulces", "Azúcar Suave"],
+  "aroma-happiness":         ["Cítricos Alegres", "Flores de Primavera", "Almizcle Fresco"],
+  "aroma-navidad":           ["Pino Natural", "Canela", "Naranja Especiada"],
 }
 
 export function ProductDetail({ product, related }: Props) {

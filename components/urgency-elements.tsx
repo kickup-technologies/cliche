@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import { ShoppingBag, Flame, Clock, MapPin, Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useCart } from "@/context/cart-context"
-import type { Promotion } from "@/lib/supabase"
 
 // ─── Compras recientes simuladas (social proof) ───────────────────────────────
 const purchases = [
@@ -119,66 +118,111 @@ export function CountdownTimer({ endTime }: { endTime: Date }) {
   )
 }
 
-// ─── Sticky Add to Cart (con countdown y carrito real) ────────────────────────
-export function StickyAddToCart() {
-  const [isVisible, setIsVisible] = useState(false)
-  const [promotion, setPromotion] = useState<Promotion | null>(null)
-  const { itemCount, checkout, isCheckingOut, openDrawer } = useCart()
+function formatPriceCOP(n: number) {
+  return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(n)
+}
 
-  // Mostrar al hacer scroll
+// ─── Sticky bar inteligente ────────────────────────────────────────────────────
+// Comportamiento:
+//   · Carrito vacío < 90s  → oculto (no molestar a los que acaban de llegar)
+//   · Carrito vacío ≥ 90s  → nudge sutil de social proof, sin timer falso
+//   · Carrito con items    → resumen real del carrito + "Finalizar compra"
+//   · Timer de urgencia    → solo aparece si: tiene items + lleva ≥4 min + no lo ha visto hoy
+export function StickyAddToCart() {
+  const [isScrolled, setIsScrolled]       = useState(false)
+  const [browseSeconds, setBrowseSeconds] = useState(0)
+  const [showUrgency, setShowUrgency]     = useState(false)
+  const { items, itemCount, total, checkout, isCheckingOut, openDrawer } = useCart()
+
+  const firstItem = items[0]
+
   useEffect(() => {
-    const onScroll = () => setIsVisible(window.scrollY > 600)
-    window.addEventListener("scroll", onScroll)
+    const onScroll = () => setIsScrolled(window.scrollY > 500)
+    window.addEventListener("scroll", onScroll, { passive: true })
     return () => window.removeEventListener("scroll", onScroll)
   }, [])
 
-  // Cargar promoción activa
+  // Contador real de tiempo en página
   useEffect(() => {
-    fetch("/api/promotions")
-      .then((r) => r.json())
-      .then((promos: Promotion[]) => {
-        const active = promos.find((p) => p.end_time !== null)
-        if (active) setPromotion(active)
-      })
-      .catch(console.error)
+    const id = setInterval(() => setBrowseSeconds((s) => s + 1), 1000)
+    return () => clearInterval(id)
   }, [])
 
-  if (!isVisible) return null
+  // Urgencia contextual: solo una vez por día, solo si tiene items y lleva ≥4 min
+  useEffect(() => {
+    if (itemCount === 0 || browseSeconds < 240) return
+    const today = new Date().toDateString()
+    if (localStorage.getItem("cliche_urgency_seen") !== today) {
+      setShowUrgency(true)
+      localStorage.setItem("cliche_urgency_seen", today)
+    }
+  }, [itemCount, browseSeconds])
 
+  if (!isScrolled) return null
+
+  // ── Sin items: invisible < 90s; social proof ≥ 90s ──────────────────────────
+  if (itemCount === 0) {
+    if (browseSeconds < 90) return null
+    return (
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-md border-t border-border/40 animate-in slide-in-from-bottom duration-500">
+        <div className="container mx-auto px-4 py-2.5 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+            <div className="flex -space-x-1.5">
+              {["bg-[#C4958A]","bg-[#EDD5CF]","bg-[#D9B5AC]"].map((c, i) => (
+                <div key={i} className={`w-5 h-5 rounded-full ${c} border-2 border-background`} />
+              ))}
+            </div>
+            <span className="hidden sm:inline">
+              +5.000 hogares ya tienen su aroma · <span className="font-medium text-foreground">Envío gratis en compras +$300k</span>
+            </span>
+            <span className="sm:hidden font-medium text-foreground">+5.000 hogares · Envío gratis</span>
+          </div>
+          <Button size="sm" variant="outline" className="shrink-0 rounded-full h-8 px-4 text-xs font-semibold" asChild>
+            <a href="#productos">Ver aromas →</a>
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Con items: resumen real + checkout ───────────────────────────────────────
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border p-4 animate-in slide-in-from-bottom duration-300">
-      <div className="container mx-auto flex items-center justify-between gap-4">
-        <div className="hidden sm:block">
-          {promotion?.end_time ? (
-            <CountdownTimer endTime={(() => {
-              // Cap al máximo medianoche esta noche — evita mostrar "719 horas"
-              const promoEnd = new Date(promotion.end_time!)
-              const tonightMidnight = new Date()
-              tonightMidnight.setHours(23, 59, 59, 0)
-              return promoEnd > tonightMidnight ? tonightMidnight : promoEnd
-            })()} />
+    <div className="fixed bottom-0 left-0 right-0 z-40 bg-card/98 backdrop-blur-md border-t border-border animate-in slide-in-from-bottom duration-300">
+      <div className="container mx-auto px-4 py-3 flex items-center gap-3">
+        {/* Resumen del carrito */}
+        <div className="flex-1 min-w-0">
+          {showUrgency ? (
+            <p className="text-xs text-amber-700 font-semibold">
+              Código BIENVENIDA20 vence hoy — 20% OFF activo en tu pedido
+            </p>
           ) : (
-            <>
-              <p className="text-sm text-muted-foreground">Oferta especial</p>
-              <p className="font-semibold text-foreground">30% OFF + Envío Gratis</p>
-            </>
+            <p className="text-xs text-muted-foreground">
+              {itemCount} {itemCount === 1 ? "producto" : "productos"} en tu carrito
+            </p>
           )}
+          <p className="text-sm font-bold text-foreground truncate">
+            {firstItem?.product.name}
+            {itemCount > 1 && <span className="text-muted-foreground font-normal"> + {itemCount - 1} más</span>}
+            <span className="ml-2 text-primary">{formatPriceCOP(total)}</span>
+          </p>
         </div>
 
-        <div className="flex items-center gap-3 flex-1 sm:flex-none justify-end">
-          {itemCount > 0 && (
-            <span className="text-sm text-muted-foreground">
-              {itemCount} {itemCount === 1 ? "producto" : "productos"} en carrito
-            </span>
-          )}
-          <Button
-            size="lg"
-            className="font-semibold px-8"
-            onClick={() => itemCount > 0 ? openDrawer() : undefined}
-            disabled={isCheckingOut || itemCount === 0}
+        {/* Acciones */}
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={openDrawer}
+            className="hidden sm:block text-sm text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
           >
-            <ShoppingBag className="w-5 h-5 mr-2" />
-            {isCheckingOut ? "PROCESANDO..." : itemCount > 0 ? `VER CARRITO (${itemCount})` : "COMPRAR AHORA"}
+            Ver carrito
+          </button>
+          <Button
+            size="default"
+            className="font-semibold px-5 rounded-full"
+            onClick={checkout}
+            disabled={isCheckingOut}
+          >
+            <ShoppingBag className="w-4 h-4 mr-1.5" />
+            {isCheckingOut ? "Procesando..." : "Finalizar compra"}
           </Button>
         </div>
       </div>

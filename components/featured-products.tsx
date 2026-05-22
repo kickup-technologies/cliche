@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Star, ShoppingCart, Eye, Flame } from "lucide-react"
+import { Star, ShoppingCart, Eye, Flame, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useCart } from "@/context/cart-context"
@@ -17,9 +17,12 @@ function formatPrice(price: number) {
   }).format(price)
 }
 
+const INITIAL_VISIBLE = 8
+
 export function FeaturedProducts() {
   const [products, setProducts] = useState<Product[]>([])
   const [isVisible, setIsVisible] = useState(false)
+  const [showAll, setShowAll] = useState(false)
   const [hoveredProduct, setHoveredProduct] = useState<string | null>(null)
   const [addedToCart, setAddedToCart] = useState<string | null>(null)
   const sectionRef = useRef<HTMLDivElement>(null)
@@ -65,7 +68,7 @@ export function FeaturedProducts() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {products.map((product, index) => (
+          {(showAll ? products : products.slice(0, INITIAL_VISIBLE)).map((product, index) => (
             <Link
               key={product.id}
               href={`/productos/${product.slug}`}
@@ -145,6 +148,28 @@ export function FeaturedProducts() {
             </Link>
           ))}
         </div>
+
+        {/* Mostrar más / Ver catálogo */}
+        {products.length > INITIAL_VISIBLE && (
+          <div className="text-center mt-10">
+            {!showAll ? (
+              <button
+                onClick={() => setShowAll(true)}
+                className="inline-flex items-center gap-2 border border-border rounded-full px-8 py-3 text-sm font-semibold text-foreground hover:border-primary hover:text-primary transition-colors"
+              >
+                <ChevronDown className="w-4 h-4" />
+                Mostrar más aromas ({products.length - INITIAL_VISIBLE} restantes)
+              </button>
+            ) : (
+              <a
+                href="/productos"
+                className="inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-8 py-3 text-sm font-semibold hover:bg-primary/90 transition-colors"
+              >
+                Ver catálogo completo →
+              </a>
+            )}
+          </div>
+        )}
       </div>
 
       {addedToCart && (
