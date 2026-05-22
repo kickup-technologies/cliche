@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getStripe } from "@/lib/stripe"
 import { createServerClient } from "@/lib/supabase"
-import { sendOrderConfirmation } from "@/lib/resend"
+import { sendOrderConfirmation, sendReviewRequestEmail } from "@/lib/resend"
 
 export async function POST(req: NextRequest) {
   const body = await req.text()
@@ -51,6 +51,14 @@ export async function POST(req: NextRequest) {
         total: session.amount_total || 0,
         items,
       })
+
+      // Email de solicitud de reseña (se envía después de la compra)
+      try {
+        const customerName = (session.customer_details as { name?: string } | null)?.name?.split(" ")[0] || "Cliente"
+        await sendReviewRequestEmail(session.customer_email, customerName, items)
+      } catch {
+        // No bloquear el webhook si falla el email de reseña
+      }
     }
   }
 

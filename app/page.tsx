@@ -14,6 +14,8 @@ import { SubscriptionPopup } from "@/components/subscription-popup"
 import { ExitIntentPopup } from "@/components/exit-intent-popup"
 import { SocialProofToast, StickyAddToCart } from "@/components/urgency-elements"
 import { CartDrawer } from "@/components/cart-drawer"
+import { HowItWorks } from "@/components/how-it-works"
+import { FAQ } from "@/components/faq"
 import { Star, Truck, ShieldCheck, RotateCcw, Users } from "lucide-react"
 
 // Barra de prueba social — refuerza confianza inmediatamente debajo del hero
@@ -73,7 +75,10 @@ export default function Home() {
       {/* 4. Prueba social inmediata — reduce ansiedad post-hero */}
       <SocialProofBar />
 
-      {/* 5. Productos primero — el usuario ya quiere comprar */}
+      {/* 5. Cómo funciona — elimina fricción antes de ver productos */}
+      <HowItWorks />
+
+      {/* 6. Productos primero — el usuario ya quiere comprar */}
       <FeaturedProducts />
 
       {/* 6. Beneficios — Interés: POR QUÉ Cliché es diferente */}
@@ -91,10 +96,13 @@ export default function Home() {
       {/* 10. CTA de conversión — Acción: oferta irresistible */}
       <CTASection />
 
-      {/* 11. Captura de email — retención futura */}
+      {/* 11. FAQ — elimina objeciones finales antes de la captura */}
+      <FAQ />
+
+      {/* 12. Captura de email — retención futura */}
       <Newsletter />
 
-      {/* 12. Footer */}
+      {/* 13. Footer */}
       <Footer />
 
       {/* ── Elementos de conversión flotantes ── */}

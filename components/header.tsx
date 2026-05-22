@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Menu, Search, ShoppingBag, User, ChevronDown, Heart } from "lucide-react"
+import { Menu, ShoppingBag, ChevronDown, Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -183,30 +183,13 @@ export function Header() {
 
           {/* Icons */}
           <div className="flex items-center gap-1">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className={`hidden sm:flex ${isScrolled ? "text-foreground hover:text-primary" : "text-white/90 hover:text-white hover:bg-white/10"}`}
-            >
-              <Search className="h-5 w-5" />
-              <span className="sr-only">Buscar</span>
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className={`hidden sm:flex ${isScrolled ? "text-foreground hover:text-primary" : "text-white/90 hover:text-white hover:bg-white/10"}`}
+            <Link
+              href="/#productos"
+              className={`hidden sm:flex w-9 h-9 items-center justify-center rounded-md transition-colors ${isScrolled ? "text-foreground hover:text-primary" : "text-white/90 hover:text-white hover:bg-white/10"}`}
+              aria-label="Ver favoritos"
             >
               <Heart className="h-5 w-5" />
-              <span className="sr-only">Favoritos</span>
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className={`hidden sm:flex ${isScrolled ? "text-foreground hover:text-primary" : "text-white/90 hover:text-white hover:bg-white/10"}`}
-            >
-              <User className="h-5 w-5" />
-              <span className="sr-only">Cuenta</span>
-            </Button>
+            </Link>
             <Button
               variant="ghost"
               size="icon"
