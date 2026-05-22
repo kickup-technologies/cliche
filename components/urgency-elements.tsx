@@ -7,11 +7,11 @@ import { useCart } from "@/context/cart-context"
 
 // ─── Compras recientes simuladas (social proof) ───────────────────────────────
 const purchases = [
-  { name: "Valentina R.", city: "Bogotá",      product: "Difusor Nebulizador Bambú",   rating: 5, time: "Hace 2 min",  color: "bg-[#EDD5CF]" },
-  { name: "Camila M.",   city: "Medellín",     product: "Kit Armonía x3",              rating: 5, time: "Hace 5 min",  color: "bg-[#D9B5AC]" },
-  { name: "Sofía L.",    city: "Cali",         product: "Aroma Lavanda Premium",        rating: 5, time: "Hace 8 min",  color: "bg-[#C4958A]" },
-  { name: "Daniela P.",  city: "Cartagena",    product: "Vela Aromática Eucalipto",     rating: 4, time: "Hace 11 min", color: "bg-[#EDD5CF]" },
-  { name: "Isabella T.", city: "Barranquilla", product: "Difusor Nebulizador Bambú",    rating: 5, time: "Hace 14 min", color: "bg-[#D9B5AC]" },
+  { name: "Valentina R.", city: "Bogotá",      product: "Aroma Vientos de Lino",   rating: 5, time: "Hace 2 min",  color: "bg-[#EDD5CF]" },
+  { name: "Camila M.",   city: "Medellín",     product: "Kit Armonía x3",          rating: 5, time: "Hace 5 min",  color: "bg-[#D9B5AC]" },
+  { name: "Sofía L.",    city: "Cali",         product: "Aroma Tao",               rating: 5, time: "Hace 8 min",  color: "bg-[#C4958A]" },
+  { name: "Daniela P.",  city: "Cartagena",    product: "Aroma Luxury",            rating: 5, time: "Hace 11 min", color: "bg-[#EDD5CF]" },
+  { name: "Isabella T.", city: "Barranquilla", product: "Aroma Mahai",             rating: 5, time: "Hace 14 min", color: "bg-[#D9B5AC]" },
 ]
 
 // ─── Social Proof Toast ───────────────────────────────────────────────────────

@@ -4,9 +4,9 @@ import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import {
-  Settings, Package, TrendingUp, Mail, ToggleLeft,
+  Settings, Package, TrendingUp, ToggleLeft,
   ToggleRight, Save, Eye, RefreshCw, ShoppingBag,
-  Users, DollarSign, AlertCircle
+  DollarSign, AlertCircle, X, Plus, Pencil
 } from "lucide-react"
 import type { Product } from "@/lib/supabase"
 
@@ -34,6 +34,10 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  // Modal de edición / creación de producto
+  const [modal, setModal] = useState<{ open: boolean; product: Partial<Product> | null }>({ open: false, product: null })
+  const [modalSaving, setModalSaving] = useState(false)
+  const [modalError, setModalError] = useState("")
 
   useEffect(() => {
     loadAll()
@@ -79,6 +83,52 @@ export default function AdminPage() {
 
   function setSetting(key: string, value: string) {
     setSettings((prev) => ({ ...prev, [key]: value }))
+  }
+
+  function openEdit(product: Product) {
+    setModalError("")
+    setModal({ open: true, product: { ...product } })
+  }
+
+  function openNew() {
+    setModalError("")
+    setModal({ open: true, product: { name: "", slug: "", price: 78000, stock: 50, rating: 4.8, reviews: 0, is_active: true } })
+  }
+
+  function closeModal() {
+    setModal({ open: false, product: null })
+    setModalError("")
+  }
+
+  function setField(key: string, value: string | number | boolean) {
+    setModal((prev) => ({ ...prev, product: { ...prev.product, [key]: value } }))
+  }
+
+  function autoSlug(name: string) {
+    return "aroma-" + name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
+  }
+
+  async function saveProduct() {
+    if (!modal.product) return
+    const p = modal.product
+    if (!p.name || !p.slug || !p.price) { setModalError("Nombre, slug y precio son requeridos"); return }
+    setModalSaving(true)
+    setModalError("")
+    try {
+      if (p.id) {
+        const { error } = await supabase.from("products").update({ ...p, updated_at: new Date().toISOString() }).eq("id", p.id)
+        if (error) throw error
+      } else {
+        const { error } = await supabase.from("products").insert({ ...p })
+        if (error) throw error
+      }
+      await loadAll()
+      closeModal()
+    } catch (err: unknown) {
+      setModalError(err instanceof Error ? err.message : "Error al guardar")
+    } finally {
+      setModalSaving(false)
+    }
   }
 
   const totalRevenue = orders
@@ -213,7 +263,12 @@ export default function AdminPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between mb-2">
               <h2 className="font-serif text-xl font-bold text-foreground">Inventario</h2>
-              <p className="text-sm text-muted-foreground">{products.length} productos</p>
+              <div className="flex items-center gap-3">
+                <p className="text-sm text-muted-foreground">{products.length} productos</p>
+                <Button size="sm" onClick={openNew} className="rounded-full h-8 gap-1.5">
+                  <Plus className="w-3.5 h-3.5" /> Nuevo producto
+                </Button>
+              </div>
             </div>
             {products.map((product) => (
               <div key={product.id} className="bg-background rounded-2xl border border-border p-4">
@@ -260,6 +315,14 @@ export default function AdminPage() {
                     >
                       {product.is_active ? <ToggleRight className="w-3.5 h-3.5" /> : <ToggleLeft className="w-3.5 h-3.5" />}
                       {product.is_active ? "Activo" : "Oculto"}
+                    </button>
+                    {/* Editar */}
+                    <button
+                      onClick={() => openEdit(product)}
+                      className="w-8 h-8 rounded-lg border border-border hover:bg-muted flex items-center justify-center transition-colors"
+                      title="Editar producto"
+                    >
+                      <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
                     </button>
                   </div>
                 </div>
@@ -341,6 +404,186 @@ export default function AdminPage() {
           </div>
         )}
       </div>
+
+      {/* ── MODAL EDITAR / CREAR PRODUCTO ── */}
+      {modal.open && modal.product && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={closeModal}>
+          <div className="bg-background rounded-2xl border border-border w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            {/* Modal header */}
+            <div className="sticky top-0 bg-background border-b border-border px-6 py-4 flex items-center justify-between rounded-t-2xl">
+              <h3 className="font-serif font-bold text-foreground">
+                {modal.product.id ? "Editar producto" : "Nuevo producto"}
+              </h3>
+              <button onClick={closeModal} className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <div className="p-6 space-y-4">
+              {/* Nombre */}
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">Nombre *</label>
+                <input
+                  type="text"
+                  value={modal.product.name || ""}
+                  onChange={(e) => {
+                    setField("name", e.target.value)
+                    if (!modal.product?.id) setField("slug", autoSlug(e.target.value))
+                  }}
+                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  placeholder="Aroma Tao"
+                />
+              </div>
+
+              {/* Slug */}
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">Slug * (URL)</label>
+                <input
+                  type="text"
+                  value={modal.product.slug || ""}
+                  onChange={(e) => setField("slug", e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  placeholder="aroma-tao"
+                />
+              </div>
+
+              {/* Precio y Precio original */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">Precio COP *</label>
+                  <input
+                    type="number"
+                    value={modal.product.price || ""}
+                    onChange={(e) => setField("price", Number(e.target.value))}
+                    className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    placeholder="78000"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">Precio original</label>
+                  <input
+                    type="number"
+                    value={modal.product.original_price || ""}
+                    onChange={(e) => setField("original_price", e.target.value ? Number(e.target.value) : null as unknown as number)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    placeholder="90000"
+                  />
+                </div>
+              </div>
+
+              {/* Stock y Rating */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">Stock</label>
+                  <input
+                    type="number"
+                    value={modal.product.stock ?? 50}
+                    onChange={(e) => setField("stock", Number(e.target.value))}
+                    className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">Rating (0-5)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="5"
+                    value={modal.product.rating ?? 4.8}
+                    onChange={(e) => setField("rating", Number(e.target.value))}
+                    className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  />
+                </div>
+              </div>
+
+              {/* Descripción */}
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">Descripción</label>
+                <textarea
+                  rows={4}
+                  value={modal.product.description || ""}
+                  onChange={(e) => setField("description", e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  placeholder="Describe el producto y su propuesta de valor..."
+                />
+              </div>
+
+              {/* URL imagen */}
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">URL de imagen</label>
+                <input
+                  type="text"
+                  value={modal.product.image_url || ""}
+                  onChange={(e) => setField("image_url", e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  placeholder="https://cdn.shopify.com/..."
+                />
+                {modal.product.image_url?.startsWith("http") && (
+                  <img src={modal.product.image_url} alt="preview" className="mt-2 w-16 h-16 object-cover rounded-lg border border-border" />
+                )}
+              </div>
+
+              {/* Badge y color */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">Badge</label>
+                  <input
+                    type="text"
+                    value={modal.product.badge || ""}
+                    onChange={(e) => setField("badge", e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    placeholder="Nuevo"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">Color badge</label>
+                  <select
+                    value={modal.product.badge_color || ""}
+                    onChange={(e) => setField("badge_color", e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  >
+                    <option value="">Sin badge</option>
+                    <option value="bg-primary">Terracota (principal)</option>
+                    <option value="bg-amber-500">Ámbar</option>
+                    <option value="bg-green-600">Verde</option>
+                    <option value="bg-red-500">Rojo</option>
+                    <option value="bg-gray-400">Gris</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Activo */}
+              <div className="flex items-center gap-3 pt-1">
+                <input
+                  type="checkbox"
+                  id="is_active"
+                  checked={modal.product.is_active ?? true}
+                  onChange={(e) => setField("is_active", e.target.checked)}
+                  className="w-4 h-4 accent-primary"
+                />
+                <label htmlFor="is_active" className="text-sm text-foreground font-medium">Producto activo (visible en tienda)</label>
+              </div>
+
+              {/* Error */}
+              {modalError && (
+                <p className="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-2.5">{modalError}</p>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-2">
+                <Button variant="outline" className="flex-1 rounded-xl" onClick={closeModal} disabled={modalSaving}>
+                  Cancelar
+                </Button>
+                <Button className="flex-1 rounded-xl" onClick={saveProduct} disabled={modalSaving}>
+                  {modalSaving ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                  {modal.product.id ? "Guardar cambios" : "Crear producto"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

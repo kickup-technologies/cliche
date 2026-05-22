@@ -19,6 +19,32 @@ function formatPrice(price: number) {
 
 const INITIAL_VISIBLE = 8
 
+const BENEFIT_MAP: Record<string, string> = {
+  "aroma-agua":              "Frescura de spa — ideal para sala y baño",
+  "aroma-aire":              "Ambiente limpio, como ventana abierta siempre",
+  "aroma-tierra":            "Calidez profunda que da carácter al espacio",
+  "aroma-fuego":             "Intensidad especiada — para noches y cenas",
+  "aroma-tao":               "Calma instantánea — favorito para home office",
+  "aroma-vientos-de-lino":   "Ropa y telas oliendo a recién lavadas, todo el día",
+  "aroma-frescura-de-lino":  "Limpieza discreta — el más versátil de la colección",
+  "aroma-luxury":            "Experiencia oud árabe en tu hogar",
+  "aroma-crema":             "Irresistible — hace que nadie quiera irse",
+  "aroma-romeo-y-julieta":   "El ambiente perfecto para noches especiales",
+  "aroma-navidad":           "La magia de diciembre, cuando quieras",
+  "aroma-mahai":             "Alegría tropical — el que más hace sonreír",
+  "aroma-sello-de-dios":     "Profundidad y misticismo — para espacios únicos",
+  "aroma-happiness":         "Activa buen humor al instante",
+  "aroma-calor-de-lana":     "Calor de hogar — como una manta en invierno",
+  "aroma-dulce-lana":        "Confort puro — cada regreso a casa huele a bienvenida",
+  "aroma-hilos-de-seda":     "Atmósfera de spa privado — para closets y baños",
+  "aroma-eternamente-indigo":"La fragancia que todos preguntan al entrar",
+  "aroma-indigo-profundo":   "Floral profundo con carácter — para espacios amplios",
+  "aroma-best-friends":      "Alegría frutal — buen humor instantáneo",
+  "aroma-lycra-de-verano":   "Energía cítrica — para mañanas activas",
+  "kit-armonia-x3":          "3 aromas esenciales — ahorra $24.000 vs individual",
+  "kit-elementos-x4":        "El ritual completo — los 4 pilares de Cliché",
+}
+
 export function FeaturedProducts() {
   const [products, setProducts] = useState<Product[]>([])
   const [isVisible, setIsVisible] = useState(false)
@@ -143,6 +169,9 @@ export function FeaturedProducts() {
                     <span className="text-sm text-muted-foreground line-through">{formatPrice(product.original_price)}</span>
                   )}
                 </div>
+                <p className="text-xs text-muted-foreground leading-snug">
+                  {BENEFIT_MAP[product.slug] || "Aroma artesanal colombiano"}
+                </p>
                 <span className="text-xs text-primary font-medium">Ver detalles →</span>
               </div>
             </Link>

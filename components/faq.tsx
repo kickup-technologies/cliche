@@ -18,8 +18,8 @@ const faqs = [
     a: "Aceptamos tarjetas de crédito y débito (Visa, Mastercard), PSE y transferencia bancaria. El pago es procesado por Stripe con cifrado SSL de 256 bits — tus datos financieros nunca tocan nuestros servidores.",
   },
   {
-    q: "¿Cuánto tarda el envío?",
-    a: "El envío estándar tarda entre 3 y 5 días hábiles a todo Colombia. En compras mayores a $300.000 COP el envío es gratis. Una vez despachado recibirás un correo con el número de rastreo.",
+    q: "¿Cuánto cuesta el envío y cuánto tarda?",
+    a: "El envío cuesta $12.000 COP y llega en 3-5 días hábiles a toda Colombia. En compras mayores a $300.000 COP el envío es completamente gratis. Para Bogotá, Medellín, Cali y Barranquilla generalmente llega en 2-3 días. Una vez despachado recibirás un correo con número de rastreo.",
   },
   {
     q: "¿En qué superficies puedo usar el aroma?",
@@ -32,6 +32,14 @@ const faqs = [
   {
     q: "¿El código BIENVENIDA20 tiene restricciones?",
     a: "El código BIENVENIDA20 aplica a cualquier compra y da un 20% de descuento sobre el total del carrito. Solo puede usarse una vez por cliente. Válido hasta agotar existencias de la promoción.",
+  },
+  {
+    q: "¿Cómo uso exactamente el aroma? ¿Cuántos pufs aplico?",
+    a: "Para una habitación normal (12-20 m²), aplica 3-5 pufs directamente al aire o sobre textiles (sofá, cojines, cortinas, ropa de cama). El aroma en el ambiente dura 2-4 horas; en textiles puede durar todo el día. No es necesario aplicar más — con Cliché menos es más.",
+  },
+  {
+    q: "¿Es seguro para niños y mascotas?",
+    a: "Sí. La fórmula no contiene alérgenos clasificados, colorantes artificiales ni aceites pesados. Al aplicarse, el alcohol portador se evapora en segundos dejando solo la fragancia. Puedes usarlo en espacios donde estén niños y mascotas sin problema.",
   },
 ]
 

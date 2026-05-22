@@ -8,21 +8,21 @@ import { ChevronRight, Star, Truck, Shield, Sparkles, ArrowRight } from "lucide-
 const heroSlides = [
   {
     image: "/images/hero-main.jpg",
-    title: "Transforma tu Hogar en un Santuario",
-    subtitle: "Aromas artesanales que despiertan emociones",
-    cta: "Ver Colección",
+    title: "Tu hogar oliendo a spa en 3 segundos",
+    subtitle: "Sin velas. Sin enchufes. Sin riesgo. Solo unos pufs duran todo el día en textiles — 100% natural, no mancha, no irrita.",
+    cta: "Descubrir mi aroma →",
   },
   {
     image: "/images/lifestyle-bedroom.jpg",
-    title: "Dulces Sueños, Aromas Únicos",
-    subtitle: "Sprays para ropa de cama que transforman tu descanso",
-    cta: "Explorar Sprays",
+    title: "Duerme rodeado del aroma que eliges tú",
+    subtitle: "Aplica 3 pufs en tus sábanas y la fragancia permanece toda la noche. Fórmula sin aceites — no mancha tela blanca.",
+    cta: "Ver aromas para dormitorio →",
   },
   {
     image: "/images/lifestyle-living.jpg",
-    title: "Cada Espacio Cuenta una Historia",
-    subtitle: "Difusores y velas premium para ambientes inolvidables",
-    cta: "Descubrir Más",
+    title: "El aroma que todos te preguntan cuando entran",
+    subtitle: "Más de 5.000 hogares colombianos ya tienen su firma olfativa. Una botella rinde 800 aplicaciones — 6 meses de uso.",
+    cta: "Elegir mi fragancia →",
   },
 ]
 

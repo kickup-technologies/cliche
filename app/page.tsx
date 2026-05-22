@@ -17,6 +17,7 @@ import { CartDrawer } from "@/components/cart-drawer"
 import { HowItWorks } from "@/components/how-it-works"
 import { FAQ } from "@/components/faq"
 import { UGCSection } from "@/components/ugc-section"
+import { RitualUpsell } from "@/components/ritual-upsell"
 import { Star, Truck, ShieldCheck, RotateCcw, Users } from "lucide-react"
 
 // Barra de prueba social — refuerza confianza inmediatamente debajo del hero
@@ -103,7 +104,10 @@ export default function Home() {
       {/* 11. FAQ — elimina objeciones finales antes de la captura */}
       <FAQ />
 
-      {/* 12. Captura de email — retención futura */}
+      {/* 12. Ritual upsell — productos complementarios antes del newsletter */}
+      <RitualUpsell />
+
+      {/* 13. Captura de email — retención futura */}
       <Newsletter />
 
       {/* 13. Footer */}

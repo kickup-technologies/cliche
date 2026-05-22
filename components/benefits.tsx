@@ -7,26 +7,26 @@ const benefits = [
   {
     icon: Sparkles,
     title: "100% Natural",
-    description: "Ingredientes naturales y sostenibles",
-    highlight: "Sin químicos",
+    description: "Sin colorantes, sin parabenos, sin aceites grasos — seguro en ropa, telas y para toda la familia",
+    highlight: "No mancha",
   },
   {
     icon: Truck,
     title: "Envío Gratis",
-    description: "En pedidos +$99.000 COP",
-    highlight: "2-3 días",
+    description: "En pedidos mayores a $300.000 COP a toda Colombia. Entrega en 3-5 días hábiles con número de rastreo",
+    highlight: "+$300k gratis",
   },
   {
     icon: Shield,
-    title: "Garantía Total",
-    description: "30 días de garantía o te devolvemos tu dinero",
-    highlight: "Sin preguntas",
+    title: "Garantía 30 días",
+    description: "Si el producto no cumple tus expectativas, te devolvemos el dinero sin preguntas vía WhatsApp",
+    highlight: "Sin letra pequeña",
   },
   {
     icon: Clock,
-    title: "Larga Duración",
-    description: "Aromas que perduran semanas",
-    highlight: "+50 hrs velas",
+    title: "Hasta 800 aplicaciones",
+    description: "Una botella rinde 4-6 meses de uso diario — el mejor precio por aplicación del mercado",
+    highlight: "6 meses por botella",
   },
 ]
 
@@ -34,22 +34,22 @@ const process = [
   {
     step: "01",
     title: "Elige tu aroma",
-    description: "Explora nuestra colección y encuentra la fragancia perfecta",
+    description: "Explora los 22 aromas de la colección. Cada uno tiene un perfil de fragancia y un espacio ideal",
   },
   {
     step: "02",
     title: "Aplica tu descuento",
-    description: "Usa el código BIENVENIDO20 para 20% OFF",
+    description: "Usa el código BIENVENIDA20 para 20% OFF en tu primera compra — válido de inmediato",
   },
   {
     step: "03",
     title: "Recibe en casa",
-    description: "Entrega segura con empaque premium en 2-3 días",
+    description: "Llega en 3-5 días hábiles con empaque protegido. Envío gratis en pedidos +$300.000",
   },
   {
     step: "04",
-    title: "Enamórate",
-    description: "Transforma cada espacio en una experiencia única",
+    title: "Transforma tu espacio",
+    description: "3-5 pufs al aire o sobre textiles. El aroma dura horas en el ambiente, todo el día en telas",
   },
 ]
 
