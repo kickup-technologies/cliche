@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Instagram, Facebook, MessageCircle, Mail } from "lucide-react"
+import { Instagram, MessageCircle, Mail } from "lucide-react"
 
 function TikTokIcon({ className }: { className?: string }) {
   return (
@@ -39,9 +39,8 @@ const footerLinks = {
 }
 
 const socialLinks = [
-  { name: "Instagram", icon: Instagram,    href: "https://www.instagram.com/clichecolombia/" },
-  { name: "TikTok",    icon: TikTokIcon,   href: "https://www.tiktok.com/@clichecolombia" },
-  { name: "Facebook",  icon: Facebook,     href: "https://www.facebook.com/clichecolombia" },
+  { name: "Instagram", icon: Instagram,    href: "https://www.instagram.com/clichearomasoficial" },
+  { name: "TikTok",    icon: TikTokIcon,   href: "https://www.tiktok.com/@clichearomasoficial" },
   { name: "WhatsApp",  icon: MessageCircle, href: "https://wa.me/573194565463?text=Hola!+Vi+sus+productos+y+quiero+más+información" },
   { name: "Email",     icon: Mail,         href: "mailto:hola@clichecolombia.com" },
 ]
