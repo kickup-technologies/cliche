@@ -173,7 +173,7 @@ export function CartDrawer() {
               <span className="text-lg font-bold text-foreground">{formatPrice(total)}</span>
             </div>
             <p className="text-xs text-muted-foreground text-center">
-              Envío calculado al finalizar. Gratis en compras mayores a $150.000.
+              Envío calculado al finalizar. Gratis en compras mayores a $300.000.
             </p>
             <Button
               size="lg"

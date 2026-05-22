@@ -7,9 +7,12 @@ import { useCart } from "@/context/cart-context"
 
 export function WhatsAppButton() {
   const [isHovered, setIsHovered] = useState(false)
-  const { itemCount } = useCart()
+  const { itemCount, isDrawerOpen } = useCart()
   const phoneNumber = "573194565463"
   const message = "Hola! Vi sus productos en la tienda online y me gustaría saber más"
+
+  // Se oculta cuando el drawer del carrito está abierto para no interferir
+  if (isDrawerOpen) return null
 
   return (
     <div className={cn(
