@@ -4,79 +4,80 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Bienestar by Cliché - Purple Brand Theme */
-  --background: #FFFFFF;
-  --foreground: #1A1A2E;
+  /* Bienestar by Cliché — Brand Colors (Terracota #A67163) */
+  --background: #FAF8F5;
+  --foreground: #2D1A14;
   --card: #FFFFFF;
-  --card-foreground: #1A1A2E;
+  --card-foreground: #2D1A14;
   --popover: #FFFFFF;
-  --popover-foreground: #1A1A2E;
-  --primary: #5B21B6;
+  --popover-foreground: #2D1A14;
+  --primary: #A67163;
   --primary-foreground: #FFFFFF;
-  --secondary: #F5F3FF;
-  --secondary-foreground: #1A1A2E;
-  --muted: #F9FAFB;
-  --muted-foreground: #6B7280;
-  --accent: #4C1D95;
+  --secondary: #F5EDE8;
+  --secondary-foreground: #2D1A14;
+  --muted: #F5EDE8;
+  --muted-foreground: #7A5C52;
+  --accent: #8B5A4A;
   --accent-foreground: #FFFFFF;
   --destructive: #EF4444;
   --destructive-foreground: #FFFFFF;
-  --border: #E5E7EB;
-  --input: #E5E7EB;
-  --ring: #5B21B6;
-  --chart-1: #5B21B6;
-  --chart-2: #7C3AED;
-  --chart-3: #A78BFA;
-  --chart-4: #C4B5FD;
-  --chart-5: #DDD6FE;
+  --border: #E8D5CB;
+  --input: #E8D5CB;
+  --ring: #A67163;
+  --chart-1: #A67163;
+  --chart-2: #8B5A4A;
+  --chart-3: #C4958A;
+  --chart-4: #D9B5AC;
+  --chart-5: #EDD5CF;
   --radius: 0.75rem;
   --sidebar: #FFFFFF;
-  --sidebar-foreground: #1A1A2E;
-  --sidebar-primary: #5B21B6;
+  --sidebar-foreground: #2D1A14;
+  --sidebar-primary: #A67163;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #F5F3FF;
-  --sidebar-accent-foreground: #1A1A2E;
-  --sidebar-border: #E5E7EB;
-  --sidebar-ring: #5B21B6;
+  --sidebar-accent: #F5EDE8;
+  --sidebar-accent-foreground: #2D1A14;
+  --sidebar-border: #E8D5CB;
+  --sidebar-ring: #A67163;
 }
 
 .dark {
-  --background: #1A1A2E;
-  --foreground: #FFFFFF;
-  --card: #2D2D44;
-  --card-foreground: #FFFFFF;
-  --popover: #2D2D44;
-  --popover-foreground: #FFFFFF;
-  --primary: #7C3AED;
-  --primary-foreground: #FFFFFF;
-  --secondary: #3D3D5C;
-  --secondary-foreground: #FFFFFF;
-  --muted: #3D3D5C;
-  --muted-foreground: #9CA3AF;
-  --accent: #5B21B6;
-  --accent-foreground: #FFFFFF;
+  --background: #2D1A14;
+  --foreground: #FAF8F5;
+  --card: #3D2419;
+  --card-foreground: #FAF8F5;
+  --popover: #3D2419;
+  --popover-foreground: #FAF8F5;
+  --primary: #C4958A;
+  --primary-foreground: #2D1A14;
+  --secondary: #4D2E24;
+  --secondary-foreground: #FAF8F5;
+  --muted: #4D2E24;
+  --muted-foreground: #C4958A;
+  --accent: #A67163;
+  --accent-foreground: #FAF8F5;
   --destructive: #EF4444;
   --destructive-foreground: #FFFFFF;
-  --border: #4D4D6D;
-  --input: #3D3D5C;
-  --ring: #7C3AED;
-  --chart-1: #7C3AED;
-  --chart-2: #5B21B6;
-  --chart-3: #A78BFA;
-  --chart-4: #C4B5FD;
-  --chart-5: #DDD6FE;
-  --sidebar: #2D2D44;
-  --sidebar-foreground: #FFFFFF;
-  --sidebar-primary: #7C3AED;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #3D3D5C;
-  --sidebar-accent-foreground: #FFFFFF;
-  --sidebar-border: #4D4D6D;
-  --sidebar-ring: #7C3AED;
+  --border: #5C3A2E;
+  --input: #4D2E24;
+  --ring: #C4958A;
+  --chart-1: #C4958A;
+  --chart-2: #A67163;
+  --chart-3: #8B5A4A;
+  --chart-4: #D9B5AC;
+  --chart-5: #EDD5CF;
+  --sidebar: #3D2419;
+  --sidebar-foreground: #FAF8F5;
+  --sidebar-primary: #C4958A;
+  --sidebar-primary-foreground: #2D1A14;
+  --sidebar-accent: #4D2E24;
+  --sidebar-accent-foreground: #FAF8F5;
+  --sidebar-border: #5C3A2E;
+  --sidebar-ring: #C4958A;
 }
 
 @theme inline {
   --font-sans: 'Inter', system-ui, sans-serif;
+  --font-serif: 'Playfair Display', Georgia, serif;
   --font-mono: 'Geist Mono', 'Geist Mono Fallback';
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -131,16 +132,16 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #F9FAFB;
+  background: #F5EDE8;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #D1D5DB;
+  background: #C4958A;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #9CA3AF;
+  background: #A67163;
 }
 
 /* Smooth scroll */
