@@ -16,6 +16,7 @@ import { SocialProofToast, StickyAddToCart } from "@/components/urgency-elements
 import { CartDrawer } from "@/components/cart-drawer"
 import { HowItWorks } from "@/components/how-it-works"
 import { FAQ } from "@/components/faq"
+import { UGCSection } from "@/components/ugc-section"
 import { Star, Truck, ShieldCheck, RotateCcw, Users } from "lucide-react"
 
 // Barra de prueba social — refuerza confianza inmediatamente debajo del hero
@@ -87,7 +88,10 @@ export default function Home() {
       {/* 7. Testimonios — Deseo: otros ya lo vivieron */}
       <Testimonials />
 
-      {/* 8. Categorías — navegación de colección secundaria */}
+      {/* 8. UGC / video social — prueba en acción */}
+      <UGCSection />
+
+      {/* 9. Categorías — navegación de colección secundaria */}
       <Categories />
 
       {/* 9. Marcas / asociaciones — credibilidad */}
