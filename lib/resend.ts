@@ -1,13 +1,20 @@
 import { Resend } from "resend"
 
-export const resend = new Resend(process.env.RESEND_API_KEY!)
+// Lazy — no se instancia en build time
+let _resend: Resend | null = null
+function getResend() {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY!)
+  return _resend
+}
 
-export const FROM = `${process.env.RESEND_FROM_NAME} <${process.env.RESEND_FROM_EMAIL}>`
+function getFrom() {
+  return `${process.env.RESEND_FROM_NAME || "Cliché Aromas"} <${process.env.RESEND_FROM_EMAIL || "noreply@example.com"}>`
+}
 
 // Email de bienvenida con código de descuento
 export async function sendWelcomeEmail(email: string, discountCode: string) {
-  return resend.emails.send({
-    from: FROM,
+  return getResend().emails.send({
+    from: getFrom(),
     to: email,
     subject: "¡Tu código de 20% OFF te espera! 🌿",
     html: `
@@ -51,8 +58,8 @@ export async function sendOrderConfirmation(
     )
     .join("")
 
-  return resend.emails.send({
-    from: FROM,
+  return getResend().emails.send({
+    from: getFrom(),
     to: email,
     subject: `✅ Pedido confirmado #${orderData.id.slice(0, 8).toUpperCase()}`,
     html: `
