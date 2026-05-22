@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
   ShoppingBag, Star, Shield, Truck, RefreshCw,
-  ChevronRight, Plus, Minus, Share2, Heart, CheckCircle
+  ChevronRight, Plus, Minus, Share2, Heart, CheckCircle,
+  Wind, Shirt, Home, AlertTriangle, Package, Gift, RotateCcw
 } from "lucide-react"
 import type { Product } from "@/lib/supabase"
 import { Header } from "@/components/header"
@@ -120,7 +121,7 @@ export function ProductDetail({ product, related }: Props) {
                     <span className="text-lg text-muted-foreground line-through">
                       ${product.original_price.toLocaleString("es-CO")}
                     </span>
-                    <Badge className="bg-green-100 text-green-700 border-0">
+                    <Badge className="bg-primary/10 text-primary border-0 font-semibold">
                       Ahorras ${savings.toLocaleString("es-CO")}
                     </Badge>
                   </>
@@ -135,8 +136,8 @@ export function ProductDetail({ product, related }: Props) {
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {notes.map((note) => (
-                      <span key={note} className="text-sm bg-background border border-border rounded-full px-3 py-1">
-                        🌿 {note}
+                      <span key={note} className="text-sm bg-background border border-border rounded-full px-3 py-1 text-foreground">
+                        {note}
                       </span>
                     ))}
                   </div>
@@ -234,9 +235,12 @@ export function ProductDetail({ product, related }: Props) {
               <div className="prose prose-sm max-w-none text-muted-foreground">
                 <p className="text-base leading-relaxed mb-4">{product.description}</p>
                 {isKit && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mt-4">
-                    <p className="font-semibold text-amber-800">🎁 Kit incluye:</p>
-                    <p className="text-amber-700 mt-1">Varios frascos de 250ml — aromatiza hasta 160 prendas o espacios por frasco. Ideal como regalo.</p>
+                  <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 mt-4 flex gap-3">
+                    <Gift className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-foreground text-sm">Kit incluye:</p>
+                      <p className="text-muted-foreground text-sm mt-1">Varios frascos de 250ml — aromatiza hasta 160 prendas o espacios por frasco. Ideal como regalo.</p>
+                    </div>
                   </div>
                 )}
                 <div className="grid sm:grid-cols-2 gap-4 mt-6">
@@ -254,13 +258,13 @@ export function ProductDetail({ product, related }: Props) {
               <div className="space-y-4 text-muted-foreground">
                 <div className="grid sm:grid-cols-2 gap-4">
                   {[
-                    { icon: "💨", title: "Para espacios", desc: "Aplica 3-5 puf en habitaciones de hasta 20m²." },
-                    { icon: "👕", title: "Para ropa", desc: "3 puf en prendas superiores, 5 en jeans e inferiores." },
-                    { icon: "🏠", title: "Duración", desc: "Efecto olfativo hasta 8 horas en espacios cerrados." },
-                    { icon: "⚠️", title: "Precauciones", desc: "Evitar contacto con ojos. Alejar de menores de edad." },
+                    { icon: Wind,         title: "Para espacios",  desc: "Aplica 3-5 puf en habitaciones de hasta 20m²." },
+                    { icon: Shirt,        title: "Para ropa",      desc: "3 puf en prendas superiores, 5 en jeans e inferiores." },
+                    { icon: Home,         title: "Duración",       desc: "Efecto olfativo hasta 8 horas en espacios cerrados." },
+                    { icon: AlertTriangle,title: "Precauciones",   desc: "Evitar contacto con ojos. Alejar de menores de edad." },
                   ].map((step) => (
                     <div key={step.title} className="flex gap-3 p-4 bg-muted/30 rounded-xl">
-                      <span className="text-2xl">{step.icon}</span>
+                      <step.icon className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                       <div>
                         <p className="font-semibold text-foreground text-sm">{step.title}</p>
                         <p className="text-sm mt-0.5">{step.desc}</p>
@@ -274,13 +278,13 @@ export function ProductDetail({ product, related }: Props) {
             {activeTab === "envio" && (
               <div className="space-y-4 text-muted-foreground">
                 {[
-                  { icon: "🚚", title: "Envío estándar", desc: "3–5 días hábiles. Costo según zona." },
-                  { icon: "🎁", title: "Envío gratis", desc: "En compras mayores a $150.000 COP a todo Colombia." },
-                  { icon: "📦", title: "Empaque", desc: "Embalaje protegido y sellado para garantizar la calidad." },
-                  { icon: "🔄", title: "Devoluciones", desc: "30 días para cambios o devoluciones sin preguntas." },
+                  { icon: Truck,    title: "Envío estándar", desc: "3–5 días hábiles. Costo según zona." },
+                  { icon: Gift,     title: "Envío gratis",   desc: "En compras mayores a $300.000 COP a todo Colombia." },
+                  { icon: Package,  title: "Empaque",        desc: "Embalaje protegido y sellado para garantizar la calidad." },
+                  { icon: RotateCcw,title: "Devoluciones",   desc: "30 días para cambios o devoluciones sin preguntas." },
                 ].map((item) => (
                   <div key={item.title} className="flex gap-3 p-4 bg-muted/30 rounded-xl">
-                    <span className="text-2xl">{item.icon}</span>
+                    <item.icon className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                     <div>
                       <p className="font-semibold text-foreground text-sm">{item.title}</p>
                       <p className="text-sm mt-0.5">{item.desc}</p>

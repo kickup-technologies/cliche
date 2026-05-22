@@ -5,60 +5,52 @@ import { X, Zap, Clock } from "lucide-react"
 
 export function AnnouncementBar() {
   const [isVisible, setIsVisible] = useState(true)
-  const [timeLeft, setTimeLeft] = useState({
-    hours: 2,
-    minutes: 0,
-    seconds: 0
-  })
+  const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 })
 
   useEffect(() => {
+    // Siempre termina a medianoche hoy — consistente con hero y sticky
     const endTime = new Date()
-    endTime.setHours(endTime.getHours() + 2)
+    endTime.setHours(23, 59, 59, 0)
 
-    const timer = setInterval(() => {
-      const now = new Date()
-      const diff = endTime.getTime() - now.getTime()
+    const tick = () => {
+      const diff = endTime.getTime() - Date.now()
+      if (diff <= 0) { setTimeLeft({ hours: 0, minutes: 0, seconds: 0 }); return }
+      setTimeLeft({
+        hours: Math.floor(diff / 3_600_000),
+        minutes: Math.floor((diff % 3_600_000) / 60_000),
+        seconds: Math.floor((diff % 60_000) / 1000),
+      })
+    }
 
-      if (diff <= 0) {
-        clearInterval(timer)
-        return
-      }
-
-      const hours = Math.floor(diff / (1000 * 60 * 60))
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000)
-
-      setTimeLeft({ hours, minutes, seconds })
-    }, 1000)
-
+    tick()
+    const timer = setInterval(tick, 1000)
     return () => clearInterval(timer)
   }, [])
 
   if (!isVisible) return null
 
   return (
-    <div className="bg-gradient-to-r from-primary via-accent to-primary text-primary-foreground relative overflow-hidden">
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxjaXJjbGUgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjEpIiBjeD0iMjAiIGN5PSIyMCIgcj0iMiIvPjwvZz48L3N2Zz4=')] opacity-30" />
-      <div className="container mx-auto px-4 py-2.5 flex items-center justify-center gap-3 text-sm font-medium relative">
-        <Zap className="w-4 h-4 animate-pulse" />
-        <span className="hidden sm:inline">🌿 ENVÍO GRATIS</span>
-        <span className="font-bold">en compras mayores a $150.000 COP</span>
-        <span className="hidden md:inline">|</span>
-        <span className="hidden md:inline font-semibold">Código: BIENVENIDA20 → 20% OFF</span>
-        <div className="flex items-center gap-1.5 bg-white/20 px-2.5 py-1 rounded-full">
-          <Clock className="w-3.5 h-3.5" />
-          <span className="font-mono font-bold">
-            {String(timeLeft.hours).padStart(2, "0")}:
-            {String(timeLeft.minutes).padStart(2, "0")}:
-            {String(timeLeft.seconds).padStart(2, "0")}
+    <div className="bg-[#2D1A14] text-[#FAF8F5] relative">
+      <div className="container mx-auto px-4 py-2 flex items-center justify-center gap-3 text-xs sm:text-sm font-medium">
+        <Zap className="w-3.5 h-3.5 text-[#C4958A] flex-shrink-0" />
+        <span className="hidden sm:inline text-[#FAF8F5]/70 uppercase tracking-widest text-[10px] font-semibold">Oferta del día</span>
+        <span className="hidden sm:block w-px h-3 bg-[#FAF8F5]/20" />
+        <span className="font-semibold text-[#FAF8F5]">Envío gratis en compras mayores a <span className="text-[#C4958A]">$300.000 COP</span></span>
+        <span className="hidden md:block w-px h-3 bg-[#FAF8F5]/20" />
+        <span className="hidden md:inline text-[#FAF8F5]/80">Código <span className="font-bold text-[#C4958A] tracking-wider">BIENVENIDA20</span> → 20% OFF</span>
+        <span className="hidden md:block w-px h-3 bg-[#FAF8F5]/20" />
+        <div className="flex items-center gap-1.5 border border-[#FAF8F5]/20 px-2.5 py-1 rounded-full">
+          <Clock className="w-3 h-3 text-[#C4958A]" />
+          <span className="font-mono font-bold text-[#FAF8F5] text-xs">
+            {String(timeLeft.hours).padStart(2, "0")}:{String(timeLeft.minutes).padStart(2, "0")}:{String(timeLeft.seconds).padStart(2, "0")}
           </span>
         </div>
         <button
           onClick={() => setIsVisible(false)}
-          className="absolute right-4 p-1 hover:bg-white/20 rounded-full transition-colors"
+          className="absolute right-4 p-1 hover:bg-[#FAF8F5]/10 rounded-full transition-colors text-[#FAF8F5]/60 hover:text-[#FAF8F5]"
           aria-label="Cerrar anuncio"
         >
-          <X className="w-4 h-4" />
+          <X className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>

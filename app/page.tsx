@@ -40,7 +40,7 @@ function SocialProofBar() {
           <span className="text-background/30 hidden sm:block">|</span>
           <div className="flex items-center gap-1.5">
             <Truck className="w-3.5 h-3.5 text-primary" />
-            <span className="text-background/80">Envío gratis en compras <strong className="text-background">+$150k</strong></span>
+            <span className="text-background/80">Envío gratis en compras <strong className="text-background">+$300k</strong></span>
           </div>
           <span className="text-background/30 hidden md:block">|</span>
           <div className="flex items-center gap-1.5">
