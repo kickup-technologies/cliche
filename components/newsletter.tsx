@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import Image from "next/image"
 import { ArrowRight, Check, Gift, Users, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -39,13 +38,12 @@ export function Newsletter() {
         <ScrollAnimation>
           <div className="bg-card rounded-3xl overflow-hidden shadow-lg border border-border">
             <div className="grid md:grid-cols-2 gap-0">
-              <div className="relative h-56 md:h-auto min-h-[220px]">
-                <Image src="/images/newsletter-bg.jpg" alt="Suscríbete" fill className="object-cover" />
-                <div className="absolute inset-0 bg-primary/40 flex items-center justify-center">
-                  <div className="text-center text-white p-6">
-                    <Sparkles className="w-10 h-10 mx-auto mb-3 opacity-90" />
-                    <p className="text-2xl font-serif font-bold">Únete a nuestra comunidad</p>
-                  </div>
+              <div className="relative h-56 md:h-auto min-h-[220px] bg-gradient-to-br from-[#A67163] via-[#8B5A4A] to-[#2D1A14] flex items-center justify-center">
+                <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'radial-gradient(circle at 30% 50%, #FAF8F5 0%, transparent 60%), radial-gradient(circle at 80% 20%, #EDD5CF 0%, transparent 50%)'}} />
+                <div className="relative text-center text-white p-6">
+                  <Sparkles className="w-10 h-10 mx-auto mb-3 opacity-90" />
+                  <p className="text-2xl font-serif font-bold">Únete a nuestra comunidad</p>
+                  <p className="text-sm mt-2 opacity-80">Aromas que transforman tu espacio</p>
                 </div>
               </div>
 
