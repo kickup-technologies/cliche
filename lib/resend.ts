@@ -43,6 +43,55 @@ export async function sendWelcomeEmail(email: string, discountCode: string) {
   })
 }
 
+// Email de carrito abandonado
+export async function sendAbandonedCartEmail(
+  email: string,
+  items: Array<{ name: string; price: number; image_url?: string }>
+) {
+  const total = items.reduce((acc, i) => acc + i.price, 0)
+  const itemsHtml = items
+    .map(
+      (item) => `
+        <tr>
+          <td style="padding: 10px 0; color: #333; font-size: 14px;">${item.name}</td>
+          <td style="padding: 10px 0; color: #333; text-align: right; font-size: 14px;">
+            $${item.price.toLocaleString("es-CO")} COP
+          </td>
+        </tr>`
+    )
+    .join("")
+
+  return getResend().emails.send({
+    from: getFrom(),
+    to: email,
+    subject: "🌿 Olvidaste algo en tu carrito...",
+    html: `
+      <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background: #fafaf8;">
+        <h1 style="color: #2d5a27; font-size: 24px;">¿Olvidaste algo? 🌿</h1>
+        <p style="color: #555; font-size: 15px; line-height: 1.6;">
+          Notamos que dejaste estos productos en tu carrito. Están esperando por ti:
+        </p>
+        <table style="width: 100%; border-top: 1px solid #eee; margin: 20px 0;">
+          ${itemsHtml}
+          <tr style="border-top: 2px solid #2d5a27;">
+            <td style="padding-top: 12px; font-weight: bold; color: #2d5a27;">TOTAL</td>
+            <td style="padding-top: 12px; font-weight: bold; color: #2d5a27; text-align: right;">
+              $${total.toLocaleString("es-CO")} COP
+            </td>
+          </tr>
+        </table>
+        <a href="${process.env.NEXT_PUBLIC_APP_URL}"
+           style="display: inline-block; background: #2d5a27; color: white; padding: 14px 32px; border-radius: 50px; text-decoration: none; font-size: 16px; font-weight: bold; margin-top: 16px;">
+          RECUPERAR MI CARRITO →
+        </a>
+        <p style="color: #aaa; font-size: 12px; margin-top: 40px;">
+          Si ya realizaste tu compra, ignora este correo. · Cliché Aromas
+        </p>
+      </div>
+    `,
+  })
+}
+
 // Email de confirmación de orden
 export async function sendOrderConfirmation(
   email: string,

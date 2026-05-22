@@ -29,6 +29,8 @@ export interface Product {
   rating: number
   reviews: number
   is_active: boolean
+  created_at: string
+  updated_at?: string
 }
 
 export interface Promotion {

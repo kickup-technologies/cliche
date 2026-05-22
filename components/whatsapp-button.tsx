@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils"
 
 export function WhatsAppButton() {
   const [isHovered, setIsHovered] = useState(false)
-  const phoneNumber = "573001234567" // Replace with actual number
-  const message = "Hola, me interesa conocer más sobre los productos de Cliché"
+  const phoneNumber = "573194565463"
+  const message = "Hola! Vi sus productos en la tienda online y me gustaría saber más 🌿"
 
   return (
     <div className="fixed bottom-6 right-6 z-50">

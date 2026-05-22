@@ -5,36 +5,34 @@ import { Instagram, Facebook, MessageCircle } from "lucide-react"
 
 const footerLinks = {
   productos: [
-    { name: "Aromas para Hogar", href: "#" },
-    { name: "Atomizadores Textiles", href: "#" },
-    { name: "Velas Artesanales", href: "#" },
-    { name: "Kits de Regalo", href: "#" },
-    { name: "Esencias", href: "#" },
+    { name: "Aromas para Hogar", href: "/#productos" },
+    { name: "Atomizadores Textiles", href: "/#productos" },
+    { name: "Kits de Regalo", href: "/#productos" },
+    { name: "Aroma Agua", href: "/productos/aroma-agua" },
+    { name: "Kit Armonía x3", href: "/productos/kit-armonia-x3" },
   ],
   empresa: [
-    { name: "Nuestra Historia", href: "#" },
-    { name: "Sostenibilidad", href: "#" },
-    { name: "Distribuidores", href: "#" },
-    { name: "Trabaja con Nosotros", href: "#" },
-    { name: "Blog", href: "#" },
+    { name: "Nuestra Historia", href: "/#nosotros" },
+    { name: "Marcas aliadas", href: "/#marcas" },
+    { name: "Crea tu aroma", href: "https://clichecolombia.com/pages/quiero-crear-un-aroma-para-mi-marca" },
+    { name: "Distribuidores", href: "https://wa.me/573194565463?text=Hola!+Quiero+info+sobre+distribuidores" },
   ],
   soporte: [
-    { name: "Contacto", href: "#" },
-    { name: "Preguntas Frecuentes", href: "#" },
-    { name: "Envíos y Devoluciones", href: "#" },
-    { name: "Guía de Aromas", href: "#" },
+    { name: "Contacto por WhatsApp", href: "https://wa.me/573194565463" },
+    { name: "Preguntas Frecuentes", href: "/#faq" },
+    { name: "Envíos y Devoluciones", href: "/terminos-condiciones#envios" },
+    { name: "Guía de Aromas", href: "/#beneficios" },
   ],
   legal: [
-    { name: "Términos y Condiciones", href: "#" },
-    { name: "Política de Privacidad", href: "#" },
-    { name: "Cookies", href: "#" },
+    { name: "Términos y Condiciones", href: "/terminos-condiciones" },
+    { name: "Política de Privacidad", href: "/politica-privacidad" },
   ],
 }
 
 const socialLinks = [
-  { name: "Instagram", icon: Instagram, href: "#" },
-  { name: "Facebook", icon: Facebook, href: "#" },
-  { name: "WhatsApp", icon: MessageCircle, href: "#" },
+  { name: "Instagram", icon: Instagram, href: "https://www.instagram.com/clichecolombia/" },
+  { name: "Facebook", icon: Facebook, href: "https://www.facebook.com/clichecolombia" },
+  { name: "WhatsApp", icon: MessageCircle, href: "https://wa.me/573194565463?text=Hola!+Vi+sus+productos+y+quiero+más+información+🌿" },
 ]
 
 export function Footer() {
@@ -158,7 +156,7 @@ export function Footer() {
         <div className="border-t border-background/10 py-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-sm text-background/60">
-              © 2024 Cliché. Todos los derechos reservados.
+              © 2025 Bienestar by Cliché. Todos los derechos reservados. · Colombia 🇨🇴
             </p>
             <div className="flex items-center gap-6">
               <img

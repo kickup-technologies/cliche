@@ -41,9 +41,10 @@ export function AnnouncementBar() {
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxjaXJjbGUgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjEpIiBjeD0iMjAiIGN5PSIyMCIgcj0iMiIvPjwvZz48L3N2Zz4=')] opacity-30" />
       <div className="container mx-auto px-4 py-2.5 flex items-center justify-center gap-3 text-sm font-medium relative">
         <Zap className="w-4 h-4 animate-pulse" />
-        <span className="hidden sm:inline">OFERTA FLASH:</span>
-        <span className="font-bold">30% OFF en toda la tienda</span>
+        <span className="hidden sm:inline">🌿 ENVÍO GRATIS</span>
+        <span className="font-bold">en compras mayores a $150.000 COP</span>
         <span className="hidden md:inline">|</span>
+        <span className="hidden md:inline font-semibold">Código: BIENVENIDA20 → 20% OFF</span>
         <div className="flex items-center gap-1.5 bg-white/20 px-2.5 py-1 rounded-full">
           <Clock className="w-3.5 h-3.5" />
           <span className="font-mono font-bold">
@@ -52,7 +53,6 @@ export function AnnouncementBar() {
             {String(timeLeft.seconds).padStart(2, "0")}
           </span>
         </div>
-        <span className="hidden lg:inline text-primary-foreground/80">Termina pronto</span>
         <button
           onClick={() => setIsVisible(false)}
           className="absolute right-4 p-1 hover:bg-white/20 rounded-full transition-colors"

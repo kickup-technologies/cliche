@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
+import Link from "next/link"
 import { Star, ShoppingCart, Eye, Flame } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -49,7 +50,7 @@ export function FeaturedProducts() {
   }
 
   return (
-    <section ref={sectionRef} className="py-16 px-4 bg-background">
+    <section id="productos" ref={sectionRef} className="py-16 px-4 bg-background">
       <div className="container mx-auto max-w-6xl">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-serif font-bold text-foreground mb-4">
@@ -118,7 +119,9 @@ export function FeaturedProducts() {
               </div>
 
               <div className="p-4 space-y-2">
-                <h3 className="font-semibold text-foreground text-sm leading-tight">{product.name}</h3>
+                <Link href={`/productos/${product.slug}`} className="block hover:text-primary transition-colors">
+                  <h3 className="font-semibold text-foreground text-sm leading-tight">{product.name}</h3>
+                </Link>
                 <div className="flex items-center gap-1">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <Star key={i} className={cn("w-3.5 h-3.5",
@@ -133,6 +136,12 @@ export function FeaturedProducts() {
                     <span className="text-sm text-muted-foreground line-through">{formatPrice(product.original_price)}</span>
                   )}
                 </div>
+                <Link
+                  href={`/productos/${product.slug}`}
+                  className="text-xs text-primary hover:underline"
+                >
+                  Ver detalles →
+                </Link>
               </div>
             </div>
           ))}

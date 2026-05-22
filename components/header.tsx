@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Menu, Search, ShoppingBag, User, ChevronDown, Heart } from "lucide-react"
+import { Menu, ShoppingBag, ChevronDown, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -15,27 +15,28 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useCart } from "@/context/cart-context"
 
 const navigation = [
   {
     name: "Aromas",
-    href: "#aromas",
+    href: "/#productos",
     submenu: [
-      { name: "Para el Hogar", href: "#hogar" },
-      { name: "Para Ropa", href: "#ropa" },
-      { name: "Humidificadores", href: "#humidificadores" },
-      { name: "Velas", href: "#velas" },
+      { name: "Para el Hogar", href: "/#productos" },
+      { name: "Para Ropa", href: "/#productos" },
+      { name: "Kits de Regalo", href: "/#productos" },
     ],
   },
-  { name: "Colecciones", href: "#colecciones" },
-  { name: "Ofertas", href: "#ofertas", highlight: true },
-  { name: "Nosotros", href: "#nosotros" },
+  { name: "Colecciones", href: "/#productos" },
+  { name: "Ofertas", href: "/#productos", highlight: true },
+  { name: "Nosotros", href: "/#nosotros" },
 ]
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
-  const [cartCount] = useState(0)
+  const { items } = useCart()
+  const cartCount = items.reduce((acc, i) => acc + i.quantity, 0)
 
   useEffect(() => {
     const handleScroll = () => {
