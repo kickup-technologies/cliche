@@ -1,12 +1,13 @@
 "use client"
 
+import { Suspense } from "react"
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { CheckCircle, ShoppingBag, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-export default function GraciasPage() {
+function GraciasContent() {
   const params = useSearchParams()
   const sessionId = params.get("session_id")
   const [loading, setLoading] = useState(true)
@@ -62,5 +63,21 @@ export default function GraciasPage() {
         )}
       </div>
     </main>
+  )
+}
+
+export default function GraciasPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="animate-pulse max-w-md w-full text-center">
+          <div className="w-20 h-20 bg-primary/20 rounded-full mx-auto mb-6" />
+          <div className="h-6 bg-muted rounded w-48 mx-auto mb-3" />
+          <div className="h-4 bg-muted rounded w-64 mx-auto" />
+        </div>
+      </main>
+    }>
+      <GraciasContent />
+    </Suspense>
   )
 }
