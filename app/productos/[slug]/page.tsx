@@ -1,7 +1,10 @@
 import { notFound } from "next/navigation"
-import { createServerClient } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase"
 import { ProductDetail } from "@/components/product-detail"
 import type { Metadata } from "next"
+
+// Force dynamic so pages always render on-demand from Supabase
+export const dynamic = "force-dynamic"
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -9,10 +12,9 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-  const supabase = createServerClient()
   const { data: product } = await supabase
     .from("products")
-    .select("*")
+    .select("name, description, image_url")
     .eq("slug", slug)
     .eq("is_active", true)
     .single()
@@ -32,7 +34,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params
-  const supabase = createServerClient()
 
   const { data: product } = await supabase
     .from("products")
@@ -43,7 +44,6 @@ export default async function ProductPage({ params }: Props) {
 
   if (!product) notFound()
 
-  // Fetch related products (same price range, different slug)
   const { data: related } = await supabase
     .from("products")
     .select("*")
@@ -52,14 +52,4 @@ export default async function ProductPage({ params }: Props) {
     .limit(4)
 
   return <ProductDetail product={product} related={related || []} />
-}
-
-export async function generateStaticParams() {
-  const supabase = createServerClient()
-  const { data: products } = await supabase
-    .from("products")
-    .select("slug")
-    .eq("is_active", true)
-
-  return (products || []).map((p) => ({ slug: p.slug }))
 }
