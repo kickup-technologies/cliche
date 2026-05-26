@@ -168,13 +168,33 @@ export function CartDrawer() {
         {/* Footer */}
         {items.length > 0 && (
           <div className="border-t border-border px-6 py-5 space-y-4 bg-background">
+            {/* Barra envío gratis */}
+            {(() => {
+              const FREE_SHIPPING = 300000
+              const remaining = Math.max(0, FREE_SHIPPING - total)
+              const progress = Math.min(100, (total / FREE_SHIPPING) * 100)
+              return (
+                <div className="space-y-1.5">
+                  {remaining > 0 ? (
+                    <p className="text-xs text-center text-muted-foreground">
+                      Agrega <span className="font-bold text-foreground">{formatPrice(remaining)}</span> más y tu envío es <span className="font-bold text-green-600">GRATIS</span> 🚚
+                    </p>
+                  ) : (
+                    <p className="text-xs text-center font-semibold text-green-600">🎉 ¡Tienes envío gratis!</p>
+                  )}
+                  <div className="w-full bg-muted rounded-full h-1.5">
+                    <div
+                      className="bg-green-500 h-1.5 rounded-full transition-all duration-500"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })()}
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">Subtotal</span>
               <span className="text-lg font-bold text-foreground">{formatPrice(total)}</span>
             </div>
-            <p className="text-xs text-muted-foreground text-center">
-              Envío calculado al finalizar. Gratis en compras mayores a $300.000.
-            </p>
             <Button
               size="lg"
               className="w-full h-13 text-base font-semibold"

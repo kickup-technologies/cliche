@@ -11,7 +11,7 @@ export function ExitIntentPopup() {
   const [email, setEmail] = useState("")
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [discountCode, setDiscountCode] = useState("QUEDATЕ15")
+  const [discountCode, setDiscountCode] = useState("QUEDATE15")
   const { items } = useCart()
 
   useEffect(() => {

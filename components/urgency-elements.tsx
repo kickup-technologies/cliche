@@ -7,11 +7,16 @@ import { useCart } from "@/context/cart-context"
 
 // ─── Compras recientes simuladas (social proof) ───────────────────────────────
 const purchases = [
-  { name: "Valentina R.", city: "Bogotá",      product: "Aroma Vientos de Lino",   rating: 5, time: "Hace 2 min",  color: "bg-[#EDD5CF]" },
-  { name: "Camila M.",   city: "Medellín",     product: "Kit Armonía x3",          rating: 5, time: "Hace 5 min",  color: "bg-[#D9B5AC]" },
-  { name: "Sofía L.",    city: "Cali",         product: "Aroma Tao",               rating: 5, time: "Hace 8 min",  color: "bg-[#C4958A]" },
-  { name: "Daniela P.",  city: "Cartagena",    product: "Aroma Luxury",            rating: 5, time: "Hace 11 min", color: "bg-[#EDD5CF]" },
-  { name: "Isabella T.", city: "Barranquilla", product: "Aroma Mahai",             rating: 5, time: "Hace 14 min", color: "bg-[#D9B5AC]" },
+  { name: "Valentina R.", city: "Bogotá",        product: "Aroma Vientos de Lino",    rating: 5, minAgo: 2,  color: "bg-[#EDD5CF]" },
+  { name: "Camila M.",    city: "Medellín",       product: "Kit Armonía x3",           rating: 5, minAgo: 5,  color: "bg-[#D9B5AC]" },
+  { name: "Sofía L.",     city: "Cali",           product: "Aroma Tao",                rating: 5, minAgo: 8,  color: "bg-[#C4958A]" },
+  { name: "Daniela P.",   city: "Cartagena",      product: "Aroma Luxury",             rating: 5, minAgo: 11, color: "bg-[#EDD5CF]" },
+  { name: "Isabella T.",  city: "Barranquilla",   product: "Aroma Mahai",              rating: 5, minAgo: 14, color: "bg-[#D9B5AC]" },
+  { name: "Mariana G.",   city: "Bucaramanga",    product: "Kit Elementos x4",         rating: 5, minAgo: 3,  color: "bg-[#C4958A]" },
+  { name: "Andrea S.",    city: "Pereira",        product: "Aroma Eternamente Índigo", rating: 5, minAgo: 7,  color: "bg-[#EDD5CF]" },
+  { name: "Luciana V.",   city: "Santa Marta",    product: "Aroma Calor de Lana",      rating: 5, minAgo: 1,  color: "bg-[#D9B5AC]" },
+  { name: "Natalia O.",   city: "Manizales",      product: "Aroma Crema",              rating: 5, minAgo: 19, color: "bg-[#C4958A]" },
+  { name: "Paola R.",     city: "Ibagué",         product: "Aroma Romeo y Julieta",    rating: 5, minAgo: 6,  color: "bg-[#EDD5CF]" },
 ]
 
 // ─── Social Proof Toast ───────────────────────────────────────────────────────
@@ -62,7 +67,7 @@ export function SocialProofToast() {
                 <Star key={i} className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
               ))}
             </div>
-            <span className="text-[10px] text-muted-foreground">{p.time}</span>
+            <span className="text-[10px] text-muted-foreground">Hace {p.minAgo} min</span>
           </div>
         </div>
       </div>

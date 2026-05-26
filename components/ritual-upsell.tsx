@@ -53,15 +53,19 @@ export function RitualUpsell() {
               href={`/productos/${p.slug}`}
               className="group bg-background/5 border border-background/10 rounded-2xl overflow-hidden hover:bg-background/10 hover:border-background/20 transition-all duration-300"
             >
-              {/* Image placeholder */}
-              <div className="aspect-square bg-background/10 flex items-center justify-center relative">
+              {/* Image area */}
+              <div className="aspect-square relative overflow-hidden" style={{background: "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)"}}>
                 {p.badge && (
-                  <span className={`absolute top-3 left-3 text-xs font-bold text-white px-2.5 py-1 rounded-full ${p.badgeColor}`}>
+                  <span className={`absolute top-3 left-3 z-10 text-xs font-bold text-white px-2.5 py-1 rounded-full ${p.badgeColor}`}>
                     {p.badge}
                   </span>
                 )}
-                <div className="text-background/20 text-4xl font-serif font-bold select-none">
-                  Cliché
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-6">
+                  <div className="w-20 h-20 rounded-full bg-background/10 border border-background/20 flex items-center justify-center">
+                    <span className="text-background/60 text-2xl font-serif font-bold">C</span>
+                  </div>
+                  <p className="text-background/40 text-xs font-medium tracking-widest uppercase">Cliché Aromas</p>
+                  <p className="text-background/60 text-sm font-semibold text-center leading-snug">{p.tagline}</p>
                 </div>
               </div>
 

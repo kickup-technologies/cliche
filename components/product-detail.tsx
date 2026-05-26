@@ -16,6 +16,7 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { WhatsAppButton } from "@/components/whatsapp-button"
 import { ReviewsSection } from "@/components/reviews-section"
+import { CountdownTimer } from "@/components/urgency-elements"
 
 interface Props {
   product: Product
@@ -58,6 +59,30 @@ export function ProductDetail({ product, related }: Props) {
   const [qty, setQty] = useState(1)
   const [added, setAdded] = useState(false)
   const [activeTab, setActiveTab] = useState<"descripcion" | "uso" | "envio">("descripcion")
+  const [viewers, setViewers] = useState(() => Math.floor(Math.random() * 16) + 7)
+  const [offerEnd, setOfferEnd] = useState<Date | null>(null)
+
+  // Viewers en vivo — fluctúa cada 18s
+  useEffect(() => {
+    const id = setInterval(() => {
+      setViewers((v) => Math.max(4, Math.min(28, v + (Math.random() > 0.45 ? 1 : -1))))
+    }, 18000)
+    return () => clearInterval(id)
+  }, [])
+
+  // Countdown de oferta por sesión
+  useEffect(() => {
+    const key = `cliche_offer_${product.id}`
+    const stored = sessionStorage.getItem(key)
+    if (stored) {
+      setOfferEnd(new Date(stored))
+    } else {
+      const hours = Math.floor(Math.random() * 3) + 2
+      const end = new Date(Date.now() + hours * 3_600_000)
+      sessionStorage.setItem(key, end.toISOString())
+      setOfferEnd(end)
+    }
+  }, [product.id])
 
   const notes = NOTES_MAP[product.slug] || []
   const isKit = product.slug.startsWith("kit-")
@@ -102,9 +127,9 @@ export function ProductDetail({ product, related }: Props) {
                       </span>
                     </div>
                   )}
-                  {product.stock <= 5 && product.stock > 0 && (
-                    <div className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full animate-pulse">
-                      ¡Solo {product.stock} disponibles!
+                  {product.stock <= 10 && product.stock > 0 && (
+                    <div className={`absolute top-4 right-4 text-white text-xs font-bold px-3 py-1.5 rounded-full ${product.stock <= 3 ? "bg-red-600 animate-pulse" : "bg-orange-500"}`}>
+                      {product.stock <= 3 ? `¡Solo ${product.stock} quedan!` : "Pocas unidades"}
                     </div>
                   )}
                 </div>
@@ -113,18 +138,24 @@ export function ProductDetail({ product, related }: Props) {
 
             {/* Product Info */}
             <div className="flex flex-col gap-6">
-              {/* Rating */}
-              <div className="flex items-center gap-2">
-                <div className="flex">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`w-4 h-4 ${i < Math.floor(product.rating) ? "text-amber-400 fill-amber-400" : "text-muted-foreground"}`}
-                    />
-                  ))}
+              {/* Rating + live viewers */}
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <div className="flex">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`w-4 h-4 ${i < Math.floor(product.rating) ? "text-amber-400 fill-amber-400" : "text-muted-foreground"}`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-sm text-muted-foreground">
+                    {product.rating.toFixed(1)} ({product.reviews} reseñas)
+                  </span>
                 </div>
-                <span className="text-sm text-muted-foreground">
-                  {product.rating.toFixed(1)} ({product.reviews} reseñas)
+                <span className="flex items-center gap-1.5 text-xs bg-green-50 text-green-700 font-medium px-2.5 py-1 rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
+                  {viewers} personas viendo ahora
                 </span>
               </div>
 
@@ -170,6 +201,9 @@ export function ProductDetail({ product, related }: Props) {
               <p className="text-muted-foreground leading-relaxed">
                 {product.description}
               </p>
+
+              {/* Countdown de oferta */}
+              {offerEnd && <CountdownTimer endTime={offerEnd} />}
 
               {/* Quantity + Add to cart */}
               <div className="space-y-4">
@@ -323,28 +357,34 @@ export function ProductDetail({ product, related }: Props) {
           {/* Related products */}
           {related.length > 0 && (
             <div className="mt-20">
-              <h2 className="text-2xl font-serif font-bold text-foreground mb-8">También te puede gustar</h2>
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-2xl font-serif font-bold text-foreground">Los que lo compran también llevan</h2>
+              </div>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {related.map((p) => (
-                  <Link
-                    key={p.id}
-                    href={`/productos/${p.slug}`}
-                    className="group bg-card border border-border rounded-2xl overflow-hidden hover:shadow-lg transition-all hover:-translate-y-1"
-                  >
-                    <div className="aspect-square bg-muted/30 overflow-hidden">
-                      <img
-                        src={p.image_url || "/placeholder-product.jpg"}
-                        alt={p.name}
-                        className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                    <div className="p-3">
+                  <div key={p.id} className="group bg-card border border-border rounded-2xl overflow-hidden hover:shadow-lg transition-all hover:-translate-y-1 flex flex-col">
+                    <Link href={`/productos/${p.slug}`}>
+                      <div className="aspect-square bg-muted/30 overflow-hidden">
+                        <img
+                          src={p.image_url || "/placeholder-product.jpg"}
+                          alt={p.name}
+                          className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+                    </Link>
+                    <div className="p-3 flex flex-col gap-2 flex-1">
                       <p className="font-medium text-sm text-foreground line-clamp-1">{p.name}</p>
-                      <p className="text-primary font-bold text-sm mt-1">
+                      <p className="text-primary font-bold text-sm">
                         ${p.price.toLocaleString("es-CO")} COP
                       </p>
+                      <button
+                        onClick={() => addItem(p)}
+                        className="mt-auto w-full py-1.5 text-xs font-semibold rounded-xl border border-primary text-primary hover:bg-primary hover:text-white transition-colors"
+                      >
+                        + Agregar
+                      </button>
                     </div>
-                  </Link>
+                  </div>
                 ))}
               </div>
             </div>

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Star, ShoppingCart, Eye, Flame, ChevronDown } from "lucide-react"
+import { Star, ShoppingCart, Eye, Flame, ChevronDown, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useCart } from "@/context/cart-context"
@@ -45,12 +45,22 @@ const BENEFIT_MAP: Record<string, string> = {
   "kit-elementos-x4":        "El ritual completo — los 4 pilares de Cliché",
 }
 
+// Session-stable views per product (generated once, persists through re-renders)
+const viewsMapRef = new Map<string, number>()
+function getViews(id: string): number {
+  if (!viewsMapRef.has(id)) {
+    viewsMapRef.set(id, Math.floor(Math.random() * 38) + 9)
+  }
+  return viewsMapRef.get(id)!
+}
+
 export function FeaturedProducts() {
   const [products, setProducts] = useState<Product[]>([])
   const [isVisible, setIsVisible] = useState(false)
   const [showAll, setShowAll] = useState(false)
   const [hoveredProduct, setHoveredProduct] = useState<string | null>(null)
   const [addedToCart, setAddedToCart] = useState<string | null>(null)
+  const [viewsTick, setViewsTick] = useState(0)
   const sectionRef = useRef<HTMLDivElement>(null)
   const { addItem, openDrawer } = useCart()
 
@@ -60,6 +70,18 @@ export function FeaturedProducts() {
       .then((r) => r.json())
       .then(setProducts)
       .catch(console.error)
+  }, [])
+
+  // Fluctuación natural del contador de vistas cada 25s
+  useEffect(() => {
+    const id = setInterval(() => {
+      viewsMapRef.forEach((v, k) => {
+        const delta = Math.random() > 0.45 ? 1 : -1
+        viewsMapRef.set(k, Math.max(5, Math.min(60, v + delta)))
+      })
+      setViewsTick((t) => t + 1)
+    }, 25000)
+    return () => clearInterval(id)
   }, [])
 
   // Animación de entrada
@@ -119,10 +141,16 @@ export function FeaturedProducts() {
                       {product.badge}
                     </span>
                   )}
-                  {product.stock > 0 && product.stock <= 5 && (
-                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-destructive text-destructive-foreground flex items-center gap-1">
+                  {product.stock > 0 && product.stock <= 3 && (
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-red-600 text-white flex items-center gap-1 animate-pulse">
                       <Flame className="w-3 h-3" />
-                      ¡Solo {product.stock} disponibles!
+                      ¡{product.stock === 1 ? "Última unidad" : `Solo ${product.stock} quedan`}!
+                    </span>
+                  )}
+                  {product.stock > 3 && product.stock <= 10 && (
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-orange-500 text-white flex items-center gap-1">
+                      <Flame className="w-3 h-3" />
+                      Pocas unidades
                     </span>
                   )}
                   {product.stock === 0 && (
@@ -133,11 +161,13 @@ export function FeaturedProducts() {
                 </div>
                 <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full flex items-center gap-1 text-xs">
                   <Eye className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-muted-foreground">{Math.floor(product.stock * 1.8 + 3)}</span>
+                  <span className="text-muted-foreground font-medium">{getViews(product.id)}</span>
                 </div>
+                {/* Siempre visible en móvil, hover en desktop */}
                 <div className={cn(
                   "absolute inset-x-3 bottom-3 transition-all duration-300",
-                  hoveredProduct === product.id ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+                  "sm:opacity-0 sm:translate-y-4",
+                  hoveredProduct === product.id ? "sm:opacity-100 sm:translate-y-0" : ""
                 )}>
                   <Button
                     className="w-full rounded-full font-semibold"
@@ -172,7 +202,15 @@ export function FeaturedProducts() {
                 <p className="text-xs text-muted-foreground leading-snug">
                   {BENEFIT_MAP[product.slug] || "Aroma artesanal colombiano"}
                 </p>
-                <span className="text-xs text-primary font-medium">Ver detalles →</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-primary font-medium">Ver detalles →</span>
+                  {product.reviews > 0 && (
+                    <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                      <Users className="w-2.5 h-2.5" />
+                      {Math.floor(product.reviews * 0.35 + 4)} esta semana
+                    </span>
+                  )}
+                </div>
               </div>
             </Link>
           ))}
@@ -191,7 +229,7 @@ export function FeaturedProducts() {
               </button>
             ) : (
               <a
-                href="/productos"
+                href="/#productos"
                 className="inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-8 py-3 text-sm font-semibold hover:bg-primary/90 transition-colors"
               >
                 Ver catálogo completo →

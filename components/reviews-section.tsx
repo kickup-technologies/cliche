@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Star, MessageSquare, CheckCircle, User } from "lucide-react"
+import { Star, MessageSquare, CheckCircle, User, BadgeCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import type { Review } from "@/lib/supabase"
@@ -52,7 +52,13 @@ function ReviewCard({ review }: { review: Review }) {
           </div>
           <div>
             <p className="font-semibold text-sm text-foreground">{review.reviewer_name}</p>
-            <p className="text-xs text-muted-foreground">{date}</p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <p className="text-xs text-muted-foreground">{date}</p>
+              <span className="flex items-center gap-0.5 text-[10px] text-green-600 font-medium">
+                <BadgeCheck className="w-3 h-3" />
+                Compra verificada
+              </span>
+            </div>
           </div>
         </div>
         <StarRating value={review.rating} />
