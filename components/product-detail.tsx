@@ -16,6 +16,7 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { WhatsAppButton } from "@/components/whatsapp-button"
 import { ReviewsSection } from "@/components/reviews-section"
+import { SprayProductViewer } from "@/components/spray-product-viewer"
 
 interface Props {
   product: Product
@@ -120,28 +121,16 @@ export function ProductDetail({ product, related }: Props) {
 
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12 mb-20">
-            {/* Product Image */}
+            {/* Product Image — interactive spray viewer */}
             <div className="relative">
-              <div className="sticky top-28">
-                <div className="relative aspect-square bg-muted/30 rounded-3xl overflow-hidden">
-                  <img
-                    src={product.image_url || "/placeholder-product.jpg"}
-                    alt={product.name}
-                    className="w-full h-full object-contain p-8"
-                  />
-                  {product.badge && (
-                    <div className="absolute top-4 left-4">
-                      <span className={`${product.badge_color || 'bg-primary'} text-white text-xs font-bold px-3 py-1.5 rounded-full`}>
-                        {product.badge}
-                      </span>
-                    </div>
-                  )}
-                  {product.stock <= 10 && product.stock > 0 && (
-                    <div className={`absolute top-4 right-4 text-white text-xs font-bold px-3 py-1.5 rounded-full ${product.stock <= 3 ? "bg-red-600 animate-pulse" : "bg-orange-500"}`}>
-                      {product.stock <= 3 ? `¡Solo ${product.stock} quedan!` : "Pocas unidades"}
-                    </div>
-                  )}
-                </div>
+              <div className="sticky top-24">
+                <SprayProductViewer
+                  src={product.image_url || "/placeholder-product.jpg"}
+                  alt={product.name}
+                  badge={product.badge}
+                  badgeColor={product.badge_color}
+                  stock={product.stock}
+                />
               </div>
             </div>
 

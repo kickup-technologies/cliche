@@ -180,9 +180,15 @@ export function Footer() {
                 <path d="M24 5.8a12 12 0 0 1 0 18.4A12 12 0 0 1 24 5.8z" fill="#FF5F00"/>
               </svg>
               {/* Nequi */}
-              <span className="text-[10px] font-bold tracking-wider px-2 py-1 rounded border border-background/20 text-background/60 uppercase">Nequi</span>
+              <svg viewBox="0 0 64 26" className="h-6 opacity-70" aria-label="Nequi" xmlns="http://www.w3.org/2000/svg">
+                <rect width="64" height="26" rx="5" fill="#6B21A8"/>
+                <text x="32" y="18" fontFamily="Arial, Helvetica, sans-serif" fontSize="12" fontWeight="700" fill="white" textAnchor="middle">nequi</text>
+              </svg>
               {/* PSE */}
-              <span className="text-[10px] font-bold tracking-wider px-2 py-1 rounded border border-background/20 text-background/60 uppercase">PSE</span>
+              <svg viewBox="0 0 52 26" className="h-6 opacity-70" aria-label="PSE" xmlns="http://www.w3.org/2000/svg">
+                <rect width="52" height="26" rx="5" fill="#005DA4"/>
+                <text x="26" y="18" fontFamily="Arial, Helvetica, sans-serif" fontSize="13" fontWeight="900" fill="white" textAnchor="middle">PSE</text>
+              </svg>
               <span className="text-xs text-background/40 ml-2">Pagos seguros</span>
             </div>
           </div>
