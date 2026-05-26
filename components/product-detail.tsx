@@ -3,7 +3,17 @@
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import dynamic from "next/dynamic"
 import { useCart } from "@/context/cart-context"
+
+const SprayBottle3D = dynamic(
+  () => import("@/components/spray-bottle-3d").then((m) => m.SprayBottle3D),
+  { ssr: false, loading: () => (
+    <div className="relative aspect-square bg-muted/30 rounded-3xl overflow-hidden flex items-center justify-center">
+      <div className="w-16 h-16 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+    </div>
+  )}
+)
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -123,12 +133,8 @@ export function ProductDetail({ product, related }: Props) {
             {/* Product Image */}
             <div className="relative">
               <div className="sticky top-24">
-                <div className="relative aspect-square bg-muted/30 rounded-3xl overflow-hidden">
-                  <img
-                    src={product.image_url || "/placeholder-product.jpg"}
-                    alt={product.name}
-                    className="w-full h-full object-contain p-8"
-                  />
+                <div className="relative">
+                  <SprayBottle3D />
                   {product.badge && (
                     <div className="absolute top-4 left-4">
                       <span className={`${product.badge_color || "bg-primary"} text-white text-xs font-bold px-3 py-1.5 rounded-full`}>
