@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { Menu, ShoppingBag, ChevronDown, Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -36,7 +37,9 @@ export function Header() {
   const [isOpen, setIsOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const { items, openDrawer } = useCart()
+  const pathname = usePathname()
   const cartCount = items.reduce((acc, i) => acc + i.quantity, 0)
+  const useSolid = isScrolled || (pathname?.startsWith("/productos/") ?? false)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -48,8 +51,8 @@ export function Header() {
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-      isScrolled 
-        ? "bg-background/95 backdrop-blur-md shadow-sm" 
+      useSolid
+        ? "bg-background/95 backdrop-blur-md shadow-sm"
         : "bg-transparent"
     }`} style={{ top: isScrolled ? 0 : "40px" }}>
       <nav className="container mx-auto px-4">
@@ -58,7 +61,7 @@ export function Header() {
           <div className="lg:hidden">
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className={isScrolled ? "text-foreground" : "text-white"}>
+                <Button variant="ghost" size="icon" className={useSolid ? "text-foreground" : "text-white"}>
                   <Menu className="h-6 w-6" />
                   <span className="sr-only">Abrir menú</span>
                 </Button>
@@ -121,7 +124,7 @@ export function Header() {
               item.submenu ? (
                 <DropdownMenu key={item.name}>
                   <DropdownMenuTrigger className={`flex items-center gap-1 text-sm font-medium transition-colors outline-none ${
-                    isScrolled ? "text-foreground hover:text-primary" : "text-white/90 hover:text-white"
+                    useSolid ? "text-foreground hover:text-primary" : "text-white/90 hover:text-white"
                   }`}>
                     {item.name}
                     <ChevronDown className="h-4 w-4" />
@@ -139,7 +142,7 @@ export function Header() {
                   key={item.name}
                   href={item.href}
                   className={`text-sm font-medium transition-colors ${
-                    isScrolled ? "text-foreground hover:text-primary" : "text-white/90 hover:text-white"
+                    useSolid ? "text-foreground hover:text-primary" : "text-white/90 hover:text-white"
                   }`}
                 >
                   {item.name}
@@ -151,7 +154,7 @@ export function Header() {
           {/* Logo */}
           <Link href="/" className="flex flex-col items-center">
             <span className={`font-serif text-2xl lg:text-3xl font-bold tracking-wide transition-colors ${
-              isScrolled ? "text-foreground" : "text-white"
+              useSolid ? "text-foreground" : "text-white"
             }`}>
               Cliché
             </span>
@@ -165,9 +168,9 @@ export function Header() {
                 href={item.href}
                 className={`text-sm font-medium transition-colors flex items-center gap-1 ${
                   item.highlight 
-                    ? "text-red-400 hover:text-red-300" 
-                    : isScrolled 
-                      ? "text-foreground hover:text-primary" 
+                    ? "text-red-400 hover:text-red-300"
+                    : useSolid
+                      ? "text-foreground hover:text-primary"
                       : "text-white/90 hover:text-white"
                 }`}
               >
@@ -187,7 +190,7 @@ export function Header() {
             <Link
               href="/#productos"
               className={`hidden lg:flex items-center gap-1.5 text-xs font-semibold border rounded-full px-3 py-1.5 transition-colors ${
-                isScrolled
+                useSolid
                   ? "border-border text-foreground hover:border-primary hover:text-primary"
                   : "border-white/30 text-white hover:border-white hover:bg-white/10"
               }`}
@@ -196,7 +199,7 @@ export function Header() {
             </Link>
             <Link
               href="/#productos"
-              className={`hidden sm:flex w-9 h-9 items-center justify-center rounded-md transition-colors ${isScrolled ? "text-foreground hover:text-primary" : "text-white/90 hover:text-white hover:bg-white/10"}`}
+              className={`hidden sm:flex w-9 h-9 items-center justify-center rounded-md transition-colors ${useSolid ? "text-foreground hover:text-primary" : "text-white/90 hover:text-white hover:bg-white/10"}`}
               aria-label="Ver favoritos"
             >
               <Heart className="h-5 w-5" />
@@ -204,7 +207,7 @@ export function Header() {
             <Button
               variant="ghost"
               size="icon"
-              className={`relative ${isScrolled ? "text-foreground hover:text-primary" : "text-white/90 hover:text-white hover:bg-white/10"}`}
+              className={`relative ${useSolid ? "text-foreground hover:text-primary" : "text-white/90 hover:text-white hover:bg-white/10"}`}
               onClick={openDrawer}
             >
               <ShoppingBag className="h-5 w-5" />

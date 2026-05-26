@@ -16,7 +16,6 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { WhatsAppButton } from "@/components/whatsapp-button"
 import { ReviewsSection } from "@/components/reviews-section"
-import { CountdownTimer } from "@/components/urgency-elements"
 
 interface Props {
   product: Product
@@ -54,13 +53,37 @@ const NOTES_MAP: Record<string, string[]> = {
   "aroma-navidad":           ["Pino Natural", "Canela", "Naranja Especiada"],
 }
 
+const VALUE_MAP: Record<string, string> = {
+  "aroma-agua":               "Transforma tu dormitorio en un oasis de calma. Su frescura acuática disuelve el estrés del día y te invita a descansar de verdad. Ideal para aplicar en sábanas antes de dormir o para refrescar baños y cocinas en segundos.",
+  "aroma-aire":               "Renueva cualquier espacio al instante. Perfecto para oficinas, salas o habitaciones que necesitan sensación de amplitud. Una sola aplicación y tu hogar respira diferente — sin velas, sin difusores.",
+  "aroma-tierra":             "Ancla tu hogar con calidez y profundidad. Su base de pachulí y cedro convierte cualquier espacio en un refugio íntimo. Ideal para crear ambiente de meditación, lectura o trabajo enfocado.",
+  "aroma-fuego":              "Crea una atmósfera que enamora. Canela y ámbar llenan el hogar de una calidez que hace que todos quieran quedarse. Perfecto para noches de invierno, reuniones íntimas o cuando quieres que tu casa se sienta como un abrazo.",
+  "aroma-vientos-de-lino":    "El aroma que hace que la ropa siempre huela a recién lavada. Fresco, limpio y reconfortante. Aplícalo en sábanas, toallas y almohadas — cada mañana empieza bien cuando el entorno huele así.",
+  "aroma-frescura-de-lino":   "Limpieza olfativa instantánea para cualquier rincón del hogar. Sin artificios, solo frescura real. Perfecto para ropa de cama, closets y espacios de trabajo donde necesitas claridad mental.",
+  "aroma-tao":                "Lleva la serenidad del spa a tu hogar. El sándalo y el agua de rosas crean equilibrio y paz interior. Ideal para yoga, meditación o simplemente desconectarte después de un día agitado.",
+  "aroma-mahai":              "Cierra los ojos y siente la brisa tropical. Coco, vainilla y flor de tiaré te transportan a la playa en segundos. Úsalo cuando necesitas escapar mentalmente sin salir de casa.",
+  "aroma-calor-de-lana":      "El aroma del bienestar puro. Cachemir y vainilla que recuerdan las mejores tardes de invierno: cobija, libro y taza de té. Ponlo en la sala o el cuarto y automáticamente sientes que todo está bien.",
+  "aroma-dulce-lana":         "Suavidad que se huele. Ámbar dorado y vainilla que hacen del hogar un espacio acogedor desde el momento en que cruzas la puerta. Transforma habitaciones frías en rincones de confort real.",
+  "aroma-crema":              "Envuelve tu hogar en dulzura. Vainilla cremosa y leche de almendra crean una atmósfera reconfortante, ideal para habitaciones, momentos de autocuidado y para acompañar el descanso nocturno.",
+  "aroma-luxury":             "La presencia de un perfume de lujo en cada rincón de tu hogar. El oud árabe y las especias exóticas crean elegancia que impresiona desde que tus visitas cruzan la puerta. Para quienes no se conforman con lo ordinario.",
+  "aroma-romeo-y-julieta":    "Convierte cualquier momento en una historia de amor. Rosa y jazmín llenan el ambiente de romanticismo genuino. Ideal para cenas especiales, veladas íntimas o para recordarle a tu pareja lo especial que es cada día.",
+  "aroma-indigo-profundo":    "Profundidad aromática que transforma el estado de ánimo. Lavanda y violeta con base de cedro oscuro: relajación real sin pastillas. Perfecto para la hora de dormir o para crear un espacio de introspección.",
+  "aroma-eternamente-indigo": "Un aroma que perdura en la memoria. Iris azul y violeta intensa que dejan huella en quien visita tu hogar. Para espacios donde quieres que la experiencia sea inolvidable.",
+  "aroma-hilos-de-seda":      "Delicadeza que se percibe antes de entrar. Seda blanca y polvos suaves que hacen que el hogar transmita cuidado y refinamiento. Ideal para dormitorios principales y espacios personales.",
+  "aroma-brillos-de-seda":    "Luminosidad aromática que eleva cualquier espacio. Flores blancas y seda natural aportan elegancia sutil — ese detalle que convierte una habitación corriente en un lugar especial.",
+  "aroma-sello-de-dios":      "Incienso, mirra y madera sagrada para quienes buscan algo más que un aroma. Purifica el ambiente, calma la mente y crea un espacio de conexión y silencio interior. Para momentos que merecen ser sagrados.",
+  "aroma-lycra-de-verano":    "Energía y vitalidad en cada aplicación. Cítricos vibrantes y sal marina para despertar el hogar y tu estado de ánimo a la vez. Ideal para mañanas, espacios deportivos o cualquier momento que necesita un impulso.",
+  "aroma-navidad":            "La magia de la Navidad sin fecha de caducidad. Pino, canela y naranja especiada para recrear esa atmósfera única de diciembre en cualquier momento del año. El aroma que activa recuerdos felices al instante.",
+  "aroma-best-friends":       "Alegría en cada rincón. Frambuesa, flores dulces y azúcar crean un ambiente juguetón y cálido que contagia buen humor. Perfecto para espacios familiares, cuartos de niños y reuniones donde quieres que todos sonrían.",
+  "aroma-happiness":          "El aroma de los días perfectos. Cítricos alegres y flores de primavera que elevan el ánimo de forma inmediata. Para cuando quieres que tu hogar tenga la energía de un buen día, todos los días.",
+}
+
 export function ProductDetail({ product, related }: Props) {
   const { addItem } = useCart()
   const [qty, setQty] = useState(1)
   const [added, setAdded] = useState(false)
   const [activeTab, setActiveTab] = useState<"descripcion" | "uso" | "envio">("descripcion")
   const [viewers, setViewers] = useState(() => Math.floor(Math.random() * 16) + 7)
-  const [offerEnd, setOfferEnd] = useState<Date | null>(null)
 
   // Viewers en vivo — fluctúa cada 18s
   useEffect(() => {
@@ -69,20 +92,6 @@ export function ProductDetail({ product, related }: Props) {
     }, 18000)
     return () => clearInterval(id)
   }, [])
-
-  // Countdown de oferta por sesión
-  useEffect(() => {
-    const key = `cliche_offer_${product.id}`
-    const stored = sessionStorage.getItem(key)
-    if (stored) {
-      setOfferEnd(new Date(stored))
-    } else {
-      const hours = Math.floor(Math.random() * 3) + 2
-      const end = new Date(Date.now() + hours * 3_600_000)
-      sessionStorage.setItem(key, end.toISOString())
-      setOfferEnd(end)
-    }
-  }, [product.id])
 
   const notes = NOTES_MAP[product.slug] || []
   const isKit = product.slug.startsWith("kit-")
@@ -199,11 +208,8 @@ export function ProductDetail({ product, related }: Props) {
 
               {/* Description */}
               <p className="text-muted-foreground leading-relaxed">
-                {product.description}
+                {VALUE_MAP[product.slug] || product.description}
               </p>
-
-              {/* Countdown de oferta */}
-              {offerEnd && <CountdownTimer endTime={offerEnd} />}
 
               {/* Quantity + Add to cart */}
               <div className="space-y-4">
@@ -289,7 +295,7 @@ export function ProductDetail({ product, related }: Props) {
 
             {activeTab === "descripcion" && (
               <div className="prose prose-sm max-w-none text-muted-foreground">
-                <p className="text-base leading-relaxed mb-4">{product.description}</p>
+                <p className="text-base leading-relaxed mb-4">{VALUE_MAP[product.slug] || product.description}</p>
                 {isKit && (
                   <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 mt-4 flex gap-3">
                     <Gift className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
