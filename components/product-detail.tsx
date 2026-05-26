@@ -103,6 +103,22 @@ export function ProductDetail({ product, related }: Props) {
     return () => clearInterval(id)
   }, [])
 
+  // Entrance animations per product
+  const ANIM_SLUGS: Record<string, 'A' | 'B' | 'C'> = {
+    'aroma-agua':   'A',
+    'aroma-aire':   'B',
+    'aroma-tierra': 'C',
+  }
+  const animType = ANIM_SLUGS[product.slug] ?? null
+  const [animActive, setAnimActive] = useState(false)
+
+  useEffect(() => {
+    if (!animType) { setAnimActive(true); return }
+    const delay = animType === 'B' ? 60 : 1000
+    const t = setTimeout(() => setAnimActive(true), delay)
+    return () => clearTimeout(t)
+  }, [])
+
   const notes = NOTES_MAP[product.slug] || []
   const isKit = product.slug.startsWith("kit-")
   const savings = product.original_price ? product.original_price - product.price : 0
@@ -117,6 +133,17 @@ export function ProductDetail({ product, related }: Props) {
     <>
       <Header />
       <main className="min-h-screen bg-background pt-24 pb-16">
+        {/* Option A: cinematic dark overlay */}
+        {animType === 'A' && (
+          <div
+            className="fixed inset-0 bg-black pointer-events-none"
+            style={{
+              zIndex: 45,
+              opacity: animActive ? 0 : 1,
+              transition: 'opacity 900ms ease',
+            }}
+          />
+        )}
         {/* Breadcrumb */}
         <div className="container mx-auto px-4 mb-6">
           <nav className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -129,9 +156,26 @@ export function ProductDetail({ product, related }: Props) {
         </div>
 
         <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-12 mb-20">
+          <div
+            className="grid lg:grid-cols-2 gap-12 mb-20"
+            style={animType === 'C' ? { overflow: 'hidden' } : {}}
+          >
             {/* Product Image */}
-            <div className="relative">
+            <div
+              className="relative"
+              style={
+                animType === 'A' ? {
+                  transform: animActive ? 'scale(1) translateX(0)' : 'scale(2.1) translateX(27%)',
+                  zIndex: animActive ? 'auto' : 50,
+                  transition: 'transform 800ms cubic-bezier(0.16,1,0.3,1)',
+                } :
+                animType === 'B' ? {
+                  transform: animActive ? 'translateY(0)' : 'translateY(-90px)',
+                  opacity: animActive ? 1 : 0,
+                  transition: 'transform 560ms cubic-bezier(0.16,1,0.3,1), opacity 420ms ease',
+                } : {}
+              }
+            >
               <div className="sticky top-24">
                 <div className="relative">
                   <SprayBottle3D />
@@ -152,7 +196,26 @@ export function ProductDetail({ product, related }: Props) {
             </div>
 
             {/* Product Info */}
-            <div className="flex flex-col gap-6">
+            <div
+              className="flex flex-col gap-6"
+              style={
+                animType === 'A' ? {
+                  opacity: animActive ? 1 : 0,
+                  transform: animActive ? 'translateY(0)' : 'translateY(24px)',
+                  transition: 'opacity 600ms ease 350ms, transform 600ms ease 350ms',
+                } :
+                animType === 'B' ? {
+                  transform: animActive ? 'translateY(0)' : 'translateY(-65px)',
+                  opacity: animActive ? 1 : 0,
+                  transition: 'transform 560ms cubic-bezier(0.16,1,0.3,1) 200ms, opacity 420ms ease 200ms',
+                } :
+                animType === 'C' ? {
+                  transform: animActive ? 'translateX(0)' : 'translateX(110%)',
+                  opacity: animActive ? 1 : 0,
+                  transition: 'transform 720ms cubic-bezier(0.16,1,0.3,1), opacity 500ms ease 100ms',
+                } : {}
+              }
+            >
               {/* Rating + live viewers */}
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
