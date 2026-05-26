@@ -29,8 +29,8 @@ function SprayModel({ spraying, onSpray }: { spraying: boolean; onSpray: () => v
   return (
     <group
       ref={groupRef}
-      scale={pressed ? 0.48 : 0.5}
-      position={[0, -0.3, 0]}
+      scale={pressed ? 0.37 : 0.39}
+      position={[0, -0.2, 0]}
       onClick={handleClick}
       onPointerDown={() => { isDragging.current = false }}
       onPointerMove={() => { isDragging.current = true }}
