@@ -29,7 +29,8 @@ function SprayModel({ spraying, onSpray }: { spraying: boolean; onSpray: () => v
   return (
     <group
       ref={groupRef}
-      scale={pressed ? 0.93 : 1}
+      scale={pressed ? 0.88 : 0.92}
+      position={[0, -0.5, 0]}
       onClick={handleClick}
       onPointerDown={() => { isDragging.current = false }}
       onPointerMove={() => { isDragging.current = true }}
@@ -129,7 +130,7 @@ export function SprayBottle3D() {
   return (
     <div className="relative aspect-square bg-gradient-to-b from-muted/10 to-muted/40 rounded-3xl overflow-hidden">
       <Canvas
-        camera={{ position: [0, 0.2, 2.8], fov: 42 }}
+        camera={{ position: [0, 0.3, 4.5], fov: 38 }}
         shadows
         gl={{ antialias: true, alpha: true }}
         style={{ background: "transparent" }}
