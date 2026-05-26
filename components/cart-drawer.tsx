@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { X, Plus, Minus, ShoppingBag, Trash2, ArrowRight, Sparkles } from "lucide-react"
+import { X, Plus, Minus, ShoppingBag, Trash2, ArrowRight, Sparkles, Truck, PartyPopper } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useCart } from "@/context/cart-context"
 import type { Product } from "@/lib/supabase"
@@ -176,11 +176,11 @@ export function CartDrawer() {
               return (
                 <div className="space-y-1.5">
                   {remaining > 0 ? (
-                    <p className="text-xs text-center text-muted-foreground">
-                      Agrega <span className="font-bold text-foreground">{formatPrice(remaining)}</span> más y tu envío es <span className="font-bold text-green-600">GRATIS</span> 🚚
+                    <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
+                      Agrega <span className="font-bold text-foreground">{formatPrice(remaining)}</span> más y tu envío es <span className="font-bold text-green-600 flex items-center gap-0.5"><Truck className="w-3 h-3" />GRATIS</span>
                     </p>
                   ) : (
-                    <p className="text-xs text-center font-semibold text-green-600">🎉 ¡Tienes envío gratis!</p>
+                    <p className="text-xs text-center font-semibold text-green-600 flex items-center justify-center gap-1"><PartyPopper className="w-3.5 h-3.5" />¡Tienes envío gratis!</p>
                   )}
                   <div className="w-full bg-muted rounded-full h-1.5">
                     <div

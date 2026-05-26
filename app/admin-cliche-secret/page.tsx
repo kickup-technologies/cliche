@@ -281,7 +281,7 @@ export default function AdminPage() {
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm text-foreground truncate">{product.name}</p>
                     <p className="text-sm text-muted-foreground">
-                      ${product.price.toLocaleString("es-CO")} COP · {product.rating}⭐ ({product.reviews} reseñas)
+                      ${product.price.toLocaleString("es-CO")} COP · {product.rating} ({product.reviews} reseñas)
                     </p>
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
@@ -396,7 +396,7 @@ export default function AdminPage() {
             </Button>
 
             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mt-6">
-              <p className="text-amber-800 text-sm font-semibold">🔒 Acceso privado</p>
+              <p className="text-amber-800 text-sm font-semibold">Acceso privado</p>
               <p className="text-amber-700 text-xs mt-1">
                 Esta URL es secreta. No la compartas públicamente. Solo accede desde un dispositivo de confianza.
               </p>

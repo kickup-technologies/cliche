@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, AlertTriangle, ShoppingBag } from "lucide-react"
+import { X, AlertTriangle, ShoppingBag, ShoppingCart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useCart } from "@/context/cart-context"
@@ -87,7 +87,7 @@ export function ExitIntentPopup() {
             </h3>
             <p className="text-lg text-muted-foreground mb-2">
               {items.length > 0
-                ? "Tienes productos en tu carrito 🛒"
+                ? <span className="flex items-center justify-center gap-1.5"><ShoppingCart className="w-4 h-4" />Tienes productos en tu carrito</span>
                 : "No te vayas con las manos vacías"}
             </p>
             <p className="text-foreground font-semibold text-lg mb-6">
