@@ -54,7 +54,7 @@ export function Header() {
       useSolid
         ? "bg-background/95 backdrop-blur-md shadow-sm"
         : "bg-transparent"
-    }`} style={{ top: isScrolled ? 0 : "40px" }}>
+    }`} style={{ top: useSolid ? 0 : "40px" }}>
       <nav className="container mx-auto px-4">
         <div className="flex h-16 lg:h-20 items-center justify-between">
           {/* Mobile menu */}

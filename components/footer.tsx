@@ -168,18 +168,22 @@ export function Footer() {
             <p className="text-sm text-background/60">
               © 2025 Bienestar by Cliché. Todos los derechos reservados. · Colombia 🇨🇴
             </p>
-            <div className="flex items-center gap-6">
-              <img
-                src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/200px-Visa_Inc._logo.svg.png"
-                alt="Visa"
-                className="h-6 opacity-60 invert"
-              />
-              <img
-                src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/200px-Mastercard-logo.svg.png"
-                alt="Mastercard"
-                className="h-6 opacity-60"
-              />
-              <span className="text-xs text-background/40">Pagos seguros</span>
+            <div className="flex items-center gap-4 flex-wrap justify-center sm:justify-end">
+              {/* Visa */}
+              <svg viewBox="0 0 60 20" className="h-5 opacity-70" aria-label="Visa" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <text x="0" y="18" fontFamily="Arial, Helvetica, sans-serif" fontSize="20" fontWeight="900" fontStyle="italic" fill="#FAF8F5" letterSpacing="-0.5">VISA</text>
+              </svg>
+              {/* Mastercard */}
+              <svg viewBox="0 0 48 30" className="h-6 opacity-70" aria-label="Mastercard" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="18" cy="15" r="12" fill="#EB001B"/>
+                <circle cx="30" cy="15" r="12" fill="#F79E1B"/>
+                <path d="M24 5.8a12 12 0 0 1 0 18.4A12 12 0 0 1 24 5.8z" fill="#FF5F00"/>
+              </svg>
+              {/* Nequi */}
+              <span className="text-[10px] font-bold tracking-wider px-2 py-1 rounded border border-background/20 text-background/60 uppercase">Nequi</span>
+              {/* PSE */}
+              <span className="text-[10px] font-bold tracking-wider px-2 py-1 rounded border border-background/20 text-background/60 uppercase">PSE</span>
+              <span className="text-xs text-background/40 ml-2">Pagos seguros</span>
             </div>
           </div>
         </div>
