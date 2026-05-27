@@ -21,7 +21,8 @@ import { Badge } from "@/components/ui/badge"
 import {
   ShoppingBag, Star, ShieldCheck, Truck, BadgeCheck,
   ChevronRight, Plus, Minus, Share2, Heart, CheckCircle,
-  Wind, Shirt, Home, AlertTriangle, Package, Gift, RotateCcw
+  Wind, Shirt, Home, AlertTriangle, Package, Gift, RotateCcw,
+  Timer, Check, Sparkles
 } from "lucide-react"
 import type { Product } from "@/lib/supabase"
 import { Header } from "@/components/header"
@@ -92,7 +93,7 @@ const VALUE_MAP: Record<string, string> = {
 
 
 export function ProductDetail({ product, related }: Props) {
-  const { addItem, openDrawer } = useCart()
+  const { addItem, openDrawer, total } = useCart()
   const { toggleFavorite, isFavorite } = useFavorites()
   const fav = isFavorite(product.id)
   const [qty, setQty] = useState(1)
@@ -375,7 +376,7 @@ export function ProductDetail({ product, related }: Props) {
               {/* Urgency timer */}
               {product.original_price && (
                 <div className="flex items-center gap-3 bg-orange-50 border border-orange-200 rounded-2xl px-4 py-3">
-                  <span className="text-orange-500 text-lg">⏰</span>
+                  <Timer className="w-5 h-5 text-orange-500 flex-shrink-0" />
                   <div className="flex-1">
                     <p className="text-xs font-semibold text-orange-700 uppercase tracking-wide">Oferta por tiempo limitado</p>
                     <p className="text-xs text-orange-600 mt-0.5">Termina en{" "}
@@ -388,18 +389,23 @@ export function ProductDetail({ product, related }: Props) {
                 </div>
               )}
 
-              {/* Free shipping progress bar */}
+              {/* Free shipping progress bar — only shown when cart has items */}
               {(() => {
                 const FREE_SHIPPING = 300000
-                const pct = Math.min(100, Math.round((product.price / FREE_SHIPPING) * 100))
-                const remaining = FREE_SHIPPING - product.price
+                const cartTotal = total // total from useCart(), in COP
+                if (cartTotal <= 0) return null
+                const pct = Math.min(100, Math.round((cartTotal / FREE_SHIPPING) * 100))
+                const remaining = FREE_SHIPPING - cartTotal
                 return (
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-muted-foreground">
                         {remaining > 0
                           ? <>Te faltan <strong className="text-foreground">${remaining.toLocaleString("es-CO")}</strong> para envío gratis</>
-                          : <span className="text-green-600 font-semibold">🎉 ¡Este pedido tiene envío gratis!</span>
+                          : <span className="text-green-600 font-semibold flex items-center gap-1">
+                              <Sparkles className="w-3.5 h-3.5" />
+                              ¡Tu pedido tiene envío gratis!
+                            </span>
                         }
                       </span>
                       <span className="text-muted-foreground font-medium">{pct}%</span>
@@ -499,8 +505,8 @@ export function ProductDetail({ product, related }: Props) {
 
                 {/* Shared toast */}
                 {shared && (
-                  <p className="text-xs text-center text-green-600 font-medium animate-pulse">
-                    ✓ Link copiado al portapapeles
+                  <p className="text-xs text-center text-green-600 font-medium flex items-center justify-center gap-1">
+                    <Check className="w-3.5 h-3.5" /> Link copiado al portapapeles
                   </p>
                 )}
               </div>
