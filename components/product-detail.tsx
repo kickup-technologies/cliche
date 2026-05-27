@@ -111,12 +111,25 @@ export function ProductDetail({ product, related }: Props) {
   }
   const animType = ANIM_SLUGS[product.slug] ?? null
   const [animActive, setAnimActive] = useState(false)
+  // Option A specific phases
+  const [heroPhase, setHeroPhase] = useState<'hero' | 'settling' | 'done'>('hero')
 
   useEffect(() => {
     if (!animType) { setAnimActive(true); return }
-    const delay = animType === 'B' ? 60 : 1000
-    const t = setTimeout(() => setAnimActive(true), delay)
-    return () => clearTimeout(t)
+    if (animType === 'B') {
+      const t = setTimeout(() => setAnimActive(true), 60)
+      return () => clearTimeout(t)
+    }
+    if (animType === 'C') {
+      const t = setTimeout(() => setAnimActive(true), 1000)
+      return () => clearTimeout(t)
+    }
+    // Option A: 3s hero → 1.2s fade out → grid appears
+    if (animType === 'A') {
+      const t1 = setTimeout(() => setHeroPhase('settling'), 3000)
+      const t2 = setTimeout(() => { setHeroPhase('done'); setAnimActive(true) }, 4300)
+      return () => { clearTimeout(t1); clearTimeout(t2) }
+    }
   }, [])
 
   const notes = NOTES_MAP[product.slug] || []
@@ -133,16 +146,44 @@ export function ProductDetail({ product, related }: Props) {
     <>
       <Header />
       <main className="min-h-screen bg-background pt-24 pb-16">
-        {/* Option A: cinematic dark overlay */}
-        {animType === 'A' && (
-          <div
-            className="fixed inset-0 bg-black pointer-events-none"
-            style={{
-              zIndex: 45,
-              opacity: animActive ? 0 : 1,
-              transition: 'opacity 900ms ease',
-            }}
-          />
+        {/* Option A: cinematic hero overlay — product centered, tilted, rotating */}
+        {animType === 'A' && heroPhase !== 'done' && (
+          <>
+            {/* Dark backdrop */}
+            <div
+              className="fixed inset-0 pointer-events-none"
+              style={{
+                zIndex: 55,
+                background: 'rgba(8, 4, 2, 0.93)',
+                opacity: heroPhase === 'settling' ? 0 : 1,
+                transition: 'opacity 1200ms ease',
+              }}
+            />
+            {/* Centered product viewer */}
+            <div
+              className="fixed inset-0 flex flex-col items-center justify-center pointer-events-none"
+              style={{
+                zIndex: 60,
+                opacity: heroPhase === 'settling' ? 0 : 1,
+                transition: 'opacity 1000ms ease 100ms',
+              }}
+            >
+              <div style={{
+                width: 'min(62vmin, 420px)',
+                height: 'min(62vmin, 420px)',
+                transform: 'perspective(1400px) rotateX(7deg) rotateY(-16deg)',
+                filter: 'drop-shadow(0 30px 60px rgba(0,0,0,0.6))',
+              }}>
+                <SprayBottle3D />
+              </div>
+              <p
+                className="text-white/40 text-xs tracking-[0.35em] uppercase mt-6"
+                style={{ fontFamily: 'serif' }}
+              >
+                {product.name}
+              </p>
+            </div>
+          </>
         )}
         {/* Breadcrumb */}
         <div className="container mx-auto px-4 mb-6">
@@ -165,9 +206,8 @@ export function ProductDetail({ product, related }: Props) {
               className="relative"
               style={
                 animType === 'A' ? {
-                  transform: animActive ? 'scale(1) translateX(0)' : 'scale(2.1) translateX(27%)',
-                  zIndex: animActive ? 'auto' : 50,
-                  transition: 'transform 800ms cubic-bezier(0.16,1,0.3,1)',
+                  opacity: animActive ? 1 : 0,
+                  transition: 'opacity 700ms ease',
                 } :
                 animType === 'B' ? {
                   transform: animActive ? 'translateY(0)' : 'translateY(-90px)',
