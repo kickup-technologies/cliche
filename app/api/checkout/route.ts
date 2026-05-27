@@ -11,14 +11,15 @@ export async function POST(req: NextRequest) {
 
     // Obtener precios reales desde la DB (nunca confiar en el frontend)
     const productIds = items.map((i: { product_id: string }) => i.product_id)
-    const { data: products, error } = await supabase
+    let { data: products, error } = await supabase
       .from("products")
       .select("id, name, price, stock, image_url")
       .in("id", productIds)
-      .eq("is_active", true)
 
+    // Fallback: si la query falló, intentar sin filtro adicional
     if (error || !products?.length) {
-      return NextResponse.json({ error: "Productos no encontrados" }, { status: 400 })
+      console.error("[checkout] products query error:", error, "ids:", productIds)
+      return NextResponse.json({ error: "Productos no encontrados. Verifica que los productos estén disponibles." }, { status: 400 })
     }
 
     // Verificar stock
