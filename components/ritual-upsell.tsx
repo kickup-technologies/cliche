@@ -1,3 +1,6 @@
+"use client"
+
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 
@@ -29,6 +32,25 @@ const ritualProducts = [
 ]
 
 export function RitualUpsell() {
+  const [activeCard, setActiveCard] = useState(0)
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveCard((prev) => (prev + 1) % ritualProducts.length)
+    }, 4000)
+    return () => clearInterval(interval)
+  }, [])
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      const card = scrollRef.current.children[activeCard] as HTMLElement
+      if (card) {
+        card.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" })
+      }
+    }
+  }, [activeCard])
+
   return (
     <section className="py-20 bg-foreground text-background">
       <div className="container mx-auto px-4 max-w-5xl">
@@ -45,43 +67,46 @@ export function RitualUpsell() {
           </p>
         </div>
 
-        {/* Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        {/* Mobile carousel */}
+        <div className="sm:hidden">
+          <div
+            ref={scrollRef}
+            className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
+            {ritualProducts.map((p) => (
+              <Link
+                key={p.slug}
+                href={`/productos/${p.slug}`}
+                className="snap-center flex-shrink-0 w-[80vw] group bg-background/5 border border-background/10 rounded-2xl overflow-hidden hover:bg-background/10 hover:border-background/20 transition-all duration-300"
+              >
+                <RitualCard p={p} />
+              </Link>
+            ))}
+          </div>
+
+          {/* Dots */}
+          <div className="flex justify-center gap-2 mt-4">
+            {ritualProducts.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setActiveCard(i)}
+                className={`h-2 rounded-full transition-all ${i === activeCard ? "w-6 bg-primary" : "w-2 bg-background/30"}`}
+                aria-label={`Ir al producto ${i + 1}`}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Desktop grid */}
+        <div className="hidden sm:grid grid-cols-3 gap-6">
           {ritualProducts.map((p) => (
             <Link
               key={p.slug}
               href={`/productos/${p.slug}`}
               className="group bg-background/5 border border-background/10 rounded-2xl overflow-hidden hover:bg-background/10 hover:border-background/20 transition-all duration-300"
             >
-              {/* Image area */}
-              <div className="aspect-square relative overflow-hidden" style={{background: "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)"}}>
-                {p.badge && (
-                  <span className={`absolute top-3 left-3 z-10 text-xs font-bold text-white px-2.5 py-1 rounded-full ${p.badgeColor}`}>
-                    {p.badge}
-                  </span>
-                )}
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-6">
-                  <div className="w-20 h-20 rounded-full bg-background/10 border border-background/20 flex items-center justify-center">
-                    <span className="text-background/60 text-2xl font-serif font-bold">C</span>
-                  </div>
-                  <p className="text-background/40 text-xs font-medium tracking-widest uppercase">Cliché Aromas</p>
-                  <p className="text-background/60 text-sm font-semibold text-center leading-snug">{p.tagline}</p>
-                </div>
-              </div>
-
-              {/* Info */}
-              <div className="p-5">
-                <h3 className="font-serif font-bold text-background text-base mb-1 group-hover:text-primary transition-colors">
-                  {p.name}
-                </h3>
-                <p className="text-xs text-background/60 mb-3 leading-snug">{p.tagline}</p>
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-background">{p.price} COP</span>
-                  <span className="text-xs text-primary font-semibold flex items-center gap-1 group-hover:gap-2 transition-all">
-                    Ver producto <ArrowRight className="w-3 h-3" />
-                  </span>
-                </div>
-              </div>
+              <RitualCard p={p} />
             </Link>
           ))}
         </div>
@@ -97,5 +122,41 @@ export function RitualUpsell() {
         </div>
       </div>
     </section>
+  )
+}
+
+function RitualCard({ p }: { p: typeof ritualProducts[0] }) {
+  return (
+    <>
+      {/* Image area */}
+      <div className="aspect-square relative overflow-hidden" style={{background: "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)"}}>
+        {p.badge && (
+          <span className={`absolute top-3 left-3 z-10 text-xs font-bold text-white px-2.5 py-1 rounded-full ${p.badgeColor}`}>
+            {p.badge}
+          </span>
+        )}
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-6">
+          <div className="w-20 h-20 rounded-full bg-background/10 border border-background/20 flex items-center justify-center">
+            <span className="text-background/60 text-2xl font-serif font-bold">C</span>
+          </div>
+          <p className="text-background/40 text-xs font-medium tracking-widest uppercase">Cliché Aromas</p>
+          <p className="text-background/60 text-sm font-semibold text-center leading-snug">{p.tagline}</p>
+        </div>
+      </div>
+
+      {/* Info */}
+      <div className="p-5">
+        <h3 className="font-serif font-bold text-background text-base mb-1 group-hover:text-primary transition-colors">
+          {p.name}
+        </h3>
+        <p className="text-xs text-background/60 mb-3 leading-snug">{p.tagline}</p>
+        <div className="flex items-center justify-between">
+          <span className="font-bold text-background">{p.price} COP</span>
+          <span className="text-xs text-primary font-semibold flex items-center gap-1 group-hover:gap-2 transition-all">
+            Ver producto <ArrowRight className="w-3 h-3" />
+          </span>
+        </div>
+      </div>
+    </>
   )
 }

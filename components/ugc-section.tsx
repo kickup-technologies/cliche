@@ -115,24 +115,24 @@ export function UGCSection() {
           <p className="text-background/60 text-sm mb-3">
             ¿Ya tienes tu aroma? Comparte tu experiencia y etiquétanos
           </p>
-          <div className="flex items-center justify-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 px-4 sm:px-0">
             <a
               href="https://www.instagram.com/clichearomasoficial"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 bg-background/10 hover:bg-background/20 text-background text-sm font-medium px-4 py-2.5 rounded-full transition-colors"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-background/10 hover:bg-background/20 text-background text-sm font-medium px-4 py-2.5 rounded-full transition-colors"
             >
-              <Instagram className="w-4 h-4" />
-              @clichearomasoficial
+              <Instagram className="w-4 h-4 flex-shrink-0" />
+              <span className="text-sm">@clichearomasoficial</span>
             </a>
             <a
               href="https://www.tiktok.com/@clichearomasoficial"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 bg-background/10 hover:bg-background/20 text-background text-sm font-medium px-4 py-2.5 rounded-full transition-colors"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-background/10 hover:bg-background/20 text-background text-sm font-medium px-4 py-2.5 rounded-full transition-colors"
             >
-              <TikTokIcon className="w-4 h-4" />
-              @clichearomasoficial
+              <TikTokIcon className="w-4 h-4 flex-shrink-0" />
+              <span className="text-sm">@clichearomasoficial</span>
             </a>
           </div>
         </div>

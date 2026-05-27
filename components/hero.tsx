@@ -70,7 +70,7 @@ export function Hero() {
   }, [])
 
   return (
-    <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+    <section className="relative min-h-[100svh] flex flex-col items-center overflow-hidden">
       {/* Background Slides */}
       {heroSlides.map((slide, index) => (
         <div
@@ -90,8 +90,8 @@ export function Hero() {
       ))}
 
       {/* Content */}
-      <div className="container mx-auto px-4 relative z-10">
-        <div className="max-w-2xl">
+      <div className="container mx-auto px-4 relative z-10 flex-1 flex items-center">
+        <div className="max-w-2xl pt-28 lg:pt-0">
           {/* Trust Badges */}
           <div className="flex items-center gap-4 mb-6">
             <div className="flex items-center gap-1 bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full">
@@ -117,10 +117,10 @@ export function Hero() {
             >
               {currentSlide === index && (
                 <>
-                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-white mb-4 leading-tight text-balance">
+                  <h1 className="text-3xl sm:text-4xl lg:text-6xl font-serif font-bold text-white mb-4 leading-tight text-balance">
                     {slide.title}
                   </h1>
-                  <p className="text-xl md:text-2xl text-white/80 mb-8">
+                  <p className="text-base sm:text-xl md:text-2xl text-white/80 mb-6 sm:mb-8">
                     {slide.subtitle}
                   </p>
                 </>
@@ -129,45 +129,45 @@ export function Hero() {
           ))}
 
           {/* Urgency Timer */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 mb-8 inline-block">
-            <div className="flex items-center gap-3 text-white">
-              <Sparkles className="w-5 h-5 text-yellow-400 animate-pulse" />
-              <span className="font-medium">Oferta termina en:</span>
-              <div className="flex gap-2">
-                <div className="bg-white/20 px-3 py-1 rounded-lg text-center">
-                  <span className="font-mono font-bold text-xl">{String(timeLeft.hours).padStart(2, "0")}</span>
-                  <span className="text-xs block text-white/70">hrs</span>
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 sm:p-4 mb-6 sm:mb-8 inline-block">
+            <div className="flex items-center gap-2 sm:gap-3 text-white">
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400 animate-pulse" />
+              <span className="font-medium text-sm sm:text-base">Oferta termina en:</span>
+              <div className="flex gap-1.5 sm:gap-2">
+                <div className="bg-white/20 px-2 sm:px-3 py-1 rounded-lg text-center">
+                  <span className="font-mono font-bold text-base sm:text-xl">{String(timeLeft.hours).padStart(2, "0")}</span>
+                  <span className="text-[10px] sm:text-xs block text-white/70">hrs</span>
                 </div>
-                <span className="text-2xl font-bold">:</span>
-                <div className="bg-white/20 px-3 py-1 rounded-lg text-center">
-                  <span className="font-mono font-bold text-xl">{String(timeLeft.minutes).padStart(2, "0")}</span>
-                  <span className="text-xs block text-white/70">min</span>
+                <span className="text-lg sm:text-2xl font-bold">:</span>
+                <div className="bg-white/20 px-2 sm:px-3 py-1 rounded-lg text-center">
+                  <span className="font-mono font-bold text-base sm:text-xl">{String(timeLeft.minutes).padStart(2, "0")}</span>
+                  <span className="text-[10px] sm:text-xs block text-white/70">min</span>
                 </div>
-                <span className="text-2xl font-bold">:</span>
-                <div className="bg-white/20 px-3 py-1 rounded-lg text-center">
-                  <span className="font-mono font-bold text-xl">{String(timeLeft.seconds).padStart(2, "0")}</span>
-                  <span className="text-xs block text-white/70">seg</span>
+                <span className="text-lg sm:text-2xl font-bold">:</span>
+                <div className="bg-white/20 px-2 sm:px-3 py-1 rounded-lg text-center">
+                  <span className="font-mono font-bold text-base sm:text-xl">{String(timeLeft.seconds).padStart(2, "0")}</span>
+                  <span className="text-[10px] sm:text-xs block text-white/70">seg</span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-8">
-            <Button size="lg" className="text-lg px-8 py-6 font-semibold group" asChild>
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6 sm:mb-8">
+            <Button size="lg" className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 font-semibold group" asChild>
               <a href="#productos">
                 COMPRAR CON {discountPct}% OFF
                 <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
               </a>
             </Button>
-            <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-white/30 text-white hover:bg-white/10 font-semibold">
+            <Button size="lg" variant="outline" className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 border-white/30 text-white hover:bg-white/10 font-semibold">
               Ver Catálogo
               <ChevronRight className="w-5 h-5 ml-1" />
             </Button>
           </div>
 
           {/* Trust Indicators */}
-          <div className="flex flex-wrap items-center gap-6 text-white/80 text-sm">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-white/80 text-xs sm:text-sm">
             <div className="flex items-center gap-2">
               <Truck className="w-5 h-5" />
               <span>Envío gratis +$99.000</span>

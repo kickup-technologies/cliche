@@ -117,7 +117,7 @@ export function FeaturedProducts() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           {(showAll ? products : products.slice(0, INITIAL_VISIBLE)).map((product, index) => (
             <Link
               key={product.id}
@@ -180,22 +180,24 @@ export function FeaturedProducts() {
                   hoveredProduct === product.id ? "sm:opacity-100 sm:translate-y-0" : ""
                 )}>
                   <Button
-                    className="w-full rounded-full font-semibold"
+                    className="w-full rounded-full font-semibold text-xs sm:text-sm"
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleAddToCart(product) }}
                     disabled={product.stock === 0}
                   >
-                    {addedToCart === product.id ? "¡Agregado!" : (
-                      <><ShoppingCart className="w-4 h-4 mr-2" />Agregar al carrito</>
+                    {addedToCart === product.id ? (
+                      <><span className="hidden sm:inline">¡Agregado!</span><ShoppingCart className="w-4 h-4 sm:hidden" /></>
+                    ) : (
+                      <><ShoppingCart className="w-4 h-4 sm:mr-2" /><span className="hidden sm:inline">Agregar al carrito</span><span className="sm:hidden">Agregar</span></>
                     )}
                   </Button>
                 </div>
               </div>
 
-              <div className="p-4 space-y-2">
-                <h3 className="font-semibold text-foreground text-sm leading-tight group-hover:text-primary transition-colors">
+              <div className="p-3 sm:p-4 space-y-1.5 sm:space-y-2">
+                <h3 className="font-semibold text-foreground text-sm leading-tight line-clamp-2 group-hover:text-primary transition-colors">
                   {product.name}
                 </h3>
-                <div className="flex items-center gap-1">
+                <div className="hidden sm:flex items-center gap-1">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <Star key={i} className={cn("w-3.5 h-3.5",
                       i < Math.floor(product.rating) ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"
@@ -204,18 +206,18 @@ export function FeaturedProducts() {
                   <span className="text-xs text-muted-foreground ml-1">({product.reviews})</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-lg font-bold text-foreground">{formatPrice(product.price)}</span>
+                  <span className="text-base font-bold text-foreground">{formatPrice(product.price)}</span>
                   {product.original_price && (
-                    <span className="text-sm text-muted-foreground line-through">{formatPrice(product.original_price)}</span>
+                    <span className="text-xs text-muted-foreground line-through hidden sm:inline">{formatPrice(product.original_price)}</span>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground leading-snug">
+                <p className="text-xs text-muted-foreground leading-snug hidden sm:block">
                   {BENEFIT_MAP[product.slug] || "Aroma artesanal colombiano"}
                 </p>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-primary font-medium">Ver detalles →</span>
                   {product.reviews > 0 && (
-                    <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                    <span className="hidden sm:flex text-[10px] text-muted-foreground items-center gap-1">
                       <Users className="w-2.5 h-2.5" />
                       {Math.floor(product.reviews * 0.35 + 4)} esta semana
                     </span>

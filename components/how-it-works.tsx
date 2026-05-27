@@ -1,3 +1,6 @@
+"use client"
+
+import { useState, useEffect, useRef } from "react"
 import { ShoppingBag, Package, Sparkles } from "lucide-react"
 import Link from "next/link"
 
@@ -29,6 +32,25 @@ const steps = [
 ]
 
 export function HowItWorks() {
+  const [activeStep, setActiveStep] = useState(0)
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveStep((prev) => (prev + 1) % steps.length)
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [])
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      const card = scrollRef.current.children[activeStep] as HTMLElement
+      if (card) {
+        card.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" })
+      }
+    }
+  }, [activeStep])
+
   return (
     <section id="como-funciona" className="py-20 bg-muted/20">
       <div className="container mx-auto px-4">
@@ -44,7 +66,52 @@ export function HowItWorks() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        {/* Mobile carousel */}
+        <div className="lg:hidden">
+          <div
+            ref={scrollRef}
+            className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 scrollbar-hide"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
+            {steps.map((step, i) => (
+              <div
+                key={i}
+                className="snap-center flex-shrink-0 w-[85vw] flex flex-col items-center text-center bg-background rounded-2xl p-6 shadow-sm border border-border"
+              >
+                <div className="relative mb-6">
+                  <div className={`w-24 h-24 rounded-3xl flex items-center justify-center ${step.color} shadow-sm`}>
+                    <step.icon className="w-10 h-10" />
+                  </div>
+                  <span className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-foreground text-background text-xs font-bold flex items-center justify-center">
+                    {step.number}
+                  </span>
+                </div>
+                <h3 className="text-lg font-serif font-bold text-foreground mb-2">{step.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4">{step.description}</p>
+                {step.cta && (
+                  <Link href={step.cta.href} className="text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary/80 transition-colors">
+                    {step.cta.label}
+                  </Link>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Dots */}
+          <div className="flex justify-center gap-2 mt-4">
+            {steps.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setActiveStep(i)}
+                className={`h-2 rounded-full transition-all ${i === activeStep ? "w-6 bg-primary" : "w-2 bg-primary/30"}`}
+                aria-label={`Ir al paso ${i + 1}`}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Desktop grid */}
+        <div className="hidden lg:grid grid-cols-3 gap-8 max-w-5xl mx-auto">
           {steps.map((step, i) => (
             <div key={i} className="flex flex-col items-center text-center relative">
               <div className="relative mb-6">
