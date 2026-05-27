@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useRef } from "react"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 
@@ -32,24 +32,16 @@ const ritualProducts = [
 ]
 
 export function RitualUpsell() {
-  const [activeCard, setActiveCard] = useState(0)
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveCard((prev) => (prev + 1) % ritualProducts.length)
-    }, 4000)
-    return () => clearInterval(interval)
-  }, [])
-
-  useEffect(() => {
+  function scrollToCard(i: number) {
     if (scrollRef.current) {
-      const card = scrollRef.current.children[activeCard] as HTMLElement
+      const card = scrollRef.current.children[i] as HTMLElement
       if (card) {
-        card.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" })
+        scrollRef.current.scrollTo({ left: card.offsetLeft - scrollRef.current.offsetLeft, behavior: "smooth" })
       }
     }
-  }, [activeCard])
+  }
 
   return (
     <section className="py-20 bg-foreground text-background">
@@ -90,8 +82,8 @@ export function RitualUpsell() {
             {ritualProducts.map((_, i) => (
               <button
                 key={i}
-                onClick={() => setActiveCard(i)}
-                className={`h-2 rounded-full transition-all ${i === activeCard ? "w-6 bg-primary" : "w-2 bg-background/30"}`}
+                onClick={() => scrollToCard(i)}
+                className="h-2 w-2 rounded-full bg-background/30 hover:bg-background/60 transition-all"
                 aria-label={`Ir al producto ${i + 1}`}
               />
             ))}

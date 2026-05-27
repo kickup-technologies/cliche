@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useRef } from "react"
 import { ShoppingBag, Package, Sparkles } from "lucide-react"
 import Link from "next/link"
 
@@ -32,24 +32,16 @@ const steps = [
 ]
 
 export function HowItWorks() {
-  const [activeStep, setActiveStep] = useState(0)
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveStep((prev) => (prev + 1) % steps.length)
-    }, 3000)
-    return () => clearInterval(interval)
-  }, [])
-
-  useEffect(() => {
+  function scrollToCard(i: number) {
     if (scrollRef.current) {
-      const card = scrollRef.current.children[activeStep] as HTMLElement
+      const card = scrollRef.current.children[i] as HTMLElement
       if (card) {
-        card.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" })
+        scrollRef.current.scrollTo({ left: card.offsetLeft - scrollRef.current.offsetLeft, behavior: "smooth" })
       }
     }
-  }, [activeStep])
+  }
 
   return (
     <section id="como-funciona" className="py-20 bg-muted/20">
@@ -102,8 +94,8 @@ export function HowItWorks() {
             {steps.map((_, i) => (
               <button
                 key={i}
-                onClick={() => setActiveStep(i)}
-                className={`h-2 rounded-full transition-all ${i === activeStep ? "w-6 bg-primary" : "w-2 bg-primary/30"}`}
+                onClick={() => scrollToCard(i)}
+                className="h-2 w-2 rounded-full bg-primary/30 hover:bg-primary/60 transition-all"
                 aria-label={`Ir al paso ${i + 1}`}
               />
             ))}

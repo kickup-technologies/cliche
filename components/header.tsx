@@ -63,10 +63,21 @@ export function Header() {
           <div className="lg:hidden">
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className={useSolid ? "text-foreground" : "text-white"}>
-                  <Menu className="h-6 w-6" />
-                  <span className="sr-only">Abrir menú</span>
-                </Button>
+                <button
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all duration-200 ${
+                    useSolid
+                      ? "border-border text-foreground hover:border-primary hover:text-primary bg-background/60"
+                      : "border-white/25 text-white hover:border-white/60 hover:bg-white/10 bg-transparent"
+                  }`}
+                >
+                  <span className={`flex flex-col gap-[4px]`}>
+                    <span className={`block h-[1.5px] w-5 rounded-full transition-colors ${useSolid ? "bg-foreground" : "bg-white"}`} />
+                    <span className={`block h-[1.5px] w-3.5 rounded-full transition-colors ${useSolid ? "bg-foreground" : "bg-white"}`} />
+                  </span>
+                  <span className={`text-[11px] font-semibold tracking-widest uppercase transition-colors ${useSolid ? "text-foreground" : "text-white"}`}>
+                    Menú
+                  </span>
+                </button>
               </SheetTrigger>
               <SheetContent side="left" className="w-[85vw] max-w-sm p-0 border-0 bg-[#2D1A14]">
                 <div className="flex flex-col h-full">
