@@ -3,10 +3,12 @@ import { createServerClient, supabase } from "@/lib/supabase"
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Try service role (bypasses RLS), fall back to anon
+    const { id } = await params
+
+    // Try service role first (bypasses RLS), fall back to anon
     const db = (() => {
       try { return createServerClient() } catch { return supabase }
     })()
@@ -14,7 +16,7 @@ export async function DELETE(
     const { error } = await db
       .from("reviews")
       .delete()
-      .eq("id", params.id)
+      .eq("id", id)
 
     if (error) throw error
     return NextResponse.json({ ok: true })

@@ -3,13 +3,14 @@ import { createServerClient } from "@/lib/supabase"
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   const supabase = createServerClient()
   const { data, error } = await supabase
     .from("orders")
     .select("id, status, total, tracking_number, customer_name, created_at, items")
-    .eq("id", params.id)
+    .eq("id", id)
     .single()
 
   if (error || !data) {
@@ -19,11 +20,11 @@ export async function GET(
   return NextResponse.json(data)
 }
 
-// Admin: update order status / tracking number
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   const supabase = createServerClient()
   const body = await req.json()
   const allowed = ["status", "tracking_number"]
@@ -35,7 +36,7 @@ export async function PATCH(
   const { data, error } = await supabase
     .from("orders")
     .update(update)
-    .eq("id", params.id)
+    .eq("id", id)
     .select()
     .single()
 

@@ -92,7 +92,7 @@ const VALUE_MAP: Record<string, string> = {
 
 
 export function ProductDetail({ product, related }: Props) {
-  const { addItem } = useCart()
+  const { addItem, openDrawer } = useCart()
   const { toggleFavorite, isFavorite } = useFavorites()
   const fav = isFavorite(product.id)
   const [qty, setQty] = useState(1)
@@ -664,7 +664,7 @@ export function ProductDetail({ product, related }: Props) {
           <Button
             size="sm"
             className="flex-shrink-0 h-11 px-6 rounded-xl font-semibold"
-            onClick={handleAdd}
+            onClick={() => { handleAdd(); setTimeout(() => openDrawer(), 300) }}
             disabled={product.stock === 0}
           >
             {added ? <CheckCircle className="w-4 h-4 mr-1" /> : <ShoppingBag className="w-4 h-4 mr-1" />}
@@ -673,26 +673,34 @@ export function ProductDetail({ product, related }: Props) {
         </div>
       </div>
 
-      {/* Recent buyer notification — bottom-left toast */}
+      {/* Recent buyer notification — premium social proof toast */}
       <div
         className="fixed bottom-24 left-4 z-50 transition-all duration-500"
         style={{
           opacity: recentBuyer ? 1 : 0,
-          transform: recentBuyer ? 'translateY(0)' : 'translateY(16px)',
+          transform: recentBuyer ? 'translateY(0)' : 'translateY(12px)',
           pointerEvents: 'none',
         }}
       >
-        <div className="bg-white border border-border rounded-2xl shadow-xl px-4 py-3 flex items-center gap-3 max-w-[240px]">
-          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-base">
-            🛒
+        <div className="bg-white border border-border/60 rounded-2xl shadow-2xl px-4 py-3 flex items-center gap-3 max-w-[260px]"
+          style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.10)' }}
+        >
+          {/* Icon */}
+          <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <ShoppingBag className="w-4 h-4 text-primary" />
           </div>
-          <div>
-            <p className="text-xs font-semibold text-foreground leading-tight">
-              {recentBuyer?.name} de {recentBuyer?.city}
+          {/* Text */}
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-foreground leading-tight truncate">
+              {recentBuyer?.name} · {recentBuyer?.city}
             </p>
             <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
-              acaba de comprarlo
+              Acaba de adquirir este producto
             </p>
+          </div>
+          {/* Verified dot */}
+          <div className="flex-shrink-0">
+            <div className="w-2 h-2 rounded-full bg-green-500 ring-2 ring-green-500/20" />
           </div>
         </div>
       </div>
