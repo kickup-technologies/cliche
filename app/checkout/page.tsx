@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useCart } from "@/context/cart-context"
-import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Lock, Sparkles } from "lucide-react"
+import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Lock, Sparkles, ShieldCheck } from "lucide-react"
 
 function fmt(n: number) {
   return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(n)
@@ -12,9 +12,18 @@ function fmt(n: number) {
 
 export default function CheckoutPage() {
   const { items, removeItem, updateQuantity } = useCart()
-  const [selected, setSelected] = useState<Record<string, boolean>>(
-    () => Object.fromEntries(items.map((i) => [i.product.id, true]))
-  )
+  const [selected, setSelected] = useState<Record<string, boolean>>({})
+
+  // Seleccionar todos por defecto cuando los items cargan desde localStorage
+  useEffect(() => {
+    setSelected(prev => {
+      const next = { ...prev }
+      items.forEach(i => {
+        if (!(i.product.id in next)) next[i.product.id] = true
+      })
+      return next
+    })
+  }, [items])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -257,31 +266,56 @@ export default function CheckoutPage() {
             </div>
           )}
 
-          {/* CTA */}
-          <button
-            onClick={handlePay}
-            disabled={isLoading || selectedItems.length === 0}
-            className="w-full h-14 bg-[#FAF8F5] text-[#2D1A14] text-sm font-semibold tracking-widest uppercase flex items-center justify-center gap-3 hover:bg-[#A67163] hover:text-white transition-colors duration-300 disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            {isLoading ? (
-              <><div className="w-4 h-4 border border-current border-t-transparent rounded-full animate-spin" /> Procesando...</>
-            ) : (
-              <><Lock className="w-3.5 h-3.5" /> {selectedItems.length > 0 ? `Pagar ${fmt(total)}` : "Selecciona productos"}</>
-            )}
-          </button>
+          {/* CTA principal */}
+          <div className="space-y-3">
+            <button
+              onClick={handlePay}
+              disabled={isLoading || selectedItems.length === 0}
+              className="w-full rounded-2xl bg-[#FAF8F5] text-[#2D1A14] flex flex-col items-center justify-center gap-0.5 py-5 hover:bg-[#A67163] hover:text-white active:scale-[0.99] transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed group shadow-lg shadow-black/20"
+            >
+              {isLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin mb-1" />
+                  <span className="text-sm font-semibold tracking-wide">Procesando pago...</span>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2">
+                    <Lock className="w-3.5 h-3.5 opacity-60" />
+                    <span className="text-xs font-medium tracking-widest uppercase opacity-60">Pago seguro</span>
+                  </div>
+                  <span className="font-serif text-2xl font-semibold mt-0.5">
+                    {selectedItems.length > 0 ? fmt(total) : "Selecciona productos"}
+                  </span>
+                  {selectedItems.length > 0 && (
+                    <span className="text-xs opacity-50 mt-0.5">
+                      {selectedItems.length} {selectedItems.length === 1 ? "producto" : "productos"} · COP
+                    </span>
+                  )}
+                </>
+              )}
+            </button>
 
-          {/* Métodos + seguridad */}
-          <div className="mt-6 space-y-4">
-            <div className="flex items-center justify-center gap-2.5">
+            {/* Garantía didáctica */}
+            <div className="flex items-center justify-center gap-2 text-[#FAF8F5]/40 text-xs">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#A67163]" />
+              <span>Compra protegida · Reembolso garantizado</span>
+            </div>
+          </div>
+
+          {/* Métodos de pago */}
+          <div className="mt-5 space-y-3">
+            <p className="text-center text-[9px] text-[#FAF8F5]/20 tracking-widest uppercase">Métodos aceptados</p>
+            <div className="flex items-center justify-center gap-2 flex-wrap">
               {["Visa", "Mastercard", "PSE", "Nequi", "Bancolombia"].map((m) => (
-                <span key={m} className="text-[9px] font-semibold text-[#FAF8F5]/25 border border-[#FAF8F5]/10 px-1.5 py-0.5 tracking-wide">
+                <span key={m} className="text-[9px] font-semibold text-[#FAF8F5]/30 border border-[#FAF8F5]/10 rounded-md px-2 py-1 tracking-wide">
                   {m}
                 </span>
               ))}
             </div>
-            <div className="flex items-center justify-center gap-1.5 text-[#FAF8F5]/20">
+            <div className="flex items-center justify-center gap-1.5 text-[#FAF8F5]/15">
               <Lock className="w-2.5 h-2.5" />
-              <span className="text-[9px] tracking-widest uppercase">Pago seguro con Wompi</span>
+              <span className="text-[9px] tracking-widest uppercase">Cifrado SSL · Powered by Wompi</span>
             </div>
           </div>
         </div>
