@@ -84,14 +84,16 @@ function OfferRow({ product, index }: { product: Product; index: number }) {
       `}
     >
       {/* ── Image panel ── */}
-      <div className="relative w-full lg:w-1/2 min-h-[50vh] lg:min-h-screen overflow-hidden bg-[#F5EDE9]">
-        <Image
-          src={product.image_url || "/images/placeholder.jpg"}
-          alt={product.name}
-          fill
-          className="object-cover object-center transition-transform duration-700 hover:scale-105"
-          sizes="(max-width: 1024px) 100vw, 50vw"
-        />
+      <div className="relative w-full lg:w-1/2 min-h-[50vh] lg:min-h-screen overflow-hidden bg-[#F5EDE9] flex items-center justify-center">
+        <div className="relative w-[55%] max-w-xs aspect-[3/4] transition-transform duration-700 hover:scale-105">
+          <Image
+            src={product.image_url || "/images/placeholder.jpg"}
+            alt={product.name}
+            fill
+            className="object-contain drop-shadow-2xl"
+            sizes="(max-width: 1024px) 50vw, 25vw"
+          />
+        </div>
 
         {/* Discount badge — floating */}
         {pct > 0 && (

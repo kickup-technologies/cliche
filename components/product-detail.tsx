@@ -178,43 +178,60 @@ export function ProductDetail({ product, related }: Props) {
                 transition: 'transform 1800ms cubic-bezier(0.0, 0.0, 0.2, 1)',
               }}
             >
-              <div className="sticky top-24 space-y-4">
-                {/* Main viewer */}
-                <div className="relative aspect-square bg-muted/30 rounded-3xl overflow-hidden">
+              <div className="sticky top-24">
+                {/* Main viewer — photo mode or 3D render */}
+                <div className="relative">
                   {selectedImage ? (
-                    /* Photo mode — fills the same space the 3D render occupied */
-                    <Image
-                      src={selectedImage}
-                      alt={product.name}
-                      fill
-                      className="object-contain p-4"
-                      sizes="(max-width: 1024px) 100vw, 50vw"
-                    />
+                    /* Photo selected: show in a clean contained box */
+                    <div className="relative aspect-square rounded-3xl overflow-hidden bg-muted/20">
+                      <Image
+                        src={selectedImage}
+                        alt={product.name}
+                        fill
+                        className="object-contain p-6"
+                        sizes="(max-width: 1024px) 100vw, 50vw"
+                      />
+                      {product.badge && (
+                        <div className="absolute top-4 left-4">
+                          <span className={`${product.badge_color || "bg-primary"} text-white text-xs font-bold px-3 py-1.5 rounded-full`}>
+                            {product.badge}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   ) : (
-                    /* 3D render mode */
-                    <SprayBottle3D transparent zTilt={35 * Math.PI / 180} onReady={handleModelReady} />
-                  )}
-
-                  {product.badge && (
-                    <div className="absolute top-4 left-4">
-                      <span className={`${product.badge_color || "bg-primary"} text-white text-xs font-bold px-3 py-1.5 rounded-full`}>
-                        {product.badge}
-                      </span>
-                    </div>
-                  )}
-                  {product.stock <= 10 && product.stock > 0 && (
-                    <div className={`absolute top-4 right-4 text-white text-xs font-bold px-3 py-1.5 rounded-full ${product.stock <= 3 ? "bg-red-600 animate-pulse" : "bg-orange-500"}`}>
-                      {product.stock <= 3 ? `¡Solo ${product.stock} quedan!` : "Pocas unidades"}
-                    </div>
+                    /* 3D render — exactly as original, fully transparent, badges float over it */
+                    <>
+                      <SprayBottle3D transparent zTilt={35 * Math.PI / 180} onReady={handleModelReady} />
+                      {product.badge && (
+                        <div className="absolute top-4 left-4">
+                          <span className={`${product.badge_color || "bg-primary"} text-white text-xs font-bold px-3 py-1.5 rounded-full`}>
+                            {product.badge}
+                          </span>
+                        </div>
+                      )}
+                      {product.stock <= 10 && product.stock > 0 && (
+                        <div className={`absolute top-4 right-4 text-white text-xs font-bold px-3 py-1.5 rounded-full ${product.stock <= 3 ? "bg-red-600 animate-pulse" : "bg-orange-500"}`}>
+                          {product.stock <= 3 ? `¡Solo ${product.stock} quedan!` : "Pocas unidades"}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
-                {/* Thumbnail strip — 3D thumb + photo thumbs */}
-                <div className="flex gap-2 overflow-x-auto pb-1">
+                {/* Thumbnail strip — only visible after the render has landed */}
+                <div
+                  className="flex gap-2 overflow-x-auto pb-1 mt-4"
+                  style={{
+                    opacity: fell ? 1 : 0,
+                    transform: fell ? 'translateY(0)' : 'translateY(8px)',
+                    transition: 'opacity 500ms ease 200ms, transform 500ms ease 200ms',
+                  }}
+                >
                   {/* 3D render thumbnail */}
                   <button
                     onClick={() => setSelectedImage(null)}
-                    className={`flex-shrink-0 w-16 h-16 rounded-xl border-2 overflow-hidden bg-muted/40 flex items-center justify-center transition-all ${
+                    className={`flex-shrink-0 w-16 h-16 rounded-xl border-2 bg-muted/40 flex items-center justify-center transition-all ${
                       selectedImage === null ? "border-primary shadow-md" : "border-border hover:border-primary/50"
                     }`}
                     title="Ver vista 3D"
@@ -222,7 +239,7 @@ export function ProductDetail({ product, related }: Props) {
                     <span className="text-[10px] font-bold text-muted-foreground text-center leading-tight px-1">Vista<br/>3D</span>
                   </button>
 
-                  {/* Admin photos (if any) or blank placeholders */}
+                  {/* Admin photos or blank placeholders */}
                   {galleryImages.length > 0
                     ? galleryImages.map((url, i) => (
                         <button
@@ -235,12 +252,10 @@ export function ProductDetail({ product, related }: Props) {
                           <img src={url} alt={`Imagen ${i + 1}`} className="w-full h-full object-cover" />
                         </button>
                       ))
-                    : /* blank placeholders shown until admin uploads images */
-                      [1, 2, 3].map((n) => (
+                    : [1, 2, 3].map((n) => (
                         <div
                           key={n}
                           className="flex-shrink-0 w-16 h-16 rounded-xl border-2 border-dashed border-border bg-muted/20 flex items-center justify-center"
-                          title="Foto próximamente"
                         >
                           <span className="text-[9px] text-muted-foreground/50 text-center leading-tight">Foto<br/>pronto</span>
                         </div>
