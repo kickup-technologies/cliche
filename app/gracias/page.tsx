@@ -3,27 +3,46 @@
 import { Suspense } from "react"
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
   CheckCircle, ShoppingBag, Mail, Sparkles, ArrowRight,
-  Tag, Share2, Star, Copy, Check
+  Tag, Share2, Star, Copy, Check, XCircle, RefreshCw
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useCart } from "@/context/cart-context"
 
 interface ReferralData {
   code: string
   discount_percent: number
 }
 
+const FAILED_STATUSES = ["DECLINED", "ERROR", "VOIDED"]
+
 function GraciasContent() {
   const params = useSearchParams()
   const sessionId = params.get("session_id")
+  const status = params.get("status")
+  const router = useRouter()
+  const { clearCart } = useCart()
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
   const [refCopied, setRefCopied] = useState(false)
   const [referral, setReferral] = useState<ReferralData | null>(null)
 
+  const isFailed = status && FAILED_STATUSES.includes(status.toUpperCase())
+
   useEffect(() => {
+    if (!isFailed) {
+      clearCart()
+    }
+  }, [isFailed]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (isFailed) {
+      setLoading(false)
+      return
+    }
     // Simulate loading + fetch referral code if session exists
     const t = setTimeout(async () => {
       if (sessionId) {
@@ -44,7 +63,7 @@ function GraciasContent() {
       setLoading(false)
     }, 1500)
     return () => clearTimeout(t)
-  }, [sessionId])
+  }, [sessionId, isFailed])
 
   function copyCode() {
     navigator.clipboard.writeText("RITUAL15")
@@ -65,6 +84,29 @@ function GraciasContent() {
 
   function shareWhatsApp() {
     window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, "_blank")
+  }
+
+  if (isFailed) {
+    return (
+      <main className="min-h-screen bg-[#FAF8F5] flex items-center justify-center py-16 px-4">
+        <div className="max-w-md w-full text-center">
+          <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <XCircle className="w-12 h-12 text-red-500" />
+          </div>
+          <h1 className="font-serif text-3xl font-light text-[#2D1A14] mb-3">Pago no procesado</h1>
+          <p className="text-[#2D1A14]/50 text-sm leading-relaxed mb-8">
+            Tu pago no pudo completarse. No se realizó ningún cobro. Puedes intentarlo de nuevo con otro método de pago.
+          </p>
+          <button
+            onClick={() => router.push("/checkout")}
+            className="inline-flex items-center gap-2 bg-[#A67163] hover:bg-[#8B5E52] text-white font-semibold px-8 py-3.5 rounded-xl transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Intentar de nuevo
+          </button>
+        </div>
+      </main>
+    )
   }
 
   return (

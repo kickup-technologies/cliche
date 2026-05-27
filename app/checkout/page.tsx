@@ -5,7 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useCart } from "@/context/cart-context"
-import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Lock, ShieldCheck, Truck, Leaf, RotateCcw, Tag, ChevronDown, ChevronUp } from "lucide-react"
+import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Lock, ShieldCheck, Truck, Leaf, RotateCcw, Tag, ChevronDown, ChevronUp, Mail, RefreshCw } from "lucide-react"
 
 function fmt(n: number) {
   return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(n)
@@ -22,6 +22,13 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null)
   const [backUrl, setBackUrl] = useState("/catalogo")
   const [mobileResumenOpen, setMobileResumenOpen] = useState(false)
+  const [customerEmail, setCustomerEmail] = useState("")
+  const [couponCode, setCouponCode] = useState("")
+  const [couponLoading, setCouponLoading] = useState(false)
+  const [couponError, setCouponError] = useState<string | null>(null)
+  const [couponSuccess, setCouponSuccess] = useState<string | null>(null)
+  const [discountAmount, setDiscountAmount] = useState(0)
+  const [appliedCode, setAppliedCode] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -51,8 +58,36 @@ export default function CheckoutPage() {
   const FREE_SHIPPING = 300000
   const freeShipping = subtotal >= FREE_SHIPPING
   const shipping = freeShipping ? 0 : subtotal > 0 ? 15000 : 0
-  const total = subtotal + shipping
+  const total = subtotal + shipping - discountAmount
   const pct = Math.min(100, Math.round((subtotal / FREE_SHIPPING) * 100))
+
+  async function handleApplyCoupon() {
+    if (!couponCode.trim()) return
+    setCouponLoading(true)
+    setCouponError(null)
+    setCouponSuccess(null)
+    try {
+      const res = await fetch("/api/discount/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: couponCode, email: customerEmail, subtotal }),
+      })
+      const data = await res.json()
+      if (data.valid) {
+        setDiscountAmount(data.discount_amount)
+        setAppliedCode(couponCode.toUpperCase().trim())
+        setCouponSuccess(`Descuento aplicado: ${data.type === "percentage" ? `${data.value}%` : fmt(data.value)} de descuento`)
+      } else {
+        setCouponError(data.error || "Código inválido")
+        setDiscountAmount(0)
+        setAppliedCode(null)
+      }
+    } catch {
+      setCouponError("Error al validar el código")
+    } finally {
+      setCouponLoading(false)
+    }
+  }
 
   async function handlePay() {
     if (!selectedItems.length) return
@@ -65,6 +100,9 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           items: selectedItems.map((i) => ({ product_id: i.product.id, quantity: i.quantity, unit_price: i.product.price, name: i.product.name })),
           total,
+          email: customerEmail,
+          discount_code: appliedCode,
+          discount_amount: discountAmount,
         }),
       })
       const data = await res.json()
@@ -178,21 +216,45 @@ export default function CheckoutPage() {
             })}
           </div>
 
-          {/* Código de descuento */}
+          {/* Email */}
           <div className="mt-8">
             <p className="text-[10px] text-[#2D1A14]/30 tracking-[0.2em] uppercase mb-3 flex items-center gap-2">
-              <Tag className="w-3 h-3" /> Código de descuento
+              <Mail className="w-3 h-3" /> Correo electrónico
             </p>
             <div className="flex border border-[#2D1A14]/15 hover:border-[#2D1A14]/30 transition-colors duration-200">
               <input
-                type="text"
-                placeholder="Ingresa tu código"
+                type="email"
+                placeholder="tu@correo.com"
+                value={customerEmail}
+                onChange={(e) => setCustomerEmail(e.target.value)}
                 className="flex-1 px-4 py-3 text-sm bg-transparent text-[#2D1A14] placeholder:text-[#2D1A14]/25 outline-none font-light tracking-wide"
               />
-              <button className="px-5 py-3 text-[10px] font-semibold text-[#2D1A14]/40 hover:text-[#A67163] transition-colors uppercase tracking-widest border-l border-[#2D1A14]/15">
-                Aplicar
+            </div>
+          </div>
+
+          {/* Código de descuento */}
+          <div className="mt-5">
+            <p className="text-[10px] text-[#2D1A14]/30 tracking-[0.2em] uppercase mb-3 flex items-center gap-2">
+              <Tag className="w-3 h-3" /> Código de descuento
+            </p>
+            <div className={`flex border transition-colors duration-200 ${couponError ? "border-red-400" : couponSuccess ? "border-green-500" : "border-[#2D1A14]/15 hover:border-[#2D1A14]/30"}`}>
+              <input
+                type="text"
+                placeholder="Ingresa tu código"
+                value={couponCode}
+                onChange={(e) => { setCouponCode(e.target.value); setCouponError(null); setCouponSuccess(null) }}
+                className="flex-1 px-4 py-3 text-sm bg-transparent text-[#2D1A14] placeholder:text-[#2D1A14]/25 outline-none font-light tracking-wide uppercase"
+              />
+              <button
+                onClick={handleApplyCoupon}
+                disabled={couponLoading || !couponCode.trim()}
+                className="px-5 py-3 text-[10px] font-semibold text-[#2D1A14]/40 hover:text-[#A67163] transition-colors uppercase tracking-widest border-l border-[#2D1A14]/15 disabled:opacity-40"
+              >
+                {couponLoading ? <RefreshCw className="w-3 h-3 animate-spin" /> : "Aplicar"}
               </button>
             </div>
+            {couponError && <p className="text-xs text-red-500 mt-1.5">{couponError}</p>}
+            {couponSuccess && <p className="text-xs text-green-600 mt-1.5">{couponSuccess}</p>}
           </div>
 
           {/* Trust pillars */}
@@ -267,6 +329,14 @@ export default function CheckoutPage() {
                 {subtotal === 0 ? "—" : freeShipping ? "Gratis" : fmt(shipping)}
               </span>
             </div>
+            {discountAmount > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="text-green-400/70 text-xs tracking-widest uppercase flex items-center gap-1">
+                  <Tag className="w-3 h-3" /> Descuento
+                </span>
+                <span className="text-green-400 text-sm tabular-nums">−{fmt(discountAmount)}</span>
+              </div>
+            )}
           </div>
 
           <div className="mt-8 pt-8 border-t border-[#FAF8F5]/6">
@@ -380,6 +450,14 @@ export default function CheckoutPage() {
                   {subtotal === 0 ? "—" : freeShipping ? "Gratis" : fmt(shipping)}
                 </span>
               </div>
+              {discountAmount > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-green-400/70 text-xs uppercase tracking-widest flex items-center gap-1">
+                    <Tag className="w-3 h-3" /> Descuento
+                  </span>
+                  <span className="text-green-400 text-xs tabular-nums">−{fmt(discountAmount)}</span>
+                </div>
+              )}
             </div>
           </div>
         )}

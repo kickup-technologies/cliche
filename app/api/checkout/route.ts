@@ -3,7 +3,7 @@ import crypto from "crypto"
 
 export async function POST(req: NextRequest) {
   try {
-    const { items, total } = await req.json()
+    const { items, total, email, discount_code, discount_amount } = await req.json()
 
     if (!items?.length || !total || total <= 0) {
       return NextResponse.json({ error: "Carrito vacío o total inválido" }, { status: 400 })
@@ -38,6 +38,9 @@ export async function POST(req: NextRequest) {
           product_id: i.product_id,
           quantity: i.quantity,
         })),
+        customer_email: email || null,
+        discount_code: discount_code || null,
+        discount_amount: discount_amount || 0,
       })
     } catch {
       // No bloquear el checkout si falla el registro
@@ -53,6 +56,7 @@ export async function POST(req: NextRequest) {
       "signature:integrity": signature,
       "redirect-url": `${appUrl}/gracias?reference=${reference}`,
     })
+    if (email) params.set("customer-email", email)
 
     const checkoutUrl = `https://checkout.wompi.co/p/?${params.toString()}`
     return NextResponse.json({ url: checkoutUrl })
