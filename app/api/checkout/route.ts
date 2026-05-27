@@ -1,21 +1,22 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase"
+import { createServerClient, supabase as anonClient } from "@/lib/supabase"
 import crypto from "crypto"
 
 export async function POST(req: NextRequest) {
   try {
     const { items, discountCode } = await req.json()
 
-    const supabase = createServerClient()
+    // Usar service role si está disponible, si no caer al anon client
+    const db = (() => { try { return createServerClient() } catch { return anonClient } })()
     const productIds = items.map((i: { product_id: string }) => i.product_id)
 
-    const { data: products, error } = await supabase
+    const { data: products, error } = await db
       .from("products")
       .select("id, name, price, stock, image_url")
       .in("id", productIds)
 
     if (error || !products?.length) {
-      console.error("[checkout] products query error:", JSON.stringify(error), "ids:", JSON.stringify(productIds), "products:", JSON.stringify(products))
+      console.error("[checkout] products query error:", JSON.stringify(error), "ids:", JSON.stringify(productIds))
       return NextResponse.json({
         error: "Productos no encontrados",
         debug: { supabaseError: error?.message, code: error?.code, ids: productIds }
