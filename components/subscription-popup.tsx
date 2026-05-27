@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { X, Gift, Sparkles } from "lucide-react"
+import { X, Gift, Sparkles, Truck, ShieldCheck, Leaf, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
@@ -110,12 +110,12 @@ export function SubscriptionPopup() {
               {/* Beneficios visuales */}
               <div className="grid grid-cols-3 gap-2 mb-5">
                 {[
-                  { emoji: "🚚", label: "Envío gratis" },
-                  { emoji: "✅", label: "Garantía 30d" },
-                  { emoji: "🌿", label: "100% natural" },
-                ].map(({ emoji, label }) => (
-                  <div key={label} className="bg-muted/50 rounded-xl py-2.5 flex flex-col items-center gap-1">
-                    <span className="text-lg">{emoji}</span>
+                  { icon: Truck,        label: "Envío gratis" },
+                  { icon: ShieldCheck,  label: "Garantía 30d" },
+                  { icon: Leaf,         label: "100% natural" },
+                ].map(({ icon: Icon, label }) => (
+                  <div key={label} className="bg-muted/50 rounded-xl py-2.5 flex flex-col items-center gap-1.5">
+                    <Icon className="w-4 h-4 text-primary" />
                     <span className="text-[10px] font-medium text-muted-foreground text-center leading-tight">{label}</span>
                   </div>
                 ))}
@@ -143,7 +143,9 @@ export function SubscriptionPopup() {
             </>
           ) : (
             <div className="text-center py-4">
-              <div className="text-4xl mb-3">🎉</div>
+              <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
+                <CheckCircle className="w-7 h-7 text-green-600" />
+              </div>
               <h3 className="text-xl font-serif font-bold text-foreground mb-2">¡Ya eres parte de la familia!</h3>
               <p className="text-sm text-muted-foreground mb-4">Tu código exclusivo:</p>
               <div className="bg-primary/10 border border-primary/20 rounded-xl px-6 py-4">

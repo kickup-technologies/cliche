@@ -1,22 +1,22 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { ShoppingBag, Flame, Clock, X, Star, Check } from "lucide-react"
+import { ShoppingBag, Flame, Clock, X, Star, Check, Droplets, Leaf, Wind, Globe } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useCart } from "@/context/cart-context"
 
 // ─── Compras recientes simuladas (social proof) ───────────────────────────────
 const purchases = [
-  { name: "Valentina R.", city: "Bogotá",      product: "Aroma Agua",     minAgo: 2,  emoji: "💧" },
-  { name: "Camila M.",    city: "Medellín",     product: "Kit Armonía x3", minAgo: 5,  emoji: "🌿" },
-  { name: "Sofía L.",     city: "Cali",         product: "Aroma Aire",     minAgo: 8,  emoji: "🌬️" },
-  { name: "Daniela P.",   city: "Cartagena",    product: "Aroma Tierra",   minAgo: 11, emoji: "🌎" },
-  { name: "Isabella T.",  city: "Barranquilla", product: "Aroma Fuego",    minAgo: 3,  emoji: "🔥" },
-  { name: "Mariana G.",   city: "Bucaramanga",  product: "Kit Armonía x3", minAgo: 7,  emoji: "🌿" },
-  { name: "Andrea S.",    city: "Pereira",      product: "Aroma Agua",     minAgo: 1,  emoji: "💧" },
-  { name: "Luciana V.",   city: "Santa Marta",  product: "Aroma Aire",     minAgo: 6,  emoji: "🌬️" },
-  { name: "Natalia O.",   city: "Manizales",    product: "Aroma Tierra",   minAgo: 19, emoji: "🌎" },
-  { name: "Paola R.",     city: "Ibagué",       product: "Aroma Fuego",    minAgo: 14, emoji: "🔥" },
+  { name: "Valentina R.", city: "Bogotá",      product: "Aroma Agua",     minAgo: 2,  icon: Droplets, color: "text-blue-500",   bg: "bg-blue-50" },
+  { name: "Camila M.",    city: "Medellín",     product: "Kit Armonía x3", minAgo: 5,  icon: Leaf,     color: "text-green-600",  bg: "bg-green-50" },
+  { name: "Sofía L.",     city: "Cali",         product: "Aroma Aire",     minAgo: 8,  icon: Wind,     color: "text-sky-500",    bg: "bg-sky-50" },
+  { name: "Daniela P.",   city: "Cartagena",    product: "Aroma Tierra",   minAgo: 11, icon: Globe,    color: "text-amber-600",  bg: "bg-amber-50" },
+  { name: "Isabella T.",  city: "Barranquilla", product: "Aroma Fuego",    minAgo: 3,  icon: Flame,    color: "text-orange-500", bg: "bg-orange-50" },
+  { name: "Mariana G.",   city: "Bucaramanga",  product: "Kit Armonía x3", minAgo: 7,  icon: Leaf,     color: "text-green-600",  bg: "bg-green-50" },
+  { name: "Andrea S.",    city: "Pereira",      product: "Aroma Agua",     minAgo: 1,  icon: Droplets, color: "text-blue-500",   bg: "bg-blue-50" },
+  { name: "Luciana V.",   city: "Santa Marta",  product: "Aroma Aire",     minAgo: 6,  icon: Wind,     color: "text-sky-500",    bg: "bg-sky-50" },
+  { name: "Natalia O.",   city: "Manizales",    product: "Aroma Tierra",   minAgo: 19, icon: Globe,    color: "text-amber-600",  bg: "bg-amber-50" },
+  { name: "Paola R.",     city: "Ibagué",       product: "Aroma Fuego",    minAgo: 14, icon: Flame,    color: "text-orange-500", bg: "bg-orange-50" },
 ]
 
 // ─── Social Proof Toast — top-right, non-invasive ─────────────────────────────
@@ -62,9 +62,9 @@ export function SocialProofToast() {
       }`}
     >
       <div className="bg-white/95 backdrop-blur-md border border-border/40 rounded-2xl shadow-lg px-3.5 py-2.5 flex items-center gap-2.5">
-        {/* Emoji icon */}
-        <div className="w-9 h-9 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg">
-          {p.emoji}
+        {/* Product icon */}
+        <div className={`w-9 h-9 ${p.bg} rounded-xl flex items-center justify-center flex-shrink-0`}>
+          <p.icon className={`w-4 h-4 ${p.color}`} />
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-semibold text-foreground leading-tight">

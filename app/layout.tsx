@@ -5,6 +5,7 @@ import { CartProvider } from '@/context/cart-context'
 import { FavoritesProvider } from '@/context/favorites-context'
 import { CartDrawer } from '@/components/cart-drawer'
 import { ScrollRestoration } from '@/components/scroll-restoration'
+import { PageTracker } from '@/components/page-tracker'
 import Script from 'next/script'
 import './globals.css'
 
@@ -150,6 +151,7 @@ export default function RootLayout({
         )}
 
         <ScrollRestoration />
+        <PageTracker />
         <CartProvider>
           <FavoritesProvider>
             {children}

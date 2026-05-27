@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { X, ShoppingBag, ShoppingCart, Sparkles } from "lucide-react"
+import { X, ShoppingBag, ShoppingCart, Sparkles, Leaf, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useCart } from "@/context/cart-context"
@@ -113,7 +113,7 @@ export function ExitIntentPopup() {
               {/* Icono */}
               <div className="flex items-center justify-center mb-4">
                 <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
-                  <span className="text-2xl">🌿</span>
+                  <Leaf className="w-7 h-7 text-primary" />
                 </div>
               </div>
 
@@ -164,7 +164,9 @@ export function ExitIntentPopup() {
             </>
           ) : (
             <div className="text-center py-4">
-              <div className="text-4xl mb-4">🎉</div>
+              <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-7 h-7 text-green-600" />
+              </div>
               <h3 className="text-xl font-serif font-bold text-foreground mb-2">¡Código enviado!</h3>
               <p className="text-sm text-muted-foreground mb-5">Revisa tu correo. Tu código exclusivo:</p>
               <div className="bg-primary/10 border border-primary/20 rounded-xl px-6 py-4 mb-5">
