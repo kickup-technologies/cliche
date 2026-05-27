@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useCart } from "@/context/cart-context"
-import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Lock, Sparkles, ShieldCheck, Truck } from "lucide-react"
+import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Lock, Sparkles, ShieldCheck, Truck, Leaf, RotateCcw, Tag } from "lucide-react"
 
 function fmt(n: number) {
   return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(n)
@@ -86,7 +86,7 @@ export default function CheckoutPage() {
         <div className="max-w-2xl mx-auto px-8 lg:px-14 pt-12 pb-24">
 
           {/* Top nav */}
-          <div className="flex items-center justify-between mb-10">
+          <div className="flex items-center justify-between mb-6">
             <Link href="/" className="font-serif text-2xl font-bold tracking-widest text-[#2D1A14] uppercase">
               Cliché
             </Link>
@@ -97,7 +97,7 @@ export default function CheckoutPage() {
           </div>
 
           {/* Breadcrumb */}
-          <div className="flex items-center gap-3 text-[10px] tracking-widest uppercase text-[#2D1A14]/25 mb-10">
+          <div className="flex items-center gap-3 text-[10px] tracking-widest uppercase text-[#2D1A14]/25 mb-7">
             <span>Carrito</span>
             <span className="text-[#A67163]">—</span>
             <span className="text-[#2D1A14]/70 font-semibold">Resumen</span>
@@ -106,9 +106,9 @@ export default function CheckoutPage() {
           </div>
 
           {/* Título */}
-          <div className="mb-10">
+          <div className="mb-7">
             <h1 className="font-serif text-5xl font-light text-[#2D1A14] leading-tight">Tu pedido</h1>
-            <p className="text-sm text-[#2D1A14]/35 mt-3 tracking-wide">
+            <p className="text-sm text-[#2D1A14]/35 mt-2 tracking-wide">
               Selecciona los artículos que incluirás en este pago
             </p>
           </div>
@@ -127,7 +127,7 @@ export default function CheckoutPage() {
                     {checked && <svg className="w-2.5 h-2.5" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="#FAF8F5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                   </button>
 
-                  <div className="relative w-20 h-20 bg-[#2D1A14]/5 flex-shrink-0 overflow-hidden">
+                  <div className="relative w-28 h-28 bg-[#2D1A14]/5 flex-shrink-0 overflow-hidden">
                     <Image src={item.product.image_url} alt={item.product.name} fill className="object-cover" />
                   </div>
 
@@ -157,7 +157,41 @@ export default function CheckoutPage() {
             })}
           </div>
 
-          <p className="text-[10px] text-[#2D1A14]/20 tracking-widest uppercase mt-12 text-center">
+          {/* Código de descuento */}
+          <div className="mt-10">
+            <p className="text-[10px] text-[#2D1A14]/30 tracking-[0.2em] uppercase mb-3 flex items-center gap-2">
+              <Tag className="w-3 h-3" /> Código de descuento
+            </p>
+            <div className="flex border border-[#2D1A14]/15 hover:border-[#2D1A14]/30 transition-colors duration-200">
+              <input
+                type="text"
+                placeholder="Ingresa tu código"
+                className="flex-1 px-4 py-3.5 text-sm bg-transparent text-[#2D1A14] placeholder:text-[#2D1A14]/25 outline-none font-light tracking-wide"
+              />
+              <button className="px-6 py-3.5 text-[10px] font-semibold text-[#2D1A14]/40 hover:text-[#A67163] transition-colors uppercase tracking-widest border-l border-[#2D1A14]/15">
+                Aplicar
+              </button>
+            </div>
+          </div>
+
+          {/* Trust pillars */}
+          <div className="grid grid-cols-3 gap-5 mt-10 pt-10 border-t border-[#2D1A14]/8">
+            {[
+              { icon: Truck,     title: "Envío rápido",   desc: "2–5 días hábiles a toda Colombia" },
+              { icon: RotateCcw, title: "Garantía total",  desc: "Reembolso si no quedas satisfecho" },
+              { icon: Leaf,      title: "100% naturales",  desc: "Aromas artesanales sin tóxicos" },
+            ].map(({ icon: Icon, title, desc }) => (
+              <div key={title} className="flex flex-col items-center text-center gap-2.5">
+                <div className="w-9 h-9 rounded-full border border-[#2D1A14]/10 flex items-center justify-center">
+                  <Icon className="w-4 h-4 text-[#A67163]/70" />
+                </div>
+                <p className="text-[11px] font-semibold text-[#2D1A14]/60 tracking-wide leading-tight">{title}</p>
+                <p className="text-[10px] text-[#2D1A14]/30 leading-relaxed">{desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-[10px] text-[#2D1A14]/15 tracking-widest uppercase mt-10 text-center">
             Aromas artesanales · Fabricado en Colombia · 100% naturales
           </p>
         </div>
