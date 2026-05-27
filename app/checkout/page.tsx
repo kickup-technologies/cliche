@@ -83,7 +83,7 @@ export default function CheckoutPage() {
           IZQUIERDA — scrollable
       ═══════════════════════════════ */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-2xl mx-auto px-8 lg:px-14 pt-12 pb-24">
+        <div className="max-w-2xl mx-auto px-8 lg:px-14 pt-10 pb-24">
 
           {/* Top nav */}
           <div className="flex items-center justify-between mb-6">
@@ -118,7 +118,7 @@ export default function CheckoutPage() {
             {items.map((item) => {
               const checked = !!selected[item.product.id]
               return (
-                <div key={item.product.id} className={`flex gap-6 py-8 border-b border-[#2D1A14]/8 transition-all duration-200 ${checked ? "opacity-100" : "opacity-30"}`}>
+                <div key={item.product.id} className={`flex gap-5 py-6 border-b border-[#2D1A14]/8 transition-all duration-200 ${checked ? "opacity-100" : "opacity-30"}`}>
                   <button
                     onClick={() => setSelected(p => ({ ...p, [item.product.id]: !p[item.product.id] }))}
                     className="mt-1 flex-shrink-0 w-5 h-5 border border-[#2D1A14]/25 flex items-center justify-center transition-all hover:border-[#A67163]"
@@ -133,10 +133,10 @@ export default function CheckoutPage() {
 
                   <div className="flex-1 min-w-0">
                     <p className="font-serif text-base text-[#2D1A14] leading-snug">{item.product.name}</p>
-                    <p className="text-[10px] text-[#2D1A14]/30 mt-1 tracking-widest uppercase">Bienestar by Cliché</p>
-                    <p className="text-[#A67163] text-sm font-medium mt-2">{fmt(item.product.price)}<span className="text-[#2D1A14]/30 text-xs ml-1">/ ud.</span></p>
-                    <div className="flex items-center mt-3 border border-[#2D1A14]/12 w-fit">
-                      <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)} className="w-8 h-8 flex items-center justify-center hover:bg-[#2D1A14]/5 transition-colors text-[#2D1A14]/40">
+                    <p className="text-[10px] text-[#2D1A14]/30 mt-0.5 tracking-widest uppercase">Bienestar by Cliché</p>
+                    <p className="text-[#A67163] text-sm font-medium mt-1.5">{fmt(item.product.price)}<span className="text-[#2D1A14]/30 text-xs ml-1">/ ud.</span></p>
+                    <div className="flex items-center mt-2 border border-[#2D1A14]/12 w-fit">
+                      <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)} disabled={item.quantity <= 1} className="w-8 h-8 flex items-center justify-center hover:bg-[#2D1A14]/5 transition-colors text-[#2D1A14]/40 disabled:opacity-20 disabled:cursor-not-allowed">
                         <Minus className="w-2.5 h-2.5" />
                       </button>
                       <span className="w-10 text-center text-sm font-medium text-[#2D1A14]">{item.quantity}</span>
