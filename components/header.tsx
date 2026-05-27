@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useCart } from "@/context/cart-context"
+import { useFavorites } from "@/context/favorites-context"
 
 const navigation = [
   {
@@ -37,6 +38,7 @@ export function Header() {
   const [isOpen, setIsOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const { items, openDrawer } = useCart()
+  const { count: favCount } = useFavorites()
   const pathname = usePathname()
   const cartCount = items.reduce((acc, i) => acc + i.quantity, 0)
   const useSolid = isScrolled || (pathname?.startsWith("/productos/") ?? false)
@@ -188,7 +190,7 @@ export function Header() {
           <div className="flex items-center gap-2">
             {/* Catálogo — acceso rápido a todos los productos */}
             <Link
-              href="/#productos"
+              href="/catalogo"
               className={`hidden lg:flex items-center gap-1.5 text-xs font-semibold border rounded-full px-3 py-1.5 transition-colors ${
                 useSolid
                   ? "border-border text-foreground hover:border-primary hover:text-primary"
@@ -198,11 +200,16 @@ export function Header() {
               Catálogo
             </Link>
             <Link
-              href="/#productos"
-              className={`hidden sm:flex w-9 h-9 items-center justify-center rounded-md transition-colors ${useSolid ? "text-foreground hover:text-primary" : "text-white/90 hover:text-white hover:bg-white/10"}`}
+              href="/favoritos"
+              className={`hidden sm:flex relative w-9 h-9 items-center justify-center rounded-md transition-colors ${useSolid ? "text-foreground hover:text-primary" : "text-white/90 hover:text-white hover:bg-white/10"}`}
               aria-label="Ver favoritos"
             >
-              <Heart className="h-5 w-5" />
+              <Heart className={`h-5 w-5 transition-colors ${favCount > 0 ? "fill-red-500 text-red-500" : ""}`} />
+              {favCount > 0 && (
+                <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-[9px] font-bold text-white flex items-center justify-center">
+                  {favCount}
+                </span>
+              )}
             </Link>
             <Button
               variant="ghost"

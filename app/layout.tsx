@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter, Playfair_Display } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { CartProvider } from '@/context/cart-context'
+import { FavoritesProvider } from '@/context/favorites-context'
 import Script from 'next/script'
 import './globals.css'
 
@@ -133,7 +134,9 @@ export default function RootLayout({
         )}
 
         <CartProvider>
-          {children}
+          <FavoritesProvider>
+            {children}
+          </FavoritesProvider>
         </CartProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>

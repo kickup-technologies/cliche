@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Star, ShoppingCart, Eye, Flame, ChevronDown, Users } from "lucide-react"
+import { Star, ShoppingCart, Eye, Flame, ChevronDown, Users, Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useCart } from "@/context/cart-context"
+import { useFavorites } from "@/context/favorites-context"
 import type { Product } from "@/lib/supabase"
 
 function formatPrice(price: number) {
@@ -63,6 +64,7 @@ export function FeaturedProducts() {
   const [viewsTick, setViewsTick] = useState(0)
   const sectionRef = useRef<HTMLDivElement>(null)
   const { addItem, openDrawer } = useCart()
+  const { toggleFavorite, isFavorite } = useFavorites()
 
   // Cargar productos reales desde Supabase via API
   useEffect(() => {
@@ -163,9 +165,17 @@ export function FeaturedProducts() {
                   <Eye className="w-3 h-3 text-muted-foreground" />
                   <span className="text-muted-foreground font-medium">{getViews(product.id)}</span>
                 </div>
+                {/* Favorite button */}
+                <button
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFavorite(product) }}
+                  className="absolute bottom-3 right-3 w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full shadow flex items-center justify-center hover:scale-110 transition-all z-10"
+                  aria-label={isFavorite(product.id) ? "Quitar de favoritos" : "Guardar en favoritos"}
+                >
+                  <Heart className={`w-4 h-4 transition-colors ${isFavorite(product.id) ? "fill-red-500 text-red-500" : "text-muted-foreground"}`} />
+                </button>
                 {/* Siempre visible en móvil, hover en desktop */}
                 <div className={cn(
-                  "absolute inset-x-3 bottom-3 transition-all duration-300",
+                  "absolute inset-x-3 bottom-3 pr-12 transition-all duration-300",
                   "sm:opacity-0 sm:translate-y-4",
                   hoveredProduct === product.id ? "sm:opacity-100 sm:translate-y-0" : ""
                 )}>
@@ -229,7 +239,7 @@ export function FeaturedProducts() {
               </button>
             ) : (
               <a
-                href="/#productos"
+                href="/catalogo"
                 className="inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-8 py-3 text-sm font-semibold hover:bg-primary/90 transition-colors"
               >
                 Ver catálogo completo →
