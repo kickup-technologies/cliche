@@ -147,7 +147,7 @@ export function ProductDetail({ product, related }: Props) {
             >
               <div className="sticky top-24">
                 <div className="relative">
-                  <SprayBottle3D zTilt={Math.PI / 3} />
+                  <SprayBottle3D transparent zTilt={40 * Math.PI / 180} />
                   {product.badge && (
                     <div className="absolute top-4 left-4">
                       <span className={`${product.badge_color || "bg-primary"} text-white text-xs font-bold px-3 py-1.5 rounded-full`}>

@@ -7,13 +7,13 @@ import * as THREE from "three"
 
 function SprayModel({ spraying, onSpray, zTilt = 0 }: { spraying: boolean; onSpray: () => void; zTilt?: number }) {
   const { scene } = useGLTF("/models/spray_bottle.glb")
-  const groupRef = useRef<THREE.Group>(null!)
+  const spinRef = useRef<THREE.Group>(null!)
   const [pressed, setPressed] = useState(false)
   const isDragging = useRef(false)
 
   useFrame((_, delta) => {
-    if (groupRef.current && !isDragging.current) {
-      groupRef.current.rotation.y += delta * 0.4
+    if (spinRef.current && !isDragging.current) {
+      spinRef.current.rotation.y += delta * 0.4
     }
   })
 
@@ -28,7 +28,6 @@ function SprayModel({ spraying, onSpray, zTilt = 0 }: { spraying: boolean; onSpr
 
   return (
     <group
-      ref={groupRef}
       scale={pressed ? 0.37 : 0.39}
       position={[0, -0.2, 0]}
       rotation={[0, 0, zTilt]}
@@ -36,7 +35,9 @@ function SprayModel({ spraying, onSpray, zTilt = 0 }: { spraying: boolean; onSpr
       onPointerDown={() => { isDragging.current = false }}
       onPointerMove={() => { isDragging.current = true }}
     >
-      <primitive object={cloned} />
+      <group ref={spinRef}>
+        <primitive object={cloned} />
+      </group>
     </group>
   )
 }
