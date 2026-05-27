@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ArrowRight, Check, Gift, Users, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,7 +10,15 @@ export function Newsletter() {
   const [email, setEmail] = useState("")
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [discountCode, setDiscountCode] = useState("PRIMERA20")
+  const [discountCode, setDiscountCode] = useState("BIENVENIDA10")
+  const [discountPct, setDiscountPct] = useState(10)
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((d) => { setDiscountPct(d.discount_percentage); setDiscountCode(d.discount_code) })
+      .catch(() => {})
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -53,7 +61,7 @@ export function Newsletter() {
                   <span className="text-sm font-medium text-primary uppercase tracking-wide">Regalo de bienvenida</span>
                 </div>
                 <h2 className="text-2xl md:text-3xl font-serif font-bold text-foreground mb-3">
-                  20% OFF en tu primera compra
+                  {discountPct}% OFF en tu primera compra
                 </h2>
                 <p className="text-muted-foreground mb-6 text-sm">
                   Suscríbete y recibe tu código de descuento al instante, más tips de aromaterapia y lanzamientos exclusivos.
@@ -77,7 +85,7 @@ export function Newsletter() {
                         disabled={isLoading}
                       >
                         {isLoading ? "Enviando..." : (
-                          <>OBTENER 20% OFF <ArrowRight className="ml-2 h-5 w-5" /></>
+                          <>OBTENER {discountPct}% OFF <ArrowRight className="ml-2 h-5 w-5" /></>
                         )}
                       </Button>
                     </div>

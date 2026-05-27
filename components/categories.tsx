@@ -7,28 +7,28 @@ import { ScrollAnimation } from "@/components/scroll-animation"
 
 const categories = [
   {
-    title: "Velas Artesanales",
-    description: "Hasta 50 horas de duración con aromas que transforman tu espacio",
+    title: "Aromas para el Hogar",
+    description: "Hasta 800 aplicaciones por botella — transforma cada rincón de tu casa",
     image: "/images/product-candle.jpg",
-    products: "24 productos",
-    discount: "25% OFF",
-    href: "#velas",
+    products: "Para sala, baño y cocina",
+    discount: "Ver colección",
+    href: "/catalogo?categoria=hogar",
   },
   {
     title: "Sprays Textiles",
-    description: "Perfuma tu ropa, camas y muebles con esencias duraderas",
+    description: "Perfuma tu ropa, camas y muebles con esencias que duran todo el día",
     image: "/images/product-spray.jpg",
-    products: "18 productos",
-    discount: "30% OFF",
-    href: "#sprays",
+    products: "Para ropa y textiles",
+    discount: "Ver colección",
+    href: "/catalogo?categoria=ropa",
   },
   {
-    title: "Difusores Premium",
-    description: "Ambientes frescos y aromáticos las 24 horas del día",
+    title: "Kits de Regalo",
+    description: "El regalo perfecto — 3 o 4 aromas seleccionados a precio especial",
     image: "/images/product-diffuser.jpg",
-    products: "12 productos",
-    discount: "20% OFF",
-    href: "#difusores",
+    products: "Kits y combos",
+    discount: "Ver colección",
+    href: "/catalogo?categoria=kit",
   },
 ]
 
@@ -57,10 +57,10 @@ export function Categories() {
                 href={category.href}
                 className="group relative bg-card rounded-2xl overflow-hidden border border-border/50 hover:border-primary/30 transition-all duration-500 hover:shadow-xl block"
               >
-                {/* Discount Badge */}
-                <div className="absolute top-4 left-4 z-10 bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1">
-                  <Sparkles className="w-3 h-3" />
-                  {category.discount}
+                {/* Category label */}
+                <div className="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur-sm text-[#2D1A14] text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm">
+                  <Sparkles className="w-3 h-3 text-[#C4958A]" />
+                  {category.products}
                 </div>
 
                 {/* Image */}

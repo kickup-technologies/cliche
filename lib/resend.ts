@@ -1,180 +1,116 @@
-import { Resend } from "resend"
+﻿import { Resend } from "resend"
 
-// Lazy — no se instancia en build time
-let _resend: Resend | null = null
-function getResend() {
-  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY!)
-  return _resend
-}
+const resend = new Resend(process.env.RESEND_API_KEY)
 
-function getFrom() {
-  return `${process.env.RESEND_FROM_NAME || "Cliché Aromas"} <${process.env.RESEND_FROM_EMAIL || "noreply@example.com"}>`
-}
+// Sender — change to your verified domain once set up in Resend dashboard
+const FROM = process.env.RESEND_FROM ?? "Cliche Aromas <onboarding@resend.dev>"
 
-// Email de bienvenida con código de descuento
-export async function sendWelcomeEmail(email: string, discountCode: string) {
-  return getResend().emails.send({
-    from: getFrom(),
-    to: email,
-    subject: "¡Tu código de 20% OFF te espera! 🌿",
-    html: `
-      <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background: #FAF8F5;">
-        <h1 style="color: #A67163; font-size: 28px; margin-bottom: 8px;">¡Bienvenida a Cliché Aromas! 🌿</h1>
-        <p style="color: #555; font-size: 16px; line-height: 1.6;">
-          Gracias por unirte. Aquí está tu código de descuento exclusivo:
-        </p>
-        <div style="background: #A67163; color: white; padding: 20px; border-radius: 12px; text-align: center; margin: 30px 0;">
-          <p style="margin: 0; font-size: 14px; letter-spacing: 2px; opacity: 0.8;">TU CÓDIGO</p>
-          <p style="margin: 8px 0 0; font-size: 36px; font-weight: bold; letter-spacing: 4px;">${discountCode}</p>
-          <p style="margin: 8px 0 0; font-size: 14px; opacity: 0.8;">20% de descuento en tu primera compra</p>
-        </div>
-        <p style="color: #555; font-size: 14px;">
-          Usa este código al momento de pagar. Válido por 30 días.
-        </p>
-        <a href="${process.env.NEXT_PUBLIC_APP_URL}"
-           style="display: inline-block; background: #A67163; color: white; padding: 14px 32px; border-radius: 50px; text-decoration: none; font-size: 16px; font-weight: bold; margin-top: 20px;">
-          VER PRODUCTOS →
-        </a>
-        <p style="color: #aaa; font-size: 12px; margin-top: 40px;">
-          Si no solicitaste este correo, ignóralo. Sin spam, prometido.
-        </p>
-      </div>
-    `,
-  })
-}
+export async function sendWelcomeEmail(to: string, discountCode: string) {
+  const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bienvenido a Cliché Aromas</title>
+</head>
+<body style="margin:0;padding:0;background:#FAF8F5;font-family:'Georgia',serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#FAF8F5;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 4px 40px rgba(0,0,0,0.07);">
 
-// Email de carrito abandonado
-export async function sendAbandonedCartEmail(
-  email: string,
-  items: Array<{ name: string; price: number; image_url?: string }>
-) {
-  const total = items.reduce((acc, i) => acc + i.price, 0)
-  const itemsHtml = items
-    .map(
-      (item) => `
-        <tr>
-          <td style="padding: 10px 0; color: #333; font-size: 14px;">${item.name}</td>
-          <td style="padding: 10px 0; color: #333; text-align: right; font-size: 14px;">
-            $${item.price.toLocaleString("es-CO")} COP
-          </td>
-        </tr>`
-    )
-    .join("")
-
-  return getResend().emails.send({
-    from: getFrom(),
-    to: email,
-    subject: "🌿 Olvidaste algo en tu carrito...",
-    html: `
-      <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background: #FAF8F5;">
-        <h1 style="color: #A67163; font-size: 24px;">¿Olvidaste algo? 🌿</h1>
-        <p style="color: #555; font-size: 15px; line-height: 1.6;">
-          Notamos que dejaste estos productos en tu carrito. Están esperando por ti:
-        </p>
-        <table style="width: 100%; border-top: 1px solid #eee; margin: 20px 0;">
-          ${itemsHtml}
-          <tr style="border-top: 2px solid #A67163;">
-            <td style="padding-top: 12px; font-weight: bold; color: #A67163;">TOTAL</td>
-            <td style="padding-top: 12px; font-weight: bold; color: #A67163; text-align: right;">
-              $${total.toLocaleString("es-CO")} COP
+          <!-- Header -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#2D1A14 0%,#6B3D30 100%);padding:48px 40px;text-align:center;">
+              <p style="margin:0 0 8px;font-size:12px;letter-spacing:0.25em;text-transform:uppercase;color:rgba(255,255,255,0.5);">Bienvenida a</p>
+              <h1 style="margin:0;font-family:'Georgia',serif;font-size:42px;font-weight:700;color:#ffffff;letter-spacing:0.05em;">Cliché</h1>
+              <p style="margin:8px 0 0;font-size:13px;color:rgba(255,255,255,0.6);letter-spacing:0.1em;text-transform:uppercase;">Aromas que transforman tu espacio</p>
             </td>
           </tr>
-        </table>
-        <a href="${process.env.NEXT_PUBLIC_APP_URL}"
-           style="display: inline-block; background: #A67163; color: white; padding: 14px 32px; border-radius: 50px; text-decoration: none; font-size: 16px; font-weight: bold; margin-top: 16px;">
-          RECUPERAR MI CARRITO →
-        </a>
-        <p style="color: #aaa; font-size: 12px; margin-top: 40px;">
-          Si ya realizaste tu compra, ignora este correo. · Cliché Aromas
-        </p>
-      </div>
-    `,
-  })
-}
 
-// Email de solicitud de reseña (post-compra, por producto)
-export async function sendReviewRequestEmail(
-  email: string,
-  customerName: string,
-  items: Array<{ name: string; slug: string }>
-) {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://clichecolombia.com"
+          <!-- Body -->
+          <tr>
+            <td style="padding:48px 40px;">
+              <p style="margin:0 0 16px;font-size:22px;font-weight:600;color:#2D1A14;">Gracias por ser parte de la familia 🤎</p>
+              <p style="margin:0 0 28px;font-size:16px;line-height:1.7;color:#6B5A53;">
+                Ya eres parte de más de <strong>5.000 hogares colombianos</strong> que transformaron su espacio con Cliché. 
+                Como regalo de bienvenida, aquí está tu código exclusivo:
+              </p>
 
-  const itemsHtml = items
-    .map(
-      (item) => `
-        <div style="margin-bottom: 16px; padding: 16px; background: #F5EDE8; border-radius: 12px;">
-          <p style="margin: 0 0 8px; font-weight: bold; color: #2D1A14; font-size: 15px;">${item.name}</p>
-          <a href="${appUrl}/productos/${item.slug}#resenas"
-             style="display: inline-block; background: #A67163; color: white; padding: 10px 24px; border-radius: 50px; text-decoration: none; font-size: 14px; font-weight: bold;">
-            Dejar mi reseña y obtener 10% OFF
-          </a>
-        </div>`
-    )
-    .join("")
+              <!-- Code box -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
+                <tr>
+                  <td style="background:#FAF0EC;border:2px dashed #C4958A;border-radius:16px;padding:28px;text-align:center;">
+                    <p style="margin:0 0 8px;font-size:12px;letter-spacing:0.2em;text-transform:uppercase;color:#8B6E64;">Tu código de descuento</p>
+                    <p style="margin:0 0 8px;font-family:'Courier New',monospace;font-size:36px;font-weight:900;letter-spacing:0.15em;color:#2D1A14;">${discountCode}</p>
+                    <p style="margin:0;font-size:13px;color:#C4958A;font-weight:600;">Aplica en tu primera compra</p>
+                  </td>
+                </tr>
+              </table>
 
-  return getResend().emails.send({
-    from: getFrom(),
-    to: email,
-    subject: `¿Cómo estuvo tu experiencia, ${customerName}? — Obtén 10% OFF`,
-    html: `
-      <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background: #FAF8F5;">
-        <h1 style="color: #A67163; font-size: 26px; margin-bottom: 8px;">Tu opinión nos importa</h1>
-        <p style="color: #7A5C52; font-size: 16px; line-height: 1.7;">
-          Hola ${customerName}, tu pedido fue entregado. Queremos saber cómo fue tu experiencia
-          con los aromas que elegiste.
-        </p>
-        <p style="color: #7A5C52; font-size: 15px; margin-bottom: 24px;">
-          A cambio de cada reseña que dejes, te enviamos un cupón de <strong style="color: #A67163;">10% de descuento</strong>
-          para tu próxima compra.
-        </p>
-        <div style="margin: 28px 0;">
-          ${itemsHtml}
-        </div>
-        <p style="color: #C4958A; font-size: 12px; margin-top: 40px; border-top: 1px solid #E8D5CB; padding-top: 20px;">
-          Cliché · hola@clichecolombia.com · Si no realizaste una compra reciente, ignora este correo.
-        </p>
-      </div>
-    `,
-  })
-}
+              <!-- Benefits -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:36px;">
+                <tr>
+                  <td width="50%" style="padding:0 8px 12px 0;vertical-align:top;">
+                    <p style="margin:0;font-size:14px;color:#2D1A14;"><strong>🚚 Envío gratis</strong></p>
+                    <p style="margin:4px 0 0;font-size:13px;color:#8B6E64;">en compras mayores a $300.000</p>
+                  </td>
+                  <td width="50%" style="padding:0 0 12px 8px;vertical-align:top;">
+                    <p style="margin:0;font-size:14px;color:#2D1A14;"><strong>🛡️ Garantía 30 días</strong></p>
+                    <p style="margin:4px 0 0;font-size:13px;color:#8B6E64;">si no te encanta, te devolvemos</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td width="50%" style="padding:0 8px 0 0;vertical-align:top;">
+                    <p style="margin:0;font-size:14px;color:#2D1A14;"><strong>🌿 100% Natural</strong></p>
+                    <p style="margin:4px 0 0;font-size:13px;color:#8B6E64;">sin químicos, no mancha</p>
+                  </td>
+                  <td width="50%" style="padding:0 0 0 8px;vertical-align:top;">
+                    <p style="margin:0;font-size:14px;color:#2D1A14;"><strong>🇨🇴 Hecho en Colombia</strong></p>
+                    <p style="margin:4px 0 0;font-size:13px;color:#8B6E64;">artesanal, con amor</p>
+                  </td>
+                </tr>
+              </table>
 
-// Email de confirmación de orden
-export async function sendOrderConfirmation(
-  email: string,
-  orderData: { id: string; total: number; items: Array<{ name: string; quantity: number; price: number }> }
-) {
-  const itemsHtml = orderData.items
-    .map(
-      (item) =>
-        `<tr>
-          <td style="padding: 8px 0; color: #333;">${item.name} x${item.quantity}</td>
-          <td style="padding: 8px 0; color: #333; text-align: right;">$${item.price.toLocaleString("es-CO")}</td>
-        </tr>`
-    )
-    .join("")
-
-  return getResend().emails.send({
-    from: getFrom(),
-    to: email,
-    subject: `✅ Pedido confirmado #${orderData.id.slice(0, 8).toUpperCase()}`,
-    html: `
-      <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background: #FAF8F5;">
-        <h1 style="color: #A67163;">¡Pedido recibido! ✅</h1>
-        <p style="color: #555;">Tu pedido está confirmado. Te avisamos cuando esté en camino.</p>
-        <table style="width: 100%; border-top: 1px solid #eee; margin: 24px 0;">
-          ${itemsHtml}
-          <tr style="border-top: 2px solid #A67163;">
-            <td style="padding-top: 12px; font-weight: bold; color: #A67163;">TOTAL</td>
-            <td style="padding-top: 12px; font-weight: bold; color: #A67163; text-align: right;">
-              $${orderData.total.toLocaleString("es-CO")} COP
+              <!-- CTA -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center">
+                    <a href="https://cliche-nine.vercel.app/catalogo" style="display:inline-block;background:#2D1A14;color:#ffffff;text-decoration:none;padding:16px 40px;border-radius:100px;font-size:15px;font-weight:700;letter-spacing:0.05em;">
+                      Ver catálogo →
+                    </a>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#FAF8F5;padding:24px 40px;text-align:center;border-top:1px solid #EDD5CF;">
+              <p style="margin:0 0 4px;font-size:12px;color:#8B6E64;">Cliché Aromas · Colombia</p>
+              <p style="margin:0;font-size:11px;color:#B0A09A;">Recibiste este correo porque te suscribiste en nuestro sitio.</p>
+            </td>
+          </tr>
+
         </table>
-        <p style="color: #aaa; font-size: 12px; margin-top: 40px;">
-          Pedido #${orderData.id.slice(0, 8).toUpperCase()} · Cliché Aromas
-        </p>
-      </div>
-    `,
-  })
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim()
+
+  try {
+    await resend.emails.send({
+      from: FROM,
+      to,
+      subject: `Tu código ${discountCode} está listo 🎁 — Cliché Aromas`,
+      html,
+    })
+  } catch (err) {
+    // Non-blocking — subscription still saved even if email fails
+    console.error("[resend] Failed to send welcome email:", err)
+  }
 }

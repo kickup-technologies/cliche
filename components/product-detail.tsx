@@ -5,6 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import dynamic from "next/dynamic"
 import { useCart } from "@/context/cart-context"
+import { useFavorites } from "@/context/favorites-context"
 import { useCAPI } from "@/lib/use-capi"
 
 const SprayBottle3D = dynamic(
@@ -92,6 +93,8 @@ const VALUE_MAP: Record<string, string> = {
 
 export function ProductDetail({ product, related }: Props) {
   const { addItem } = useCart()
+  const { toggleFavorite, isFavorite } = useFavorites()
+  const fav = isFavorite(product.id)
   const [qty, setQty] = useState(1)
   const [added, setAdded] = useState(false)
   const [activeTab, setActiveTab] = useState<"descripcion" | "uso" | "envio">("descripcion")
@@ -288,8 +291,14 @@ export function ProductDetail({ product, related }: Props) {
                 </Button>
 
                 <div className="flex gap-3">
-                  <Button variant="outline" size="lg" className="flex-1 h-12 rounded-2xl">
-                    <Heart className="w-4 h-4 mr-2" /> Favoritos
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className={`flex-1 h-12 rounded-2xl transition-colors ${fav ? "border-red-300 bg-red-50 text-red-600 hover:bg-red-100" : ""}`}
+                    onClick={() => toggleFavorite(product)}
+                  >
+                    <Heart className={`w-4 h-4 mr-2 transition-all ${fav ? "fill-red-500 text-red-500 scale-110" : ""}`} />
+                    {fav ? "Guardado" : "Favoritos"}
                   </Button>
                   <Button variant="outline" size="icon" className="h-12 w-12 rounded-2xl">
                     <Share2 className="w-4 h-4" />
@@ -297,18 +306,37 @@ export function ProductDetail({ product, related }: Props) {
                 </div>
               </div>
 
-              {/* Trust signals */}
+              {/* Trust signals — animated */}
+              <style>{`
+                @keyframes truck-drive {
+                  0%,100% { transform: translateX(0px) rotate(0deg); }
+                  25%      { transform: translateX(3px) rotate(-2deg); }
+                  75%      { transform: translateX(-2px) rotate(1deg); }
+                }
+                @keyframes shield-pulse {
+                  0%,100% { transform: scale(1);   filter: drop-shadow(0 0 0px #C4958A); }
+                  50%      { transform: scale(1.18); filter: drop-shadow(0 0 6px #C4958A); }
+                }
+                @keyframes star-spin {
+                  0%   { transform: rotate(0deg) scale(1); }
+                  50%  { transform: rotate(180deg) scale(1.2); }
+                  100% { transform: rotate(360deg) scale(1); }
+                }
+                .anim-truck  { animation: truck-drive  1.8s ease-in-out infinite; }
+                .anim-shield { animation: shield-pulse  2s   ease-in-out infinite; }
+                .anim-star   { animation: star-spin     3s   linear      infinite; }
+              `}</style>
               <div className="grid grid-cols-3 gap-3 pt-2">
                 <div className="flex flex-col items-center text-center gap-1.5 p-3 bg-muted/30 rounded-xl">
-                  <Truck className="w-5 h-5 text-primary" />
+                  <Truck className="w-5 h-5 text-primary anim-truck" />
                   <span className="text-xs text-muted-foreground leading-tight">Envío gratis &gt;$150k</span>
                 </div>
                 <div className="flex flex-col items-center text-center gap-1.5 p-3 bg-muted/30 rounded-xl">
-                  <Shield className="w-5 h-5 text-primary" />
+                  <Shield className="w-5 h-5 text-primary anim-shield" />
                   <span className="text-xs text-muted-foreground leading-tight">Pago 100% seguro</span>
                 </div>
                 <div className="flex flex-col items-center text-center gap-1.5 p-3 bg-muted/30 rounded-xl">
-                  <RefreshCw className="w-5 h-5 text-primary" />
+                  <RotateCcw className="w-5 h-5 text-primary anim-star" />
                   <span className="text-xs text-muted-foreground leading-tight">30 días garantía</span>
                 </div>
               </div>
