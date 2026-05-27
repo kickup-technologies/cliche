@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import { Search, Heart, ShoppingCart, Star, SlidersHorizontal, X, Flame, Eye } from "lucide-react"
@@ -144,11 +145,14 @@ function ProductCard({ product }: { product: Product }) {
   )
 }
 
-export default function CatalogoPage() {
+function CatalogoInner() {
+  const searchParams = useSearchParams()
+  const initialCategory = searchParams.get("categoria") ?? "all"
+
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
-  const [category, setCategory] = useState("all")
+  const [category, setCategory] = useState(initialCategory)
   const [sort, setSort] = useState("featured")
   const [showFilters, setShowFilters] = useState(false)
 
@@ -316,5 +320,13 @@ export default function CatalogoPage() {
         </div>
       </main>
     </>
+  )
+}
+
+export default function CatalogoPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background animate-pulse" />}>
+      <CatalogoInner />
+    </Suspense>
   )
 }

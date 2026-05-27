@@ -22,15 +22,15 @@ import { useFavorites } from "@/context/favorites-context"
 const navigation = [
   {
     name: "Aromas",
-    href: "/#productos",
+    href: "/catalogo",
     submenu: [
-      { name: "Para el Hogar", href: "/#productos" },
-      { name: "Para Ropa", href: "/#productos" },
-      { name: "Kits de Regalo", href: "/#productos" },
+      { name: "Para el Hogar", href: "/catalogo?categoria=hogar" },
+      { name: "Para Ropa", href: "/catalogo?categoria=ropa" },
+      { name: "Kits de Regalo", href: "/catalogo?categoria=kit" },
     ],
   },
-  { name: "Colecciones", href: "/#productos" },
-  { name: "Ofertas", href: "/#productos", highlight: true },
+  { name: "Colecciones", href: "/catalogo" },
+  { name: "Ofertas", href: "/ofertas", highlight: true },
   { name: "Nosotros", href: "/#nosotros" },
 ]
 
