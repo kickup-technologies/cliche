@@ -222,11 +222,10 @@ export function ProductDetail({ product, related }: Props) {
     })
   }
 
-  async function handleBuyNow() {
+  function handleBuyNow() {
     for (let i = 0; i < qty; i++) addItem(product)
-    // Small delay so cart state updates before checkout
-    await new Promise((r) => setTimeout(r, 80))
-    checkout()
+    // Pequeño delay para que el carrito se actualice antes de redirigir
+    setTimeout(() => { window.location.href = "/checkout" }, 80)
   }
 
   return (

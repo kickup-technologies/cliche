@@ -16,7 +16,7 @@ interface CartContextType {
   clearCart: () => void
   total: number
   itemCount: number
-  checkout: (discountCode?: string, email?: string) => Promise<void>
+  checkout: () => void
   isCheckingOut: boolean
   isDrawerOpen: boolean
   openDrawer: () => void
@@ -74,52 +74,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const total = items.reduce((sum, i) => sum + i.product.price * i.quantity, 0)
   const itemCount = items.reduce((sum, i) => sum + i.quantity, 0)
 
-  const checkout = useCallback(async (discountCode?: string, email?: string) => {
+  const checkout = useCallback(async () => {
     if (!items.length) return
-    setIsCheckingOut(true)
-
-    // CAPI: InitiateCheckout
-    const total = items.reduce((s, i) => s + i.product.price * i.quantity, 0)
-    fetch('/api/capi', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        event_name: 'InitiateCheckout',
-        event_source_url: window.location.href,
-        event_id: `${Date.now()}_checkout`,
-        custom_data: {
-          currency: 'COP',
-          value: total,
-          num_items: items.reduce((s, i) => s + i.quantity, 0),
-          content_ids: items.map((i) => i.product.id),
-        },
-      }),
-    }).catch(() => {})
-
-    try {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: items.map((i) => ({ product_id: i.product.id, quantity: i.quantity })),
-          discountCode,
-          customerEmail: email,
-        }),
-      })
-
-      const data = await res.json()
-      if (data.url) {
-        clearCart()
-        window.location.href = data.url
-      } else {
-        alert(data.error || "Error al procesar el pago")
-      }
-    } catch {
-      alert("Error de conexión. Intenta de nuevo.")
-    } finally {
-      setIsCheckingOut(false)
-    }
-  }, [items, clearCart])
+    // Redirigir a la página de resumen de checkout
+    window.location.href = "/checkout"
+  }, [items])
 
   return (
     <CartContext.Provider
