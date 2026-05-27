@@ -123,15 +123,17 @@ export function ProductDetail({ product, related }: Props) {
   const pad = (n: number) => String(n).padStart(2, "0")
   // Sticky CTA — show when page scrolled past the add-to-cart button
   const [showSticky, setShowSticky] = useState(false)
-  const ctaRef = useRef<HTMLButtonElement>(null)
+  const ctaWrapRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
+    if (!ctaWrapRef.current) return
     const obs = new IntersectionObserver(
       ([entry]) => setShowSticky(!entry.isIntersecting),
       { threshold: 0 }
     )
-    if (ctaRef.current) obs.observe(ctaRef.current)
+    obs.observe(ctaWrapRef.current)
     return () => obs.disconnect()
-  }, [fell])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const galleryImages: string[] = Array.isArray(product.image_urls) ? product.image_urls.filter(Boolean) : []
   // Share
   const [shared, setShared] = useState(false)
@@ -456,8 +458,8 @@ export function ProductDetail({ product, related }: Props) {
                   </p>
                 </div>
 
+                <div ref={ctaWrapRef}>
                 <Button
-                  ref={ctaRef}
                   size="lg"
                   className="w-full h-14 text-base font-semibold rounded-2xl"
                   onClick={handleAdd}
@@ -469,6 +471,7 @@ export function ProductDetail({ product, related }: Props) {
                     <><ShoppingBag className="w-5 h-5 mr-2" /> Agregar al carrito</>
                   )}
                 </Button>
+                </div>
 
                 <div className="flex gap-3">
                   <Button
