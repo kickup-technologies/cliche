@@ -1,17 +1,16 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useCart } from "@/context/cart-context"
-import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Lock, Sparkles, ShieldCheck, Truck, Leaf, RotateCcw, Tag } from "lucide-react"
+import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Lock, ShieldCheck, Truck, Leaf, RotateCcw, Tag, ChevronDown, ChevronUp } from "lucide-react"
 
 function fmt(n: number) {
   return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(n)
 }
 
-// Devuelve ["171", "000"] separando miles del número
 function splitNum(n: number): string {
   return n.toLocaleString("es-CO")
 }
@@ -22,22 +21,21 @@ export default function CheckoutPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [backUrl, setBackUrl] = useState("/catalogo")
+  const [mobileResumenOpen, setMobileResumenOpen] = useState(false)
   const router = useRouter()
 
-  // Guardar la página anterior al entrar al checkout
   useEffect(() => {
     const stored = sessionStorage.getItem("checkout-back-url")
     if (stored) {
       setBackUrl(stored)
     } else if (document.referrer && !document.referrer.includes("/checkout")) {
-      const ref = new URL(document.referrer).pathname + new URL(document.referrer).search
-      sessionStorage.setItem("checkout-back-url", ref)
-      setBackUrl(ref)
+      try {
+        const ref = new URL(document.referrer).pathname + new URL(document.referrer).search
+        sessionStorage.setItem("checkout-back-url", ref)
+        setBackUrl(ref)
+      } catch {}
     }
-    return () => {
-      // Limpiar al salir de checkout
-      sessionStorage.removeItem("checkout-back-url")
-    }
+    return () => { sessionStorage.removeItem("checkout-back-url") }
   }, [])
 
   useEffect(() => {
@@ -95,28 +93,28 @@ export default function CheckoutPage() {
   }
 
   return (
-    /* Layout fijo: derecha nunca se mueve, izquierda scrollea */
-    <div className="flex h-screen overflow-hidden bg-[#FAF8F5]">
+    <div className="bg-[#FAF8F5] min-h-screen lg:flex lg:h-screen lg:overflow-hidden">
 
-      {/* ═══════════════════════════════
-          IZQUIERDA — scrollable
-      ═══════════════════════════════ */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-2xl mx-auto px-8 lg:px-14 pt-10 pb-24">
+      {/* ══════════════════════════════════════
+          COLUMNA IZQUIERDA — productos
+      ══════════════════════════════════════ */}
+      <div className="flex-1 lg:overflow-y-auto">
+        <div className="max-w-2xl mx-auto px-5 sm:px-8 lg:px-14 pt-8 lg:pt-10 pb-8 lg:pb-24">
 
           {/* Top nav */}
-          <div className="flex items-center justify-between mb-6">
-            <Link href="/" className="font-serif text-2xl font-bold tracking-widest text-[#2D1A14] uppercase">
+          <div className="flex items-center justify-between mb-5 lg:mb-6">
+            <Link href="/" className="font-serif text-xl lg:text-2xl font-bold tracking-widest text-[#2D1A14] uppercase">
               Cliché
             </Link>
             <button onClick={() => router.push(backUrl)} className="flex items-center gap-2 text-xs text-[#2D1A14]/35 hover:text-[#2D1A14] transition-colors uppercase tracking-widest">
               <ArrowLeft className="w-3.5 h-3.5" />
-              Seguir comprando
+              <span className="hidden sm:inline">Seguir comprando</span>
+              <span className="sm:hidden">Volver</span>
             </button>
           </div>
 
           {/* Breadcrumb */}
-          <div className="flex items-center gap-3 text-[10px] tracking-widest uppercase text-[#2D1A14]/25 mb-7">
+          <div className="flex items-center gap-2 text-[10px] tracking-widest uppercase text-[#2D1A14]/25 mb-5 lg:mb-7">
             <span>Carrito</span>
             <span className="text-[#A67163]">—</span>
             <span className="text-[#2D1A14]/70 font-semibold">Resumen</span>
@@ -125,19 +123,20 @@ export default function CheckoutPage() {
           </div>
 
           {/* Título */}
-          <div className="mb-7">
-            <h1 className="font-serif text-5xl font-light text-[#2D1A14] leading-tight">Tu pedido</h1>
-            <p className="text-sm text-[#2D1A14]/35 mt-2 tracking-wide">
+          <div className="mb-5 lg:mb-7">
+            <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light text-[#2D1A14] leading-tight">Tu pedido</h1>
+            <p className="text-xs lg:text-sm text-[#2D1A14]/35 mt-1.5 tracking-wide">
               Selecciona los artículos que incluirás en este pago
             </p>
           </div>
 
-          {/* Lista */}
+          {/* Lista de productos */}
           <div className="border-t border-[#2D1A14]/8">
             {items.map((item) => {
               const checked = !!selected[item.product.id]
               return (
-                <div key={item.product.id} className={`flex gap-5 py-6 border-b border-[#2D1A14]/8 transition-all duration-200 ${checked ? "opacity-100" : "opacity-30"}`}>
+                <div key={item.product.id} className={`flex gap-3 sm:gap-5 py-5 border-b border-[#2D1A14]/8 transition-all duration-200 ${checked ? "opacity-100" : "opacity-30"}`}>
+                  {/* Checkbox */}
                   <button
                     onClick={() => setSelected(p => ({ ...p, [item.product.id]: !p[item.product.id] }))}
                     className="mt-1 flex-shrink-0 w-5 h-5 border border-[#2D1A14]/25 flex items-center justify-center transition-all hover:border-[#A67163]"
@@ -146,30 +145,33 @@ export default function CheckoutPage() {
                     {checked && <svg className="w-2.5 h-2.5" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="#FAF8F5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                   </button>
 
-                  <div className="relative w-28 h-28 bg-[#2D1A14]/5 flex-shrink-0 overflow-hidden">
+                  {/* Imagen — más pequeña en mobile */}
+                  <div className="relative w-20 h-20 sm:w-28 sm:h-28 bg-[#2D1A14]/5 flex-shrink-0 overflow-hidden">
                     <Image src={item.product.image_url} alt={item.product.name} fill className="object-cover" />
                   </div>
 
+                  {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <p className="font-serif text-base text-[#2D1A14] leading-snug">{item.product.name}</p>
+                    <p className="font-serif text-sm sm:text-base text-[#2D1A14] leading-snug">{item.product.name}</p>
                     <p className="text-[10px] text-[#2D1A14]/30 mt-0.5 tracking-widest uppercase">Bienestar by Cliché</p>
                     <p className="text-[#A67163] text-sm font-medium mt-1.5">{fmt(item.product.price)}<span className="text-[#2D1A14]/30 text-xs ml-1">/ ud.</span></p>
                     <div className="flex items-center mt-2 border border-[#2D1A14]/12 w-fit">
                       <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)} disabled={item.quantity <= 1} className="w-8 h-8 flex items-center justify-center hover:bg-[#2D1A14]/5 transition-colors text-[#2D1A14]/40 disabled:opacity-20 disabled:cursor-not-allowed">
                         <Minus className="w-2.5 h-2.5" />
                       </button>
-                      <span className="w-10 text-center text-sm font-medium text-[#2D1A14]">{item.quantity}</span>
+                      <span className="w-9 text-center text-sm font-medium text-[#2D1A14]">{item.quantity}</span>
                       <button onClick={() => updateQuantity(item.product.id, item.quantity + 1)} disabled={item.quantity >= item.product.stock} className="w-8 h-8 flex items-center justify-center hover:bg-[#2D1A14]/5 transition-colors text-[#2D1A14]/40 disabled:opacity-20">
                         <Plus className="w-2.5 h-2.5" />
                       </button>
                     </div>
                   </div>
 
-                  <div className="flex flex-col items-end justify-between min-w-[90px]">
+                  {/* Precio + borrar */}
+                  <div className="flex flex-col items-end justify-between min-w-[72px] sm:min-w-[90px]">
                     <button onClick={() => removeItem(item.product.id)} className="text-[#2D1A14]/15 hover:text-red-400 transition-colors">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
-                    <p className="font-serif text-lg text-[#2D1A14]">{fmt(item.product.price * item.quantity)}</p>
+                    <p className="font-serif text-base sm:text-lg text-[#2D1A14]">{fmt(item.product.price * item.quantity)}</p>
                   </div>
                 </div>
               )
@@ -177,7 +179,7 @@ export default function CheckoutPage() {
           </div>
 
           {/* Código de descuento */}
-          <div className="mt-10">
+          <div className="mt-8">
             <p className="text-[10px] text-[#2D1A14]/30 tracking-[0.2em] uppercase mb-3 flex items-center gap-2">
               <Tag className="w-3 h-3" /> Código de descuento
             </p>
@@ -185,49 +187,48 @@ export default function CheckoutPage() {
               <input
                 type="text"
                 placeholder="Ingresa tu código"
-                className="flex-1 px-4 py-3.5 text-sm bg-transparent text-[#2D1A14] placeholder:text-[#2D1A14]/25 outline-none font-light tracking-wide"
+                className="flex-1 px-4 py-3 text-sm bg-transparent text-[#2D1A14] placeholder:text-[#2D1A14]/25 outline-none font-light tracking-wide"
               />
-              <button className="px-6 py-3.5 text-[10px] font-semibold text-[#2D1A14]/40 hover:text-[#A67163] transition-colors uppercase tracking-widest border-l border-[#2D1A14]/15">
+              <button className="px-5 py-3 text-[10px] font-semibold text-[#2D1A14]/40 hover:text-[#A67163] transition-colors uppercase tracking-widest border-l border-[#2D1A14]/15">
                 Aplicar
               </button>
             </div>
           </div>
 
           {/* Trust pillars */}
-          <div className="grid grid-cols-3 gap-5 mt-10 pt-10 border-t border-[#2D1A14]/8">
+          <div className="grid grid-cols-3 gap-4 mt-8 pt-8 border-t border-[#2D1A14]/8">
             {[
-              { icon: Truck,     title: "Envío rápido",   desc: "2–5 días hábiles a toda Colombia" },
-              { icon: RotateCcw, title: "Garantía total",  desc: "Reembolso si no quedas satisfecho" },
-              { icon: Leaf,      title: "100% naturales",  desc: "Aromas artesanales sin tóxicos" },
+              { icon: Truck,     title: "Envío rápido",  desc: "2–5 días a toda Colombia" },
+              { icon: RotateCcw, title: "Garantía total", desc: "Reembolso si no quedas satisfecho" },
+              { icon: Leaf,      title: "100% natural",   desc: "Sin tóxicos, artesanal" },
             ].map(({ icon: Icon, title, desc }) => (
-              <div key={title} className="flex flex-col items-center text-center gap-2.5">
-                <div className="w-9 h-9 rounded-full border border-[#2D1A14]/10 flex items-center justify-center">
-                  <Icon className="w-4 h-4 text-[#A67163]/70" />
+              <div key={title} className="flex flex-col items-center text-center gap-2">
+                <div className="w-8 h-8 rounded-full border border-[#2D1A14]/10 flex items-center justify-center">
+                  <Icon className="w-3.5 h-3.5 text-[#A67163]/70" />
                 </div>
-                <p className="text-[11px] font-semibold text-[#2D1A14]/60 tracking-wide leading-tight">{title}</p>
-                <p className="text-[10px] text-[#2D1A14]/30 leading-relaxed">{desc}</p>
+                <p className="text-[10px] font-semibold text-[#2D1A14]/60 tracking-wide leading-tight">{title}</p>
+                <p className="text-[9px] text-[#2D1A14]/30 leading-relaxed hidden sm:block">{desc}</p>
               </div>
             ))}
           </div>
 
-          <p className="text-[10px] text-[#2D1A14]/15 tracking-widest uppercase mt-10 text-center">
+          <p className="text-[10px] text-[#2D1A14]/15 tracking-widest uppercase mt-8 text-center">
             Aromas artesanales · Fabricado en Colombia · 100% naturales
           </p>
+
+          {/* Espaciado extra en mobile para el sticky bar */}
+          <div className="h-28 lg:hidden" />
         </div>
       </div>
 
-      {/* ═══════════════════════════════
-          DERECHA — fija, no se mueve
-      ═══════════════════════════════ */}
-      <div className="w-[400px] xl:w-[440px] flex-shrink-0 bg-[#2D1A14] h-screen overflow-y-auto flex flex-col">
+      {/* ══════════════════════════════════════
+          DERECHA — resumen (desktop only)
+      ══════════════════════════════════════ */}
+      <div className="hidden lg:flex w-[400px] xl:w-[440px] flex-shrink-0 bg-[#2D1A14] h-screen overflow-y-auto flex-col">
         <div className="flex flex-col min-h-full px-10 xl:px-12 pt-14 pb-10">
 
-          {/* Eyebrow */}
-          <p className="text-[#FAF8F5]/25 text-[9px] tracking-[0.25em] uppercase mb-8">
-            Resumen del pedido
-          </p>
+          <p className="text-[#FAF8F5]/25 text-[9px] tracking-[0.25em] uppercase mb-8">Resumen del pedido</p>
 
-          {/* Items del pedido */}
           <div className="space-y-5 flex-1">
             {selectedItems.length === 0 ? (
               <p className="text-[#FAF8F5]/20 text-sm py-4">Ningún artículo seleccionado</p>
@@ -236,33 +237,25 @@ export default function CheckoutPage() {
                 <div key={i.product.id} className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <p className="text-[#FAF8F5]/75 text-sm leading-snug">{i.product.name}</p>
-                    {i.quantity > 1 && (
-                      <p className="text-[#FAF8F5]/25 text-xs mt-0.5 tracking-wide">× {i.quantity}</p>
-                    )}
+                    {i.quantity > 1 && <p className="text-[#FAF8F5]/25 text-xs mt-0.5 tracking-wide">× {i.quantity}</p>}
                   </div>
-                  <p className="text-[#FAF8F5]/60 text-sm tabular-nums flex-shrink-0">
-                    {fmt(i.product.price * i.quantity)}
-                  </p>
+                  <p className="text-[#FAF8F5]/60 text-sm tabular-nums flex-shrink-0">{fmt(i.product.price * i.quantity)}</p>
                 </div>
               ))
             )}
           </div>
 
-          {/* Barra envío gratis */}
           {subtotal > 0 && (
             <div className="mt-8 space-y-2">
               <div className="h-[1px] bg-[#FAF8F5]/8 w-full overflow-hidden">
                 <div className="h-full bg-[#A67163]/60 transition-all duration-700" style={{ width: `${pct}%` }} />
               </div>
               <p className="text-[10px] text-[#FAF8F5]/25 tracking-wide text-center">
-                {freeShipping
-                  ? <span className="text-[#A67163]/80">Envío gratuito aplicado</span>
-                  : <>{fmt(FREE_SHIPPING - subtotal)} más para envío gratis</>}
+                {freeShipping ? <span className="text-[#A67163]/80">Envío gratuito aplicado</span> : <>{fmt(FREE_SHIPPING - subtotal)} más para envío gratis</>}
               </p>
             </div>
           )}
 
-          {/* Desglose */}
           <div className="mt-8 pt-8 border-t border-[#FAF8F5]/6 space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-[#FAF8F5]/30 text-xs tracking-widest uppercase">Subtotal</span>
@@ -276,7 +269,6 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* Total — el protagonista */}
           <div className="mt-8 pt-8 border-t border-[#FAF8F5]/6">
             <div className="flex items-baseline justify-between gap-3 mb-1">
               <span className="text-[#FAF8F5]/30 text-[10px] tracking-[0.2em] uppercase">Total a pagar</span>
@@ -284,40 +276,33 @@ export default function CheckoutPage() {
             </div>
             <p className="font-serif text-right mt-2">
               <span className="text-[#FAF8F5]/40 text-lg align-top mt-2 inline-block mr-1">$</span>
-              <span className="text-[#FAF8F5] text-5xl font-light tracking-tight">
-                {subtotal > 0 ? splitNum(total) : "—"}
-              </span>
+              <span className="text-[#FAF8F5] text-5xl font-light tracking-tight">{subtotal > 0 ? splitNum(total) : "—"}</span>
             </p>
           </div>
 
-          {/* Error */}
           {error && (
             <div className="mt-5 bg-red-950/50 border border-red-500/20 rounded-xl p-3">
               <p className="text-red-300 text-xs">{error}</p>
             </div>
           )}
 
-          {/* CTA */}
           <div className="mt-8 space-y-3">
             <button
               onClick={handlePay}
               disabled={isLoading || selectedItems.length === 0}
               className="w-full rounded-xl py-4 px-6 flex items-center justify-center gap-3 bg-[#A67163] text-white font-semibold text-sm tracking-wide hover:bg-[#8B5E52] active:scale-[0.99] transition-all duration-200 disabled:opacity-25 disabled:cursor-not-allowed"
             >
-              {isLoading ? (
-                <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Procesando...</>
-              ) : (
-                <><Lock className="w-3.5 h-3.5 opacity-70" /> {selectedItems.length > 0 ? `Pagar ${fmt(total)}` : "Selecciona artículos"}</>
-              )}
+              {isLoading
+                ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Procesando...</>
+                : <><Lock className="w-3.5 h-3.5 opacity-70" /> {selectedItems.length > 0 ? `Pagar ${fmt(total)}` : "Selecciona artículos"}</>
+              }
             </button>
-
             <div className="flex items-center justify-center gap-2 text-[#FAF8F5]/20 text-[10px] tracking-wide">
               <ShieldCheck className="w-3 h-3 text-[#A67163]/50" />
               <span>Pago cifrado · Protección al comprador</span>
             </div>
           </div>
 
-          {/* Trust + métodos */}
           <div className="mt-8 pt-8 border-t border-[#FAF8F5]/6 space-y-5">
             <div className="grid grid-cols-2 gap-3">
               <div className="flex items-start gap-2">
@@ -329,24 +314,121 @@ export default function CheckoutPage() {
                 <p className="text-[#FAF8F5]/30 text-[10px] leading-relaxed">Garantía de satisfacción o reembolso total</p>
               </div>
             </div>
-
             <div>
               <p className="text-[#FAF8F5]/15 text-[8px] tracking-[0.2em] uppercase mb-2.5 text-center">Métodos de pago</p>
               <div className="flex items-center justify-center gap-2 flex-wrap">
                 {["Visa", "Mastercard", "PSE", "Nequi", "Bancolombia"].map((m) => (
-                  <span key={m} className="text-[8px] font-medium text-[#FAF8F5]/20 border border-[#FAF8F5]/8 rounded px-2 py-0.5 tracking-wider">
-                    {m}
-                  </span>
+                  <span key={m} className="text-[8px] font-medium text-[#FAF8F5]/20 border border-[#FAF8F5]/8 rounded px-2 py-0.5 tracking-wider">{m}</span>
                 ))}
               </div>
-              <p className="text-center text-[#FAF8F5]/10 text-[8px] tracking-widest uppercase mt-3">
-                Powered by Wompi · Bancolombia
-              </p>
+              <p className="text-center text-[#FAF8F5]/10 text-[8px] tracking-widest uppercase mt-3">Powered by Wompi · Bancolombia</p>
             </div>
           </div>
 
         </div>
       </div>
+
+      {/* ══════════════════════════════════════
+          MOBILE — barra sticky inferior
+      ══════════════════════════════════════ */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#2D1A14] shadow-2xl">
+
+        {/* Resumen expandible */}
+        {mobileResumenOpen && (
+          <div className="px-5 pt-5 pb-3 border-b border-[#FAF8F5]/8">
+            {/* Items */}
+            <div className="space-y-3 mb-4">
+              {selectedItems.length === 0 ? (
+                <p className="text-[#FAF8F5]/30 text-xs">Ningún artículo seleccionado</p>
+              ) : selectedItems.map((i) => (
+                <div key={i.product.id} className="flex justify-between items-start gap-3">
+                  <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                    <div className="relative w-9 h-9 flex-shrink-0 overflow-hidden bg-[#FAF8F5]/5">
+                      <Image src={i.product.image_url} alt={i.product.name} fill className="object-cover" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[#FAF8F5]/80 text-xs leading-snug truncate">{i.product.name}</p>
+                      {i.quantity > 1 && <p className="text-[#FAF8F5]/30 text-[10px]">× {i.quantity}</p>}
+                    </div>
+                  </div>
+                  <p className="text-[#FAF8F5]/60 text-xs tabular-nums flex-shrink-0">{fmt(i.product.price * i.quantity)}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Barra envío */}
+            {subtotal > 0 && (
+              <div className="mb-4 space-y-1.5">
+                <div className="h-[1px] bg-[#FAF8F5]/8 w-full overflow-hidden">
+                  <div className="h-full bg-[#A67163]/60 transition-all duration-700" style={{ width: `${pct}%` }} />
+                </div>
+                <p className="text-[9px] text-[#FAF8F5]/25 text-center">
+                  {freeShipping ? <span className="text-[#A67163]/70">Envío gratuito aplicado</span> : <>{fmt(FREE_SHIPPING - subtotal)} más para envío gratis</>}
+                </p>
+              </div>
+            )}
+
+            {/* Desglose */}
+            <div className="space-y-2 pt-3 border-t border-[#FAF8F5]/6">
+              <div className="flex justify-between">
+                <span className="text-[#FAF8F5]/30 text-xs uppercase tracking-widest">Subtotal</span>
+                <span className="text-[#FAF8F5]/50 text-xs tabular-nums">{subtotal > 0 ? fmt(subtotal) : "—"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#FAF8F5]/30 text-xs uppercase tracking-widest">Envío</span>
+                <span className={`text-xs tabular-nums ${freeShipping && subtotal > 0 ? "text-[#A67163]/80" : "text-[#FAF8F5]/50"}`}>
+                  {subtotal === 0 ? "—" : freeShipping ? "Gratis" : fmt(shipping)}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Error */}
+        {error && (
+          <div className="px-5 pt-3">
+            <p className="text-red-300 text-xs bg-red-950/50 border border-red-500/20 rounded-lg p-2.5">{error}</p>
+          </div>
+        )}
+
+        {/* Fila principal: total + botón pagar */}
+        <div className="flex items-center gap-3 px-5 py-4">
+          {/* Total + toggle */}
+          <button
+            onClick={() => setMobileResumenOpen(v => !v)}
+            className="flex-1 flex items-center gap-2 min-w-0"
+          >
+            <div className="min-w-0">
+              <p className="text-[#FAF8F5]/30 text-[9px] uppercase tracking-widest flex items-center gap-1">
+                Total {mobileResumenOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
+              </p>
+              <p className="font-serif text-[#FAF8F5] text-xl font-light tabular-nums">
+                {subtotal > 0 ? fmt(total) : "—"}
+              </p>
+            </div>
+          </button>
+
+          {/* Botón pagar */}
+          <button
+            onClick={handlePay}
+            disabled={isLoading || selectedItems.length === 0}
+            className="flex-shrink-0 rounded-xl py-3.5 px-6 flex items-center justify-center gap-2 bg-[#A67163] text-white font-semibold text-sm tracking-wide hover:bg-[#8B5E52] active:scale-[0.98] transition-all duration-200 disabled:opacity-25 disabled:cursor-not-allowed"
+          >
+            {isLoading
+              ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Procesando</>
+              : <><Lock className="w-3.5 h-3.5 opacity-70" /> Pagar</>
+            }
+          </button>
+        </div>
+
+        {/* Métodos de pago mobile */}
+        <div className="flex items-center justify-center gap-1.5 pb-4 flex-wrap px-5">
+          {["Visa", "Mastercard", "PSE", "Nequi"].map((m) => (
+            <span key={m} className="text-[8px] font-medium text-[#FAF8F5]/15 border border-[#FAF8F5]/8 rounded px-1.5 py-0.5">{m}</span>
+          ))}
+        </div>
+      </div>
+
     </div>
   )
 }
