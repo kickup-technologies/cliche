@@ -5,6 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import dynamic from "next/dynamic"
 import { useCart } from "@/context/cart-context"
+import { useCAPI } from "@/lib/use-capi"
 
 const SprayBottle3D = dynamic(
   () => import("@/components/spray-bottle-3d").then((m) => m.SprayBottle3D),
@@ -108,6 +109,23 @@ export function ProductDetail({ product, related }: Props) {
   const [fell, setFell] = useState(false)
   const handleModelReady = () => requestAnimationFrame(() => setFell(true))
 
+  const { track } = useCAPI()
+
+  // ViewContent — dispara cuando se carga la página del producto
+  useEffect(() => {
+    track({
+      event_name: 'ViewContent',
+      custom_data: {
+        content_ids: [product.id],
+        content_name: product.name,
+        content_type: 'product',
+        currency: 'COP',
+        value: product.price,
+      },
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const notes = NOTES_MAP[product.slug] || []
   const isKit = product.slug.startsWith("kit-")
   const savings = product.original_price ? product.original_price - product.price : 0
@@ -116,6 +134,17 @@ export function ProductDetail({ product, related }: Props) {
     for (let i = 0; i < qty; i++) addItem(product)
     setAdded(true)
     setTimeout(() => setAdded(false), 2000)
+    track({
+      event_name: 'AddToCart',
+      custom_data: {
+        content_ids: [product.id],
+        content_name: product.name,
+        content_type: 'product',
+        currency: 'COP',
+        value: product.price * qty,
+        num_items: qty,
+      },
+    })
   }
 
   return (

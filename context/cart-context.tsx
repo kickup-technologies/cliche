@@ -78,6 +78,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (!items.length) return
     setIsCheckingOut(true)
 
+    // CAPI: InitiateCheckout
+    const total = items.reduce((s, i) => s + i.product.price * i.quantity, 0)
+    fetch('/api/capi', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event_name: 'InitiateCheckout',
+        event_source_url: window.location.href,
+        event_id: `${Date.now()}_checkout`,
+        custom_data: {
+          currency: 'COP',
+          value: total,
+          num_items: items.reduce((s, i) => s + i.quantity, 0),
+          content_ids: items.map((i) => i.product.id),
+        },
+      }),
+    }).catch(() => {})
+
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
