@@ -208,7 +208,7 @@ export default function PedidoPage() {
                   <Link href="/catalogo">Seguir comprando</Link>
                 </Button>
                 <Button asChild variant="outline" className="flex-1 border-[#2D1A14]/20 text-[#2D1A14]">
-                  <a href="https://wa.me/573000000000?text=Hola%2C+tengo+una+pregunta+sobre+mi+pedido" target="_blank" rel="noopener noreferrer">
+                  <a href="https://wa.me/573194565463?text=Hola%2C+tengo+una+pregunta+sobre+mi+pedido" target="_blank" rel="noopener noreferrer">
                     Contactar soporte
                   </a>
                 </Button>

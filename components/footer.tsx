@@ -28,6 +28,7 @@ const footerLinks = {
   soporte: [
     { name: "WhatsApp: +57 319 456 5463", href: "https://wa.me/573194565463" },
     { name: "hola@clichecolombia.com", href: "mailto:hola@clichecolombia.com" },
+    { name: "Seguimiento de pedido", href: "/pedido" },
     { name: "Preguntas Frecuentes", href: "/#faq" },
     { name: "Envíos y Devoluciones", href: "/terminos#envios" },
     { name: "Guía de Aromas", href: "/#beneficios" },

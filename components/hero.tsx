@@ -131,7 +131,7 @@ export function Hero() {
 
             {/* Trust mínimo */}
             <div className="flex items-center justify-center gap-4 text-white/60 text-[11px]">
-              <span className="flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> Envío gratis +$150k</span>
+              <span className="flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> Envío gratis +$300k</span>
               <span className="flex items-center gap-1"><Shield className="w-3.5 h-3.5" /> Garantía 30d</span>
             </div>
           </div>
@@ -213,7 +213,7 @@ export function Hero() {
 
             {/* Trust Indicators */}
             <div className="flex flex-wrap items-center gap-6 text-white/80 text-sm">
-              <div className="flex items-center gap-2"><Truck className="w-5 h-5" /><span>Envío gratis +$150.000</span></div>
+              <div className="flex items-center gap-2"><Truck className="w-5 h-5" /><span>Envío gratis +$300.000</span></div>
               <div className="flex items-center gap-2"><Shield className="w-5 h-5" /><span>Garantía 30 días</span></div>
               <div className="flex items-center gap-2"><Sparkles className="w-5 h-5" /><span>100% Natural</span></div>
             </div>

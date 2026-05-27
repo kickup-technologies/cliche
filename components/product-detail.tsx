@@ -534,7 +534,7 @@ export function ProductDetail({ product, related }: Props) {
               <div className="grid grid-cols-3 gap-3 pt-2">
                 <div className="flex flex-col items-center text-center gap-1.5 p-3 bg-muted/30 rounded-xl">
                   <Truck className="w-6 h-6 text-primary trust-truck" />
-                  <span className="text-xs text-muted-foreground leading-tight font-medium">Envío gratis &gt;$150k</span>
+                  <span className="text-xs text-muted-foreground leading-tight font-medium">Envío gratis &gt;$300k</span>
                 </div>
                 <div className="flex flex-col items-center text-center gap-1.5 p-3 bg-muted/30 rounded-xl">
                   <ShieldCheck className="w-6 h-6 text-primary trust-shield" />

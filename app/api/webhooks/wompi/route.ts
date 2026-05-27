@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase"
 import crypto from "crypto"
-import { sendOrderConfirmation, sendReviewRequestEmail } from "@/lib/mailer"
+import { sendOrderConfirmation, sendReviewRequestEmail, sendAdminOrderAlert } from "@/lib/mailer"
 
 export async function POST(req: NextRequest) {
   try {
@@ -109,6 +109,19 @@ export async function POST(req: NextRequest) {
             await sendReviewRequestEmail(customerEmail, firstName, order.items || [])
           } catch { /* no bloquear */ }
         }
+
+        // ── 7. Alerta al administrador ────────────────────────────
+        try {
+          await sendAdminOrderAlert({
+            reference,
+            total: order.total,
+            customer_name: customerName,
+            customer_email: customerEmail,
+            customer_phone: order.customer_phone || null,
+            shipping_address: order.shipping_address || null,
+            items: order.items || [],
+          })
+        } catch { /* no bloquear checkout */ }
       }
     }
 

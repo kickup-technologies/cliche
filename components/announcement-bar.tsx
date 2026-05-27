@@ -47,7 +47,7 @@ export function AnnouncementBar() {
         <Zap className="w-3.5 h-3.5 text-[#C4958A] flex-shrink-0" />
         <span className="hidden sm:inline text-[#FAF8F5]/70 uppercase tracking-widest text-[10px] font-semibold">Oferta del día</span>
         <span className="hidden sm:block w-px h-3 bg-[#FAF8F5]/20" />
-        <span className="font-semibold text-[#FAF8F5]">Envío gratis en compras mayores a <span className="text-[#C4958A]">$150.000 COP</span></span>
+        <span className="font-semibold text-[#FAF8F5]">Envío gratis en compras mayores a <span className="text-[#C4958A]">$300.000 COP</span></span>
         <span className="hidden md:block w-px h-3 bg-[#FAF8F5]/20" />
         <span className="hidden md:inline text-[#FAF8F5]/80">Código <span className="font-bold text-[#C4958A] tracking-wider">{discountCode}</span> → {discountPct}% OFF</span>
         <span className="hidden md:block w-px h-3 bg-[#FAF8F5]/20" />

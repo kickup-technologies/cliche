@@ -5,7 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useCart } from "@/context/cart-context"
-import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Lock, ShieldCheck, Truck, Leaf, RotateCcw, Tag, ChevronDown, ChevronUp, Mail, RefreshCw } from "lucide-react"
+import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Lock, Truck, Leaf, RotateCcw, Tag, ChevronDown, ChevronUp, Mail, RefreshCw, Phone, MapPin, User } from "lucide-react"
 
 function fmt(n: number) {
   return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(n)
@@ -29,6 +29,13 @@ export default function CheckoutPage() {
   const [couponSuccess, setCouponSuccess] = useState<string | null>(null)
   const [discountAmount, setDiscountAmount] = useState(0)
   const [appliedCode, setAppliedCode] = useState<string | null>(null)
+  // Shipping address
+  const [customerName, setCustomerName] = useState("")
+  const [customerPhone, setCustomerPhone] = useState("")
+  const [addressLine, setAddressLine] = useState("")
+  const [addressCity, setAddressCity] = useState("")
+  const [addressDept, setAddressDept] = useState("")
+  const [addressNotes, setAddressNotes] = useState("")
   const router = useRouter()
 
   useEffect(() => {
@@ -55,7 +62,7 @@ export default function CheckoutPage() {
 
   const selectedItems = items.filter((i) => selected[i.product.id])
   const subtotal = selectedItems.reduce((s, i) => s + i.product.price * i.quantity, 0)
-  const FREE_SHIPPING = 150000
+  const FREE_SHIPPING = 300000
   const freeShipping = subtotal >= FREE_SHIPPING
   const shipping = freeShipping ? 0 : subtotal > 0 ? 15000 : 0
   const total = subtotal + shipping - discountAmount
@@ -91,6 +98,15 @@ export default function CheckoutPage() {
 
   async function handlePay() {
     if (!selectedItems.length) return
+    // Validar campos obligatorios de envío
+    if (!customerName.trim() || !customerPhone.trim() || !addressLine.trim() || !addressCity.trim() || !addressDept.trim()) {
+      setError("Completa todos los datos de envío antes de continuar.")
+      return
+    }
+    if (!customerEmail.trim() || !customerEmail.includes("@")) {
+      setError("Ingresa un correo electrónico válido.")
+      return
+    }
     setIsLoading(true)
     setError(null)
     try {
@@ -103,6 +119,14 @@ export default function CheckoutPage() {
           email: customerEmail,
           discount_code: appliedCode,
           discount_amount: discountAmount,
+          customer_name: customerName.trim(),
+          customer_phone: customerPhone.trim(),
+          shipping_address: {
+            address: addressLine.trim(),
+            city: addressCity.trim(),
+            department: addressDept.trim(),
+            notes: addressNotes.trim() || null,
+          },
         }),
       })
       const data = await res.json()
@@ -216,18 +240,95 @@ export default function CheckoutPage() {
             })}
           </div>
 
-          {/* Email */}
-          <div className="mt-8">
-            <p className="text-[10px] text-[#2D1A14]/30 tracking-[0.2em] uppercase mb-3 flex items-center gap-2">
-              <Mail className="w-3 h-3" /> Correo electrónico
+          {/* ── Datos de contacto y envío ────────────────────── */}
+          <div className="mt-8 space-y-4">
+            <p className="text-[10px] text-[#2D1A14]/30 tracking-[0.2em] uppercase flex items-center gap-2">
+              <MapPin className="w-3 h-3" /> Datos de envío
             </p>
+
+            {/* Nombre + Teléfono */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex border border-[#2D1A14]/15 hover:border-[#2D1A14]/30 transition-colors duration-200">
+                <div className="pl-3 flex items-center">
+                  <User className="w-3.5 h-3.5 text-[#2D1A14]/20" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Nombre completo *"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  className="flex-1 px-3 py-3 text-sm bg-transparent text-[#2D1A14] placeholder:text-[#2D1A14]/25 outline-none font-light"
+                />
+              </div>
+              <div className="flex border border-[#2D1A14]/15 hover:border-[#2D1A14]/30 transition-colors duration-200">
+                <div className="pl-3 flex items-center">
+                  <Phone className="w-3.5 h-3.5 text-[#2D1A14]/20" />
+                </div>
+                <input
+                  type="tel"
+                  placeholder="Celular *"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  className="flex-1 px-3 py-3 text-sm bg-transparent text-[#2D1A14] placeholder:text-[#2D1A14]/25 outline-none font-light"
+                />
+              </div>
+            </div>
+
+            {/* Email */}
             <div className="flex border border-[#2D1A14]/15 hover:border-[#2D1A14]/30 transition-colors duration-200">
+              <div className="pl-3 flex items-center">
+                <Mail className="w-3.5 h-3.5 text-[#2D1A14]/20" />
+              </div>
               <input
                 type="email"
-                placeholder="tu@correo.com"
+                placeholder="Correo electrónico *"
                 value={customerEmail}
                 onChange={(e) => setCustomerEmail(e.target.value)}
-                className="flex-1 px-4 py-3 text-sm bg-transparent text-[#2D1A14] placeholder:text-[#2D1A14]/25 outline-none font-light tracking-wide"
+                className="flex-1 px-3 py-3 text-sm bg-transparent text-[#2D1A14] placeholder:text-[#2D1A14]/25 outline-none font-light tracking-wide"
+              />
+            </div>
+
+            {/* Dirección */}
+            <div className="flex border border-[#2D1A14]/15 hover:border-[#2D1A14]/30 transition-colors duration-200">
+              <input
+                type="text"
+                placeholder="Dirección: calle, número, barrio *"
+                value={addressLine}
+                onChange={(e) => setAddressLine(e.target.value)}
+                className="flex-1 px-4 py-3 text-sm bg-transparent text-[#2D1A14] placeholder:text-[#2D1A14]/25 outline-none font-light"
+              />
+            </div>
+
+            {/* Ciudad + Departamento */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex border border-[#2D1A14]/15 hover:border-[#2D1A14]/30 transition-colors duration-200">
+                <input
+                  type="text"
+                  placeholder="Ciudad / Municipio *"
+                  value={addressCity}
+                  onChange={(e) => setAddressCity(e.target.value)}
+                  className="flex-1 px-4 py-3 text-sm bg-transparent text-[#2D1A14] placeholder:text-[#2D1A14]/25 outline-none font-light"
+                />
+              </div>
+              <div className="flex border border-[#2D1A14]/15 hover:border-[#2D1A14]/30 transition-colors duration-200">
+                <input
+                  type="text"
+                  placeholder="Departamento *"
+                  value={addressDept}
+                  onChange={(e) => setAddressDept(e.target.value)}
+                  className="flex-1 px-4 py-3 text-sm bg-transparent text-[#2D1A14] placeholder:text-[#2D1A14]/25 outline-none font-light"
+                />
+              </div>
+            </div>
+
+            {/* Notas opcionales */}
+            <div className="flex border border-[#2D1A14]/10 hover:border-[#2D1A14]/20 transition-colors duration-200">
+              <input
+                type="text"
+                placeholder="Instrucciones de entrega (opcional)"
+                value={addressNotes}
+                onChange={(e) => setAddressNotes(e.target.value)}
+                className="flex-1 px-4 py-3 text-sm bg-transparent text-[#2D1A14] placeholder:text-[#2D1A14]/20 outline-none font-light"
               />
             </div>
           </div>

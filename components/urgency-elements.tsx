@@ -211,9 +211,9 @@ export function StickyAddToCart() {
               ))}
             </div>
             <span className="hidden sm:inline text-xs">
-              +5.000 hogares · <span className="font-semibold text-foreground">Envío gratis +$150k</span>
+              +5.000 hogares · <span className="font-semibold text-foreground">Envío gratis +$300k</span>
             </span>
-            <span className="sm:hidden text-xs font-medium text-foreground">+5.000 hogares · Envío gratis +$150k</span>
+            <span className="sm:hidden text-xs font-medium text-foreground">+5.000 hogares · Envío gratis +$300k</span>
           </div>
           <Button size="sm" className="shrink-0 rounded-full h-8 px-4 text-xs font-semibold" asChild>
             <a href="#productos">Ver aromas →</a>

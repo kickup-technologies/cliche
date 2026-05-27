@@ -3,7 +3,7 @@ import crypto from "crypto"
 
 export async function POST(req: NextRequest) {
   try {
-    const { items, total, email, discount_code, discount_amount } = await req.json()
+    const { items, total, email, discount_code, discount_amount, customer_name, customer_phone, shipping_address } = await req.json()
 
     if (!items?.length || !total || total <= 0) {
       return NextResponse.json({ error: "Carrito vacío o total inválido" }, { status: 400 })
@@ -34,11 +34,15 @@ export async function POST(req: NextRequest) {
         stripe_session_id: reference,
         total: Math.round(total),
         status: "pending",
-        items: items.map((i: { product_id: string; quantity: number }) => ({
+        items: items.map((i: { product_id: string; quantity: number; name?: string }) => ({
           product_id: i.product_id,
           quantity: i.quantity,
+          name: i.name,
         })),
         customer_email: email || null,
+        customer_name: customer_name || null,
+        customer_phone: customer_phone || null,
+        shipping_address: shipping_address || null,
         discount_code: discount_code || null,
         discount_amount: discount_amount || 0,
       })
@@ -57,6 +61,20 @@ export async function POST(req: NextRequest) {
       "redirect-url": `${appUrl}/gracias?reference=${reference}`,
     })
     if (email) params.set("customer-email", email)
+    // Pre-fill Wompi widget with customer data
+    if (customer_name) params.set("customer-data:full-name", customer_name)
+    if (customer_phone) {
+      params.set("customer-data:phone-number", customer_phone.replace(/\D/g, "").slice(-10))
+      params.set("customer-data:phone-number-prefix", "+57")
+    }
+    // Pre-fill shipping address in Wompi
+    if (shipping_address) {
+      if (shipping_address.address) params.set("shipping-address:address-line-1", shipping_address.address)
+      if (shipping_address.city) params.set("shipping-address:city", shipping_address.city)
+      if (shipping_address.department) params.set("shipping-address:region", shipping_address.department)
+      if (customer_name) params.set("shipping-address:name", customer_name)
+      if (customer_phone) params.set("shipping-address:phone-number", customer_phone.replace(/\D/g, "").slice(-10))
+    }
 
     const checkoutUrl = `https://checkout.wompi.co/p/?${params.toString()}`
     return NextResponse.json({ url: checkoutUrl })

@@ -72,7 +72,7 @@ export default function TerminosCondiciones() {
               <h2 className="text-xl font-serif font-bold text-foreground mb-3">5. Envíos</h2>
               <ul className="list-disc pl-5 space-y-1">
                 <li><strong>Envío estándar:</strong> 3–5 días hábiles a todo Colombia.</li>
-                <li><strong>Envío gratis</strong> en compras mayores a $150.000 COP.</li>
+                <li><strong>Envío gratis</strong> en compras mayores a $300.000 COP.</li>
                 <li>Los tiempos de entrega son estimados y pueden variar por condiciones externas.</li>
                 <li>Una vez despachado el pedido, recibirá un número de seguimiento por correo.</li>
                 <li>No realizamos envíos internacionales en este momento.</li>
