@@ -142,12 +142,12 @@ export function ProductDetail({ product, related }: Props) {
               className="relative"
               style={{
                 transform: fell ? 'translateY(0)' : 'translateY(-110vh)',
-                transition: 'transform 900ms cubic-bezier(0.34, 1.3, 0.64, 1)',
+                transition: 'transform 1800ms cubic-bezier(0.0, 0.0, 0.2, 1)',
               }}
             >
               <div className="sticky top-24">
                 <div className="relative">
-                  <SprayBottle3D transparent zTilt={40 * Math.PI / 180} />
+                  <SprayBottle3D transparent zTilt={35 * Math.PI / 180} />
                   {product.badge && (
                     <div className="absolute top-4 left-4">
                       <span className={`${product.badge_color || "bg-primary"} text-white text-xs font-bold px-3 py-1.5 rounded-full`}>

@@ -95,7 +95,7 @@ function Mist({ active }: { active: boolean }) {
   )
 }
 
-function Scene({ zTilt = 0 }: { zTilt?: number }) {
+function Scene({ zTilt = 0, transparent = false }: { zTilt?: number; transparent?: boolean }) {
   const [spraying, setSpraying] = useState(false)
 
   const handleSpray = () => {
@@ -113,7 +113,7 @@ function Scene({ zTilt = 0 }: { zTilt?: number }) {
       <Suspense fallback={null}>
         <SprayModel spraying={spraying} onSpray={handleSpray} zTilt={zTilt} />
         <Mist active={spraying} />
-        <ContactShadows position={[0, -1.4, 0]} opacity={0.25} scale={4} blur={2.5} />
+        {!transparent && <ContactShadows position={[0, -1.4, 0]} opacity={0.25} scale={4} blur={2.5} />}
         <Environment preset="apartment" />
       </Suspense>
 
@@ -141,7 +141,7 @@ export function SprayBottle3D({ transparent, zTilt = 0 }: { transparent?: boolea
         style={{ background: "transparent" }}
         onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}
       >
-        <Scene zTilt={zTilt} />
+        <Scene zTilt={zTilt} transparent={transparent} />
       </Canvas>
 
       {!transparent && (
