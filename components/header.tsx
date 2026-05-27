@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Menu, ShoppingBag, ChevronDown, Heart } from "lucide-react"
+import { Menu, ShoppingBag, ChevronDown, Heart, Instagram, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -68,53 +68,114 @@ export function Header() {
                   <span className="sr-only">Abrir menú</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-[300px] bg-background">
-                <div className="flex flex-col gap-6 pt-8">
-                  {navigation.map((item) => (
-                    <div key={item.name}>
-                      {item.submenu ? (
-                        <div className="space-y-3">
-                          <span className="text-lg font-serif font-semibold text-foreground">
-                            {item.name}
-                          </span>
-                          <div className="pl-4 space-y-2">
-                            {item.submenu.map((sub) => (
-                              <Link
-                                key={sub.name}
-                                href={sub.href}
-                                className="block text-muted-foreground hover:text-primary transition-colors"
-                                onClick={() => setIsOpen(false)}
-                              >
-                                {sub.name}
-                              </Link>
-                            ))}
-                          </div>
-                        </div>
-                      ) : (
-                        <Link
-                          href={item.href}
-                          className={`text-lg font-serif font-semibold transition-colors ${
-                            item.highlight ? "text-primary" : "text-foreground hover:text-primary"
-                          }`}
-                          onClick={() => setIsOpen(false)}
-                        >
-                          {item.name}
-                          {item.highlight && (
-                            <span className="ml-2 text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">
-                              -30%
-                            </span>
-                          )}
-                        </Link>
-                      )}
-                    </div>
-                  ))}
-                  
-                  {/* Mobile CTA */}
-                  <div className="pt-6 border-t border-border">
-                    <Button className="w-full" size="lg">
-                      COMPRAR AHORA
-                    </Button>
+              <SheetContent side="left" className="w-[85vw] max-w-sm p-0 border-0 bg-[#2D1A14]">
+                <div className="flex flex-col h-full">
+
+                  {/* Header del menú */}
+                  <div className="flex items-center justify-between px-7 pt-8 pb-6 border-b border-white/8">
+                    <Link href="/" onClick={() => setIsOpen(false)}>
+                      <span className="font-serif text-2xl font-bold tracking-widest text-white uppercase">
+                        Cliché
+                      </span>
+                    </Link>
+                    <p className="text-[10px] text-white/25 tracking-[0.2em] uppercase">Menú</p>
                   </div>
+
+                  {/* Navegación */}
+                  <nav className="flex-1 px-7 py-8 space-y-1 overflow-y-auto">
+                    {navigation.map((item, idx) => (
+                      <div key={item.name}>
+                        {item.submenu ? (
+                          <div className="mb-2">
+                            {/* Categoría padre */}
+                            <p className="text-[10px] text-white/30 tracking-[0.25em] uppercase mb-3 mt-4 first:mt-0">
+                              {item.name}
+                            </p>
+                            <div className="space-y-1">
+                              {item.submenu.map((sub) => (
+                                <Link
+                                  key={sub.name}
+                                  href={sub.href}
+                                  onClick={() => setIsOpen(false)}
+                                  className="flex items-center justify-between py-3 px-4 rounded-xl text-white/70 hover:text-white hover:bg-white/6 transition-all duration-200 group"
+                                >
+                                  <span className="font-serif text-base">{sub.name}</span>
+                                  <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <Link
+                            href={item.href}
+                            onClick={() => setIsOpen(false)}
+                            className={`flex items-center justify-between py-3.5 px-4 rounded-xl transition-all duration-200 group ${
+                              item.highlight
+                                ? "text-[#A67163] hover:bg-[#A67163]/10"
+                                : "text-white/80 hover:text-white hover:bg-white/6"
+                            }`}
+                          >
+                            <span className="font-serif text-lg font-light">{item.name}</span>
+                            <div className="flex items-center gap-2">
+                              {item.highlight && (
+                                <span className="text-[9px] font-bold bg-red-500 text-white px-2 py-0.5 rounded-full tracking-wider">
+                                  HOT
+                                </span>
+                              )}
+                              <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-60 transition-opacity" />
+                            </div>
+                          </Link>
+                        )}
+                        {/* Separador sutil entre secciones */}
+                        {idx < navigation.length - 1 && !item.submenu && (
+                          <div className="mx-4 border-b border-white/5 mt-1" />
+                        )}
+                      </div>
+                    ))}
+                  </nav>
+
+                  {/* Footer del menú */}
+                  <div className="px-7 pb-10 space-y-4 border-t border-white/8 pt-6">
+                    {/* CTA */}
+                    <Link
+                      href="/catalogo"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center justify-center gap-2 w-full bg-[#A67163] hover:bg-[#8B5E52] text-white font-semibold text-sm tracking-wide py-4 rounded-xl transition-colors duration-200"
+                    >
+                      <ShoppingBag className="w-4 h-4" />
+                      Ver colección
+                    </Link>
+
+                    {/* Redes sociales */}
+                    <div className="flex items-center justify-center gap-4 pt-2">
+                      <a
+                        href="https://instagram.com/clichearomasoficial"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 text-white/30 hover:text-white/60 transition-colors text-xs tracking-wide"
+                      >
+                        <Instagram className="w-3.5 h-3.5" />
+                        Instagram
+                      </a>
+                      <span className="text-white/15">·</span>
+                      <a
+                        href="https://tiktok.com/@clichearomasoficial"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 text-white/30 hover:text-white/60 transition-colors text-xs tracking-wide"
+                      >
+                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.34 6.34 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.27 8.27 0 004.84 1.55V6.79a4.85 4.85 0 01-1.07-.1z"/>
+                        </svg>
+                        TikTok
+                      </a>
+                    </div>
+
+                    <p className="text-center text-white/15 text-[9px] tracking-widest uppercase">
+                      Aromas artesanales · Colombia
+                    </p>
+                  </div>
+
                 </div>
               </SheetContent>
             </Sheet>
