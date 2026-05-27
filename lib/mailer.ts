@@ -188,6 +188,50 @@ export async function sendOrderConfirmation(
   } catch (err) { console.error("[mailer] Order confirmation failed:", err) }
 }
 
+// ── Abandoned cart ───────────────────────────────────────────────────────────
+export async function sendAbandonedCartEmail(
+  to: string,
+  items: Array<{ name: string; price: number; image_url?: string }>
+): Promise<void> {
+  const transport = createTransport()
+  if (!transport) { console.warn("[mailer] SMTP not configured — skipping abandoned cart email"); return }
+
+  const itemsList = items.slice(0, 4).map((item) =>
+    `<tr><td style="padding:8px 0;font-size:14px;color:#2D1A14;">${item.name}</td><td align="right" style="padding:8px 0;font-size:14px;font-weight:600;color:#2D1A14;">$${item.price.toLocaleString("es-CO")} COP</td></tr>`
+  ).join("")
+
+  const html = `
+<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/></head>
+<body style="margin:0;padding:0;background:#FAF8F5;font-family:Georgia,serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#FAF8F5;padding:40px 16px;"><tr><td align="center">
+<table width="540" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:24px;overflow:hidden;box-shadow:0 4px 40px rgba(0,0,0,.07);">
+  <tr><td style="background:linear-gradient(135deg,#2D1A14 0%,#6B3D30 100%);padding:40px;text-align:center;">
+    <h1 style="margin:0;font-family:Georgia,serif;font-size:36px;font-weight:700;color:#fff;">Cliche</h1>
+    <p style="margin:8px 0 0;font-size:12px;color:rgba(255,255,255,.55);letter-spacing:.12em;text-transform:uppercase;">Tu carrito te espera</p>
+  </td></tr>
+  <tr><td style="padding:40px;">
+    <p style="margin:0 0 8px;font-size:20px;font-weight:600;color:#2D1A14;">Olvidaste algo especial</p>
+    <p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:#6B5A53;">Guardamos tu carrito para que puedas retomar tu compra cuando quieras.</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;border-top:1px solid #EDD5CF;">
+      ${itemsList}
+    </table>
+    <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+      <a href="https://cliche-nine.vercel.app/" style="display:inline-block;background:#2D1A14;color:#fff;text-decoration:none;padding:16px 44px;border-radius:100px;font-size:15px;font-weight:700;">
+        Completar mi compra
+      </a>
+    </td></tr></table>
+  </td></tr>
+  <tr><td style="background:#FAF8F5;padding:20px 40px;text-align:center;border-top:1px solid #EDD5CF;">
+    <p style="margin:0;font-size:11px;color:#B0A09A;">Cliche Aromas - Colombia | hola@clichearomas.com</p>
+  </td></tr>
+</table></td></tr></table>
+</body></html>`
+
+  try {
+    await transport.sendMail({ from: FROM, to, subject: "Tu carrito te espera — Cliche Aromas", html })
+  } catch (err) { console.error("[mailer] Abandoned cart email failed:", err) }
+}
+
 // ── Review request (sent post-purchase) ──────────────────────────────────────
 export async function sendReviewRequestEmail(
   to: string,

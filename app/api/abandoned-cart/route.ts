@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase"
-import { sendAbandonedCartEmail } from "@/lib/resend"
+import { sendAbandonedCartEmail } from "@/lib/mailer"
 
 // Called by a cron job or timer after ~1 hour of inactivity
 // POST body: { session_id, email }
