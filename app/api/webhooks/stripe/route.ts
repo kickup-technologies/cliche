@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getStripe } from "@/lib/stripe"
 import { createServerClient } from "@/lib/supabase"
-import { sendOrderConfirmation, sendReviewRequestEmail } from "@/lib/resend"
+import { sendOrderConfirmation, sendReviewRequestEmail } from "@/lib/mailer"
 
 export async function POST(req: NextRequest) {
   const body = await req.text()

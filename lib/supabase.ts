@@ -23,6 +23,7 @@ export interface Product {
   original_price: number | null
   description: string | null
   image_url: string
+  image_urls: string[]
   badge: string | null
   badge_color: string | null
   stock: number

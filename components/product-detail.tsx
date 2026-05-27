@@ -99,6 +99,9 @@ export function ProductDetail({ product, related }: Props) {
   const [added, setAdded] = useState(false)
   const [activeTab, setActiveTab] = useState<"descripcion" | "uso" | "envio">("descripcion")
   const [viewers, setViewers] = useState(() => Math.floor(Math.random() * 16) + 7)
+  // Gallery: null = show 3D render, string = show that photo URL
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const galleryImages: string[] = Array.isArray(product.image_urls) ? product.image_urls.filter(Boolean) : []
 
   // Viewers en vivo — fluctúa cada 18s
   useEffect(() => {
@@ -167,7 +170,7 @@ export function ProductDetail({ product, related }: Props) {
 
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12 mb-20">
-            {/* Product Image */}
+            {/* Product Image / Gallery */}
             <div
               className="relative"
               style={{
@@ -175,9 +178,23 @@ export function ProductDetail({ product, related }: Props) {
                 transition: 'transform 1800ms cubic-bezier(0.0, 0.0, 0.2, 1)',
               }}
             >
-              <div className="sticky top-24">
-                <div className="relative">
-                  <SprayBottle3D transparent zTilt={35 * Math.PI / 180} onReady={handleModelReady} />
+              <div className="sticky top-24 space-y-4">
+                {/* Main viewer */}
+                <div className="relative aspect-square bg-muted/30 rounded-3xl overflow-hidden">
+                  {selectedImage ? (
+                    /* Photo mode — fills the same space the 3D render occupied */
+                    <Image
+                      src={selectedImage}
+                      alt={product.name}
+                      fill
+                      className="object-contain p-4"
+                      sizes="(max-width: 1024px) 100vw, 50vw"
+                    />
+                  ) : (
+                    /* 3D render mode */
+                    <SprayBottle3D transparent zTilt={35 * Math.PI / 180} onReady={handleModelReady} />
+                  )}
+
                   {product.badge && (
                     <div className="absolute top-4 left-4">
                       <span className={`${product.badge_color || "bg-primary"} text-white text-xs font-bold px-3 py-1.5 rounded-full`}>
@@ -190,6 +207,45 @@ export function ProductDetail({ product, related }: Props) {
                       {product.stock <= 3 ? `¡Solo ${product.stock} quedan!` : "Pocas unidades"}
                     </div>
                   )}
+                </div>
+
+                {/* Thumbnail strip — 3D thumb + photo thumbs */}
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {/* 3D render thumbnail */}
+                  <button
+                    onClick={() => setSelectedImage(null)}
+                    className={`flex-shrink-0 w-16 h-16 rounded-xl border-2 overflow-hidden bg-muted/40 flex items-center justify-center transition-all ${
+                      selectedImage === null ? "border-primary shadow-md" : "border-border hover:border-primary/50"
+                    }`}
+                    title="Ver vista 3D"
+                  >
+                    <span className="text-[10px] font-bold text-muted-foreground text-center leading-tight px-1">Vista<br/>3D</span>
+                  </button>
+
+                  {/* Admin photos (if any) or blank placeholders */}
+                  {galleryImages.length > 0
+                    ? galleryImages.map((url, i) => (
+                        <button
+                          key={url}
+                          onClick={() => setSelectedImage(url)}
+                          className={`flex-shrink-0 w-16 h-16 rounded-xl border-2 overflow-hidden transition-all ${
+                            selectedImage === url ? "border-primary shadow-md" : "border-border hover:border-primary/50"
+                          }`}
+                        >
+                          <img src={url} alt={`Imagen ${i + 1}`} className="w-full h-full object-cover" />
+                        </button>
+                      ))
+                    : /* blank placeholders shown until admin uploads images */
+                      [1, 2, 3].map((n) => (
+                        <div
+                          key={n}
+                          className="flex-shrink-0 w-16 h-16 rounded-xl border-2 border-dashed border-border bg-muted/20 flex items-center justify-center"
+                          title="Foto próximamente"
+                        >
+                          <span className="text-[9px] text-muted-foreground/50 text-center leading-tight">Foto<br/>pronto</span>
+                        </div>
+                      ))
+                  }
                 </div>
               </div>
             </div>

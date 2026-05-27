@@ -51,5 +51,38 @@ export default async function ProductPage({ params }: Props) {
     .neq("slug", slug)
     .limit(4)
 
-  return <ProductDetail product={product} related={related || []} />
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.description ?? `${product.name} — Cliché Aromas Colombia`,
+    image: product.image_url ? [product.image_url] : [],
+    brand: { "@type": "Brand", name: "Cliché Aromas" },
+    offers: {
+      "@type": "Offer",
+      priceCurrency: "COP",
+      price: product.price,
+      availability: product.stock > 0
+        ? "https://schema.org/InStock"
+        : "https://schema.org/OutOfStock",
+      seller: { "@type": "Organization", name: "Cliché Aromas" },
+    },
+    ...(product.rating > 0 && {
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: product.rating,
+        reviewCount: product.reviews,
+      },
+    }),
+  }
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <ProductDetail product={product} related={related || []} />
+    </>
+  )
 }

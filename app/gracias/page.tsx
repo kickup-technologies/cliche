@@ -4,24 +4,67 @@ import { Suspense } from "react"
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { CheckCircle, ShoppingBag, Mail, Sparkles, ArrowRight, Tag } from "lucide-react"
+import {
+  CheckCircle, ShoppingBag, Mail, Sparkles, ArrowRight,
+  Tag, Share2, Star, Copy, Check
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
+
+interface ReferralData {
+  code: string
+  discount_percent: number
+}
 
 function GraciasContent() {
   const params = useSearchParams()
   const sessionId = params.get("session_id")
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
+  const [refCopied, setRefCopied] = useState(false)
+  const [referral, setReferral] = useState<ReferralData | null>(null)
 
   useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 2000)
+    // Simulate loading + fetch referral code if session exists
+    const t = setTimeout(async () => {
+      if (sessionId) {
+        try {
+          const res = await fetch("/api/referral/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ session_id: sessionId }),
+          })
+          if (res.ok) {
+            const d = await res.json()
+            setReferral(d)
+          }
+        } catch {
+          // silent — referral is a nice-to-have
+        }
+      }
+      setLoading(false)
+    }, 1500)
     return () => clearTimeout(t)
-  }, [])
+  }, [sessionId])
 
   function copyCode() {
     navigator.clipboard.writeText("RITUAL15")
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  function copyReferral() {
+    if (!referral) return
+    navigator.clipboard.writeText(referral.code)
+    setRefCopied(true)
+    setTimeout(() => setRefCopied(false), 2000)
+  }
+
+  const shareText = referral
+    ? `Descubrí Cliché Aromas y huele increíble 🌿 Usa mi código ${referral.code} y obtén ${referral.discount_percent}% OFF en tu primera compra → https://clichearomas.com`
+    : ""
+
+  function shareWhatsApp() {
+    window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, "_blank")
   }
 
   return (
@@ -59,14 +102,81 @@ function GraciasContent() {
               </div>
 
               {sessionId && (
-                <p className="text-xs text-muted-foreground mb-4">
-                  Pedido #{sessionId.slice(-8).toUpperCase()}
-                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center mb-2">
+                  <p className="text-xs text-muted-foreground">
+                    Pedido #{sessionId.slice(-8).toUpperCase()}
+                  </p>
+                  <Link
+                    href={`/pedido/${sessionId}`}
+                    className="text-xs font-semibold text-primary hover:underline underline-offset-2"
+                  >
+                    Seguir mi pedido →
+                  </Link>
+                </div>
               )}
             </div>
 
+            {/* Google Review CTA */}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-5 mb-5 flex items-start gap-4">
+              <div className="flex-shrink-0">
+                <div className="w-10 h-10 bg-yellow-100 rounded-xl flex items-center justify-center">
+                  <Star className="w-5 h-5 text-yellow-500 fill-yellow-400" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-foreground text-sm mb-1">¿Ya te gustó la experiencia?</p>
+                <p className="text-xs text-muted-foreground mb-3">Una reseña en Google nos ayuda a llegar a más hogares colombianos. ¡Solo toma 30 segundos!</p>
+                <a
+                  href="https://g.page/r/CLICHE_AROMAS_GOOGLE_PLACE_ID/review"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 text-xs font-bold px-4 py-2 rounded-xl transition-colors"
+                >
+                  <Star className="w-3.5 h-3.5 fill-yellow-900" />
+                  Dejar reseña en Google
+                </a>
+              </div>
+            </div>
+
+            {/* Referral program */}
+            {referral && (
+              <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-3xl p-6 mb-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <Share2 className="w-4 h-4 text-primary" />
+                  <span className="text-xs font-bold uppercase tracking-widest text-primary">Comparte y gana</span>
+                </div>
+                <h2 className="text-lg font-serif font-bold text-foreground mb-1">
+                  Tu código de referido
+                </h2>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Comparte este código con amigos. Ellos obtienen <strong>{referral.discount_percent}% OFF</strong> y tú acumulas beneficios con cada compra referida.
+                </p>
+
+                <div className="bg-background rounded-xl p-4 mb-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Tag className="w-4 h-4 text-primary" />
+                    <span className="font-mono font-bold text-lg text-foreground tracking-widest">{referral.code}</span>
+                  </div>
+                  <button
+                    onClick={copyReferral}
+                    className="flex items-center gap-1 text-xs font-semibold text-primary underline underline-offset-2 hover:text-primary/70 transition-colors"
+                  >
+                    {refCopied ? <><Check className="w-3 h-3" /> Copiado</> : <><Copy className="w-3 h-3" /> Copiar</>}
+                  </button>
+                </div>
+
+                <button
+                  onClick={shareWhatsApp}
+                  className="w-full flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors"
+                >
+                  <Share2 className="w-4 h-4" />
+                  Compartir por WhatsApp
+                </button>
+              </div>
+            )}
+
             {/* Upsell — Completa tu ritual */}
-            <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-3xl p-6 mb-6">
+            <div className="bg-card border border-border rounded-3xl p-6 mb-6">
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles className="w-4 h-4 text-primary" />
                 <span className="text-xs font-bold uppercase tracking-widest text-primary">Completa tu ritual</span>
@@ -79,7 +189,7 @@ function GraciasContent() {
               </p>
 
               {/* Discount code */}
-              <div className="bg-background rounded-xl p-4 mb-4 flex items-center justify-between">
+              <div className="bg-muted/50 rounded-xl p-4 mb-4 flex items-center justify-between">
                 <div>
                   <p className="text-xs text-muted-foreground mb-0.5">Código exclusivo por tu compra</p>
                   <div className="flex items-center gap-2">
@@ -90,9 +200,9 @@ function GraciasContent() {
                 </div>
                 <button
                   onClick={copyCode}
-                  className="text-xs font-semibold text-primary underline underline-offset-2 hover:text-primary/70 transition-colors"
+                  className="flex items-center gap-1 text-xs font-semibold text-primary underline underline-offset-2 hover:text-primary/70 transition-colors"
                 >
-                  {copied ? "¡Copiado!" : "Copiar"}
+                  {copied ? <><Check className="w-3 h-3" /> ¡Copiado!</> : <><Copy className="w-3 h-3" /> Copiar</>}
                 </button>
               </div>
 
