@@ -57,6 +57,7 @@ export interface Review {
   rating: number
   comment: string | null
   is_approved: boolean
+  media_urls: string[]
   created_at: string
 }
 
