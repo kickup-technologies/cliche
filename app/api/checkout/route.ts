@@ -1,37 +1,34 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getStripe, toStripeAmount } from "@/lib/stripe"
 import { createServerClient } from "@/lib/supabase"
+import crypto from "crypto"
 
 export async function POST(req: NextRequest) {
   try {
-    const { items, discountCode, customerEmail } = await req.json()
-    // items = [{ product_id, quantity }]
+    const { items, discountCode } = await req.json()
 
     const supabase = createServerClient()
-
-    // Obtener precios reales desde la DB (nunca confiar en el frontend)
     const productIds = items.map((i: { product_id: string }) => i.product_id)
-    let { data: products, error } = await supabase
+
+    const { data: products, error } = await supabase
       .from("products")
       .select("id, name, price, stock, image_url")
       .in("id", productIds)
 
-    // Fallback: si la query falló, intentar sin filtro adicional
     if (error || !products?.length) {
       console.error("[checkout] products query error:", error, "ids:", productIds)
-      return NextResponse.json({ error: "Productos no encontrados. Verifica que los productos estén disponibles." }, { status: 400 })
+      return NextResponse.json({ error: "Productos no encontrados" }, { status: 400 })
     }
 
     // Verificar stock
     for (const item of items) {
       const product = products.find((p) => p.id === item.product_id)
-      if (!product) return NextResponse.json({ error: `Producto no existe` }, { status: 400 })
+      if (!product) return NextResponse.json({ error: "Producto no existe" }, { status: 400 })
       if (product.stock < item.quantity) {
         return NextResponse.json({ error: `Stock insuficiente: ${product.name}` }, { status: 400 })
       }
     }
 
-    // Aplicar descuento si hay código
+    // Descuento
     let discountPercent = 0
     if (discountCode) {
       const { data: promo } = await supabase
@@ -43,39 +40,46 @@ export async function POST(req: NextRequest) {
       if (promo) discountPercent = promo.discount_percent
     }
 
-    // Crear line items para Stripe
-    const lineItems = items.map((item: { product_id: string; quantity: number }) => {
+    // Total en COP (pesos)
+    const totalCOP = items.reduce((sum: number, item: { product_id: string; quantity: number }) => {
       const product = products.find((p) => p.id === item.product_id)!
-      const finalPrice = Math.round(product.price * (1 - discountPercent / 100))
+      const price = Math.round(product.price * (1 - discountPercent / 100))
+      return sum + price * item.quantity
+    }, 0)
 
-      return {
-        price_data: {
-          currency: "cop",
-          unit_amount: toStripeAmount(finalPrice),
-          product_data: {
-            name: product.name,
-            images: product.image_url ? [`${process.env.NEXT_PUBLIC_APP_URL}${product.image_url}`] : [],
-          },
-        },
-        quantity: item.quantity,
-      }
+    // Wompi usa centavos (1 COP = 100 centavos)
+    const amountInCents = totalCOP * 100
+    const reference = `cliche_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
+    const currency = "COP"
+    const integritySecret = process.env.WOMPI_INTEGRITY_SECRET!
+    const publicKey = process.env.WOMPI_PUBLIC_KEY!
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://cliche-nine.vercel.app"
+
+    // Firma de integridad SHA256(reference + amount_in_cents + currency + integrity_secret)
+    const integrityString = `${reference}${amountInCents}${currency}${integritySecret}`
+    const signature = crypto.createHash("sha256").update(integrityString).digest("hex")
+
+    // Guardar orden pendiente para recuperarla en el webhook
+    await supabase.from("orders").insert({
+      stripe_session_id: reference, // reutilizamos este campo para la referencia de Wompi
+      total: totalCOP,
+      status: "pending",
+      items,
+      discount_code: discountCode || null,
     })
 
-    // Crear sesión de Stripe Checkout
-    const session = await getStripe().checkout.sessions.create({
-      payment_method_types: ["card"],
-      line_items: lineItems,
-      mode: "payment",
-      customer_email: customerEmail,
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/gracias?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/?cancelado=true`,
-      metadata: {
-        discount_code: discountCode || "",
-        items: JSON.stringify(items),
-      },
+    // URL de checkout Wompi
+    const params = new URLSearchParams({
+      "public-key": publicKey,
+      currency,
+      "amount-in-cents": String(amountInCents),
+      reference,
+      "signature:integrity": signature,
+      "redirect-url": `${appUrl}/gracias?reference=${reference}`,
     })
 
-    return NextResponse.json({ url: session.url })
+    const checkoutUrl = `https://checkout.wompi.co/p/?${params.toString()}`
+    return NextResponse.json({ url: checkoutUrl })
   } catch (err) {
     console.error("Checkout error:", err)
     return NextResponse.json({ error: "Error creando checkout" }, { status: 500 })
