@@ -102,6 +102,25 @@ export function ProductDetail({ product, related }: Props) {
   // Gallery: null = show 3D render, string = show that photo URL
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const galleryImages: string[] = Array.isArray(product.image_urls) ? product.image_urls.filter(Boolean) : []
+  // Share
+  const [shared, setShared] = useState(false)
+  // Recent purchase ghost notification
+  const NAMES = ["Laura", "Valentina", "Sofía", "Camila", "Isabella", "María", "Daniela", "Juliana"]
+  const CITIES = ["Bogotá", "Medellín", "Cali", "Barranquilla", "Bucaramanga", "Cartagena", "Pereira"]
+  const [recentBuyer, setRecentBuyer] = useState<{ name: string; city: string } | null>(null)
+  useEffect(() => {
+    const show = () => {
+      setRecentBuyer({
+        name: NAMES[Math.floor(Math.random() * NAMES.length)],
+        city: CITIES[Math.floor(Math.random() * CITIES.length)],
+      })
+      setTimeout(() => setRecentBuyer(null), 4000)
+    }
+    const initial = setTimeout(show, 6000)
+    const interval = setInterval(show, 28000)
+    return () => { clearTimeout(initial); clearInterval(interval) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Viewers en vivo — fluctúa cada 18s
   useEffect(() => {
@@ -135,6 +154,22 @@ export function ProductDetail({ product, related }: Props) {
   const notes = NOTES_MAP[product.slug] || []
   const isKit = product.slug.startsWith("kit-")
   const savings = product.original_price ? product.original_price - product.price : 0
+
+  async function handleShare() {
+    const url = typeof window !== "undefined" ? window.location.href : `https://cliche-nine.vercel.app/productos/${product.slug}`
+    const shareData = {
+      title: product.name,
+      text: `Mira este aroma de Cliché: ${product.name} — ${product.description?.slice(0, 80) ?? ""}`,
+      url,
+    }
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try { await navigator.share(shareData) } catch { /* user cancelled */ }
+    } else {
+      await navigator.clipboard.writeText(url)
+      setShared(true)
+      setTimeout(() => setShared(false), 2500)
+    }
+  }
 
   function handleAdd() {
     for (let i = 0; i < qty; i++) addItem(product)
@@ -371,10 +406,26 @@ export function ProductDetail({ product, related }: Props) {
                     <Heart className={`w-4 h-4 mr-2 transition-all ${fav ? "fill-red-500 text-red-500 scale-110" : ""}`} />
                     {fav ? "Guardado" : "Favoritos"}
                   </Button>
-                  <Button variant="outline" size="icon" className="h-12 w-12 rounded-2xl">
-                    <Share2 className="w-4 h-4" />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className={`h-12 w-12 rounded-2xl transition-colors ${shared ? "border-green-400 bg-green-50 text-green-600" : ""}`}
+                    onClick={handleShare}
+                    title={shared ? "¡Link copiado!" : "Compartir"}
+                  >
+                    {shared
+                      ? <CheckCircle className="w-4 h-4 text-green-600" />
+                      : <Share2 className="w-4 h-4" />
+                    }
                   </Button>
                 </div>
+
+                {/* Shared toast */}
+                {shared && (
+                  <p className="text-xs text-center text-green-600 font-medium animate-pulse">
+                    ✓ Link copiado al portapapeles
+                  </p>
+                )}
               </div>
 
               {/* Trust signals — animated (keyframes in globals.css) */}
@@ -519,6 +570,30 @@ export function ProductDetail({ product, related }: Props) {
       </main>
       <Footer />
       <WhatsAppButton />
+
+      {/* Recent buyer notification — bottom-left toast */}
+      <div
+        className="fixed bottom-24 left-4 z-50 transition-all duration-500"
+        style={{
+          opacity: recentBuyer ? 1 : 0,
+          transform: recentBuyer ? 'translateY(0)' : 'translateY(16px)',
+          pointerEvents: 'none',
+        }}
+      >
+        <div className="bg-white border border-border rounded-2xl shadow-xl px-4 py-3 flex items-center gap-3 max-w-[240px]">
+          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-base">
+            🛒
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-foreground leading-tight">
+              {recentBuyer?.name} de {recentBuyer?.city}
+            </p>
+            <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
+              acaba de comprarlo
+            </p>
+          </div>
+        </div>
+      </div>
     </>
   )
 }
