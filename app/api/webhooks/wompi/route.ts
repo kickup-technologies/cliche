@@ -7,12 +7,11 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
 
-    // Verificar firma del evento (opcional pero recomendado)
+    // Verificar firma del evento
     const eventsSecret = process.env.WOMPI_EVENTS_SECRET
     if (eventsSecret) {
       const checksum = req.headers.get("x-event-checksum")
       if (checksum) {
-        const timestamp = body.timestamp
         const expected = crypto
           .createHash("sha256")
           .update(`${body.event}${body.timestamp}${eventsSecret}`)
@@ -37,24 +36,22 @@ export async function POST(req: NextRequest) {
         .eq("stripe_session_id", reference)
         .single()
 
-      if (order && order.status !== "paid") {
-        const customerEmail =
-          transaction.customer_email ||
-          transaction.customer_data?.legal_id_type === "CC"
-            ? null
-            : transaction.customer_email
+      // Solo procesar si está pendiente (evitar duplicados)
+      if (order && order.status === "pending") {
+        const customerEmail = transaction.customer_email || order.customer_email || null
+        const customerName = transaction.customer_data?.full_name || order.customer_name || null
 
-        // Actualizar orden a pagada
+        // ── 1. Actualizar orden a confirmada ──────────────────────────
         await supabase
           .from("orders")
           .update({
-            status: "paid",
-            customer_email: transaction.customer_email || null,
-            customer_name: transaction.customer_data?.full_name || null,
+            status: "confirmed",
+            customer_email: customerEmail,
+            customer_name: customerName,
           })
           .eq("stripe_session_id", reference)
 
-        // Descontar stock
+        // ── 2. Descontar stock ────────────────────────────────────────
         for (const item of order.items || []) {
           await supabase.rpc("decrement_stock", {
             p_product_id: item.product_id,
@@ -62,29 +59,55 @@ export async function POST(req: NextRequest) {
           })
         }
 
-        const email = transaction.customer_email
-        if (email) {
-          // Suscribir email
-          await supabase.from("subscribers").upsert(
-            { email, source: "purchase" },
-            { onConflict: "email", ignoreDuplicates: true }
-          )
-
-          // Email de confirmación
-          await sendOrderConfirmation(email, {
-            id: reference,
-            total: transaction.amount_in_cents / 100,
-            items: order.items || [],
-          })
-
-          // Email de reseña
+        // ── 3. Registrar uso del código de descuento ──────────────────
+        if (order.discount_code && customerEmail) {
           try {
-            const firstName =
-              transaction.customer_data?.full_name?.split(" ")[0] || "Cliente"
-            await sendReviewRequestEmail(email, firstName, order.items || [])
+            const { data: discountCode } = await supabase
+              .from("discount_codes")
+              .select("id")
+              .eq("code", order.discount_code)
+              .single()
+
+            if (discountCode) {
+              // Registrar canje (1 uso por email)
+              await supabase.from("code_redemptions").upsert(
+                {
+                  code_id: discountCode.id,
+                  customer_email: customerEmail,
+                  order_reference: reference,
+                },
+                { onConflict: "code_id,customer_email", ignoreDuplicates: true }
+              )
+
+              // Incrementar contador de usos
+              await supabase.rpc("increment_uses_count", { p_code_id: discountCode.id })
+            }
           } catch {
             // No bloquear si falla
           }
+        }
+
+        // ── 4. Suscribir email ────────────────────────────────────────
+        if (customerEmail) {
+          try {
+            await supabase.from("subscribers").upsert(
+              { email: customerEmail, source: "purchase" },
+              { onConflict: "email", ignoreDuplicates: true }
+            )
+          } catch { /* silent */ }
+
+          // ── 5. Email de confirmación ──────────────────────────────
+          await sendOrderConfirmation(customerEmail, {
+            id: reference,
+            total: order.total,
+            items: order.items || [],
+          })
+
+          // ── 6. Email de reseña (best-effort) ─────────────────────
+          try {
+            const firstName = customerName?.split(" ")[0] || "Cliente"
+            await sendReviewRequestEmail(customerEmail, firstName, order.items || [])
+          } catch { /* no bloquear */ }
         }
       }
     }

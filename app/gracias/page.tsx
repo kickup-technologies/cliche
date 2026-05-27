@@ -21,7 +21,7 @@ const FAILED_STATUSES = ["DECLINED", "ERROR", "VOIDED"]
 
 function GraciasContent() {
   const params = useSearchParams()
-  const sessionId = params.get("session_id")
+  const sessionId = params.get("reference") || params.get("session_id")
   const status = params.get("status")
   const router = useRouter()
   const { clearCart } = useCart()
