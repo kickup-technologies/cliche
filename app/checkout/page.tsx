@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useCart } from "@/context/cart-context"
 import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Lock, Sparkles, ShieldCheck, Truck, Leaf, RotateCcw, Tag } from "lucide-react"
 
@@ -20,6 +21,24 @@ export default function CheckoutPage() {
   const [selected, setSelected] = useState<Record<string, boolean>>({})
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [backUrl, setBackUrl] = useState("/catalogo")
+  const router = useRouter()
+
+  // Guardar la página anterior al entrar al checkout
+  useEffect(() => {
+    const stored = sessionStorage.getItem("checkout-back-url")
+    if (stored) {
+      setBackUrl(stored)
+    } else if (document.referrer && !document.referrer.includes("/checkout")) {
+      const ref = new URL(document.referrer).pathname + new URL(document.referrer).search
+      sessionStorage.setItem("checkout-back-url", ref)
+      setBackUrl(ref)
+    }
+    return () => {
+      // Limpiar al salir de checkout
+      sessionStorage.removeItem("checkout-back-url")
+    }
+  }, [])
 
   useEffect(() => {
     setSelected(prev => {
@@ -90,10 +109,10 @@ export default function CheckoutPage() {
             <Link href="/" className="font-serif text-2xl font-bold tracking-widest text-[#2D1A14] uppercase">
               Cliché
             </Link>
-            <Link href="/" className="flex items-center gap-2 text-xs text-[#2D1A14]/35 hover:text-[#2D1A14] transition-colors uppercase tracking-widest">
+            <button onClick={() => router.push(backUrl)} className="flex items-center gap-2 text-xs text-[#2D1A14]/35 hover:text-[#2D1A14] transition-colors uppercase tracking-widest">
               <ArrowLeft className="w-3.5 h-3.5" />
               Seguir comprando
-            </Link>
+            </button>
           </div>
 
           {/* Breadcrumb */}

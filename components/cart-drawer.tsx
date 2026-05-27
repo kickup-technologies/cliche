@@ -198,7 +198,7 @@ export function CartDrawer() {
             <Button
               size="lg"
               className="w-full h-13 text-base font-semibold"
-              onClick={() => { checkout(); closeDrawer() }}
+              onClick={() => { sessionStorage.setItem("checkout-back-url", window.location.pathname + window.location.search); checkout(); closeDrawer() }}
               disabled={isCheckingOut}
             >
               {isCheckingOut ? "PROCESANDO..." : (

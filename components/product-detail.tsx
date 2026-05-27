@@ -224,7 +224,7 @@ export function ProductDetail({ product, related }: Props) {
 
   function handleBuyNow() {
     for (let i = 0; i < qty; i++) addItem(product)
-    // Pequeño delay para que el carrito se actualice antes de redirigir
+    sessionStorage.setItem("checkout-back-url", window.location.pathname + window.location.search)
     setTimeout(() => { window.location.href = "/checkout" }, 80)
   }
 
