@@ -6,6 +6,18 @@ import { X, Zap, Clock } from "lucide-react"
 export function AnnouncementBar() {
   const [isVisible, setIsVisible] = useState(true)
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 })
+  const [discountPct, setDiscountPct] = useState(10)
+  const [discountCode, setDiscountCode] = useState("BIENVENIDA10")
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((d) => {
+        setDiscountPct(d.discount_percentage)
+        setDiscountCode(d.discount_code)
+      })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     // Siempre termina a medianoche hoy — consistente con hero y sticky
@@ -37,7 +49,7 @@ export function AnnouncementBar() {
         <span className="hidden sm:block w-px h-3 bg-[#FAF8F5]/20" />
         <span className="font-semibold text-[#FAF8F5]">Envío gratis en compras mayores a <span className="text-[#C4958A]">$300.000 COP</span></span>
         <span className="hidden md:block w-px h-3 bg-[#FAF8F5]/20" />
-        <span className="hidden md:inline text-[#FAF8F5]/80">Código <span className="font-bold text-[#C4958A] tracking-wider">BIENVENIDA20</span> → 20% OFF</span>
+        <span className="hidden md:inline text-[#FAF8F5]/80">Código <span className="font-bold text-[#C4958A] tracking-wider">{discountCode}</span> → {discountPct}% OFF</span>
         <span className="hidden md:block w-px h-3 bg-[#FAF8F5]/20" />
         <div className="flex items-center gap-1.5 border border-[#FAF8F5]/20 px-2.5 py-1 rounded-full">
           <Clock className="w-3 h-3 text-[#C4958A]" />

@@ -29,6 +29,14 @@ const heroSlides = [
 export function Hero() {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 })
+  const [discountPct, setDiscountPct] = useState(10)
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((d) => setDiscountPct(d.discount_percentage))
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     const slideTimer = setInterval(() => {
@@ -92,7 +100,7 @@ export function Hero() {
                   <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                 ))}
               </div>
-              <span className="text-white/90 text-sm ml-1">4.9 (2,847 reseñas)</span>
+              <span className="text-white/90 text-sm ml-1">+5.000 hogares felices</span>
             </div>
           </div>
 
@@ -146,9 +154,11 @@ export function Hero() {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 mb-8">
-            <Button size="lg" className="text-lg px-8 py-6 font-semibold group">
-              COMPRAR CON 30% OFF
-              <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+            <Button size="lg" className="text-lg px-8 py-6 font-semibold group" asChild>
+              <a href="#productos">
+                COMPRAR CON {discountPct}% OFF
+                <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+              </a>
             </Button>
             <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-white/30 text-white hover:bg-white/10 font-semibold">
               Ver Catálogo

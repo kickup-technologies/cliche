@@ -7,16 +7,16 @@ import { useCart } from "@/context/cart-context"
 
 // ─── Compras recientes simuladas (social proof) ───────────────────────────────
 const purchases = [
-  { name: "Valentina R.", city: "Bogotá",        product: "Aroma Vientos de Lino",    rating: 5, minAgo: 2,  color: "bg-[#EDD5CF]" },
-  { name: "Camila M.",    city: "Medellín",       product: "Kit Armonía x3",           rating: 5, minAgo: 5,  color: "bg-[#D9B5AC]" },
-  { name: "Sofía L.",     city: "Cali",           product: "Aroma Tao",                rating: 5, minAgo: 8,  color: "bg-[#C4958A]" },
-  { name: "Daniela P.",   city: "Cartagena",      product: "Aroma Luxury",             rating: 5, minAgo: 11, color: "bg-[#EDD5CF]" },
-  { name: "Isabella T.",  city: "Barranquilla",   product: "Aroma Mahai",              rating: 5, minAgo: 14, color: "bg-[#D9B5AC]" },
-  { name: "Mariana G.",   city: "Bucaramanga",    product: "Kit Elementos x4",         rating: 5, minAgo: 3,  color: "bg-[#C4958A]" },
-  { name: "Andrea S.",    city: "Pereira",        product: "Aroma Eternamente Índigo", rating: 5, minAgo: 7,  color: "bg-[#EDD5CF]" },
-  { name: "Luciana V.",   city: "Santa Marta",    product: "Aroma Calor de Lana",      rating: 5, minAgo: 1,  color: "bg-[#D9B5AC]" },
-  { name: "Natalia O.",   city: "Manizales",      product: "Aroma Crema",              rating: 5, minAgo: 19, color: "bg-[#C4958A]" },
-  { name: "Paola R.",     city: "Ibagué",         product: "Aroma Romeo y Julieta",    rating: 5, minAgo: 6,  color: "bg-[#EDD5CF]" },
+  { name: "Valentina R.", city: "Bogotá",        product: "Aroma Agua",    rating: 5, minAgo: 2,  color: "bg-[#EDD5CF]" },
+  { name: "Camila M.",    city: "Medellín",       product: "Kit Armonía x3", rating: 5, minAgo: 5,  color: "bg-[#D9B5AC]" },
+  { name: "Sofía L.",     city: "Cali",           product: "Aroma Aire",    rating: 5, minAgo: 8,  color: "bg-[#C4958A]" },
+  { name: "Daniela P.",   city: "Cartagena",      product: "Aroma Tierra",  rating: 5, minAgo: 11, color: "bg-[#EDD5CF]" },
+  { name: "Isabella T.",  city: "Barranquilla",   product: "Aroma Fuego",   rating: 5, minAgo: 14, color: "bg-[#D9B5AC]" },
+  { name: "Mariana G.",   city: "Bucaramanga",    product: "Kit Armonía x3", rating: 5, minAgo: 3,  color: "bg-[#C4958A]" },
+  { name: "Andrea S.",    city: "Pereira",        product: "Aroma Agua",    rating: 5, minAgo: 7,  color: "bg-[#EDD5CF]" },
+  { name: "Luciana V.",   city: "Santa Marta",    product: "Aroma Aire",    rating: 5, minAgo: 1,  color: "bg-[#D9B5AC]" },
+  { name: "Natalia O.",   city: "Manizales",      product: "Aroma Tierra",  rating: 5, minAgo: 19, color: "bg-[#C4958A]" },
+  { name: "Paola R.",     city: "Ibagué",         product: "Aroma Fuego",   rating: 5, minAgo: 6,  color: "bg-[#EDD5CF]" },
 ]
 
 // ─── Social Proof Toast ───────────────────────────────────────────────────────
@@ -137,7 +137,16 @@ export function StickyAddToCart() {
   const [isScrolled, setIsScrolled]       = useState(false)
   const [browseSeconds, setBrowseSeconds] = useState(0)
   const [showUrgency, setShowUrgency]     = useState(false)
+  const [discountPct, setDiscountPct]     = useState(10)
+  const [discountCode, setDiscountCode]   = useState("BIENVENIDA10")
   const { items, itemCount, total, checkout, isCheckingOut, openDrawer } = useCart()
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((d) => { setDiscountPct(d.discount_percentage); setDiscountCode(d.discount_code) })
+      .catch(() => {})
+  }, [])
 
   const firstItem = items[0]
 
@@ -198,7 +207,7 @@ export function StickyAddToCart() {
         <div className="flex-1 min-w-0">
           {showUrgency ? (
             <p className="text-xs text-amber-700 font-semibold">
-              Código BIENVENIDA20 vence hoy — 20% OFF activo en tu pedido
+              Código {discountCode} vence hoy — {discountPct}% OFF activo en tu pedido
             </p>
           ) : (
             <p className="text-xs text-muted-foreground">
