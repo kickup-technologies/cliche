@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/next'
 import { CartProvider } from '@/context/cart-context'
 import { FavoritesProvider } from '@/context/favorites-context'
 import { CartDrawer } from '@/components/cart-drawer'
+import { ScrollRestoration } from '@/components/scroll-restoration'
 import Script from 'next/script'
 import './globals.css'
 
@@ -25,7 +26,7 @@ export const metadata: Metadata = {
     default: 'Bienestar by Cliché — Aromas que Transforman tu Espacio',
     template: '%s | Bienestar by Cliché',
   },
-  description: 'Aromas artesanales para el hogar y la ropa. Difusores, esencias y kits de aromaterapia 100% naturales. Fabricados en Colombia. Envío gratis en compras mayores a $300.000 COP.',
+  description: 'Aromas artesanales para el hogar y la ropa. Difusores, esencias y kits de aromaterapia 100% naturales. Fabricados en Colombia. Envío gratis en compras mayores a $150.000 COP.',
   keywords: ['aromas hogar', 'difusor aromas', 'aromaterapia Colombia', 'esencias naturales', 'marketing olfativo', 'cliché aromas', 'bienestar aromas'],
   authors: [{ name: 'Bienestar by Cliché' }],
   creator: 'Bienestar by Cliché',
@@ -148,6 +149,7 @@ export default function RootLayout({
           </>
         )}
 
+        <ScrollRestoration />
         <CartProvider>
           <FavoritesProvider>
             {children}
