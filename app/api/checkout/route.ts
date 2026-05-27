@@ -15,8 +15,11 @@ export async function POST(req: NextRequest) {
       .in("id", productIds)
 
     if (error || !products?.length) {
-      console.error("[checkout] products query error:", error, "ids:", productIds)
-      return NextResponse.json({ error: "Productos no encontrados" }, { status: 400 })
+      console.error("[checkout] products query error:", JSON.stringify(error), "ids:", JSON.stringify(productIds), "products:", JSON.stringify(products))
+      return NextResponse.json({
+        error: "Productos no encontrados",
+        debug: { supabaseError: error?.message, code: error?.code, ids: productIds }
+      }, { status: 400 })
     }
 
     // Verificar stock
