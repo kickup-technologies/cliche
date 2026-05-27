@@ -7,14 +7,51 @@ export async function GET(
 ) {
   const { id } = await params
   const supabase = createServerClient()
-  const { data, error } = await supabase
-    .from("orders")
-    .select("id, status, total, tracking_number, customer_name, created_at, items")
-    .eq("id", id)
-    .single()
 
-  if (error || !data) {
+  // Buscar por UUID o por referencia de Wompi (stripe_session_id)
+  let data: Record<string, unknown> | null = null
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+
+  if (isUUID) {
+    const res = await supabase
+      .from("orders")
+      .select("id, status, total, tracking_number, customer_name, created_at, items, stripe_session_id")
+      .eq("id", id)
+      .single()
+    data = res.data
+  } else {
+    // Es una referencia Wompi (ej: cliche_1234567890_abc12)
+    const res = await supabase
+      .from("orders")
+      .select("id, status, total, tracking_number, customer_name, created_at, items, stripe_session_id")
+      .eq("stripe_session_id", id)
+      .single()
+    data = res.data
+  }
+
+  if (!data) {
     return NextResponse.json({ error: "Not found" }, { status: 404 })
+  }
+
+  // Enriquecer items con nombres de producto
+  const rawItems = (data.items as Array<{ product_id: string; quantity: number }>) || []
+  if (rawItems.length > 0) {
+    const productIds = rawItems.map((i) => i.product_id)
+    const { data: products } = await supabase
+      .from("products")
+      .select("id, name, price, image_url")
+      .in("id", productIds)
+
+    const productMap = new Map((products || []).map((p) => [p.id, p]))
+    data = {
+      ...data,
+      items: rawItems.map((item) => ({
+        ...item,
+        name: productMap.get(item.product_id)?.name ?? "Producto",
+        price: productMap.get(item.product_id)?.price ?? 0,
+        image_url: productMap.get(item.product_id)?.image_url ?? "",
+      })),
+    }
   }
 
   return NextResponse.json(data)
