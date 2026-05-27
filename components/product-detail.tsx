@@ -22,7 +22,7 @@ import {
   ShoppingBag, Star, ShieldCheck, Truck, BadgeCheck,
   ChevronRight, Plus, Minus, Share2, Heart, CheckCircle,
   Wind, Shirt, Home, AlertTriangle, Package, Gift, RotateCcw,
-  Timer, Check, Sparkles
+  Timer, Check, Sparkles, Zap
 } from "lucide-react"
 import type { Product } from "@/lib/supabase"
 import { Header } from "@/components/header"
@@ -93,7 +93,7 @@ const VALUE_MAP: Record<string, string> = {
 
 
 export function ProductDetail({ product, related }: Props) {
-  const { addItem, openDrawer, total } = useCart()
+  const { addItem, openDrawer, total, checkout, isCheckingOut } = useCart()
   const { toggleFavorite, isFavorite } = useFavorites()
   const fav = isFavorite(product.id)
   const [qty, setQty] = useState(1)
@@ -220,6 +220,13 @@ export function ProductDetail({ product, related }: Props) {
         num_items: qty,
       },
     })
+  }
+
+  async function handleBuyNow() {
+    for (let i = 0; i < qty; i++) addItem(product)
+    // Small delay so cart state updates before checkout
+    await new Promise((r) => setTimeout(r, 80))
+    checkout()
   }
 
   return (
@@ -464,19 +471,32 @@ export function ProductDetail({ product, related }: Props) {
                   </p>
                 </div>
 
-                <div ref={ctaWrapRef}>
-                <Button
-                  size="lg"
-                  className="w-full h-14 text-base font-semibold rounded-2xl"
-                  onClick={handleAdd}
-                  disabled={product.stock === 0}
-                >
-                  {added ? (
-                    <><CheckCircle className="w-5 h-5 mr-2" /> ¡Agregado al carrito!</>
-                  ) : (
-                    <><ShoppingBag className="w-5 h-5 mr-2" /> Agregar al carrito</>
-                  )}
-                </Button>
+                <div ref={ctaWrapRef} className="space-y-3">
+                  <Button
+                    size="lg"
+                    className="w-full h-14 text-base font-semibold rounded-2xl"
+                    onClick={handleAdd}
+                    disabled={product.stock === 0}
+                  >
+                    {added ? (
+                      <><CheckCircle className="w-5 h-5 mr-2" /> ¡Agregado al carrito!</>
+                    ) : (
+                      <><ShoppingBag className="w-5 h-5 mr-2" /> Agregar al carrito</>
+                    )}
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-full h-12 text-sm font-semibold rounded-2xl border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+                    onClick={handleBuyNow}
+                    disabled={product.stock === 0 || isCheckingOut}
+                  >
+                    {isCheckingOut ? (
+                      <><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" /> Procesando...</>
+                    ) : (
+                      <><Zap className="w-4 h-4 mr-2" /> Comprar ahora</>
+                    )}
+                  </Button>
                 </div>
 
                 <div className="flex gap-3">

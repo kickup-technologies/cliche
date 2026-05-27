@@ -13,7 +13,6 @@ import { WhatsAppButton } from "@/components/whatsapp-button"
 import { SubscriptionPopup } from "@/components/subscription-popup"
 import { ExitIntentPopup } from "@/components/exit-intent-popup"
 import { SocialProofToast, StickyAddToCart } from "@/components/urgency-elements"
-import { CartDrawer } from "@/components/cart-drawer"
 import { HowItWorks } from "@/components/how-it-works"
 import { FAQ } from "@/components/faq"
 import { UGCSection } from "@/components/ugc-section"
@@ -114,7 +113,6 @@ export default function Home() {
       <Footer />
 
       {/* ── Elementos de conversión flotantes ── */}
-      <CartDrawer />
       <WhatsAppButton />
       <SubscriptionPopup />
       <ExitIntentPopup />
