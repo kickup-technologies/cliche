@@ -41,7 +41,7 @@ export function Header() {
   const { count: favCount } = useFavorites()
   const pathname = usePathname()
   const cartCount = items.reduce((acc, i) => acc + i.quantity, 0)
-  const useSolid = isScrolled || (pathname?.startsWith("/productos/") ?? false)
+  const useSolid = isScrolled || (pathname?.startsWith("/productos/") ?? false) || pathname === "/checkout" || pathname === "/catalogo" || pathname?.startsWith("/pedido")
 
   useEffect(() => {
     const handleScroll = () => {
