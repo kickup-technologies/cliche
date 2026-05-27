@@ -88,19 +88,6 @@ const VALUE_MAP: Record<string, string> = {
   "aroma-happiness":          "El aroma de los días perfectos. Cítricos alegres y flores de primavera que elevan el ánimo de forma inmediata. Para cuando quieres que tu hogar tenga la energía de un buen día, todos los días.",
 }
 
-function ProgressBar() {
-  const [w, setW] = useState(0)
-  useEffect(() => {
-    const t = requestAnimationFrame(() => setW(100))
-    return () => cancelAnimationFrame(t)
-  }, [])
-  return (
-    <div
-      className="absolute inset-0 bg-primary/60"
-      style={{ width: `${w}%`, transition: 'width 3000ms linear' }}
-    />
-  )
-}
 
 export function ProductDetail({ product, related }: Props) {
   const { addItem } = useCart()
@@ -117,35 +104,10 @@ export function ProductDetail({ product, related }: Props) {
     return () => clearInterval(id)
   }, [])
 
-  // Entrance animations per product
-  const ANIM_SLUGS: Record<string, 'A' | 'B' | 'C'> = {
-    'aroma-agua':   'A',
-    'aroma-aire':   'B',
-    'aroma-tierra': 'C',
-  }
-  const animType = ANIM_SLUGS[product.slug] ?? null
-  const [animActive, setAnimActive] = useState(false)
-  // Option A specific phases
-  const [heroPhase, setHeroPhase] = useState<'hero' | 'settling' | 'done'>('hero')
-  const [renderDropped, setRenderDropped] = useState(false)
-
+  // Fall-from-sky entrance
+  const [fell, setFell] = useState(false)
   useEffect(() => {
-    if (!animType) { setAnimActive(true); return }
-    if (animType === 'B') {
-      const t = setTimeout(() => setAnimActive(true), 60)
-      return () => clearTimeout(t)
-    }
-    if (animType === 'C') {
-      const t = setTimeout(() => setAnimActive(true), 1000)
-      return () => clearTimeout(t)
-    }
-    // Option A: render falls in → 3s hero → fade out → grid appears
-    if (animType === 'A') {
-      requestAnimationFrame(() => setRenderDropped(true))
-      const t1 = setTimeout(() => setHeroPhase('settling'), 3200)
-      const t2 = setTimeout(() => { setHeroPhase('done'); setAnimActive(true) }, 4300)
-      return () => { clearTimeout(t1); clearTimeout(t2) }
-    }
+    requestAnimationFrame(() => setFell(true))
   }, [])
 
   const notes = NOTES_MAP[product.slug] || []
@@ -162,60 +124,6 @@ export function ProductDetail({ product, related }: Props) {
     <>
       <Header />
       <main className="min-h-screen bg-background pt-24 pb-16">
-        {/* Option A: premium hero — same background, render floats alongside text */}
-        {animType === 'A' && heroPhase !== 'done' && (
-          <div
-            className="fixed inset-0 bg-background flex items-center overflow-hidden"
-            style={{
-              zIndex: 60,
-              opacity: heroPhase === 'settling' ? 0 : 1,
-              transition: 'opacity 1000ms ease',
-              pointerEvents: heroPhase === 'settling' ? 'none' : 'auto',
-            }}
-          >
-            {/* Left — 3D render falling from sky, tilted 35°, no container bg */}
-            <div className="flex-1 flex items-center justify-center h-full">
-              <div style={{
-                width: 'min(58vmin, 460px)',
-                height: 'min(58vmin, 460px)',
-                transform: renderDropped
-                  ? 'perspective(1400px) rotateY(-35deg) translateY(0)'
-                  : 'perspective(1400px) rotateY(-35deg) translateY(-130vh)',
-                transition: 'transform 950ms cubic-bezier(0.34, 1.4, 0.64, 1)',
-              }}>
-                <SprayBottle3D transparent />
-              </div>
-            </div>
-
-            {/* Right — premium typography */}
-            <div
-              className="flex-1 flex flex-col justify-center gap-6 pr-14 lg:pr-20"
-              style={{
-                opacity: renderDropped ? 1 : 0,
-                transform: renderDropped ? 'translateY(0)' : 'translateY(16px)',
-                transition: 'opacity 700ms ease 400ms, transform 700ms ease 400ms',
-              }}
-            >
-              <p className="text-muted-foreground/50 text-[9px] tracking-[0.55em] uppercase">
-                Cliché · Colección Esencial
-              </p>
-              <h1 className="font-serif font-bold text-foreground leading-[1.0]"
-                style={{ fontSize: 'clamp(2.6rem, 5vw, 4rem)' }}>
-                {product.name.split('—')[0].trim()}
-              </h1>
-              <p className="text-primary text-xs tracking-[0.3em] uppercase font-semibold">
-                {(NOTES_MAP[product.slug] || []).join(' · ')}
-              </p>
-              <p className="text-muted-foreground/80 leading-relaxed max-w-[280px]"
-                style={{ fontSize: 'clamp(0.8rem, 1.2vw, 0.9rem)' }}>
-                {VALUE_MAP[product.slug]?.split('.')[0]}.
-              </p>
-              <div className="mt-2 w-24 h-px bg-muted-foreground/15 relative overflow-hidden">
-                <ProgressBar />
-              </div>
-            </div>
-          </div>
-        )}
         {/* Breadcrumb */}
         <div className="container mx-auto px-4 mb-6">
           <nav className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -228,28 +136,18 @@ export function ProductDetail({ product, related }: Props) {
         </div>
 
         <div className="container mx-auto px-4">
-          <div
-            className="grid lg:grid-cols-2 gap-12 mb-20"
-            style={animType === 'C' ? { overflow: 'hidden' } : {}}
-          >
+          <div className="grid lg:grid-cols-2 gap-12 mb-20">
             {/* Product Image */}
             <div
               className="relative"
-              style={
-                animType === 'A' ? {
-                  opacity: animActive ? 1 : 0,
-                  transition: 'opacity 700ms ease',
-                } :
-                animType === 'B' ? {
-                  transform: animActive ? 'translateY(0)' : 'translateY(-90px)',
-                  opacity: animActive ? 1 : 0,
-                  transition: 'transform 560ms cubic-bezier(0.16,1,0.3,1), opacity 420ms ease',
-                } : {}
-              }
+              style={{
+                transform: fell ? 'translateY(0)' : 'translateY(-110vh)',
+                transition: 'transform 900ms cubic-bezier(0.34, 1.3, 0.64, 1)',
+              }}
             >
               <div className="sticky top-24">
                 <div className="relative">
-                  <SprayBottle3D />
+                  <SprayBottle3D zTilt={Math.PI / 3} />
                   {product.badge && (
                     <div className="absolute top-4 left-4">
                       <span className={`${product.badge_color || "bg-primary"} text-white text-xs font-bold px-3 py-1.5 rounded-full`}>
@@ -269,39 +167,14 @@ export function ProductDetail({ product, related }: Props) {
             {/* Product Info */}
             <div
               className="flex flex-col gap-6"
-              style={
-                animType === 'A' ? {
-                  opacity: animActive ? 1 : 0,
-                  transform: animActive ? 'translateY(0)' : 'translateY(24px)',
-                  transition: 'opacity 600ms ease 350ms, transform 600ms ease 350ms',
-                } :
-                animType === 'B' ? {
-                  transform: animActive ? 'translateY(0)' : 'translateY(-65px)',
-                  opacity: animActive ? 1 : 0,
-                  transition: 'transform 560ms cubic-bezier(0.16,1,0.3,1) 200ms, opacity 420ms ease 200ms',
-                } :
-                animType === 'C' ? {
-                  transform: animActive ? 'translateX(0)' : 'translateX(110%)',
-                  opacity: animActive ? 1 : 0,
-                  transition: 'transform 720ms cubic-bezier(0.16,1,0.3,1), opacity 500ms ease 100ms',
-                } : {}
-              }
+              style={{
+                opacity: fell ? 1 : 0,
+                transform: fell ? 'translateY(0)' : 'translateY(20px)',
+                transition: 'opacity 600ms ease 300ms, transform 600ms ease 300ms',
+              }}
             >
-              {/* Rating + live viewers */}
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <div className="flex items-center gap-2">
-                  <div className="flex">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`w-4 h-4 ${i < Math.floor(product.rating) ? "text-amber-400 fill-amber-400" : "text-muted-foreground"}`}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-sm text-muted-foreground">
-                    {product.rating.toFixed(1)} ({product.reviews} reseñas)
-                  </span>
-                </div>
+              {/* Live viewers */}
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="flex items-center gap-1.5 text-xs bg-green-50 text-green-700 font-medium px-2.5 py-1 rounded-full">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
                   {viewers} personas viendo ahora

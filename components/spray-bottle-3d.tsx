@@ -5,7 +5,7 @@ import { Canvas, useFrame } from "@react-three/fiber"
 import { useGLTF, OrbitControls, Environment, ContactShadows } from "@react-three/drei"
 import * as THREE from "three"
 
-function SprayModel({ spraying, onSpray }: { spraying: boolean; onSpray: () => void }) {
+function SprayModel({ spraying, onSpray, zTilt = 0 }: { spraying: boolean; onSpray: () => void; zTilt?: number }) {
   const { scene } = useGLTF("/models/spray_bottle.glb")
   const groupRef = useRef<THREE.Group>(null!)
   const [pressed, setPressed] = useState(false)
@@ -31,6 +31,7 @@ function SprayModel({ spraying, onSpray }: { spraying: boolean; onSpray: () => v
       ref={groupRef}
       scale={pressed ? 0.37 : 0.39}
       position={[0, -0.2, 0]}
+      rotation={[0, 0, zTilt]}
       onClick={handleClick}
       onPointerDown={() => { isDragging.current = false }}
       onPointerMove={() => { isDragging.current = true }}
@@ -93,7 +94,7 @@ function Mist({ active }: { active: boolean }) {
   )
 }
 
-function Scene() {
+function Scene({ zTilt = 0 }: { zTilt?: number }) {
   const [spraying, setSpraying] = useState(false)
 
   const handleSpray = () => {
@@ -109,7 +110,7 @@ function Scene() {
       <pointLight position={[0, 4, 0]} intensity={0.4} color="#fff8f0" />
 
       <Suspense fallback={null}>
-        <SprayModel spraying={spraying} onSpray={handleSpray} />
+        <SprayModel spraying={spraying} onSpray={handleSpray} zTilt={zTilt} />
         <Mist active={spraying} />
         <ContactShadows position={[0, -1.4, 0]} opacity={0.25} scale={4} blur={2.5} />
         <Environment preset="apartment" />
@@ -126,7 +127,7 @@ function Scene() {
   )
 }
 
-export function SprayBottle3D({ transparent }: { transparent?: boolean }) {
+export function SprayBottle3D({ transparent, zTilt = 0 }: { transparent?: boolean; zTilt?: number }) {
   return (
     <div
       className={`relative aspect-square overflow-hidden ${transparent ? "" : "bg-gradient-to-b from-muted/10 to-muted/40 rounded-3xl"}`}
@@ -139,7 +140,7 @@ export function SprayBottle3D({ transparent }: { transparent?: boolean }) {
         style={{ background: "transparent" }}
         onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}
       >
-        <Scene />
+        <Scene zTilt={zTilt} />
       </Canvas>
 
       {!transparent && (
