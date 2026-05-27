@@ -308,16 +308,22 @@ export async function sendAdminOrderAlert(order: {
        ${addr.notes ? `<p style="margin:4px 0;font-size:13px;color:#8B6E64;font-style:italic;">Nota: ${addr.notes}</p>` : ""}`
     : `<p style="margin:4px 0;font-size:13px;color:#C4958A;">⚠️ Sin dirección registrada</p>`
 
+  // SVG icons inline — safe for all email clients
+  const iconBag = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C4958A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px;"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>`
+  const iconUser = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B6E64" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`
+  const iconTruck = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B6E64" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px;"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`
+  const iconList = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B6E64" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px;"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`
+
   const html = `
 <!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/></head>
 <body style="margin:0;padding:0;background:#FAF8F5;font-family:Arial,sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#FAF8F5;padding:32px 16px;"><tr><td align="center">
 <table width="560" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);">
 
-  <!-- Header urgente -->
+  <!-- Header -->
   <tr><td style="background:#2D1A14;padding:28px 32px;text-align:center;">
     <p style="margin:0 0 4px;font-size:11px;letter-spacing:.2em;color:rgba(255,255,255,.5);text-transform:uppercase;">Cliche Aromas — Panel Admin</p>
-    <h1 style="margin:0;font-size:24px;font-weight:700;color:#fff;">🛍️ Nuevo pedido confirmado</h1>
+    <h1 style="margin:0;font-size:22px;font-weight:700;color:#fff;">${iconBag} Nuevo pedido confirmado</h1>
     <p style="margin:8px 0 0;font-size:20px;font-weight:700;color:#C4958A;">${totalFormatted}</p>
   </td></tr>
 
@@ -326,32 +332,34 @@ export async function sendAdminOrderAlert(order: {
     <!-- Referencia -->
     <table width="100%" cellpadding="0" cellspacing="0" style="background:#FAF8F5;border-radius:12px;padding:16px;margin-bottom:24px;">
       <tr>
-        <td style="font-size:12px;color:#8B6E64;text-transform:uppercase;letter-spacing:.1em;">Pedido #</td>
-        <td align="right" style="font-family:monospace;font-size:18px;font-weight:700;color:#2D1A14;">${orderId}</td>
+        <td style="font-size:12px;color:#8B6E64;text-transform:uppercase;letter-spacing:.1em;">Numero de pedido</td>
+        <td align="right" style="font-family:monospace;font-size:18px;font-weight:700;color:#2D1A14;">#${orderId}</td>
       </tr>
     </table>
 
     <!-- Cliente -->
-    <h2 style="margin:0 0 12px;font-size:14px;text-transform:uppercase;letter-spacing:.1em;color:#8B6E64;">👤 Cliente</h2>
+    <h2 style="margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:.1em;color:#8B6E64;border-bottom:1px solid #EDD5CF;padding-bottom:8px;">${iconUser} Cliente</h2>
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
-      <tr><td style="font-size:14px;color:#2D1A14;padding:3px 0;"><strong>Nombre:</strong> ${order.customer_name ?? "—"}</td></tr>
-      <tr><td style="font-size:14px;color:#2D1A14;padding:3px 0;"><strong>Email:</strong> ${order.customer_email ?? "—"}</td></tr>
-      <tr><td style="font-size:14px;color:#2D1A14;padding:3px 0;"><strong>Celular:</strong> ${order.customer_phone ?? "—"}</td></tr>
+      <tr><td style="font-size:14px;color:#2D1A14;padding:4px 0;"><strong>Nombre:</strong> ${order.customer_name ?? "—"}</td></tr>
+      <tr><td style="font-size:14px;color:#2D1A14;padding:4px 0;"><strong>Email:</strong> ${order.customer_email ?? "—"}</td></tr>
+      <tr><td style="font-size:14px;color:#2D1A14;padding:4px 0;"><strong>Celular:</strong> ${order.customer_phone ?? "—"}</td></tr>
     </table>
 
-    <!-- Dirección de envío -->
-    <h2 style="margin:0 0 12px;font-size:14px;text-transform:uppercase;letter-spacing:.1em;color:#8B6E64;">📦 Dirección de envío</h2>
-    <div style="background:#FFF8F5;border:2px solid #EDD5CF;border-radius:12px;padding:16px;margin-bottom:24px;">
-      ${addressBlock}
-    </div>
+    <!-- Direccion de envio -->
+    <h2 style="margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:.1em;color:#8B6E64;border-bottom:1px solid #EDD5CF;padding-bottom:8px;">${iconTruck} Direccion de envio</h2>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+      <tr><td style="background:#FFF8F5;border:2px solid #EDD5CF;border-radius:12px;padding:16px;">
+        ${addressBlock}
+      </td></tr>
+    </table>
 
     <!-- Productos -->
-    <h2 style="margin:0 0 12px;font-size:14px;text-transform:uppercase;letter-spacing:.1em;color:#8B6E64;">🛒 Productos</h2>
+    <h2 style="margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:.1em;color:#8B6E64;border-bottom:1px solid #EDD5CF;padding-bottom:8px;">${iconList} Productos</h2>
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
       <thead><tr>
-        <th style="text-align:left;font-size:12px;color:#8B6E64;padding-bottom:8px;border-bottom:2px solid #EDD5CF;">Producto</th>
-        <th style="text-align:center;font-size:12px;color:#8B6E64;padding-bottom:8px;border-bottom:2px solid #EDD5CF;">Cant.</th>
-        <th style="text-align:right;font-size:12px;color:#8B6E64;padding-bottom:8px;border-bottom:2px solid #EDD5CF;">Total</th>
+        <th style="text-align:left;font-size:12px;color:#8B6E64;padding-bottom:8px;">Producto</th>
+        <th style="text-align:center;font-size:12px;color:#8B6E64;padding-bottom:8px;">Cant.</th>
+        <th style="text-align:right;font-size:12px;color:#8B6E64;padding-bottom:8px;">Subtotal</th>
       </tr></thead>
       <tbody>${itemsRows}</tbody>
       <tfoot><tr>
@@ -360,17 +368,17 @@ export async function sendAdminOrderAlert(order: {
       </tr></tfoot>
     </table>
 
-    <!-- CTA Admin -->
+    <!-- CTA -->
     <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
-      <a href="${appUrl}/admin" style="display:inline-block;background:#2D1A14;color:#fff;text-decoration:none;padding:14px 36px;border-radius:100px;font-size:14px;font-weight:700;letter-spacing:.05em;">
-        Ver en panel admin →
+      <a href="${appUrl}/admin-cliche-secret" style="display:inline-block;background:#2D1A14;color:#fff;text-decoration:none;padding:14px 36px;border-radius:100px;font-size:14px;font-weight:700;letter-spacing:.05em;">
+        Abrir panel de administrador
       </a>
     </td></tr></table>
 
   </td></tr>
 
   <tr><td style="background:#FAF8F5;padding:16px 32px;text-align:center;border-top:1px solid #EDD5CF;">
-    <p style="margin:0;font-size:11px;color:#B0A09A;">Este correo se genera automáticamente cuando se confirma un pago en Wompi.</p>
+    <p style="margin:0;font-size:11px;color:#B0A09A;">Generado automaticamente al confirmarse un pago en Wompi.</p>
   </td></tr>
 
 </table></td></tr></table>
