@@ -104,11 +104,9 @@ export function ProductDetail({ product, related }: Props) {
     return () => clearInterval(id)
   }, [])
 
-  // Fall-from-sky entrance
+  // Fall-from-sky entrance — fires only once the GLB model is fully loaded
   const [fell, setFell] = useState(false)
-  useEffect(() => {
-    requestAnimationFrame(() => setFell(true))
-  }, [])
+  const handleModelReady = () => requestAnimationFrame(() => setFell(true))
 
   const notes = NOTES_MAP[product.slug] || []
   const isKit = product.slug.startsWith("kit-")
@@ -147,7 +145,7 @@ export function ProductDetail({ product, related }: Props) {
             >
               <div className="sticky top-24">
                 <div className="relative">
-                  <SprayBottle3D transparent zTilt={35 * Math.PI / 180} />
+                  <SprayBottle3D transparent zTilt={35 * Math.PI / 180} onReady={handleModelReady} />
                   {product.badge && (
                     <div className="absolute top-4 left-4">
                       <span className={`${product.badge_color || "bg-primary"} text-white text-xs font-bold px-3 py-1.5 rounded-full`}>

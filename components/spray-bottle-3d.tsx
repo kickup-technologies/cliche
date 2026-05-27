@@ -1,15 +1,20 @@
 "use client"
 
-import { Suspense, useRef, useState, useMemo } from "react"
+import { Suspense, useRef, useState, useMemo, useEffect } from "react"
 import { Canvas, useFrame } from "@react-three/fiber"
 import { useGLTF, OrbitControls, Environment, ContactShadows } from "@react-three/drei"
 import * as THREE from "three"
 
-function SprayModel({ spraying, onSpray, zTilt = 0 }: { spraying: boolean; onSpray: () => void; zTilt?: number }) {
+function SprayModel({ spraying, onSpray, zTilt = 0, onReady }: { spraying: boolean; onSpray: () => void; zTilt?: number; onReady?: () => void }) {
   const { scene } = useGLTF("/models/spray_bottle.glb")
   const spinRef = useRef<THREE.Group>(null!)
   const [pressed, setPressed] = useState(false)
   const isDragging = useRef(false)
+
+  useEffect(() => {
+    onReady?.()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useFrame((_, delta) => {
     if (spinRef.current && !isDragging.current) {
@@ -95,7 +100,7 @@ function Mist({ active }: { active: boolean }) {
   )
 }
 
-function Scene({ zTilt = 0, transparent = false }: { zTilt?: number; transparent?: boolean }) {
+function Scene({ zTilt = 0, transparent = false, onReady }: { zTilt?: number; transparent?: boolean; onReady?: () => void }) {
   const [spraying, setSpraying] = useState(false)
 
   const handleSpray = () => {
@@ -111,7 +116,7 @@ function Scene({ zTilt = 0, transparent = false }: { zTilt?: number; transparent
       <pointLight position={[0, 4, 0]} intensity={0.4} color="#fff8f0" />
 
       <Suspense fallback={null}>
-        <SprayModel spraying={spraying} onSpray={handleSpray} zTilt={zTilt} />
+        <SprayModel spraying={spraying} onSpray={handleSpray} zTilt={zTilt} onReady={onReady} />
         <Mist active={spraying} />
         {!transparent && <ContactShadows position={[0, -1.4, 0]} opacity={0.25} scale={4} blur={2.5} />}
         <Environment preset="apartment" />
@@ -128,7 +133,7 @@ function Scene({ zTilt = 0, transparent = false }: { zTilt?: number; transparent
   )
 }
 
-export function SprayBottle3D({ transparent, zTilt = 0 }: { transparent?: boolean; zTilt?: number }) {
+export function SprayBottle3D({ transparent, zTilt = 0, onReady }: { transparent?: boolean; zTilt?: number; onReady?: () => void }) {
   return (
     <div
       className={`relative aspect-square overflow-hidden ${transparent ? "" : "bg-gradient-to-b from-muted/10 to-muted/40 rounded-3xl"}`}
@@ -141,7 +146,7 @@ export function SprayBottle3D({ transparent, zTilt = 0 }: { transparent?: boolea
         style={{ background: "transparent" }}
         onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}
       >
-        <Scene zTilt={zTilt} transparent={transparent} />
+        <Scene zTilt={zTilt} transparent={transparent} onReady={onReady} />
       </Canvas>
 
       {!transparent && (
