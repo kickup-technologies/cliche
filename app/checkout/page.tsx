@@ -4,28 +4,30 @@ import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useCart } from "@/context/cart-context"
-import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Lock, Sparkles, ShieldCheck } from "lucide-react"
+import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Lock, Sparkles, ShieldCheck, Truck } from "lucide-react"
 
 function fmt(n: number) {
   return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(n)
 }
 
+// Devuelve ["171", "000"] separando miles del número
+function splitNum(n: number): string {
+  return n.toLocaleString("es-CO")
+}
+
 export default function CheckoutPage() {
   const { items, removeItem, updateQuantity } = useCart()
   const [selected, setSelected] = useState<Record<string, boolean>>({})
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  // Seleccionar todos por defecto cuando los items cargan desde localStorage
   useEffect(() => {
     setSelected(prev => {
       const next = { ...prev }
-      items.forEach(i => {
-        if (!(i.product.id in next)) next[i.product.id] = true
-      })
+      items.forEach(i => { if (!(i.product.id in next)) next[i.product.id] = true })
       return next
     })
   }, [items])
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   const selectedItems = items.filter((i) => selected[i.product.id])
   const subtotal = selectedItems.reduce((s, i) => s + i.product.price * i.quantity, 0)
@@ -58,7 +60,6 @@ export default function CheckoutPage() {
     }
   }
 
-  /* ── Carrito vacío ── */
   if (items.length === 0) {
     return (
       <div className="min-h-screen bg-[#FAF8F5] flex flex-col items-center justify-center px-6 text-center">
@@ -75,147 +76,120 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
+    /* Layout fijo: derecha nunca se mueve, izquierda scrollea */
+    <div className="flex h-screen overflow-hidden bg-[#FAF8F5]">
 
-      {/* ════════════════════════════════
-          PANEL IZQUIERDO — Crema
-      ════════════════════════════════ */}
-      <div className="flex-1 bg-[#FAF8F5] flex flex-col min-h-screen">
+      {/* ═══════════════════════════════
+          IZQUIERDA — scrollable
+      ═══════════════════════════════ */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-2xl mx-auto px-8 lg:px-14 pt-12 pb-24">
 
-        {/* Topbar */}
-        <div className="flex items-center justify-between px-8 lg:px-14 pt-10 pb-6">
-          <Link href="/" className="font-serif text-2xl font-bold tracking-widest text-[#2D1A14] uppercase">
-            Cliché
-          </Link>
-          <Link href="/" className="flex items-center gap-2 text-xs text-[#2D1A14]/40 hover:text-[#2D1A14] transition-colors uppercase tracking-widest">
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Seguir comprando
-          </Link>
-        </div>
+          {/* Top nav */}
+          <div className="flex items-center justify-between mb-10">
+            <Link href="/" className="font-serif text-2xl font-bold tracking-widest text-[#2D1A14] uppercase">
+              Cliché
+            </Link>
+            <Link href="/" className="flex items-center gap-2 text-xs text-[#2D1A14]/35 hover:text-[#2D1A14] transition-colors uppercase tracking-widest">
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Seguir comprando
+            </Link>
+          </div>
 
-        {/* Breadcrumb */}
-        <div className="px-8 lg:px-14 pb-8">
-          <div className="flex items-center gap-3 text-xs tracking-widest uppercase text-[#2D1A14]/30">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-3 text-[10px] tracking-widest uppercase text-[#2D1A14]/25 mb-10">
             <span>Carrito</span>
             <span className="text-[#A67163]">—</span>
-            <span className="text-[#2D1A14]/80 font-medium">Resumen</span>
+            <span className="text-[#2D1A14]/70 font-semibold">Resumen</span>
             <span className="text-[#A67163]">—</span>
             <span>Pago</span>
           </div>
-        </div>
 
-        {/* Título */}
-        <div className="px-8 lg:px-14 pb-10">
-          <h1 className="font-serif text-4xl lg:text-5xl font-light text-[#2D1A14] leading-tight">
-            Tu pedido
-          </h1>
-          <p className="text-sm text-[#2D1A14]/40 mt-2 tracking-wide">
-            Selecciona los artículos que incluirás en este pago
-          </p>
-        </div>
+          {/* Título */}
+          <div className="mb-10">
+            <h1 className="font-serif text-5xl font-light text-[#2D1A14] leading-tight">Tu pedido</h1>
+            <p className="text-sm text-[#2D1A14]/35 mt-3 tracking-wide">
+              Selecciona los artículos que incluirás en este pago
+            </p>
+          </div>
 
-        {/* Lista de productos */}
-        <div className="px-8 lg:px-14 flex-1">
-          <div className="border-t border-[#2D1A14]/10">
-            {items.map((item, idx) => {
+          {/* Lista */}
+          <div className="border-t border-[#2D1A14]/8">
+            {items.map((item) => {
               const checked = !!selected[item.product.id]
               return (
-                <div
-                  key={item.product.id}
-                  className={`flex gap-6 py-7 border-b border-[#2D1A14]/10 transition-opacity duration-200 ${checked ? "opacity-100" : "opacity-35"}`}
-                >
-                  {/* Custom checkbox */}
+                <div key={item.product.id} className={`flex gap-6 py-8 border-b border-[#2D1A14]/8 transition-all duration-200 ${checked ? "opacity-100" : "opacity-30"}`}>
                   <button
                     onClick={() => setSelected(p => ({ ...p, [item.product.id]: !p[item.product.id] }))}
-                    className="mt-1 flex-shrink-0 w-5 h-5 rounded-none border border-[#2D1A14]/30 flex items-center justify-center transition-colors hover:border-[#A67163]"
+                    className="mt-1 flex-shrink-0 w-5 h-5 border border-[#2D1A14]/25 flex items-center justify-center transition-all hover:border-[#A67163]"
                     style={{ background: checked ? "#2D1A14" : "transparent" }}
-                    aria-label="Seleccionar"
                   >
                     {checked && <svg className="w-2.5 h-2.5" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="#FAF8F5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                   </button>
 
-                  {/* Imagen */}
-                  <div className="relative w-[88px] h-[88px] bg-[#2D1A14]/5 flex-shrink-0 overflow-hidden">
+                  <div className="relative w-20 h-20 bg-[#2D1A14]/5 flex-shrink-0 overflow-hidden">
                     <Image src={item.product.image_url} alt={item.product.name} fill className="object-cover" />
                   </div>
 
-                  {/* Info */}
                   <div className="flex-1 min-w-0">
                     <p className="font-serif text-base text-[#2D1A14] leading-snug">{item.product.name}</p>
-                    <p className="text-xs text-[#2D1A14]/40 mt-0.5 tracking-wide uppercase">Bienestar by Cliché</p>
-                    <p className="text-[#A67163] font-semibold text-sm mt-2">{fmt(item.product.price)} / unidad</p>
-
-                    {/* Cantidad */}
-                    <div className="flex items-center gap-0 mt-3 border border-[#2D1A14]/15 w-fit">
-                      <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)} className="w-8 h-8 flex items-center justify-center hover:bg-[#2D1A14]/5 transition-colors text-[#2D1A14]/50">
-                        <Minus className="w-3 h-3" />
+                    <p className="text-[10px] text-[#2D1A14]/30 mt-1 tracking-widest uppercase">Bienestar by Cliché</p>
+                    <p className="text-[#A67163] text-sm font-medium mt-2">{fmt(item.product.price)}<span className="text-[#2D1A14]/30 text-xs ml-1">/ ud.</span></p>
+                    <div className="flex items-center mt-3 border border-[#2D1A14]/12 w-fit">
+                      <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)} className="w-8 h-8 flex items-center justify-center hover:bg-[#2D1A14]/5 transition-colors text-[#2D1A14]/40">
+                        <Minus className="w-2.5 h-2.5" />
                       </button>
-                      <span className="w-9 text-center text-sm font-medium text-[#2D1A14]">{item.quantity}</span>
-                      <button onClick={() => updateQuantity(item.product.id, item.quantity + 1)} disabled={item.quantity >= item.product.stock} className="w-8 h-8 flex items-center justify-center hover:bg-[#2D1A14]/5 transition-colors text-[#2D1A14]/50 disabled:opacity-20">
-                        <Plus className="w-3 h-3" />
+                      <span className="w-10 text-center text-sm font-medium text-[#2D1A14]">{item.quantity}</span>
+                      <button onClick={() => updateQuantity(item.product.id, item.quantity + 1)} disabled={item.quantity >= item.product.stock} className="w-8 h-8 flex items-center justify-center hover:bg-[#2D1A14]/5 transition-colors text-[#2D1A14]/40 disabled:opacity-20">
+                        <Plus className="w-2.5 h-2.5" />
                       </button>
                     </div>
                   </div>
 
-                  {/* Precio total + eliminar */}
-                  <div className="flex flex-col items-end justify-between">
-                    <button onClick={() => removeItem(item.product.id)} className="text-[#2D1A14]/20 hover:text-red-400 transition-colors p-1">
+                  <div className="flex flex-col items-end justify-between min-w-[90px]">
+                    <button onClick={() => removeItem(item.product.id)} className="text-[#2D1A14]/15 hover:text-red-400 transition-colors">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
-                    <p className="font-serif text-lg font-medium text-[#2D1A14]">
-                      {fmt(item.product.price * item.quantity)}
-                    </p>
+                    <p className="font-serif text-lg text-[#2D1A14]">{fmt(item.product.price * item.quantity)}</p>
                   </div>
                 </div>
               )
             })}
           </div>
-        </div>
 
-        {/* Footer izquierdo */}
-        <div className="px-8 lg:px-14 py-8 mt-auto">
-          <p className="text-xs text-[#2D1A14]/30 tracking-widest uppercase">
+          <p className="text-[10px] text-[#2D1A14]/20 tracking-widest uppercase mt-12 text-center">
             Aromas artesanales · Fabricado en Colombia · 100% naturales
           </p>
         </div>
       </div>
 
-      {/* ════════════════════════════════
-          PANEL DERECHO — Mocha oscuro
-      ════════════════════════════════ */}
-      <div className="w-full lg:w-[420px] xl:w-[460px] bg-[#2D1A14] flex flex-col lg:min-h-screen lg:sticky lg:top-0 lg:h-screen">
-        <div className="flex flex-col h-full px-8 xl:px-12 py-10 lg:py-14">
+      {/* ═══════════════════════════════
+          DERECHA — fija, no se mueve
+      ═══════════════════════════════ */}
+      <div className="w-[400px] xl:w-[440px] flex-shrink-0 bg-[#2D1A14] h-screen overflow-y-auto flex flex-col">
+        <div className="flex flex-col min-h-full px-10 xl:px-12 pt-14 pb-10">
 
-          {/* Header panel */}
-          <div className="mb-10">
-            <p className="text-[#FAF8F5]/30 text-xs tracking-widest uppercase mb-2">Resumen</p>
-            <h2 className="font-serif text-3xl font-light text-[#FAF8F5]">
-              {selectedItems.length > 0 ? fmt(total) : "—"}
-            </h2>
-            <p className="text-[#FAF8F5]/40 text-xs mt-1">
-              {selectedItems.length} {selectedItems.length === 1 ? "producto" : "productos"} · COP
-            </p>
-          </div>
+          {/* Eyebrow */}
+          <p className="text-[#FAF8F5]/25 text-[9px] tracking-[0.25em] uppercase mb-8">
+            Resumen del pedido
+          </p>
 
-          {/* Separador decorativo */}
-          <div className="flex items-center gap-3 mb-8">
-            <div className="h-px flex-1 bg-[#FAF8F5]/10" />
-            <div className="w-1 h-1 rounded-full bg-[#A67163]" />
-            <div className="h-px flex-1 bg-[#FAF8F5]/10" />
-          </div>
-
-          {/* Items seleccionados */}
-          <div className="flex-1 space-y-4 mb-8">
+          {/* Items del pedido */}
+          <div className="space-y-5 flex-1">
             {selectedItems.length === 0 ? (
-              <p className="text-[#FAF8F5]/30 text-sm text-center py-6">Ningún producto seleccionado</p>
+              <p className="text-[#FAF8F5]/20 text-sm py-4">Ningún artículo seleccionado</p>
             ) : (
               selectedItems.map((i) => (
-                <div key={i.product.id} className="flex justify-between items-start gap-3">
+                <div key={i.product.id} className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
-                    <p className="text-[#FAF8F5]/80 text-sm leading-snug line-clamp-1">{i.product.name}</p>
-                    {i.quantity > 1 && <p className="text-[#FAF8F5]/30 text-xs mt-0.5">× {i.quantity} unidades</p>}
+                    <p className="text-[#FAF8F5]/75 text-sm leading-snug">{i.product.name}</p>
+                    {i.quantity > 1 && (
+                      <p className="text-[#FAF8F5]/25 text-xs mt-0.5 tracking-wide">× {i.quantity}</p>
+                    )}
                   </div>
-                  <p className="text-[#FAF8F5] text-sm font-medium flex-shrink-0">{fmt(i.product.price * i.quantity)}</p>
+                  <p className="text-[#FAF8F5]/60 text-sm tabular-nums flex-shrink-0">
+                    {fmt(i.product.price * i.quantity)}
+                  </p>
                 </div>
               ))
             )}
@@ -223,104 +197,103 @@ export default function CheckoutPage() {
 
           {/* Barra envío gratis */}
           {subtotal > 0 && (
-            <div className="mb-6 space-y-2">
-              <div className="h-px bg-[#FAF8F5]/8 overflow-hidden rounded-full">
-                <div className="h-full bg-gradient-to-r from-[#A67163] to-[#C4958A] transition-all duration-700" style={{ width: `${pct}%` }} />
+            <div className="mt-8 space-y-2">
+              <div className="h-[1px] bg-[#FAF8F5]/8 w-full overflow-hidden">
+                <div className="h-full bg-[#A67163]/60 transition-all duration-700" style={{ width: `${pct}%` }} />
               </div>
-              <p className="text-xs text-[#FAF8F5]/30 text-center">
+              <p className="text-[10px] text-[#FAF8F5]/25 tracking-wide text-center">
                 {freeShipping
-                  ? <span className="text-[#C4958A] flex items-center justify-center gap-1"><Sparkles className="w-3 h-3" /> Envío incluido gratuitamente</span>
-                  : <>Agrega {fmt(FREE_SHIPPING - subtotal)} más para envío gratis</>}
+                  ? <span className="text-[#A67163]/80">Envío gratuito aplicado</span>
+                  : <>{fmt(FREE_SHIPPING - subtotal)} más para envío gratis</>}
               </p>
             </div>
           )}
 
           {/* Desglose */}
-          <div className="border-t border-[#FAF8F5]/8 pt-5 space-y-3 mb-6">
-            <div className="flex justify-between text-sm">
-              <span className="text-[#FAF8F5]/40">Subtotal</span>
-              <span className="text-[#FAF8F5]/70">{subtotal > 0 ? fmt(subtotal) : "—"}</span>
+          <div className="mt-8 pt-8 border-t border-[#FAF8F5]/6 space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-[#FAF8F5]/30 text-xs tracking-widest uppercase">Subtotal</span>
+              <span className="text-[#FAF8F5]/50 text-sm tabular-nums">{subtotal > 0 ? fmt(subtotal) : "—"}</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-[#FAF8F5]/40">Envío</span>
-              <span className={freeShipping && subtotal > 0 ? "text-[#C4958A]" : "text-[#FAF8F5]/70"}>
+            <div className="flex justify-between items-center">
+              <span className="text-[#FAF8F5]/30 text-xs tracking-widest uppercase">Envío</span>
+              <span className={`text-sm tabular-nums ${freeShipping && subtotal > 0 ? "text-[#A67163]/80" : "text-[#FAF8F5]/50"}`}>
                 {subtotal === 0 ? "—" : freeShipping ? "Gratis" : fmt(shipping)}
               </span>
             </div>
           </div>
 
-          <div className="border-t border-[#FAF8F5]/8 pt-5 mb-8">
-            <div className="flex justify-between items-end">
-              <span className="text-[#FAF8F5]/60 text-sm uppercase tracking-widest">Total</span>
-              <div className="text-right">
-                <p className="font-serif text-3xl font-light text-[#FAF8F5]">{subtotal > 0 ? fmt(total) : "—"}</p>
-                <p className="text-[#FAF8F5]/25 text-[10px] mt-0.5 tracking-wide">IVA incluido</p>
-              </div>
+          {/* Total — el protagonista */}
+          <div className="mt-8 pt-8 border-t border-[#FAF8F5]/6">
+            <div className="flex items-baseline justify-between gap-3 mb-1">
+              <span className="text-[#FAF8F5]/30 text-[10px] tracking-[0.2em] uppercase">Total a pagar</span>
+              <span className="text-[#FAF8F5]/20 text-[10px] tracking-wide">COP · IVA incl.</span>
             </div>
+            <p className="font-serif text-right mt-2">
+              <span className="text-[#FAF8F5]/40 text-lg align-top mt-2 inline-block mr-1">$</span>
+              <span className="text-[#FAF8F5] text-5xl font-light tracking-tight">
+                {subtotal > 0 ? splitNum(total) : "—"}
+              </span>
+            </p>
           </div>
 
           {/* Error */}
           {error && (
-            <div className="mb-4 bg-red-900/30 border border-red-500/20 rounded-lg p-3">
+            <div className="mt-5 bg-red-950/50 border border-red-500/20 rounded-xl p-3">
               <p className="text-red-300 text-xs">{error}</p>
             </div>
           )}
 
-          {/* CTA principal */}
-          <div className="space-y-3">
+          {/* CTA */}
+          <div className="mt-8 space-y-3">
             <button
               onClick={handlePay}
               disabled={isLoading || selectedItems.length === 0}
-              className="w-full rounded-2xl bg-[#FAF8F5] text-[#2D1A14] flex flex-col items-center justify-center gap-0.5 py-5 hover:bg-[#A67163] hover:text-white active:scale-[0.99] transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed group shadow-lg shadow-black/20"
+              className="w-full rounded-xl py-4 px-6 flex items-center justify-center gap-3 bg-[#A67163] text-white font-semibold text-sm tracking-wide hover:bg-[#8B5E52] active:scale-[0.99] transition-all duration-200 disabled:opacity-25 disabled:cursor-not-allowed"
             >
               {isLoading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin mb-1" />
-                  <span className="text-sm font-semibold tracking-wide">Procesando pago...</span>
-                </>
+                <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Procesando...</>
               ) : (
-                <>
-                  <div className="flex items-center gap-2">
-                    <Lock className="w-3.5 h-3.5 opacity-60" />
-                    <span className="text-xs font-medium tracking-widest uppercase opacity-60">Pago seguro</span>
-                  </div>
-                  <span className="font-serif text-2xl font-semibold mt-0.5">
-                    {selectedItems.length > 0 ? fmt(total) : "Selecciona productos"}
-                  </span>
-                  {selectedItems.length > 0 && (
-                    <span className="text-xs opacity-50 mt-0.5">
-                      {selectedItems.length} {selectedItems.length === 1 ? "producto" : "productos"} · COP
-                    </span>
-                  )}
-                </>
+                <><Lock className="w-3.5 h-3.5 opacity-70" /> {selectedItems.length > 0 ? `Pagar ${fmt(total)}` : "Selecciona artículos"}</>
               )}
             </button>
 
-            {/* Garantía didáctica */}
-            <div className="flex items-center justify-center gap-2 text-[#FAF8F5]/40 text-xs">
-              <ShieldCheck className="w-3.5 h-3.5 text-[#A67163]" />
-              <span>Compra protegida · Reembolso garantizado</span>
+            <div className="flex items-center justify-center gap-2 text-[#FAF8F5]/20 text-[10px] tracking-wide">
+              <ShieldCheck className="w-3 h-3 text-[#A67163]/50" />
+              <span>Pago cifrado · Protección al comprador</span>
             </div>
           </div>
 
-          {/* Métodos de pago */}
-          <div className="mt-5 space-y-3">
-            <p className="text-center text-[9px] text-[#FAF8F5]/20 tracking-widest uppercase">Métodos aceptados</p>
-            <div className="flex items-center justify-center gap-2 flex-wrap">
-              {["Visa", "Mastercard", "PSE", "Nequi", "Bancolombia"].map((m) => (
-                <span key={m} className="text-[9px] font-semibold text-[#FAF8F5]/30 border border-[#FAF8F5]/10 rounded-md px-2 py-1 tracking-wide">
-                  {m}
-                </span>
-              ))}
+          {/* Trust + métodos */}
+          <div className="mt-8 pt-8 border-t border-[#FAF8F5]/6 space-y-5">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex items-start gap-2">
+                <Truck className="w-3.5 h-3.5 text-[#A67163]/60 mt-0.5 flex-shrink-0" />
+                <p className="text-[#FAF8F5]/30 text-[10px] leading-relaxed">Envío en 2–5 días hábiles a todo Colombia</p>
+              </div>
+              <div className="flex items-start gap-2">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#A67163]/60 mt-0.5 flex-shrink-0" />
+                <p className="text-[#FAF8F5]/30 text-[10px] leading-relaxed">Garantía de satisfacción o reembolso total</p>
+              </div>
             </div>
-            <div className="flex items-center justify-center gap-1.5 text-[#FAF8F5]/15">
-              <Lock className="w-2.5 h-2.5" />
-              <span className="text-[9px] tracking-widest uppercase">Cifrado SSL · Powered by Wompi</span>
+
+            <div>
+              <p className="text-[#FAF8F5]/15 text-[8px] tracking-[0.2em] uppercase mb-2.5 text-center">Métodos de pago</p>
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                {["Visa", "Mastercard", "PSE", "Nequi", "Bancolombia"].map((m) => (
+                  <span key={m} className="text-[8px] font-medium text-[#FAF8F5]/20 border border-[#FAF8F5]/8 rounded px-2 py-0.5 tracking-wider">
+                    {m}
+                  </span>
+                ))}
+              </div>
+              <p className="text-center text-[#FAF8F5]/10 text-[8px] tracking-widest uppercase mt-3">
+                Powered by Wompi · Bancolombia
+              </p>
             </div>
           </div>
+
         </div>
       </div>
-
     </div>
   )
 }
