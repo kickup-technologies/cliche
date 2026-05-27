@@ -1,15 +1,14 @@
-﻿import { NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase"
+import { NextRequest, NextResponse } from "next/server"
+import { supabase, createServerClient } from "@/lib/supabase"
 
-// GET /api/reviews?product_id=xxx
+// GET /api/reviews?product_id=xxx — public anon client (RLS: approved only)
 export async function GET(req: NextRequest) {
   const product_id = req.nextUrl.searchParams.get("product_id")
   if (!product_id) {
     return NextResponse.json({ error: "product_id required" }, { status: 400 })
   }
   try {
-    const db = createServerClient()
-    const { data, error } = await db
+    const { data, error } = await supabase
       .from("reviews")
       .select("*")
       .eq("product_id", product_id)
@@ -23,7 +22,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/reviews
+// POST /api/reviews — public anon client (RLS: anyone can insert)
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -40,7 +39,12 @@ export async function POST(req: NextRequest) {
     if (rating < 1 || rating > 5) {
       return NextResponse.json({ error: "Rating invalido" }, { status: 400 })
     }
-    const db = createServerClient()
+
+    // Try service role first (bypasses RLS), fall back to anon
+    const db = (() => {
+      try { return createServerClient() } catch { return supabase }
+    })()
+
     const { data, error } = await db
       .from("reviews")
       .insert({
@@ -53,7 +57,26 @@ export async function POST(req: NextRequest) {
       })
       .select()
       .single()
-    if (error) throw error
+
+    if (error) {
+      console.error("[reviews POST] DB error:", error)
+      // Fallback: try anon client if service role failed
+      const { data: d2, error: e2 } = await supabase
+        .from("reviews")
+        .insert({
+          product_id,
+          reviewer_name: reviewer_name.trim(),
+          rating,
+          comment: comment?.trim() || null,
+          media_urls: media_urls ?? [],
+          is_approved: true,
+        })
+        .select()
+        .single()
+      if (e2) throw e2
+      return NextResponse.json(d2, { status: 201 })
+    }
+
     return NextResponse.json(data, { status: 201 })
   } catch (err) {
     console.error("[reviews POST]", err)

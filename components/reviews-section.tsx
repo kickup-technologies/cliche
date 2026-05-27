@@ -1,10 +1,10 @@
-﻿"use client"
+"use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import Image from "next/image"
 import {
   Star, MessageSquare, CheckCircle, User, BadgeCheck,
-  ImagePlus, X, Play, Loader2, ChevronLeft, ChevronRight
+  ImagePlus, X, Play, Loader2, ChevronLeft, ChevronRight, Trash2
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -133,14 +133,26 @@ function MediaGrid({ urls }: { urls: string[] }) {
 }
 
 // ── Review card ──────────────────────────────────────────────────────────────
-function ReviewCard({ review }: { review: Review }) {
+function ReviewCard({ review, onDelete }: { review: Review; onDelete: (id: string) => void }) {
   const date = new Date(review.created_at).toLocaleDateString("es-CO", {
     year: "numeric", month: "long", day: "numeric",
   })
   const urls = review.media_urls ?? []
+  const [confirming, setConfirming] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  const handleDelete = async () => {
+    if (!confirming) { setConfirming(true); return }
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/reviews/${review.id}`, { method: "DELETE" })
+      if (res.ok) onDelete(review.id)
+    } catch { /* silent */ }
+    finally { setDeleting(false); setConfirming(false) }
+  }
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
+    <div className="bg-card border border-border rounded-2xl p-5 space-y-3 group relative">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -156,7 +168,23 @@ function ReviewCard({ review }: { review: Review }) {
             </div>
           </div>
         </div>
-        <StarRating value={review.rating} />
+        <div className="flex items-center gap-2">
+          <StarRating value={review.rating} />
+          {/* Delete button — visible on hover */}
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            className={`opacity-0 group-hover:opacity-100 transition-all p-1.5 rounded-lg text-xs font-medium flex items-center gap-1 ${
+              confirming
+                ? "opacity-100 bg-red-50 text-red-600 border border-red-200"
+                : "text-muted-foreground hover:text-red-500 hover:bg-red-50"
+            }`}
+            title={confirming ? "Confirmar eliminación" : "Eliminar reseña"}
+          >
+            {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+            {confirming && <span>¿Eliminar?</span>}
+          </button>
+        </div>
       </div>
       {review.comment && (
         <p className="text-sm text-muted-foreground leading-relaxed pl-12">{review.comment}</p>
@@ -235,6 +263,10 @@ export function ReviewsSection({ productId }: Props) {
     setMediaFiles(combined)
   }
 
+  const handleDelete = (id: string) => {
+    setReviews((prev) => prev.filter((r) => r.id !== id))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.reviewer_name.trim() || form.rating === 0) return
@@ -242,17 +274,20 @@ export function ReviewsSection({ productId }: Props) {
     setUploadError("")
 
     try {
-      // 1. Upload media first
+      // 1. Upload media first (if any)
       let media_urls: string[] = []
       if (mediaFiles.length > 0) {
         const fd = new FormData()
         mediaFiles.forEach((f) => fd.append("files", f))
         const upRes = await fetch("/api/reviews/upload", { method: "POST", body: fd })
-        const upData = await upRes.json()
-        media_urls = upData.urls ?? []
+        if (upRes.ok) {
+          const upData = await upRes.json()
+          media_urls = upData.urls ?? []
+        }
+        // If upload fails, continue without media (don't block the review)
       }
 
-      // 2. Post review with media URLs
+      // 2. Post review
       const res = await fetch("/api/reviews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -265,10 +300,13 @@ export function ReviewsSection({ productId }: Props) {
         return
       }
 
+      const newReview = await res.json()
+      // Optimistic: add the new review to the list immediately
+      setReviews((prev) => [newReview, ...prev])
       setSubmitted(true)
       setShowForm(false)
       setMediaFiles([])
-      fetchReviews()
+      setForm({ reviewer_name: "", rating: 0, comment: "" })
     } catch {
       setUploadError("Error de conexión. Intenta de nuevo.")
     } finally {
@@ -342,7 +380,6 @@ export function ReviewsSection({ productId }: Props) {
             <label className="text-sm font-medium text-foreground">
               Fotos / Videos <span className="text-muted-foreground font-normal">(opcional · máx. {MAX_FILES} archivos · {MAX_SIZE_MB}MB c/u)</span>
             </label>
-
             <div className="flex flex-wrap gap-2">
               {mediaFiles.map((file, i) => (
                 <FileThumbnail
@@ -362,7 +399,6 @@ export function ReviewsSection({ productId }: Props) {
                 </button>
               )}
             </div>
-
             <input
               ref={fileInputRef}
               type="file"
@@ -371,7 +407,6 @@ export function ReviewsSection({ productId }: Props) {
               className="hidden"
               onChange={(e) => handleFiles(e.target.files)}
             />
-
             {uploadError && (
               <p className="text-sm text-red-600 font-medium">{uploadError}</p>
             )}
@@ -395,7 +430,7 @@ export function ReviewsSection({ productId }: Props) {
         <div className="bg-primary/10 border border-primary/20 rounded-2xl p-5 mb-8 flex items-center gap-4">
           <CheckCircle className="w-6 h-6 text-primary flex-shrink-0" />
           <div>
-            <p className="font-semibold text-foreground">Gracias por tu reseña</p>
+            <p className="font-semibold text-foreground">¡Gracias por tu reseña!</p>
             <p className="text-sm text-muted-foreground">Tu opinión ya es visible para la comunidad.</p>
           </div>
         </div>
@@ -417,7 +452,7 @@ export function ReviewsSection({ productId }: Props) {
       ) : (
         <div className="space-y-4">
           {reviews.map((review) => (
-            <ReviewCard key={review.id} review={review} />
+            <ReviewCard key={review.id} review={review} onDelete={handleDelete} />
           ))}
         </div>
       )}

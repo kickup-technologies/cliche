@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import dynamic from "next/dynamic"
@@ -101,6 +101,37 @@ export function ProductDetail({ product, related }: Props) {
   const [viewers, setViewers] = useState(() => Math.floor(Math.random() * 16) + 7)
   // Gallery: null = show 3D render, string = show that photo URL
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  // Urgency timer — 24h from first visit (sessionStorage persists across reloads)
+  const [timeLeft, setTimeLeft] = useState({ h: 23, m: 59, s: 59 })
+  useEffect(() => {
+    const KEY = `cliche_urgency_${product.id}`
+    const stored = sessionStorage.getItem(KEY)
+    const expiry = stored ? Number(stored) : Date.now() + 24 * 60 * 60 * 1000
+    if (!stored) sessionStorage.setItem(KEY, String(expiry))
+    const tick = () => {
+      const diff = Math.max(0, expiry - Date.now())
+      setTimeLeft({
+        h: Math.floor(diff / 3600000),
+        m: Math.floor((diff % 3600000) / 60000),
+        s: Math.floor((diff % 60000) / 1000),
+      })
+    }
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [product.id])
+  const pad = (n: number) => String(n).padStart(2, "0")
+  // Sticky CTA — show when page scrolled past the add-to-cart button
+  const [showSticky, setShowSticky] = useState(false)
+  const ctaRef = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    const obs = new IntersectionObserver(
+      ([entry]) => setShowSticky(!entry.isIntersecting),
+      { threshold: 0 }
+    )
+    if (ctaRef.current) obs.observe(ctaRef.current)
+    return () => obs.disconnect()
+  }, [fell])
   const galleryImages: string[] = Array.isArray(product.image_urls) ? product.image_urls.filter(Boolean) : []
   // Share
   const [shared, setShared] = useState(false)
@@ -339,6 +370,48 @@ export function ProductDetail({ product, related }: Props) {
                 )}
               </div>
 
+              {/* Urgency timer */}
+              {product.original_price && (
+                <div className="flex items-center gap-3 bg-orange-50 border border-orange-200 rounded-2xl px-4 py-3">
+                  <span className="text-orange-500 text-lg">⏰</span>
+                  <div className="flex-1">
+                    <p className="text-xs font-semibold text-orange-700 uppercase tracking-wide">Oferta por tiempo limitado</p>
+                    <p className="text-xs text-orange-600 mt-0.5">Termina en{" "}
+                      <span className="font-mono font-bold text-orange-800">{pad(timeLeft.h)}:{pad(timeLeft.m)}:{pad(timeLeft.s)}</span>
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold text-orange-700 bg-orange-100 px-2 py-1 rounded-lg">
+                    -{Math.round((1 - product.price / product.original_price) * 100)}%
+                  </span>
+                </div>
+              )}
+
+              {/* Free shipping progress bar */}
+              {(() => {
+                const FREE_SHIPPING = 300000
+                const pct = Math.min(100, Math.round((product.price / FREE_SHIPPING) * 100))
+                const remaining = FREE_SHIPPING - product.price
+                return (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">
+                        {remaining > 0
+                          ? <>Te faltan <strong className="text-foreground">${remaining.toLocaleString("es-CO")}</strong> para envío gratis</>
+                          : <span className="text-green-600 font-semibold">🎉 ¡Este pedido tiene envío gratis!</span>
+                        }
+                      </span>
+                      <span className="text-muted-foreground font-medium">{pct}%</span>
+                    </div>
+                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-primary to-green-500 rounded-full transition-all duration-700"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                )
+              })()}
+
               {/* Fragrance notes */}
               {notes.length > 0 && (
                 <div className="bg-muted/40 rounded-2xl p-4">
@@ -384,6 +457,7 @@ export function ProductDetail({ product, related }: Props) {
                 </div>
 
                 <Button
+                  ref={ctaRef}
                   size="lg"
                   className="w-full h-14 text-base font-semibold rounded-2xl"
                   onClick={handleAdd}
@@ -570,6 +644,31 @@ export function ProductDetail({ product, related }: Props) {
       </main>
       <Footer />
       <WhatsAppButton />
+
+      {/* Sticky CTA bar — appears on mobile when add-to-cart scrolls out of view */}
+      <div
+        className="fixed bottom-0 left-0 right-0 z-40 lg:hidden transition-all duration-300"
+        style={{
+          transform: showSticky ? 'translateY(0)' : 'translateY(100%)',
+          opacity: showSticky ? 1 : 0,
+        }}
+      >
+        <div className="bg-card border-t border-border shadow-2xl px-4 py-3 flex items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-muted-foreground truncate">{product.name}</p>
+            <p className="font-bold text-foreground text-sm">${product.price.toLocaleString("es-CO")} COP</p>
+          </div>
+          <Button
+            size="sm"
+            className="flex-shrink-0 h-11 px-6 rounded-xl font-semibold"
+            onClick={handleAdd}
+            disabled={product.stock === 0}
+          >
+            {added ? <CheckCircle className="w-4 h-4 mr-1" /> : <ShoppingBag className="w-4 h-4 mr-1" />}
+            {added ? "¡Agregado!" : "Agregar"}
+          </Button>
+        </div>
+      </div>
 
       {/* Recent buyer notification — bottom-left toast */}
       <div
