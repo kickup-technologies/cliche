@@ -88,6 +88,20 @@ const VALUE_MAP: Record<string, string> = {
   "aroma-happiness":          "El aroma de los días perfectos. Cítricos alegres y flores de primavera que elevan el ánimo de forma inmediata. Para cuando quieres que tu hogar tenga la energía de un buen día, todos los días.",
 }
 
+function ProgressBar() {
+  const [w, setW] = useState(0)
+  useEffect(() => {
+    const t = requestAnimationFrame(() => setW(100))
+    return () => cancelAnimationFrame(t)
+  }, [])
+  return (
+    <div
+      className="absolute inset-0 bg-primary/60"
+      style={{ width: `${w}%`, transition: 'width 3000ms linear' }}
+    />
+  )
+}
+
 export function ProductDetail({ product, related }: Props) {
   const { addItem } = useCart()
   const [qty, setQty] = useState(1)
@@ -146,44 +160,48 @@ export function ProductDetail({ product, related }: Props) {
     <>
       <Header />
       <main className="min-h-screen bg-background pt-24 pb-16">
-        {/* Option A: cinematic hero overlay — product centered, tilted, rotating */}
+        {/* Option A: premium hero — same background, render floats alongside text */}
         {animType === 'A' && heroPhase !== 'done' && (
-          <>
-            {/* Dark backdrop */}
-            <div
-              className="fixed inset-0 pointer-events-none"
-              style={{
-                zIndex: 55,
-                background: 'rgba(8, 4, 2, 0.93)',
-                opacity: heroPhase === 'settling' ? 0 : 1,
-                transition: 'opacity 1200ms ease',
-              }}
-            />
-            {/* Centered product viewer */}
-            <div
-              className="fixed inset-0 flex flex-col items-center justify-center pointer-events-none"
-              style={{
-                zIndex: 60,
-                opacity: heroPhase === 'settling' ? 0 : 1,
-                transition: 'opacity 1000ms ease 100ms',
-              }}
-            >
+          <div
+            className="fixed inset-0 bg-background flex items-center overflow-hidden"
+            style={{
+              zIndex: 60,
+              opacity: heroPhase === 'settling' ? 0 : 1,
+              transition: 'opacity 1000ms ease',
+              pointerEvents: heroPhase === 'settling' ? 'none' : 'auto',
+            }}
+          >
+            {/* Left — 3D render floating, tilted, no container bg */}
+            <div className="flex-1 flex items-center justify-center h-full">
               <div style={{
-                width: 'min(62vmin, 420px)',
-                height: 'min(62vmin, 420px)',
-                transform: 'perspective(1400px) rotateX(7deg) rotateY(-16deg)',
-                filter: 'drop-shadow(0 30px 60px rgba(0,0,0,0.6))',
+                width: 'min(58vmin, 460px)',
+                height: 'min(58vmin, 460px)',
+                transform: 'perspective(1400px) rotateX(6deg) rotateY(-14deg)',
               }}>
-                <SprayBottle3D />
+                <SprayBottle3D transparent />
               </div>
-              <p
-                className="text-white/40 text-xs tracking-[0.35em] uppercase mt-6"
-                style={{ fontFamily: 'serif' }}
-              >
-                {product.name}
-              </p>
             </div>
-          </>
+
+            {/* Right — premium typography */}
+            <div className="flex-1 flex flex-col justify-center gap-5 pr-16 lg:pr-24">
+              <p className="text-muted-foreground/60 text-[10px] tracking-[0.45em] uppercase font-medium">
+                Cliché · Colección Esencial
+              </p>
+              <h1 className="font-serif text-5xl lg:text-6xl font-bold text-foreground leading-[1.05]">
+                {product.name.split('—')[0].trim().split(' ').slice(0, 2).join('\n')}
+              </h1>
+              <p className="text-primary/80 text-sm tracking-[0.2em] uppercase font-medium">
+                {(NOTES_MAP[product.slug] || []).join(' · ')}
+              </p>
+              <p className="text-muted-foreground text-sm leading-relaxed max-w-[260px]">
+                {VALUE_MAP[product.slug]?.split('.')[0]}.
+              </p>
+              {/* Progress bar */}
+              <div className="mt-4 w-20 h-px bg-muted-foreground/15 relative overflow-hidden">
+                <ProgressBar />
+              </div>
+            </div>
+          </div>
         )}
         {/* Breadcrumb */}
         <div className="container mx-auto px-4 mb-6">

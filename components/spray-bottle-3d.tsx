@@ -126,9 +126,9 @@ function Scene() {
   )
 }
 
-export function SprayBottle3D() {
+export function SprayBottle3D({ transparent }: { transparent?: boolean }) {
   return (
-    <div className="relative aspect-square bg-gradient-to-b from-muted/10 to-muted/40 rounded-3xl overflow-hidden">
+    <div className={`relative aspect-square overflow-hidden ${transparent ? "" : "bg-gradient-to-b from-muted/10 to-muted/40 rounded-3xl"}`}>
       <Canvas
         camera={{ position: [0, 0.1, 3.5], fov: 36 }}
         shadows
