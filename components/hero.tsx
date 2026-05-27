@@ -70,7 +70,8 @@ export function Hero() {
   }, [])
 
   return (
-    <section className="relative min-h-[100svh] flex flex-col items-center overflow-hidden">
+    <section className="relative flex flex-col items-center overflow-hidden min-h-[72svh] lg:min-h-[100svh]">
+
       {/* Background Slides */}
       {heroSlides.map((slide, index) => (
         <div
@@ -82,123 +83,159 @@ export function Hero() {
             src={slide.image}
             alt={slide.title}
             fill
-            className="object-cover"
+            className="object-cover object-top"
             priority={index === 0}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
+          {/* gradiente más fuerte abajo para legibilidad del CTA en móvil */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/75 lg:bg-gradient-to-r lg:from-black/70 lg:via-black/40 lg:to-transparent" />
         </div>
       ))}
 
       {/* Content */}
-      <div className="container mx-auto px-4 relative z-10 flex-1 flex items-center">
-        <div className="max-w-2xl pt-28 lg:pt-0">
-          {/* Trust Badges */}
-          <div className="flex items-center gap-4 mb-6">
-            <div className="flex items-center gap-1 bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full">
+      <div className="container mx-auto px-4 relative z-10 flex-1 flex items-end lg:items-center pb-8 lg:pb-0">
+        <div className="w-full max-w-2xl pt-20 lg:pt-0">
+
+          {/* ── MÓVIL: layout compacto de conversión ── */}
+          <div className="lg:hidden">
+            {/* Rating pill */}
+            <div className="flex items-center gap-1.5 mb-3">
               <div className="flex">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  <Star key={i} className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
                 ))}
               </div>
-              <span className="text-white/90 text-sm ml-1">+5.000 hogares felices</span>
+              <span className="text-white/80 text-xs">+5.000 hogares felices</span>
             </div>
-          </div>
 
-          {/* Title with Animation */}
-          {heroSlides.map((slide, index) => (
-            <div
-              key={index}
-              className="transition-all duration-700"
-              style={{
-                opacity: currentSlide === index ? 1 : 0,
-                transform: currentSlide === index ? "translateY(0)" : "translateY(20px)",
-                position: currentSlide === index ? "relative" : "absolute",
-              }}
-            >
-              {currentSlide === index && (
-                <>
-                  <h1 className="text-3xl sm:text-4xl lg:text-6xl font-serif font-bold text-white mb-4 leading-tight text-balance">
-                    {slide.title}
-                  </h1>
-                  <p className="text-base sm:text-xl md:text-2xl text-white/80 mb-6 sm:mb-8">
-                    {slide.subtitle}
-                  </p>
-                </>
-              )}
+            {/* Título — solo el del slide actual */}
+            <h1 className="text-2xl font-serif font-bold text-white mb-2 leading-tight">
+              {heroSlides[currentSlide].title}
+            </h1>
+
+            {/* Urgency strip compacto */}
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0" />
+              <span className="text-white/70 text-xs">Oferta termina en:</span>
+              <span className="font-mono font-bold text-white text-sm">
+                {String(timeLeft.hours).padStart(2,"0")}:{String(timeLeft.minutes).padStart(2,"0")}:{String(timeLeft.seconds).padStart(2,"0")}
+              </span>
             </div>
-          ))}
 
-          {/* Urgency Timer */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 sm:p-4 mb-6 sm:mb-8 inline-block">
-            <div className="flex items-center gap-2 sm:gap-3 text-white">
-              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400 animate-pulse" />
-              <span className="font-medium text-sm sm:text-base">Oferta termina en:</span>
-              <div className="flex gap-1.5 sm:gap-2">
-                <div className="bg-white/20 px-2 sm:px-3 py-1 rounded-lg text-center">
-                  <span className="font-mono font-bold text-base sm:text-xl">{String(timeLeft.hours).padStart(2, "0")}</span>
-                  <span className="text-[10px] sm:text-xs block text-white/70">hrs</span>
-                </div>
-                <span className="text-lg sm:text-2xl font-bold">:</span>
-                <div className="bg-white/20 px-2 sm:px-3 py-1 rounded-lg text-center">
-                  <span className="font-mono font-bold text-base sm:text-xl">{String(timeLeft.minutes).padStart(2, "0")}</span>
-                  <span className="text-[10px] sm:text-xs block text-white/70">min</span>
-                </div>
-                <span className="text-lg sm:text-2xl font-bold">:</span>
-                <div className="bg-white/20 px-2 sm:px-3 py-1 rounded-lg text-center">
-                  <span className="font-mono font-bold text-base sm:text-xl">{String(timeLeft.seconds).padStart(2, "0")}</span>
-                  <span className="text-[10px] sm:text-xs block text-white/70">seg</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6 sm:mb-8">
-            <Button size="lg" className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 font-semibold group" asChild>
+            {/* CTA principal — grande, full-width */}
+            <Button size="lg" className="w-full py-5 text-base font-bold tracking-wide group mb-3" asChild>
               <a href="#productos">
                 COMPRAR CON {discountPct}% OFF
                 <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
               </a>
             </Button>
-            <Button size="lg" variant="outline" className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 border-white/30 text-white hover:bg-white/10 font-semibold">
-              Ver Catálogo
-              <ChevronRight className="w-5 h-5 ml-1" />
-            </Button>
+
+            {/* Trust mínimo */}
+            <div className="flex items-center justify-center gap-4 text-white/60 text-[11px]">
+              <span className="flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> Envío gratis +$300k</span>
+              <span className="flex items-center gap-1"><Shield className="w-3.5 h-3.5" /> Garantía 30d</span>
+            </div>
           </div>
 
-          {/* Trust Indicators */}
-          <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-white/80 text-xs sm:text-sm">
-            <div className="flex items-center gap-2">
-              <Truck className="w-5 h-5" />
-              <span>Envío gratis +$99.000</span>
+          {/* ── DESKTOP: layout original completo ── */}
+          <div className="hidden lg:block">
+            {/* Trust Badges */}
+            <div className="flex items-center gap-4 mb-6">
+              <div className="flex items-center gap-1 bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                <div className="flex">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  ))}
+                </div>
+                <span className="text-white/90 text-sm ml-1">+5.000 hogares felices</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Shield className="w-5 h-5" />
-              <span>Garantía 30 días</span>
+
+            {/* Title with Animation */}
+            {heroSlides.map((slide, index) => (
+              <div
+                key={index}
+                className="transition-all duration-700"
+                style={{
+                  opacity: currentSlide === index ? 1 : 0,
+                  transform: currentSlide === index ? "translateY(0)" : "translateY(20px)",
+                  position: currentSlide === index ? "relative" : "absolute",
+                }}
+              >
+                {currentSlide === index && (
+                  <>
+                    <h1 className="text-4xl lg:text-6xl font-serif font-bold text-white mb-4 leading-tight text-balance">
+                      {slide.title}
+                    </h1>
+                    <p className="text-xl md:text-2xl text-white/80 mb-8">
+                      {slide.subtitle}
+                    </p>
+                  </>
+                )}
+              </div>
+            ))}
+
+            {/* Urgency Timer */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 mb-8 inline-block">
+              <div className="flex items-center gap-3 text-white">
+                <Sparkles className="w-5 h-5 text-yellow-400 animate-pulse" />
+                <span className="font-medium">Oferta termina en:</span>
+                <div className="flex gap-2">
+                  {[
+                    { v: timeLeft.hours, l: "hrs" },
+                    { v: timeLeft.minutes, l: "min" },
+                    { v: timeLeft.seconds, l: "seg" },
+                  ].map(({ v, l }, i) => (
+                    <div key={l} className="flex items-center gap-2">
+                      {i > 0 && <span className="text-2xl font-bold">:</span>}
+                      <div className="bg-white/20 px-3 py-1 rounded-lg text-center">
+                        <span className="font-mono font-bold text-xl">{String(v).padStart(2,"0")}</span>
+                        <span className="text-xs block text-white/70">{l}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5" />
-              <span>100% Natural</span>
+
+            {/* CTA Buttons */}
+            <div className="flex gap-4 mb-8">
+              <Button size="lg" className="text-lg px-8 py-6 font-semibold group" asChild>
+                <a href="#productos">
+                  COMPRAR CON {discountPct}% OFF
+                  <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                </a>
+              </Button>
+              <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-white/30 text-white hover:bg-white/10 font-semibold">
+                Ver Catálogo
+                <ChevronRight className="w-5 h-5 ml-1" />
+              </Button>
+            </div>
+
+            {/* Trust Indicators */}
+            <div className="flex flex-wrap items-center gap-6 text-white/80 text-sm">
+              <div className="flex items-center gap-2"><Truck className="w-5 h-5" /><span>Envío gratis +$300.000</span></div>
+              <div className="flex items-center gap-2"><Shield className="w-5 h-5" /><span>Garantía 30 días</span></div>
+              <div className="flex items-center gap-2"><Sparkles className="w-5 h-5" /><span>100% Natural</span></div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Slide Indicators */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+      <div className="absolute bottom-4 lg:bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-10">
         {heroSlides.map((_, index) => (
           <button
             key={index}
             onClick={() => setCurrentSlide(index)}
-            className={`h-2 rounded-full transition-all ${
-              currentSlide === index ? "w-8 bg-white" : "w-2 bg-white/50 hover:bg-white/70"
+            className={`h-1.5 rounded-full transition-all ${
+              currentSlide === index ? "w-6 bg-white" : "w-1.5 bg-white/40 hover:bg-white/70"
             }`}
             aria-label={`Ir a slide ${index + 1}`}
           />
         ))}
       </div>
 
-      {/* Scroll Indicator */}
+      {/* Scroll Indicator — solo desktop */}
       <div className="absolute bottom-8 right-8 hidden lg:flex flex-col items-center gap-2 text-white/60 text-sm z-10">
         <span className="[writing-mode:vertical-lr]">Scroll</span>
         <div className="w-px h-12 bg-white/30 relative overflow-hidden">

@@ -64,55 +64,52 @@ function SocialProofBar() {
 export default function Home() {
   return (
     <main className="min-h-screen">
-      {/* 1. Urgencia inmediata — oferta del día */}
+      {/* 1. Urgencia — barra de anuncio con oferta del día */}
       <AnnouncementBar />
 
       {/* 2. Navegación */}
       <Header />
 
-      {/* 3. Hero — AIDA: Atención + primera impresión emocional */}
+      {/* 3. Hero compacto en móvil — CTA visible sin scroll */}
       <Hero />
 
-      {/* 4. Prueba social inmediata — reduce ansiedad post-hero */}
+      {/* 4. Prueba social inmediata — reduce ansiedad en < 3 seg */}
       <SocialProofBar />
 
-      {/* 5. Cómo funciona — elimina fricción antes de ver productos */}
-      <HowItWorks />
-
-      {/* 6. Productos primero — el usuario ya quiere comprar */}
+      {/* 5. PRODUCTOS — el usuario llegó a comprar, mostrarlos rápido */}
       <FeaturedProducts />
 
-      {/* 6. Beneficios — Interés: POR QUÉ Cliché es diferente */}
-      <Benefits />
-
-      {/* 7. Testimonios — Deseo: otros ya lo vivieron */}
+      {/* 6. Testimonios — justo después de ver productos, valida la decisión */}
       <Testimonials />
 
-      {/* 8. UGC / video social — prueba en acción */}
+      {/* 7. Cómo funciona — resuelve dudas de primer uso */}
+      <HowItWorks />
+
+      {/* 8. Beneficios — por qué Cliché vs otras opciones */}
+      <Benefits />
+
+      {/* 9. UGC — prueba real en acción */}
       <UGCSection />
 
-      {/* 9. Categorías — navegación de colección secundaria */}
-      <Categories />
-
-      {/* 9. Marcas / asociaciones — credibilidad */}
-      <BrandShowcase />
-
-      {/* 10. CTA de conversión — Acción: oferta irresistible */}
+      {/* 10. CTA de conversión con urgencia — segunda oportunidad de compra */}
       <CTASection />
 
-      {/* 11. FAQ — elimina objeciones finales antes de la captura */}
-      <FAQ />
-
-      {/* 12. Ritual upsell — productos complementarios antes del newsletter */}
+      {/* 11. Ritual upsell — productos complementarios */}
       <RitualUpsell />
 
-      {/* 13. Captura de email — retención futura */}
+      {/* 12. FAQ — elimina objeciones finales */}
+      <FAQ />
+
+      {/* 13. Categorías — solo para quien quiere explorar más */}
+      <Categories />
+
+      {/* 14. Captura de email — retención futura */}
       <Newsletter />
 
-      {/* 13. Footer */}
+      {/* 15. Footer */}
       <Footer />
 
-      {/* ── Elementos de conversión flotantes ── */}
+      {/* ── Flotantes de conversión ── */}
       <WhatsAppButton />
       <SubscriptionPopup />
       <ExitIntentPopup />
