@@ -17,11 +17,11 @@ export async function POST(req: NextRequest) {
     // Find the order to get the buyer's email
     const { data: order } = await supabase
       .from("orders")
-      .select("id, email, used_referral")
+      .select("id, customer_email, used_referral")
       .eq("stripe_session_id", session_id)
       .single()
 
-    const ownerEmail = order?.email ?? session_id
+    const ownerEmail = order?.customer_email ?? session_id
 
     // Check if we already generated a referral code for this buyer
     const { data: existing } = await supabase

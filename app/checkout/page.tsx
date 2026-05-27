@@ -55,7 +55,7 @@ export default function CheckoutPage() {
 
   const selectedItems = items.filter((i) => selected[i.product.id])
   const subtotal = selectedItems.reduce((s, i) => s + i.product.price * i.quantity, 0)
-  const FREE_SHIPPING = 300000
+  const FREE_SHIPPING = 150000
   const freeShipping = subtotal >= FREE_SHIPPING
   const shipping = freeShipping ? 0 : subtotal > 0 ? 15000 : 0
   const total = subtotal + shipping - discountAmount

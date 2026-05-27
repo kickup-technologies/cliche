@@ -106,7 +106,7 @@ export async function sendWelcomeEmail(to: string, discountCode: string): Promis
             <table width="100%" cellpadding="0" cellspacing="0">
               <tr>
                 <td align="center">
-                  <a href="https://cliche-nine.vercel.app/catalogo"
+                  <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://clichearomas.com"}/catalogo"
                      style="display:inline-block;background:#2D1A14;color:#fff;text-decoration:none;padding:16px 44px;border-radius:100px;font-size:15px;font-weight:700;letter-spacing:.05em;">
                     Ver catalogo
                   </a>
@@ -151,8 +151,10 @@ export async function sendOrderConfirmation(
   const transport = createTransport()
   if (!transport) { console.warn("[mailer] SMTP not configured — skipping order confirmation"); return }
 
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://clichearomas.com"
   const orderId = order.id.slice(-8).toUpperCase()
-  const totalFormatted = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(order.total / 100)
+  // total is stored in pesos (integer), NOT centavos — do NOT divide by 100
+  const totalFormatted = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(order.total)
 
   const html = `
 <!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/></head>
@@ -172,7 +174,7 @@ export async function sendOrderConfirmation(
       <tr><td style="font-size:13px;color:#8B6E64;">Total pagado</td><td align="right" style="font-size:18px;font-weight:700;color:#2D1A14;">${totalFormatted}</td></tr>
     </table>
     <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
-      <a href="https://cliche-nine.vercel.app/pedido/${order.id}" style="display:inline-block;background:#2D1A14;color:#fff;text-decoration:none;padding:14px 40px;border-radius:100px;font-size:14px;font-weight:700;">
+      <a href="${appUrl}/pedido/${order.id}" style="display:inline-block;background:#2D1A14;color:#fff;text-decoration:none;padding:14px 40px;border-radius:100px;font-size:14px;font-weight:700;">
         Seguir mi pedido
       </a>
     </td></tr></table>
@@ -216,7 +218,7 @@ export async function sendAbandonedCartEmail(
       ${itemsList}
     </table>
     <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
-      <a href="https://cliche-nine.vercel.app/" style="display:inline-block;background:#2D1A14;color:#fff;text-decoration:none;padding:16px 44px;border-radius:100px;font-size:15px;font-weight:700;">
+      <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://clichearomas.com"}/" style="display:inline-block;background:#2D1A14;color:#fff;text-decoration:none;padding:16px 44px;border-radius:100px;font-size:15px;font-weight:700;">
         Completar mi compra
       </a>
     </td></tr></table>
@@ -254,7 +256,7 @@ export async function sendReviewRequestEmail(
     <p style="font-size:40px;margin:0 0 16px;">&#11088;</p>
     <p style="margin:0 0 12px;font-size:20px;font-weight:600;color:#2D1A14;">Hola ${name}, como te fue?</p>
     <p style="margin:0 0 28px;font-size:15px;line-height:1.7;color:#6B5A53;">Tu opinion ayuda a mas hogares colombianos a encontrar su aroma perfecto. Solo toma 30 segundos.</p>
-    <a href="https://cliche-nine.vercel.app/resenas" style="display:inline-block;background:#C4958A;color:#fff;text-decoration:none;padding:14px 36px;border-radius:100px;font-size:14px;font-weight:700;margin-bottom:16px;">
+    <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://clichearomas.com"}/resenas" style="display:inline-block;background:#C4958A;color:#fff;text-decoration:none;padding:14px 36px;border-radius:100px;font-size:14px;font-weight:700;margin-bottom:16px;">
       Dejar mi resena
     </a>
   </td></tr>
