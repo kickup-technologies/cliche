@@ -127,6 +127,7 @@ export function ProductDetail({ product, related }: Props) {
   const [animActive, setAnimActive] = useState(false)
   // Option A specific phases
   const [heroPhase, setHeroPhase] = useState<'hero' | 'settling' | 'done'>('hero')
+  const [renderDropped, setRenderDropped] = useState(false)
 
   useEffect(() => {
     if (!animType) { setAnimActive(true); return }
@@ -138,9 +139,10 @@ export function ProductDetail({ product, related }: Props) {
       const t = setTimeout(() => setAnimActive(true), 1000)
       return () => clearTimeout(t)
     }
-    // Option A: 3s hero → 1.2s fade out → grid appears
+    // Option A: render falls in → 3s hero → fade out → grid appears
     if (animType === 'A') {
-      const t1 = setTimeout(() => setHeroPhase('settling'), 3000)
+      requestAnimationFrame(() => setRenderDropped(true))
+      const t1 = setTimeout(() => setHeroPhase('settling'), 3200)
       const t2 = setTimeout(() => { setHeroPhase('done'); setAnimActive(true) }, 4300)
       return () => { clearTimeout(t1); clearTimeout(t2) }
     }
@@ -171,33 +173,44 @@ export function ProductDetail({ product, related }: Props) {
               pointerEvents: heroPhase === 'settling' ? 'none' : 'auto',
             }}
           >
-            {/* Left — 3D render floating, tilted, no container bg */}
+            {/* Left — 3D render falling from sky, tilted 35°, no container bg */}
             <div className="flex-1 flex items-center justify-center h-full">
               <div style={{
                 width: 'min(58vmin, 460px)',
                 height: 'min(58vmin, 460px)',
-                transform: 'perspective(1400px) rotateX(6deg) rotateY(-14deg)',
+                transform: renderDropped
+                  ? 'perspective(1400px) rotateY(-35deg) translateY(0)'
+                  : 'perspective(1400px) rotateY(-35deg) translateY(-130vh)',
+                transition: 'transform 950ms cubic-bezier(0.34, 1.4, 0.64, 1)',
               }}>
                 <SprayBottle3D transparent />
               </div>
             </div>
 
             {/* Right — premium typography */}
-            <div className="flex-1 flex flex-col justify-center gap-5 pr-16 lg:pr-24">
-              <p className="text-muted-foreground/60 text-[10px] tracking-[0.45em] uppercase font-medium">
+            <div
+              className="flex-1 flex flex-col justify-center gap-6 pr-14 lg:pr-20"
+              style={{
+                opacity: renderDropped ? 1 : 0,
+                transform: renderDropped ? 'translateY(0)' : 'translateY(16px)',
+                transition: 'opacity 700ms ease 400ms, transform 700ms ease 400ms',
+              }}
+            >
+              <p className="text-muted-foreground/50 text-[9px] tracking-[0.55em] uppercase">
                 Cliché · Colección Esencial
               </p>
-              <h1 className="font-serif text-5xl lg:text-6xl font-bold text-foreground leading-[1.05]">
-                {product.name.split('—')[0].trim().split(' ').slice(0, 2).join('\n')}
+              <h1 className="font-serif font-bold text-foreground leading-[1.0]"
+                style={{ fontSize: 'clamp(2.6rem, 5vw, 4rem)' }}>
+                {product.name.split('—')[0].trim()}
               </h1>
-              <p className="text-primary/80 text-sm tracking-[0.2em] uppercase font-medium">
+              <p className="text-primary text-xs tracking-[0.3em] uppercase font-semibold">
                 {(NOTES_MAP[product.slug] || []).join(' · ')}
               </p>
-              <p className="text-muted-foreground text-sm leading-relaxed max-w-[260px]">
+              <p className="text-muted-foreground/80 leading-relaxed max-w-[280px]"
+                style={{ fontSize: 'clamp(0.8rem, 1.2vw, 0.9rem)' }}>
                 {VALUE_MAP[product.slug]?.split('.')[0]}.
               </p>
-              {/* Progress bar */}
-              <div className="mt-4 w-20 h-px bg-muted-foreground/15 relative overflow-hidden">
+              <div className="mt-2 w-24 h-px bg-muted-foreground/15 relative overflow-hidden">
                 <ProgressBar />
               </div>
             </div>

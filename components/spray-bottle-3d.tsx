@@ -128,22 +128,28 @@ function Scene() {
 
 export function SprayBottle3D({ transparent }: { transparent?: boolean }) {
   return (
-    <div className={`relative aspect-square overflow-hidden ${transparent ? "" : "bg-gradient-to-b from-muted/10 to-muted/40 rounded-3xl"}`}>
+    <div
+      className={`relative aspect-square overflow-hidden ${transparent ? "" : "bg-gradient-to-b from-muted/10 to-muted/40 rounded-3xl"}`}
+      style={transparent ? { background: "transparent" } : {}}
+    >
       <Canvas
         camera={{ position: [0, 0.1, 3.5], fov: 36 }}
         shadows
         gl={{ antialias: true, alpha: true }}
         style={{ background: "transparent" }}
+        onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}
       >
         <Scene />
       </Canvas>
 
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 pointer-events-none">
-        <span className="text-[10px] text-muted-foreground/50 tracking-wider uppercase flex items-center gap-1.5">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-muted-foreground/30 animate-pulse" />
-          Arrastra · Toca para activar
-        </span>
-      </div>
+      {!transparent && (
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 pointer-events-none">
+          <span className="text-[10px] text-muted-foreground/50 tracking-wider uppercase flex items-center gap-1.5">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-muted-foreground/30 animate-pulse" />
+            Arrastra · Toca para activar
+          </span>
+        </div>
+      )}
     </div>
   )
 }
