@@ -76,6 +76,7 @@ export const metadata: Metadata = {
 const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || '2074090273450880'
 const GA4_ID = process.env.NEXT_PUBLIC_GA4_ID
 const TIKTOK_PIXEL_ID = process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID
+const PROOFFACTOR_SITE_ID = process.env.NEXT_PUBLIC_PROOFFACTOR_SITE_ID
 
 export default function RootLayout({
   children,
@@ -110,6 +111,19 @@ export default function RootLayout({
                 ttq.load('${TIKTOK_PIXEL_ID}');
                 ttq.page();
               }(window, document, 'ttq');
+            `}
+          </Script>
+        )}
+        {/* Prooffactor — social proof notifications */}
+        {PROOFFACTOR_SITE_ID && (
+          <Script id="prooffactor" strategy="afterInteractive">
+            {`
+              (function(w,d,s,o,f,js,fjs){
+                w['ProofFactor']=o;w[o]=w[o]||function(){(w[o].q=w[o].q||[]).push(arguments)};
+                js=d.createElement(s),fjs=d.getElementsByTagName(s)[0];
+                js.id=o;js.src=f;js.async=1;fjs.parentNode.insertBefore(js,fjs);
+              }(window,document,'script','pf','https://cdn.prooffactor.com/script.min.js'));
+              pf('init', '${PROOFFACTOR_SITE_ID}');
             `}
           </Script>
         )}

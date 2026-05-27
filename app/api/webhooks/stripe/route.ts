@@ -59,6 +59,38 @@ export async function POST(req: NextRequest) {
       } catch {
         // No bloquear el webhook si falla el email de reseña
       }
+
+      // Prooffactor — notificar compra para mostrar social proof en tiempo real
+      try {
+        const pfSiteId = process.env.NEXT_PUBLIC_PROOFFACTOR_SITE_ID
+        if (pfSiteId) {
+          const customerDetails = session.customer_details as { name?: string; address?: { city?: string; country?: string } } | null
+          const firstName = customerDetails?.name?.split(" ")[0] || "Alguien"
+          const city = customerDetails?.address?.city || ""
+          const country = customerDetails?.address?.country || "CO"
+          // Get first product name from metadata
+          const firstItem = items[0]
+          const productName = firstItem ? `Cliché ${firstItem.product_id?.slice(0, 8)}` : "Cliché Aromas"
+
+          await fetch("https://app.prooffactor.com/api/v1/events", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Site-Id": pfSiteId,
+            },
+            body: JSON.stringify({
+              event_type: "purchase",
+              first_name: firstName,
+              city,
+              country,
+              product_title: productName,
+              timestamp: new Date().toISOString(),
+            }),
+          })
+        }
+      } catch {
+        // Never block the webhook for analytics
+      }
     }
   }
 
