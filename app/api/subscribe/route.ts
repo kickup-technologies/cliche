@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase"
-import { sendWelcomeEmail } from "@/lib/resend"
+import { sendWelcomeEmail } from "@/lib/mailer"
 
 export async function POST(req: NextRequest) {
   try {

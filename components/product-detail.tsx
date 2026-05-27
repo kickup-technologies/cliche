@@ -19,7 +19,7 @@ const SprayBottle3D = dynamic(
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
-  ShoppingBag, Star, Shield, Truck, RefreshCw,
+  ShoppingBag, Star, ShieldCheck, Truck, BadgeCheck,
   ChevronRight, Plus, Minus, Share2, Heart, CheckCircle,
   Wind, Shirt, Home, AlertTriangle, Package, Gift, RotateCcw
 } from "lucide-react"
@@ -306,38 +306,19 @@ export function ProductDetail({ product, related }: Props) {
                 </div>
               </div>
 
-              {/* Trust signals — animated */}
-              <style>{`
-                @keyframes truck-drive {
-                  0%,100% { transform: translateX(0px) rotate(0deg); }
-                  25%      { transform: translateX(3px) rotate(-2deg); }
-                  75%      { transform: translateX(-2px) rotate(1deg); }
-                }
-                @keyframes shield-pulse {
-                  0%,100% { transform: scale(1);   filter: drop-shadow(0 0 0px #C4958A); }
-                  50%      { transform: scale(1.18); filter: drop-shadow(0 0 6px #C4958A); }
-                }
-                @keyframes star-spin {
-                  0%   { transform: rotate(0deg) scale(1); }
-                  50%  { transform: rotate(180deg) scale(1.2); }
-                  100% { transform: rotate(360deg) scale(1); }
-                }
-                .anim-truck  { animation: truck-drive  1.8s ease-in-out infinite; }
-                .anim-shield { animation: shield-pulse  2s   ease-in-out infinite; }
-                .anim-star   { animation: star-spin     3s   linear      infinite; }
-              `}</style>
+              {/* Trust signals — animated (keyframes in globals.css) */}
               <div className="grid grid-cols-3 gap-3 pt-2">
                 <div className="flex flex-col items-center text-center gap-1.5 p-3 bg-muted/30 rounded-xl">
-                  <Truck className="w-5 h-5 text-primary anim-truck" />
-                  <span className="text-xs text-muted-foreground leading-tight">Envío gratis &gt;$150k</span>
+                  <Truck className="w-6 h-6 text-primary trust-truck" />
+                  <span className="text-xs text-muted-foreground leading-tight font-medium">Envío gratis &gt;$150k</span>
                 </div>
                 <div className="flex flex-col items-center text-center gap-1.5 p-3 bg-muted/30 rounded-xl">
-                  <Shield className="w-5 h-5 text-primary anim-shield" />
-                  <span className="text-xs text-muted-foreground leading-tight">Pago 100% seguro</span>
+                  <ShieldCheck className="w-6 h-6 text-primary trust-shield" />
+                  <span className="text-xs text-muted-foreground leading-tight font-medium">Pago 100% seguro</span>
                 </div>
                 <div className="flex flex-col items-center text-center gap-1.5 p-3 bg-muted/30 rounded-xl">
-                  <RotateCcw className="w-5 h-5 text-primary anim-star" />
-                  <span className="text-xs text-muted-foreground leading-tight">30 días garantía</span>
+                  <BadgeCheck className="w-6 h-6 text-primary trust-badge" />
+                  <span className="text-xs text-muted-foreground leading-tight font-medium">30 días garantía</span>
                 </div>
               </div>
             </div>

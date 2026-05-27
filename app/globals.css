@@ -148,3 +148,37 @@
 html {
   scroll-behavior: smooth;
 }
+
+/* ── Trust icon animations ───────────────────────────────────────────── */
+
+/* Truck: slides right as if arriving, then resets */
+@keyframes trust-truck {
+  0%          { transform: translateX(-6px); opacity: 0.6; }
+  40%         { transform: translateX(2px);  opacity: 1;   }
+  70%, 100%   { transform: translateX(0px);  opacity: 1;   }
+}
+.trust-truck {
+  animation: trust-truck 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Shield: brief scale-up + outer ring pulse = "activated" feel */
+@keyframes trust-shield {
+  0%, 100%  { transform: scale(1);    filter: drop-shadow(0 0 0px #A67163); }
+  30%       { transform: scale(1.22); filter: drop-shadow(0 0 8px #A67163cc); }
+  60%       { transform: scale(1.08); filter: drop-shadow(0 0 4px #A6716366); }
+}
+.trust-shield {
+  animation: trust-shield 2.8s ease-in-out infinite;
+}
+
+/* Guarantee badge: ticks clockwise like a "certified" stamp */
+@keyframes trust-badge {
+  0%        { transform: rotate(0deg)   scale(1);    }
+  15%       { transform: rotate(-12deg) scale(1.15); }
+  35%       { transform: rotate(8deg)   scale(1.1);  }
+  55%       { transform: rotate(-4deg)  scale(1.05); }
+  70%, 100% { transform: rotate(0deg)   scale(1);    }
+}
+.trust-badge {
+  animation: trust-badge 3.2s ease-in-out infinite;
+}
