@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase"
 import { isAdmin } from "@/lib/admin-auth"
+import { rateLimit } from "@/lib/rate-limit"
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // Anti-enumeración: limita la consulta pública de pedidos por IP
+  const limited = rateLimit(req, { id: "order-lookup", limit: 20, windowMs: 60_000 })
+  if (limited) return limited
+
   const { id } = await params
   const supabase = createServerClient()
 

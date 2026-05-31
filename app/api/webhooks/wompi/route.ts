@@ -3,23 +3,46 @@ import { createServerClient } from "@/lib/supabase"
 import crypto from "crypto"
 import { sendOrderConfirmation, sendAdminOrderAlert } from "@/lib/mailer"
 
+/** Resuelve una ruta tipo "transaction.amount_in_cents" dentro de un objeto */
+function getByPath(obj: unknown, path: string): unknown {
+  return path.split(".").reduce<unknown>(
+    (acc, key) => (acc && typeof acc === "object" ? (acc as Record<string, unknown>)[key] : undefined),
+    obj
+  )
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
 
-    // Verificar firma del evento
+    // ── Verificación de firma (formato oficial Wompi) ──────────────────
+    // Sin el secreto NO se procesa: de lo contrario cualquiera podría POSTear
+    // un "transaction.updated APPROVED" falso y confirmar pedidos sin pagar.
     const eventsSecret = process.env.WOMPI_EVENTS_SECRET
-    if (eventsSecret) {
-      const checksum = req.headers.get("x-event-checksum")
-      if (checksum) {
-        const expected = crypto
-          .createHash("sha256")
-          .update(`${body.event}${body.timestamp}${eventsSecret}`)
-          .digest("hex")
-        if (checksum !== expected) {
-          return NextResponse.json({ error: "Firma inválida" }, { status: 401 })
-        }
-      }
+    if (!eventsSecret) {
+      console.error("[wompi webhook] WOMPI_EVENTS_SECRET no configurado — rechazando evento")
+      return NextResponse.json({ error: "Webhook no configurado" }, { status: 503 })
+    }
+
+    const signature = body.signature as { checksum?: string; properties?: string[] } | undefined
+    const checksum = signature?.checksum || req.headers.get("x-event-checksum")
+    const properties = signature?.properties || []
+
+    if (!checksum || properties.length === 0) {
+      return NextResponse.json({ error: "Firma ausente" }, { status: 401 })
+    }
+
+    // Wompi: concatena los valores de las propiedades indicadas + timestamp + secret
+    const concatenated = properties
+      .map((p) => String(getByPath(body.data, p) ?? ""))
+      .join("")
+    const expected = crypto
+      .createHash("sha256")
+      .update(`${concatenated}${body.timestamp}${eventsSecret}`)
+      .digest("hex")
+
+    if (checksum.toLowerCase() !== expected.toLowerCase()) {
+      return NextResponse.json({ error: "Firma inválida" }, { status: 401 })
     }
 
     const event = body.event

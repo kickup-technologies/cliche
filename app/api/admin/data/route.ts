@@ -42,6 +42,21 @@ export async function GET(req: NextRequest) {
     if (ordersErr) console.error("[admin/data] orders error:", ordersErr)
     if (productsErr) console.error("[admin/data] products error:", productsErr)
 
+    // Si TODAS las consultas devuelven vacío y al menos una falló, casi siempre
+    // significa que falta SUPABASE_SERVICE_ROLE_KEY en el entorno (el cliente
+    // service-role no puede leer nada). Devolvemos el error en vez de fingir
+    // que la base de datos está vacía, para no confundir "sin clave" con "sin datos".
+    if (productsErr || ordersErr) {
+      return NextResponse.json(
+        {
+          error:
+            "No se pudieron cargar los datos. Verifica que SUPABASE_SERVICE_ROLE_KEY esté configurada en el entorno.",
+          detail: (productsErr || ordersErr)?.message ?? null,
+        },
+        { status: 500 }
+      )
+    }
+
     return NextResponse.json({
       orders: orders || [],
       products: products || [],

@@ -5,6 +5,20 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { ChevronRight, Star, Truck, Shield, Sparkles, ArrowRight } from "lucide-react"
 
+// Tiempo restante hasta medianoche de hoy. Se calcula al instante para que el
+// contador nunca aparezca en 00:00:00 durante el primer render.
+function timeUntilMidnight() {
+  const end = new Date()
+  end.setHours(23, 59, 59, 0)
+  const diff = end.getTime() - Date.now()
+  if (diff <= 0) return { hours: 0, minutes: 0, seconds: 0 }
+  return {
+    hours: Math.floor(diff / (1000 * 60 * 60)),
+    minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+    seconds: Math.floor((diff % (1000 * 60)) / 1000),
+  }
+}
+
 const heroSlides = [
   {
     image: "/images/hero-main.jpg",
@@ -28,7 +42,7 @@ const heroSlides = [
 
 export function Hero() {
   const [currentSlide, setCurrentSlide] = useState(0)
-  const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 })
+  const [timeLeft, setTimeLeft] = useState(timeUntilMidnight)
   const [discountPct, setDiscountPct] = useState(10)
 
   useEffect(() => {
@@ -48,24 +62,8 @@ export function Hero() {
 
   useEffect(() => {
     // Oferta siempre termina esta noche a medianoche — urgencia real y consistente
-    const endTime = new Date()
-    endTime.setHours(23, 59, 59, 0)
-
-    const tick = () => {
-      const diff = endTime.getTime() - Date.now()
-      if (diff <= 0) {
-        setTimeLeft({ hours: 0, minutes: 0, seconds: 0 })
-        return
-      }
-      setTimeLeft({
-        hours: Math.floor(diff / (1000 * 60 * 60)),
-        minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
-        seconds: Math.floor((diff % (1000 * 60)) / 1000),
-      })
-    }
-
-    tick()
-    const timer = setInterval(tick, 1000)
+    setTimeLeft(timeUntilMidnight())
+    const timer = setInterval(() => setTimeLeft(timeUntilMidnight()), 1000)
     return () => clearInterval(timer)
   }, [])
 
@@ -93,7 +91,7 @@ export function Hero() {
 
       {/* Content */}
       <div className="container mx-auto px-4 relative z-10 flex-1 flex items-end lg:items-center pb-8 lg:pb-0">
-        <div className="w-full max-w-2xl pt-20 lg:pt-0">
+        <div className="w-full max-w-2xl pt-20 lg:pt-28">
 
           {/* ── MÓVIL: layout compacto de conversión ── */}
           <div className="lg:hidden">
@@ -205,9 +203,11 @@ export function Hero() {
                   <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                 </a>
               </Button>
-              <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-white/30 text-white hover:bg-white/10 font-semibold">
-                Ver Catálogo
-                <ChevronRight className="w-5 h-5 ml-1" />
+              <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-white/30 text-white hover:bg-white/10 font-semibold" asChild>
+                <a href="#productos">
+                  Ver Catálogo
+                  <ChevronRight className="w-5 h-5 ml-1" />
+                </a>
               </Button>
             </div>
 

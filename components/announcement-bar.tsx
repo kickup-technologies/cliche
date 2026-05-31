@@ -3,9 +3,23 @@
 import { useState, useEffect } from "react"
 import { X, Zap, Clock } from "lucide-react"
 
+// Tiempo restante hasta medianoche de hoy. Se calcula al instante para que el
+// contador nunca aparezca en 00:00:00 durante el primer render.
+function timeUntilMidnight() {
+  const end = new Date()
+  end.setHours(23, 59, 59, 0)
+  const diff = end.getTime() - Date.now()
+  if (diff <= 0) return { hours: 0, minutes: 0, seconds: 0 }
+  return {
+    hours: Math.floor(diff / 3_600_000),
+    minutes: Math.floor((diff % 3_600_000) / 60_000),
+    seconds: Math.floor((diff % 60_000) / 1000),
+  }
+}
+
 export function AnnouncementBar() {
   const [isVisible, setIsVisible] = useState(true)
-  const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 })
+  const [timeLeft, setTimeLeft] = useState(timeUntilMidnight)
   const [discountPct, setDiscountPct] = useState(10)
   const [discountCode, setDiscountCode] = useState("BIENVENIDA10")
 
@@ -21,21 +35,8 @@ export function AnnouncementBar() {
 
   useEffect(() => {
     // Siempre termina a medianoche hoy — consistente con hero y sticky
-    const endTime = new Date()
-    endTime.setHours(23, 59, 59, 0)
-
-    const tick = () => {
-      const diff = endTime.getTime() - Date.now()
-      if (diff <= 0) { setTimeLeft({ hours: 0, minutes: 0, seconds: 0 }); return }
-      setTimeLeft({
-        hours: Math.floor(diff / 3_600_000),
-        minutes: Math.floor((diff % 3_600_000) / 60_000),
-        seconds: Math.floor((diff % 60_000) / 1000),
-      })
-    }
-
-    tick()
-    const timer = setInterval(tick, 1000)
+    setTimeLeft(timeUntilMidnight())
+    const timer = setInterval(() => setTimeLeft(timeUntilMidnight()), 1000)
     return () => clearInterval(timer)
   }, [])
 
@@ -53,7 +54,7 @@ export function AnnouncementBar() {
         <span className="hidden md:block w-px h-3 bg-[#FAF8F5]/20" />
         <div className="flex items-center gap-1.5 border border-[#FAF8F5]/20 px-2.5 py-1 rounded-full">
           <Clock className="w-3 h-3 text-[#C4958A]" />
-          <span className="font-mono font-bold text-[#FAF8F5] text-xs">
+          <span className="font-mono font-bold text-[#FAF8F5] text-xs" suppressHydrationWarning>
             {String(timeLeft.hours).padStart(2, "0")}:{String(timeLeft.minutes).padStart(2, "0")}:{String(timeLeft.seconds).padStart(2, "0")}
           </span>
         </div>
