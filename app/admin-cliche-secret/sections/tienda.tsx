@@ -1,7 +1,7 @@
 "use client"
 import { useState } from "react"
 import { Save, RefreshCw, Tag, Lock } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { adminFetch } from "@/lib/admin-client"
 
 interface TiendaSectionProps {
   settings: Record<string, string>
@@ -19,13 +19,22 @@ export function TiendaSection({ settings, onSettingsUpdate }: TiendaSectionProps
 
   async function saveSettings() {
     setSaving(true)
-    for (const [key, value] of Object.entries(local)) {
-      await supabase.from("site_settings").upsert({ key, value, updated_at: new Date().toISOString() })
+    try {
+      const res = await adminFetch("/api/admin/settings", {
+        method: "POST",
+        body: JSON.stringify({ settings: local }),
+      })
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: "" }))
+        alert(error || "No se pudo guardar la configuración")
+        return
+      }
+      onSettingsUpdate(local)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    } finally {
+      setSaving(false)
     }
-    onSettingsUpdate(local)
-    setSaving(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2500)
   }
 
   const textFields = [

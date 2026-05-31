@@ -1,13 +1,16 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase"
+import { isAdmin } from "@/lib/admin-auth"
 
 /**
  * GET /api/admin/data
  * Fetches all admin data using service role (bypasses RLS).
- * Protected by ADMIN_PASSWORD check via the session token in the request header.
- * Called by the admin panel client instead of querying Supabase directly with anon key.
+ * Protegido por la credencial x-admin-password (header). Devuelve datos
+ * personales de clientes, así que SIN auth no responde.
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
+  if (!isAdmin(req)) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+
   try {
     const supabase = createServerClient() // service role — bypasses RLS
     const oneYearAgo = new Date(Date.now() - 365 * 86400000).toISOString()

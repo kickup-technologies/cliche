@@ -1,14 +1,18 @@
 "use client"
 import { useState, useRef } from "react"
 import { Plus, Pencil, Minus, RefreshCw, Save, X, AlertCircle, ToggleLeft, ToggleRight, Upload, ImageIcon } from "lucide-react"
-import { supabase } from "@/lib/supabase"
 import { fmt } from "../types"
 import type { Product } from "@/lib/supabase"
+import { adminFetch, getAdminPw } from "@/lib/admin-client"
 
 async function uploadImage(file: File): Promise<string | null> {
   const fd = new FormData()
   fd.append("file", file)
-  const res = await fetch("/api/admin/upload", { method: "POST", body: fd })
+  const res = await fetch("/api/admin/upload", {
+    method: "POST",
+    body: fd,
+    headers: { "x-admin-password": getAdminPw() },
+  })
   if (!res.ok) return null
   const { url } = await res.json()
   return url
@@ -60,12 +64,12 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
     if (!p.name || !p.slug || !p.price) { setModalError("Nombre, slug y precio son requeridos"); return }
     setModalSaving(true); setModalError("")
     try {
-      if (p.id) {
-        const { error } = await supabase.from("products").update({ ...p, updated_at: new Date().toISOString() }).eq("id", p.id)
-        if (error) throw error
-      } else {
-        const { error } = await supabase.from("products").insert({ ...p })
-        if (error) throw error
+      const res = p.id
+        ? await adminFetch(`/api/admin/products/${p.id}`, { method: "PUT", body: JSON.stringify(p) })
+        : await adminFetch("/api/admin/products", { method: "POST", body: JSON.stringify(p) })
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: "" }))
+        throw new Error(error || "Error al guardar")
       }
       await onRefresh(); closeModal()
     } catch (err: unknown) {
@@ -74,12 +78,12 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
   }
 
   async function updateStock(id: string, stock: number) {
-    await supabase.from("products").update({ stock }).eq("id", id)
+    await adminFetch(`/api/admin/products/${id}`, { method: "PUT", body: JSON.stringify({ stock }) })
     await onRefresh()
   }
 
   async function toggleProduct(id: string, is_active: boolean) {
-    await supabase.from("products").update({ is_active }).eq("id", id)
+    await adminFetch(`/api/admin/products/${id}`, { method: "PUT", body: JSON.stringify({ is_active }) })
     await onRefresh()
   }
 

@@ -9,6 +9,7 @@ import {
 } from "lucide-react"
 import type { Product } from "@/lib/supabase"
 import { Order, PageView } from "./types"
+import { setAdminPw, clearAdminPw, adminFetch } from "@/lib/admin-client"
 
 // Sections
 import { OverviewSection } from "./sections/overview"
@@ -75,6 +76,7 @@ export default function AdminPage() {
         body: JSON.stringify({ password: pwInput }),
       })
       if (!res.ok) { setAuthError("Contraseña incorrecta"); return }
+      setAdminPw(pwInput) // guardar credencial para autenticar las llamadas a la API
       sessionStorage.setItem("cliche_admin_auth", "ok")
       setAuthed(true)
     } catch {
@@ -86,6 +88,7 @@ export default function AdminPage() {
 
   function handleLogout() {
     sessionStorage.removeItem("cliche_admin_auth")
+    clearAdminPw()
     setAuthed(false)
     setPwInput("")
   }
@@ -94,7 +97,8 @@ export default function AdminPage() {
     setLoading(true)
     try {
       // Use service-role API route — anon client cannot read orders/page_views (RLS)
-      const res = await fetch("/api/admin/data")
+      const res = await adminFetch("/api/admin/data")
+      if (res.status === 401) { handleLogout(); return }
       if (!res.ok) throw new Error("Failed to load admin data")
       const { orders: ords, products: prods, settings: setts, pageViews: views } = await res.json()
       setOrders(ords || [])

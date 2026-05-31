@@ -1,13 +1,21 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase"
+import { isAdmin } from "@/lib/admin-auth"
 
-function checkAuth(req: NextRequest) {
-  const pwd = req.headers.get("x-admin-password")
-  return pwd === process.env.ADMIN_PASSWORD
+// Campos que el admin puede escribir (whitelist — nunca confiar en todo el body)
+export const PRODUCT_FIELDS = [
+  "name", "slug", "price", "original_price", "description", "image_url",
+  "image_urls", "badge", "badge_color", "stock", "rating", "reviews", "is_active",
+] as const
+
+export function pickProductFields(body: Record<string, unknown>) {
+  const out: Record<string, unknown> = {}
+  for (const k of PRODUCT_FIELDS) if (k in body) out[k] = body[k]
+  return out
 }
 
 export async function GET(req: NextRequest) {
-  if (!checkAuth(req)) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+  if (!isAdmin(req)) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
 
   try {
     const db = createServerClient()
@@ -21,5 +29,26 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     console.error("[admin/products GET] error:", err)
     return NextResponse.json({ error: "Error al obtener productos" }, { status: 500 })
+  }
+}
+
+// POST — crear producto
+export async function POST(req: NextRequest) {
+  if (!isAdmin(req)) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+
+  try {
+    const body = await req.json()
+    const fields = pickProductFields(body)
+    if (!fields.name || !fields.slug || !fields.price) {
+      return NextResponse.json({ error: "Nombre, slug y precio son requeridos" }, { status: 400 })
+    }
+
+    const db = createServerClient()
+    const { data, error } = await db.from("products").insert(fields).select().single()
+    if (error) throw error
+    return NextResponse.json(data)
+  } catch (err) {
+    console.error("[admin/products POST]", err)
+    return NextResponse.json({ error: "Error al crear el producto" }, { status: 500 })
   }
 }

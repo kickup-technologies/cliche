@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase"
+import { isAdmin } from "@/lib/admin-auth"
 
 export async function GET(
   _req: NextRequest,
@@ -61,6 +62,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!isAdmin(req)) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id } = await params
   const supabase = createServerClient()
   const body = await req.json()

@@ -1,9 +1,9 @@
 "use client"
 import { useState } from "react"
 import { ShoppingBag, X, RefreshCw, CheckCircle, Truck, ChevronRight } from "lucide-react"
-import { supabase } from "@/lib/supabase"
 import { Order, Period, filterPeriod, fmt, ORDER_STATUS_MAP } from "../types"
 import { PeriodSelector } from "../components/period-selector"
+import { adminFetch } from "@/lib/admin-client"
 
 type SortKey = "date" | "total" | "status"
 
@@ -50,10 +50,21 @@ export function PedidosSection({
     setOrderSaving(true)
     const update: Partial<Order> = { status: statusInput }
     if (trackingInput.trim()) update.tracking_number = trackingInput.trim()
-    await supabase.from("orders").update(update).eq("id", selectedOrder.id)
-    onOrdersUpdate({ ...selectedOrder, ...update })
-    setSelectedOrder(null)
-    setOrderSaving(false)
+    try {
+      const res = await adminFetch("/api/admin/orders", {
+        method: "PATCH",
+        body: JSON.stringify({ id: selectedOrder.id, ...update }),
+      })
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: "" }))
+        alert(error || "No se pudo actualizar el pedido")
+        return
+      }
+      onOrdersUpdate({ ...selectedOrder, ...update })
+      setSelectedOrder(null)
+    } finally {
+      setOrderSaving(false)
+    }
   }
 
   const SortBtn = ({ label, k }: { label: string; k: SortKey }) => (
