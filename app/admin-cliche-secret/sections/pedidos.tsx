@@ -1,6 +1,6 @@
 "use client"
 import { useState } from "react"
-import { ShoppingBag, X, RefreshCw, CheckCircle, Truck, ChevronRight } from "lucide-react"
+import { ShoppingBag, X, RefreshCw, CheckCircle, Truck, ChevronRight, Search, Download } from "lucide-react"
 import { Order, Period, filterPeriod, fmt, ORDER_STATUS_MAP } from "../types"
 import { PeriodSelector } from "../components/period-selector"
 import { adminFetch } from "@/lib/admin-client"
@@ -21,12 +21,47 @@ export function PedidosSection({
   const [orderSaving, setOrderSaving] = useState(false)
   const [sortKey, setSortKey] = useState<SortKey>("date")
   const [sortAsc, setSortAsc] = useState(false)
+  const [query, setQuery] = useState("")
 
   const periodOrders = filterPeriod(orders, period)
   const confirmedOrders = periodOrders.filter(o => ["confirmed", "preparing", "shipped", "delivered", "paid"].includes(o.status))
   const periodRevenue = confirmedOrders.reduce((s, o) => s + o.total, 0)
 
-  const sorted = [...periodOrders].sort((a, b) => {
+  const q = query.trim().toLowerCase()
+  const filtered = q
+    ? periodOrders.filter(o =>
+        (o.customer_name || "").toLowerCase().includes(q) ||
+        (o.customer_email || "").toLowerCase().includes(q) ||
+        (o.customer_phone || "").toLowerCase().includes(q) ||
+        (o.stripe_session_id || o.id).toLowerCase().includes(q)
+      )
+    : periodOrders
+
+  function exportCSV() {
+    const headers = ["Pedido", "Estado", "Cliente", "Email", "Telefono", "Ciudad", "Total", "Guia", "Fecha"]
+    const rows = filtered.map(o => [
+      "#" + (o.stripe_session_id || o.id).slice(-8).toUpperCase(),
+      ORDER_STATUS_MAP[o.status]?.label || o.status,
+      o.customer_name || "",
+      o.customer_email || "",
+      o.customer_phone || "",
+      o.shipping_address?.city || "",
+      o.total,
+      o.tracking_number || "",
+      new Date(o.created_at).toLocaleString("es-CO"),
+    ])
+    const escape = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`
+    const csv = [headers, ...rows].map(r => r.map(escape).join(",")).join("\r\n")
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `pedidos-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const sorted = [...filtered].sort((a, b) => {
     let diff = 0
     if (sortKey === "date") diff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     if (sortKey === "total") diff = a.total - b.total
@@ -85,7 +120,35 @@ export function PedidosSection({
             {periodOrders.length} pedidos · {fmt(periodRevenue)} confirmados
           </p>
         </div>
-        <PeriodSelector value={period} onChange={setPeriod} />
+        <div className="flex items-center gap-2">
+          <PeriodSelector value={period} onChange={setPeriod} />
+          <button
+            onClick={exportCSV}
+            disabled={filtered.length === 0}
+            className="flex items-center gap-1.5 h-9 px-3 rounded-xl border border-[#2D1A14]/15 text-xs font-semibold text-[#2D1A14] hover:bg-[#FAF8F5] transition-colors disabled:opacity-40"
+            title="Exportar a CSV (Excel)"
+          >
+            <Download className="w-3.5 h-3.5" />
+            CSV
+          </button>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search className="w-4 h-4 text-[#2D1A14]/30 absolute left-3.5 top-1/2 -translate-y-1/2" />
+        <input
+          type="text"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="Buscar por nombre, email, teléfono o # de pedido…"
+          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#2D1A14]/15 bg-white text-[#2D1A14] text-sm focus:outline-none focus:ring-2 focus:ring-[#A67163]/40"
+        />
+        {query && (
+          <button onClick={() => setQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#2D1A14]/30 hover:text-[#2D1A14]">
+            <X className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {/* Sort controls */}
@@ -99,7 +162,7 @@ export function PedidosSection({
       {sorted.length === 0 ? (
         <div className="bg-white rounded-2xl border border-[#2D1A14]/8 p-12 text-center">
           <ShoppingBag className="w-10 h-10 text-[#2D1A14]/15 mx-auto mb-3" />
-          <p className="text-sm text-[#2D1A14]/40">Sin pedidos en este periodo</p>
+          <p className="text-sm text-[#2D1A14]/40">{q ? "Sin resultados para tu búsqueda" : "Sin pedidos en este periodo"}</p>
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-[#2D1A14]/8 overflow-hidden">

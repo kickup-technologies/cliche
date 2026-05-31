@@ -125,6 +125,14 @@ export default function AdminPage() {
     setSidebarOpen(false)
   }
 
+  // Badges: pedidos que requieren acción (pagados, sin despachar) + productos con stock bajo
+  const pendingFulfillment = orders.filter(o => ["confirmed", "preparing", "paid"].includes(o.status)).length
+  const lowStock = products.filter(p => typeof p.stock === "number" && p.stock <= 5).length
+  const navBadges: Record<string, { count: number; tone: "danger" | "accent" } | undefined> = {
+    pedidos: pendingFulfillment > 0 ? { count: pendingFulfillment, tone: "accent" } : undefined,
+    inventario: lowStock > 0 ? { count: lowStock, tone: "danger" } : undefined,
+  }
+
   // ── LOGIN ──────────────────────────────────────────────────────────────────
   if (!authed) {
     return (
@@ -216,20 +224,31 @@ export default function AdminPage() {
             <div key={group.section}>
               <p className="text-[10px] font-bold uppercase tracking-widest text-[#2D1A14]/30 px-2 mb-1.5">{group.section}</p>
               <div className="space-y-0.5">
-                {group.items.map(({ id, label, icon: Icon }) => (
-                  <button
-                    key={id}
-                    onClick={() => navigate(id as SectionId)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left ${
-                      activeSection === id
-                        ? "bg-[#2D1A14] text-white"
-                        : "text-[#2D1A14]/60 hover:bg-[#2D1A14]/5 hover:text-[#2D1A14]"
-                    }`}
-                  >
-                    <Icon className="w-4 h-4 flex-shrink-0" />
-                    {label}
-                  </button>
-                ))}
+                {group.items.map(({ id, label, icon: Icon }) => {
+                  const badge = navBadges[id]
+                  const active = activeSection === id
+                  return (
+                    <button
+                      key={id}
+                      onClick={() => navigate(id as SectionId)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left ${
+                        active
+                          ? "bg-[#2D1A14] text-white"
+                          : "text-[#2D1A14]/60 hover:bg-[#2D1A14]/5 hover:text-[#2D1A14]"
+                      }`}
+                    >
+                      <Icon className="w-4 h-4 flex-shrink-0" />
+                      <span className="flex-1">{label}</span>
+                      {badge ? (
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
+                          active ? "bg-white/20 text-white" : badge.tone === "danger" ? "bg-red-100 text-red-600" : "bg-[#A67163]/15 text-[#A67163]"
+                        }`}>
+                          {badge.count}
+                        </span>
+                      ) : null}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           ))}
