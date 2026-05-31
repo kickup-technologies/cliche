@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase"
 import { sendWelcomeEmail } from "@/lib/mailer"
+import { rateLimit } from "@/lib/rate-limit"
 
 export async function POST(req: NextRequest) {
+  // Anti-spam: máx. 5 suscripciones por IP cada 10 minutos
+  const limited = rateLimit(req, { id: "subscribe", limit: 5, windowMs: 10 * 60_000 })
+  if (limited) return limited
+
   try {
     const { email, source = "newsletter" } = await req.json()
 

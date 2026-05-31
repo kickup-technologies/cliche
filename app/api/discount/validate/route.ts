@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase"
+import { rateLimit } from "@/lib/rate-limit"
 
 export async function POST(req: NextRequest) {
+  // Anti-fuerza-bruta de códigos: máx. 20 intentos por IP por minuto
+  const limited = rateLimit(req, { id: "discount-validate", limit: 20, windowMs: 60_000 })
+  if (limited) return limited
+
   try {
     const { code, email, subtotal } = await req.json()
 
