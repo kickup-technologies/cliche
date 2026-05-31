@@ -5,7 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useCart } from "@/context/cart-context"
-import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Lock, Truck, Leaf, RotateCcw, Tag, ChevronDown, ChevronUp, Mail, RefreshCw, Phone, MapPin, User } from "lucide-react"
+import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Lock, Truck, Leaf, RotateCcw, Tag, ChevronDown, ChevronUp, Mail, RefreshCw, Phone, MapPin, User, ShieldCheck } from "lucide-react"
 
 function fmt(n: number) {
   return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(n)

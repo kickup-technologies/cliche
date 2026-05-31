@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
 
     // Build items list for email
     const items = cartItems.flatMap((ci) => {
-      const p = ci.product as { name: string; price: number; image_url?: string } | null
+      const p = ci.product as unknown as { name: string; price: number; image_url?: string } | null
       if (!p) return []
       return Array.from({ length: ci.quantity }, () => ({
         name: p.name,
