@@ -5,22 +5,22 @@ import { ShoppingBag, Flame, Clock, X, Star, Check, Droplets, Leaf, Wind, Globe 
 import { Button } from "@/components/ui/button"
 import { useCart } from "@/context/cart-context"
 
-// ─── Compras recientes simuladas (social proof) ───────────────────────────────
-const purchases = [
-  { name: "Valentina R.", city: "Bogotá",      product: "Aroma Agua",     minAgo: 2,  icon: Droplets, color: "text-blue-500",   bg: "bg-blue-50" },
-  { name: "Camila M.",    city: "Medellín",     product: "Kit Armonía x3", minAgo: 5,  icon: Leaf,     color: "text-green-600",  bg: "bg-green-50" },
-  { name: "Sofía L.",     city: "Cali",         product: "Aroma Aire",     minAgo: 8,  icon: Wind,     color: "text-sky-500",    bg: "bg-sky-50" },
-  { name: "Daniela P.",   city: "Cartagena",    product: "Aroma Tierra",   minAgo: 11, icon: Globe,    color: "text-amber-600",  bg: "bg-amber-50" },
-  { name: "Isabella T.",  city: "Barranquilla", product: "Aroma Fuego",    minAgo: 3,  icon: Flame,    color: "text-orange-500", bg: "bg-orange-50" },
-  { name: "Mariana G.",   city: "Bucaramanga",  product: "Kit Armonía x3", minAgo: 7,  icon: Leaf,     color: "text-green-600",  bg: "bg-green-50" },
-  { name: "Andrea S.",    city: "Pereira",      product: "Aroma Agua",     minAgo: 1,  icon: Droplets, color: "text-blue-500",   bg: "bg-blue-50" },
-  { name: "Luciana V.",   city: "Santa Marta",  product: "Aroma Aire",     minAgo: 6,  icon: Wind,     color: "text-sky-500",    bg: "bg-sky-50" },
-  { name: "Natalia O.",   city: "Manizales",    product: "Aroma Tierra",   minAgo: 19, icon: Globe,    color: "text-amber-600",  bg: "bg-amber-50" },
-  { name: "Paola R.",     city: "Ibagué",       product: "Aroma Fuego",    minAgo: 14, icon: Flame,    color: "text-orange-500", bg: "bg-orange-50" },
-]
+// ─── Social proof con compras REALES (vía /api/recent-purchases) ──────────────
+interface RealPurchase { name: string; city: string; product: string; minAgo: number }
+
+// Asigna icono/color según el nombre del producto comprado
+function iconForProduct(product: string) {
+  const p = product.toLowerCase()
+  if (p.includes("agua"))   return { icon: Droplets, color: "text-blue-500",   bg: "bg-blue-50" }
+  if (p.includes("aire"))   return { icon: Wind,     color: "text-sky-500",    bg: "bg-sky-50" }
+  if (p.includes("tierra")) return { icon: Globe,    color: "text-amber-600",  bg: "bg-amber-50" }
+  if (p.includes("fuego"))  return { icon: Flame,    color: "text-orange-500", bg: "bg-orange-50" }
+  return { icon: Leaf, color: "text-green-600", bg: "bg-green-50" } // kits y otros
+}
 
 // ─── Social Proof Toast — top-right, non-invasive ─────────────────────────────
 export function SocialProofToast() {
+  const [purchases, setPurchases] = useState<RealPurchase[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isVisible, setIsVisible] = useState(false)
   const [dismissed, setDismissed] = useState(false)
@@ -30,8 +30,16 @@ export function SocialProofToast() {
     setDismissed(true)
   }, [])
 
+  // Cargar compras reales (anonimizadas). Si no hay, el toast no se muestra.
   useEffect(() => {
-    if (dismissed) return
+    fetch("/api/recent-purchases")
+      .then((r) => r.json())
+      .then((d) => setPurchases(Array.isArray(d.purchases) ? d.purchases : []))
+      .catch(() => setPurchases([]))
+  }, [])
+
+  useEffect(() => {
+    if (dismissed || purchases.length === 0) return
 
     const showNext = () => {
       setIsVisible(true)
@@ -48,11 +56,13 @@ export function SocialProofToast() {
     // Siguientes: cada 20s (poco frecuente = no invasivo)
     const interval = setInterval(showNext, 20000)
     return () => { clearTimeout(initial); clearInterval(interval) }
-  }, [dismissed])
+  }, [dismissed, purchases])
 
-  if (dismissed) return null
+  // No mostrar nada si no hay compras reales (evita inventar social proof)
+  if (dismissed || purchases.length === 0) return null
 
-  const p = purchases[currentIndex]
+  const base = purchases[currentIndex]
+  const p = { ...base, ...iconForProduct(base.product) }
 
   return (
     // Posición: top-right debajo del header — no interfiere con sticky bar ni WhatsApp

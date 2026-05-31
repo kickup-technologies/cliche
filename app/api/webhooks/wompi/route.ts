@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase"
 import crypto from "crypto"
-import { sendOrderConfirmation, sendReviewRequestEmail, sendAdminOrderAlert } from "@/lib/mailer"
+import { sendOrderConfirmation, sendAdminOrderAlert } from "@/lib/mailer"
 
 export async function POST(req: NextRequest) {
   try {
@@ -102,12 +102,8 @@ export async function POST(req: NextRequest) {
             total: order.total,
             items: order.items || [],
           })
-
-          // ── 6. Email de reseña (best-effort) ─────────────────────
-          try {
-            const firstName = customerName?.split(" ")[0] || "Cliente"
-            await sendReviewRequestEmail(customerEmail, firstName, order.items || [])
-          } catch { /* no bloquear */ }
+          // NOTA: el email de reseña ya NO se envía aquí (era prematuro).
+          // Lo dispara el cron /api/cron/review-emails 7 días después.
         }
 
         // ── 7. Alerta al administrador ────────────────────────────

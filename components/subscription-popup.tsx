@@ -13,9 +13,11 @@ export function SubscriptionPopup() {
   const [discountCode, setDiscountCode] = useState("PRIMERA20")
 
   const openPopup = useCallback(() => {
-    const hasSeenPopup = sessionStorage.getItem("cliche-popup-seen")
-    if (hasSeenPopup || isOpen) return
+    // Coordinación: si CUALQUIER popup de captura ya apareció esta sesión, no mostrar otro
+    const hasSeenAny = sessionStorage.getItem("cliche-popup-seen") || sessionStorage.getItem("cliche-capture-shown")
+    if (hasSeenAny || isOpen) return
     setIsOpen(true)
+    sessionStorage.setItem("cliche-capture-shown", "true")
   }, [isOpen])
 
   useEffect(() => {

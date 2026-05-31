@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
 import type { Product } from "@/lib/supabase"
+import { useCAPI } from "@/lib/use-capi"
 
 interface CartItem {
   product: Product
@@ -10,7 +11,7 @@ interface CartItem {
 
 interface CartContextType {
   items: CartItem[]
-  addItem: (product: Product) => void
+  addItem: (product: Product, quantity?: number) => void
   removeItem: (productId: string) => void
   updateQuantity: (productId: string, quantity: number) => void
   clearCart: () => void
@@ -29,6 +30,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
   const [isCheckingOut, setIsCheckingOut] = useState(false)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const { track } = useCAPI()
 
   const openDrawer = useCallback(() => setIsDrawerOpen(true), [])
   const closeDrawer = useCallback(() => setIsDrawerOpen(false), [])
@@ -43,17 +45,30 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("cliche-cart", JSON.stringify(items))
   }, [items])
 
-  const addItem = useCallback((product: Product) => {
+  const addItem = useCallback((product: Product, quantity: number = 1) => {
+    const qty = Math.max(1, quantity)
     setItems((prev) => {
       const existing = prev.find((i) => i.product.id === product.id)
       if (existing) {
         return prev.map((i) =>
-          i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i
+          i.product.id === product.id ? { ...i, quantity: i.quantity + qty } : i
         )
       }
-      return [...prev, { product, quantity: 1 }]
+      return [...prev, { product, quantity: qty }]
     })
-  }, [])
+    // ── Meta Pixel + CAPI: AddToCart (1 evento, num_items real) ──
+    track({
+      event_name: "AddToCart",
+      custom_data: {
+        currency: "COP",
+        value: product.price * qty,
+        content_ids: [product.id],
+        content_name: product.name,
+        content_type: "product",
+        num_items: qty,
+      },
+    })
+  }, [track])
 
   const removeItem = useCallback((productId: string) => {
     setItems((prev) => prev.filter((i) => i.product.id !== productId))
@@ -76,9 +91,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const checkout = useCallback(async () => {
     if (!items.length) return
+    // ── Meta Pixel + CAPI: InitiateCheckout ──
+    track({
+      event_name: "InitiateCheckout",
+      custom_data: {
+        currency: "COP",
+        value: items.reduce((s, i) => s + i.product.price * i.quantity, 0),
+        content_ids: items.map((i) => i.product.id),
+        content_type: "product",
+        num_items: items.reduce((s, i) => s + i.quantity, 0),
+      },
+    })
     // Redirigir a la página de resumen de checkout
     window.location.href = "/checkout"
-  }, [items])
+  }, [items, track])
 
   return (
     <CartContext.Provider

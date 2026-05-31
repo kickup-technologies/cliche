@@ -206,11 +206,17 @@ export function ProductDetail({ product, related }: Props) {
   }
 
   function handleAdd() {
-    for (let i = 0; i < qty; i++) addItem(product)
+    // addItem ya dispara el evento AddToCart (Pixel + CAPI) una sola vez
+    addItem(product, qty)
     setAdded(true)
     setTimeout(() => setAdded(false), 2000)
+  }
+
+  function handleBuyNow() {
+    addItem(product, qty)
+    // ── Meta Pixel + CAPI: InitiateCheckout (compra directa) ──
     track({
-      event_name: 'AddToCart',
+      event_name: 'InitiateCheckout',
       custom_data: {
         content_ids: [product.id],
         content_name: product.name,
@@ -220,10 +226,6 @@ export function ProductDetail({ product, related }: Props) {
         num_items: qty,
       },
     })
-  }
-
-  function handleBuyNow() {
-    for (let i = 0; i < qty; i++) addItem(product)
     sessionStorage.setItem("checkout-back-url", window.location.pathname + window.location.search)
     setTimeout(() => { window.location.href = "/checkout" }, 80)
   }

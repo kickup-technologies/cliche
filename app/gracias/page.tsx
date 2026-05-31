@@ -11,6 +11,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useCart } from "@/context/cart-context"
+import { useCAPI } from "@/lib/use-capi"
 
 interface ReferralData {
   code: string
@@ -25,6 +26,7 @@ function GraciasContent() {
   const status = params.get("status")
   const router = useRouter()
   const { clearCart } = useCart()
+  const { track } = useCAPI()
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
   const [refCopied, setRefCopied] = useState(false)
@@ -46,6 +48,31 @@ function GraciasContent() {
     // Simulate loading + fetch referral code if session exists
     const t = setTimeout(async () => {
       if (sessionId) {
+        // ── Meta Pixel + CAPI: Purchase event (deduplicado por pedido) ──
+        try {
+          const fired = sessionStorage.getItem(`purchase_fired_${sessionId}`)
+          if (!fired) {
+            const ordRes = await fetch(`/api/orders/${sessionId}`)
+            if (ordRes.ok) {
+              const order = await ordRes.json()
+              const items = (order.items as Array<{ product_id: string; quantity: number }>) || []
+              track({
+                event_name: "Purchase",
+                custom_data: {
+                  currency: "COP",
+                  value: Number(order.total) || 0,
+                  content_ids: items.map((i) => i.product_id),
+                  content_type: "product",
+                  num_items: items.reduce((n, i) => n + (i.quantity || 1), 0),
+                },
+              })
+              sessionStorage.setItem(`purchase_fired_${sessionId}`, "1")
+            }
+          }
+        } catch {
+          // silent — el tracking no debe romper la página de gracias
+        }
+
         try {
           const res = await fetch("/api/referral/generate", {
             method: "POST",
@@ -63,7 +90,7 @@ function GraciasContent() {
       setLoading(false)
     }, 1500)
     return () => clearTimeout(t)
-  }, [sessionId, isFailed])
+  }, [sessionId, isFailed]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function copyCode() {
     navigator.clipboard.writeText("RITUAL15")

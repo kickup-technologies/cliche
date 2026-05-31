@@ -15,10 +15,12 @@ export function ExitIntentPopup() {
   const { items } = useCart()
 
   const openPopup = useCallback(() => {
-    const hasSeenExit = sessionStorage.getItem("cliche-exit-seen")
-    if (hasSeenExit) return
+    // Coordinación: si CUALQUIER popup de captura ya apareció esta sesión, no mostrar otro
+    const hasSeenAny = sessionStorage.getItem("cliche-exit-seen") || sessionStorage.getItem("cliche-capture-shown")
+    if (hasSeenAny) return
     setIsOpen(true)
     sessionStorage.setItem("cliche-exit-seen", "true")
+    sessionStorage.setItem("cliche-capture-shown", "true")
   }, [])
 
   useEffect(() => {
