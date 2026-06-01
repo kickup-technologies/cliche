@@ -65,9 +65,10 @@ export function UGCSection() {
             <Play className="w-3.5 h-3.5 fill-current" />
             La comunidad lo dice
           </div>
-          <h2 className="text-3xl lg:text-4xl font-serif font-bold text-background mb-3">
+          <h2 className="text-3xl lg:text-4xl font-serif font-bold text-shimmer-light mb-3">
             Así huele vivir con Cliché
           </h2>
+          <span className="accent-rule" />
           <p className="text-background/60 max-w-md mx-auto text-sm">
             Más de 5.000 hogares colombianos ya transformaron su espacio. Únete.
           </p>

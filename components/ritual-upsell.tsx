@@ -51,9 +51,10 @@ export function RitualUpsell() {
           <p className="text-xs font-semibold uppercase tracking-widest text-background/50 mb-3">
             Colección destacada
           </p>
-          <h2 className="text-3xl lg:text-4xl font-serif font-bold text-background mb-3">
+          <h2 className="text-3xl lg:text-4xl font-serif font-bold text-shimmer-light mb-3">
             El ritual completo
           </h2>
+          <span className="accent-rule" />
           <p className="text-background/60 max-w-md mx-auto text-sm">
             Combina aromas para cada momento del día. Los más elegidos por nuestra comunidad.
           </p>

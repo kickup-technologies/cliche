@@ -55,9 +55,10 @@ export function FAQ() {
             <HelpCircle className="w-3.5 h-3.5" />
             Resolvemos tus dudas
           </div>
-          <h2 className="text-3xl lg:text-4xl font-serif font-bold text-foreground mb-4">
+          <h2 className="text-3xl lg:text-4xl font-serif font-bold text-shimmer mb-4">
             Preguntas frecuentes
           </h2>
+          <span className="accent-rule" />
           <p className="text-muted-foreground">
             Todo lo que necesitas saber antes de tu primera compra.
           </p>

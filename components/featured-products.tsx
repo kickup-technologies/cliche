@@ -115,15 +115,20 @@ export function FeaturedProducts() {
     <section id="productos" ref={sectionRef} className="py-16 px-4 bg-background">
       <div className="container mx-auto max-w-6xl">
         <div className="text-center mb-12">
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 mb-4 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-[0.18em]">
+            <Flame className="w-3.5 h-3.5 float-soft" />
+            Lo más vendido
+          </span>
           <h2
-            className="text-3xl md:text-4xl font-serif font-bold text-foreground mb-4"
+            className="text-3xl md:text-5xl font-serif font-bold text-shimmer mb-4 leading-tight"
             data-cliche-edit="featured_title"
             data-cliche-label="Título destacados"
           >
             {featuredTitle}
           </h2>
+          <span className="block w-16 h-1 rounded-full bg-gradient-to-r from-primary to-accent mx-auto mb-4" />
           <p
-            className="text-muted-foreground max-w-xl mx-auto"
+            className="text-muted-foreground max-w-xl mx-auto text-base md:text-lg"
             data-cliche-edit="featured_subtitle"
             data-cliche-label="Subtítulo destacados"
           >
@@ -137,7 +142,7 @@ export function FeaturedProducts() {
               key={product.id}
               href={`/productos/${product.slug}`}
               className={cn(
-                "group bg-white border border-border rounded-2xl overflow-hidden transition-all duration-500 hover:shadow-xl hover:border-primary/20 block",
+                "group card-beam bg-white border border-border rounded-2xl overflow-hidden transition-all duration-500 shadow-soft hover-lift hover:border-primary/30 block",
                 isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
               )}
               style={{ transitionDelay: `${index * 100}ms` }}
@@ -152,6 +157,11 @@ export function FeaturedProducts() {
                   className="object-cover transition-transform duration-500 group-hover:scale-110"
                 />
                 <div className="absolute top-3 left-3 flex flex-col gap-2">
+                  {product.original_price && product.original_price > product.price && (
+                    <span className="px-2.5 py-1 rounded-full text-xs font-extrabold text-white bg-primary shadow-soft">
+                      -{Math.round((1 - product.price / product.original_price) * 100)}%
+                    </span>
+                  )}
                   {product.badge && (
                     <span className={cn("px-3 py-1 rounded-full text-xs font-semibold text-white", product.badge_color)}>
                       {product.badge}
@@ -219,10 +229,10 @@ export function FeaturedProducts() {
                   ))}
                   <span className="text-xs text-muted-foreground ml-1">({product.reviews})</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-base font-bold text-foreground">{formatPrice(product.price)}</span>
-                  {product.original_price && (
-                    <span className="text-xs text-muted-foreground line-through hidden sm:inline">{formatPrice(product.original_price)}</span>
+                <div className="flex items-baseline flex-wrap gap-x-2 gap-y-0.5">
+                  <span className="text-lg font-extrabold text-foreground">{formatPrice(product.price)}</span>
+                  {product.original_price && product.original_price > product.price && (
+                    <span className="text-xs text-muted-foreground line-through">{formatPrice(product.original_price)}</span>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground leading-snug hidden sm:block">
@@ -248,7 +258,7 @@ export function FeaturedProducts() {
             {!showAll ? (
               <button
                 onClick={() => setShowAll(true)}
-                className="inline-flex items-center gap-2 border border-border rounded-full px-8 py-3 text-sm font-semibold text-foreground hover:border-primary hover:text-primary transition-colors"
+                className="inline-flex items-center gap-2 border border-border rounded-full px-8 py-3 text-sm font-semibold text-foreground hover:border-primary hover:text-primary transition-colors hover-lift"
               >
                 <ChevronDown className="w-4 h-4" />
                 Mostrar más aromas ({products.length - INITIAL_VISIBLE} restantes)
@@ -256,7 +266,7 @@ export function FeaturedProducts() {
             ) : (
               <a
                 href="/catalogo"
-                className="inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-8 py-3 text-sm font-semibold hover:bg-primary/90 transition-colors"
+                className="inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-8 py-3 text-sm font-semibold hover:bg-primary/90 transition-colors btn-shine hover-lift"
               >
                 Ver catálogo completo →
               </a>

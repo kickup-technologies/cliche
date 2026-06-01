@@ -27,7 +27,7 @@ export function CTASection() {
                 <h2
                   data-cliche-edit="cta_title"
                   data-cliche-label="Título empresas"
-                  className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground text-balance"
+                  className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-shimmer text-balance"
                 >
                   {ctaTitle}
                 </h2>

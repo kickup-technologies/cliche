@@ -50,9 +50,10 @@ export function HowItWorks() {
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-xs font-semibold uppercase tracking-widest px-4 py-2 rounded-full mb-4">
             Simple como respirar
           </div>
-          <h2 className="text-3xl lg:text-4xl font-serif font-bold text-foreground mb-4">
+          <h2 className="text-3xl lg:text-4xl font-serif font-bold text-shimmer mb-4">
             Cómo funciona
           </h2>
+          <span className="accent-rule" />
           <p className="text-muted-foreground max-w-xl mx-auto">
             De la elección a la transformación en tres pasos. Sin complicaciones.
           </p>

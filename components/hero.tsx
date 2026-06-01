@@ -140,7 +140,7 @@ export function Hero() {
             </div>
 
             {/* CTA principal — grande, full-width */}
-            <Button size="lg" className="w-full py-5 text-base font-bold tracking-wide group mb-3" asChild>
+            <Button size="lg" className="w-full py-5 text-base font-bold tracking-wide group mb-3 btn-shine hover-lift cta-glow text-white" asChild>
               <a href="#productos">
                 COMPRAR CON {discountPct}% OFF
                 <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
@@ -225,7 +225,7 @@ export function Hero() {
 
             {/* CTA Buttons */}
             <div className="flex gap-4 mb-8">
-              <Button size="lg" className="text-lg px-8 py-6 font-semibold group" asChild>
+              <Button size="lg" className="text-lg px-8 py-6 font-semibold group btn-shine hover-lift cta-glow text-white" asChild>
                 <a href="#productos">
                   COMPRAR CON {discountPct}% OFF
                   <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />

@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react"
 import { supabase } from "@/lib/supabase"
 import {
   LayoutDashboard, TrendingUp, BarChart3, Star, ShoppingBag, Zap,
-  Package, Settings, Lock, RefreshCw, AlertCircle, Eye, LogOut, Menu, X, Paintbrush, Flame,
+  Package, Settings, Lock, RefreshCw, AlertCircle, Eye, LogOut, Menu, X, Paintbrush, Flame, Ticket,
 } from "lucide-react"
 import type { Product } from "@/lib/supabase"
 import { Order, PageView } from "./types"
@@ -22,8 +22,9 @@ import { InventarioSection } from "./sections/inventario"
 import { TiendaSection } from "./sections/tienda"
 import { PersonalizarSection } from "./sections/personalizar"
 import { HeatmapsSection } from "./sections/heatmaps"
+import { DescuentosSection } from "./sections/descuentos"
 
-type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "heatmaps" | "pedidos" | "urgencia" | "inventario" | "tienda" | "personalizar"
+type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "heatmaps" | "pedidos" | "urgencia" | "descuentos" | "inventario" | "tienda" | "personalizar"
 
 interface Setting { key: string; value: string }
 
@@ -38,8 +39,9 @@ const SIDEBAR = [
     { id: "heatmaps",        label: "Mapas de Calor", icon: Flame },
   ]},
   { section: "OPERACIONES", items: [
-    { id: "pedidos",  label: "Pedidos",              icon: ShoppingBag },
-    { id: "urgencia", label: "Urgencia Inteligente", icon: Zap },
+    { id: "pedidos",   label: "Pedidos",              icon: ShoppingBag },
+    { id: "urgencia",  label: "Urgencia Inteligente", icon: Zap },
+    { id: "descuentos", label: "Códigos de descuento", icon: Ticket },
   ]},
   { section: "CONTENIDO", items: [
     { id: "personalizar", label: "Editor Visual", icon: Paintbrush },
@@ -347,6 +349,9 @@ export default function AdminPage() {
           )}
           {activeSection === "urgencia" && (
             <UrgenciaSection orders={orders} products={products} />
+          )}
+          {activeSection === "descuentos" && (
+            <DescuentosSection />
           )}
           {activeSection === "inventario" && (
             <InventarioSection products={products} onRefresh={loadAll} />

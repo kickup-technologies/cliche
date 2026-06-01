@@ -72,7 +72,7 @@ export function Testimonials() {
                 <p className="text-sm uppercase tracking-widest text-primary font-semibold">
                   Testimonios
                 </p>
-                <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-balance">
+                <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-balance text-shimmer-light">
                   +2,847 clientes felices
                 </h2>
                 <p className="text-lg text-background/70 leading-relaxed max-w-lg">

@@ -82,7 +82,7 @@ export function Newsletter() {
                   <Gift className="w-5 h-5 text-primary" />
                   <span className="text-sm font-medium text-primary uppercase tracking-wide">Regalo de bienvenida</span>
                 </div>
-                <h2 className="text-2xl md:text-3xl font-serif font-bold text-foreground mb-3">
+                <h2 className="text-2xl md:text-3xl font-serif font-bold text-shimmer mb-3">
                   {discountPct}% OFF en tu primera compra
                 </h2>
                 <p

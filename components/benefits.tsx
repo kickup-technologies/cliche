@@ -104,9 +104,10 @@ export function Benefits() {
           <p className="text-sm uppercase tracking-widest text-primary font-semibold mb-4">
             Cómo Funciona
           </p>
-          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground text-balance">
+          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-shimmer text-balance">
             Tu experiencia aromática en 4 pasos
           </h2>
+          <span className="accent-rule mt-4" />
         </ScrollAnimation>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">

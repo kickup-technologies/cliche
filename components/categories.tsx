@@ -41,9 +41,10 @@ export function Categories() {
           <p className="text-sm uppercase tracking-widest text-primary font-semibold mb-4">
             Categorías
           </p>
-          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4 text-balance">
+          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-shimmer mb-4 text-balance">
             Encuentra el aroma perfecto
           </h2>
+          <span className="accent-rule" />
           <p className="text-lg text-muted-foreground">
             Explora nuestras colecciones y transforma cualquier espacio
           </p>

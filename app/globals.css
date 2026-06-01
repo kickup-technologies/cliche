@@ -187,3 +187,199 @@ html {
 html[data-cliche-edit-mode="1"] [data-cliche-edit] {
   cursor: pointer !important;
 }
+
+/* ── Polish utilities — sombras suaves, lift y reveal coherentes ──────── */
+
+/* Sombra de marca: suave, en capas (no la sombra dura por defecto) */
+.shadow-soft {
+  box-shadow: 0 1px 2px rgba(45, 26, 20, 0.04), 0 8px 24px -12px rgba(45, 26, 20, 0.18);
+}
+.shadow-soft-lg {
+  box-shadow: 0 2px 4px rgba(45, 26, 20, 0.05), 0 18px 40px -16px rgba(45, 26, 20, 0.28);
+}
+
+/* Lift táctil al pasar el cursor — para tarjetas y CTAs */
+.hover-lift {
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.28s ease;
+  will-change: transform;
+}
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 2px 4px rgba(45, 26, 20, 0.05), 0 22px 48px -18px rgba(45, 26, 20, 0.32);
+}
+.hover-lift:active {
+  transform: translateY(-1px);
+  transition-duration: 0.1s;
+}
+
+/* Reveal al hacer scroll — opacidad + leve subida */
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.reveal-up {
+  animation: reveal-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Brillo sutil que cruza el CTA primario al hacer hover */
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+}
+.btn-shine::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.6s ease;
+  pointer-events: none;
+}
+.btn-shine:hover::after {
+  left: 130%;
+}
+
+/* Anillo de foco accesible y consistente en toda la tienda */
+*:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── Componentes animados premium (estilo 21st.dev) ──────────────────── */
+
+@property --beam-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+/* Border beam: borde con degradado cónico que gira alrededor de la card */
+.card-beam {
+  position: relative;
+  isolation: isolate;
+}
+.card-beam::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2.5px;
+  background: conic-gradient(
+    from var(--beam-angle),
+    transparent 45%,
+    var(--primary) 70%,
+    #e8c9bf 80%,
+    #ffffff 86%,
+    var(--primary) 92%,
+    transparent 100%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  animation: beam-spin 3s linear infinite;
+  z-index: 1;
+  pointer-events: none;
+  filter: drop-shadow(0 0 6px rgba(166, 113, 99, 0.55));
+}
+.card-beam:hover::before {
+  opacity: 1;
+}
+@keyframes beam-spin {
+  to { --beam-angle: 360deg; }
+}
+
+/* CTA con degradado animado + glow cálido de marca */
+.cta-glow {
+  background: linear-gradient(110deg, #A67163 0%, #C4958A 40%, #b9847a 50%, #A67163 60%, #A67163 100%);
+  background-size: 220% 100%;
+  animation: cta-glow-move 3.5s linear infinite;
+  box-shadow: 0 10px 30px -8px rgba(166, 113, 99, 0.55), 0 2px 6px rgba(45, 26, 20, 0.2);
+}
+.cta-glow:hover {
+  box-shadow: 0 14px 40px -8px rgba(166, 113, 99, 0.75), 0 2px 8px rgba(45, 26, 20, 0.25);
+}
+@keyframes cta-glow-move {
+  to { background-position: -220% 0; }
+}
+
+/* Texto con degradado animado (shimmer) */
+.text-shimmer {
+  background: linear-gradient(110deg, var(--foreground) 35%, var(--primary) 50%, var(--foreground) 65%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: text-shimmer-move 5s linear infinite;
+}
+@keyframes text-shimmer-move {
+  to { background-position: -220% 0; }
+}
+
+/* Variante de shimmer para secciones con fondo oscuro (texto claro) */
+.text-shimmer-light {
+  background: linear-gradient(110deg, #FAF8F5 40%, #e8c9bf 50%, #FAF8F5 60%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: text-shimmer-move 5s linear infinite;
+}
+
+/* Eyebrow reutilizable — etiqueta sobre los títulos de sección */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 1rem;
+  margin-bottom: 1rem;
+  border-radius: 9999px;
+  background: rgba(166, 113, 99, 0.1);
+  color: var(--primary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.eyebrow-light {
+  background: rgba(250, 248, 245, 0.12);
+  color: #f0dcd4;
+}
+/* Línea de acento bajo el título */
+.accent-rule {
+  display: block;
+  width: 4rem;
+  height: 0.25rem;
+  border-radius: 9999px;
+  background: linear-gradient(to right, var(--primary), var(--accent));
+  margin: 0 auto 1rem;
+}
+
+/* Flotación suave para badges/iconos destacados */
+@keyframes float-soft {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
+}
+.float-soft {
+  animation: float-soft 3.5s ease-in-out infinite;
+}
+
+/* Respeta la preferencia de movimiento reducido del sistema */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
