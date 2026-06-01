@@ -1,0 +1,96 @@
+"use client"
+
+import { useEffect } from "react"
+import { getConsent } from "@/components/cookie-consent"
+
+/**
+ * PixelManager — carga Meta Pixel, TikTok y GA4 SOLO si el usuario
+ * aceptó las cookies correspondientes (Ley 1581/2012 Colombia).
+ *
+ * Marketing → Meta Pixel + TikTok
+ * Analíticas → GA4
+ */
+
+const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || "2074090273450880"
+const GA4_ID = process.env.NEXT_PUBLIC_GA4_ID || ""
+const TIKTOK_PIXEL_ID = process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID || ""
+
+function injectScript(src: string, id: string) {
+  if (document.getElementById(id)) return
+  const s = document.createElement("script")
+  s.id = id
+  s.src = src
+  s.async = true
+  document.head.appendChild(s)
+}
+
+function loadMetaPixel() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const w = window as any
+  if (w.fbq) return
+  w.fbq = function (...args: unknown[]) {
+    if (w.fbq.callMethod) w.fbq.callMethod(...args)
+    else w.fbq.queue.push(args)
+  }
+  w._fbq = w.fbq
+  w.fbq.push = w.fbq
+  w.fbq.loaded = true
+  w.fbq.version = "2.0"
+  w.fbq.queue = []
+  injectScript("https://connect.facebook.net/en_US/fbevents.js", "meta-pixel-sdk")
+  w.fbq("init", META_PIXEL_ID)
+  w.fbq("track", "PageView")
+}
+
+function loadGA4() {
+  if (!GA4_ID) return
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const w = window as any
+  if (w.__ga4Loaded) return
+  w.__ga4Loaded = true
+  injectScript(`https://www.googletagmanager.com/gtag/js?id=${GA4_ID}`, "ga4-sdk")
+  w.dataLayer = w.dataLayer || []
+  w.gtag = function (...args: unknown[]) { w.dataLayer.push(args) }
+  w.gtag("js", new Date())
+  w.gtag("config", GA4_ID)
+}
+
+function loadTikTok() {
+  if (!TIKTOK_PIXEL_ID) return
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const w = window as any
+  if (w.ttq) return
+  const ttq: Record<string, unknown> = {}
+  const methods = ["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"]
+  ttq._q = []
+  methods.forEach((m) => {
+    ttq[m] = (...args: unknown[]) => { (ttq._q as unknown[]).push([m, ...args]) }
+  })
+  w.ttq = ttq
+  injectScript(
+    `https://analytics.tiktok.com/i18n/pixel/events.js?sdkid=${TIKTOK_PIXEL_ID}&lib=ttq`,
+    "tiktok-pixel-sdk"
+  )
+  ;(ttq.page as () => void)()
+}
+
+export function PixelManager() {
+  useEffect(() => {
+    const apply = () => {
+      const consent = getConsent()
+      if (!consent) return
+      if (consent.analytics && GA4_ID) loadGA4()
+      if (consent.marketing) {
+        if (META_PIXEL_ID) loadMetaPixel()
+        if (TIKTOK_PIXEL_ID) loadTikTok()
+      }
+    }
+
+    apply()
+
+    window.addEventListener("cliche-consent-change", apply)
+    return () => window.removeEventListener("cliche-consent-change", apply)
+  }, [])
+
+  return null
+}
