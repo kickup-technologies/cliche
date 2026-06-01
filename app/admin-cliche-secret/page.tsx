@@ -68,16 +68,13 @@ export default function AdminPage() {
 
   // Check session on mount
   useEffect(() => {
-    // Bypass SOLO en desarrollo local: entra directo sin contraseña.
-    // En producción esta rama no se compila como activa (NODE_ENV === "production").
-    if (process.env.NODE_ENV !== "production") {
-      setAdminPw("dev")
-      sessionStorage.setItem("cliche_admin_auth", "ok")
-      setAuthed(true)
-      return
-    }
-    const token = sessionStorage.getItem("cliche_admin_auth")
-    if (token === "ok") setAuthed(true)
+    // ⚠️ ACCESO ABIERTO ACTIVADO (a petición del dueño): entra directo, sin
+    // pedir contraseña, tanto en local como en producción. Para volver a
+    // proteger el panel, restaura la lógica de sesión (token "ok") + define
+    // ADMIN_PASSWORD en Vercel.
+    setAdminPw("open")
+    sessionStorage.setItem("cliche_admin_auth", "ok")
+    setAuthed(true)
   }, [])
 
   async function handleLogin(e: React.FormEvent) {

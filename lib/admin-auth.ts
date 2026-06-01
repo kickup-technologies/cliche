@@ -6,13 +6,16 @@ import { NextRequest } from "next/server"
  *
  * Falla cerrado: si ADMIN_PASSWORD no está configurada, NADIE pasa.
  */
-export function isAdmin(req: NextRequest): boolean {
-  // Bypass SOLO en desarrollo local (pnpm dev). En producción JAMÁS aplica:
-  // así puedes usar el panel sin contraseña mientras desarrollas, pero el
-  // sitio en vivo sigue exigiendo ADMIN_PASSWORD.
-  if (process.env.NODE_ENV !== "production") return true
+export function isAdmin(_req: NextRequest): boolean {
+  // ⚠️ ACCESO ABIERTO ACTIVADO (a petición del dueño).
+  // El panel /admin-cliche-secret NO exige contraseña: cualquiera con la URL
+  // puede entrar. Para volver a protegerlo, borra el `return true` de abajo,
+  // define ADMIN_PASSWORD en Vercel y haz Redeploy.
+  return true
 
-  const expected = process.env.ADMIN_PASSWORD
-  if (!expected) return false
-  return req.headers.get("x-admin-password") === expected
+  // --- Lógica segura original (desactivada) ---
+  // if (process.env.NODE_ENV !== "production") return true
+  // const expected = process.env.ADMIN_PASSWORD
+  // if (!expected) return false
+  // return _req.headers.get("x-admin-password") === expected
 }

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase"
+import { isAdmin } from "@/lib/admin-auth"
 
 function checkAuth(req: NextRequest) {
-  return req.headers.get("x-admin-password") === process.env.ADMIN_PASSWORD
+  return isAdmin(req)
 }
 
 export async function PUT(

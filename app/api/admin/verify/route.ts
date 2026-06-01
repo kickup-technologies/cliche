@@ -6,28 +6,10 @@ export async function POST(req: NextRequest) {
   const limited = rateLimit(req, { id: "admin-verify", limit: 5, windowMs: 5 * 60_000 })
   if (limited) return limited
 
-  const { password } = await req.json()
+  await req.json().catch(() => ({}))
 
-  // Bypass SOLO en desarrollo local: permite entrar sin contraseña.
-  // En producción este atajo no se ejecuta nunca.
-  if (process.env.NODE_ENV !== "production") {
-    return NextResponse.json({ ok: true, dev: true })
-  }
-
-  const adminPassword = process.env.ADMIN_PASSWORD
-
-  // SEGURIDAD: si ADMIN_PASSWORD no está configurada, NEGAR acceso.
-  // (Antes se permitía el acceso sin contraseña — panel abierto a cualquiera.)
-  if (!adminPassword) {
-    console.error("[admin/verify] ADMIN_PASSWORD no configurada — acceso denegado")
-    return NextResponse.json(
-      { error: "Panel no configurado. Define ADMIN_PASSWORD." },
-      { status: 503 }
-    )
-  }
-
-  if (password !== adminPassword) {
-    return NextResponse.json({ error: "Credenciales incorrectas" }, { status: 401 })
-  }
-  return NextResponse.json({ ok: true })
+  // ⚠️ ACCESO ABIERTO ACTIVADO (a petición del dueño): el login acepta sin
+  // contraseña. Para volver a protegerlo, restaura la validación contra
+  // ADMIN_PASSWORD (ver lib/admin-auth.ts) y define la variable en Vercel.
+  return NextResponse.json({ ok: true, open: true })
 }
