@@ -65,6 +65,12 @@ function GraciasContent() {
                   content_type: "product",
                   num_items: items.reduce((n, i) => n + (i.quantity || 1), 0),
                 },
+                // Advanced Matching — el servidor los hashea con SHA-256
+                // antes de enviarlos a Meta (nunca van crudos a Facebook)
+                user_data: {
+                  ...(order.customer_email && { raw_email: order.customer_email }),
+                  ...(order.customer_phone && { raw_phone: order.customer_phone }),
+                },
               })
               sessionStorage.setItem(`purchase_fired_${sessionId}`, "1")
             }

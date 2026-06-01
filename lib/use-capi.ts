@@ -25,8 +25,13 @@ export interface CAPIEventPayload {
   }
   user_data?: {
     em?: string[]
+    ph?: string[]
     fbc?: string
     fbp?: string
+    /** Email crudo — el servidor lo hashea con SHA-256 antes de enviar a Meta */
+    raw_email?: string
+    /** Teléfono crudo — el servidor lo normaliza y hashea antes de enviar a Meta */
+    raw_phone?: string
   }
 }
 
