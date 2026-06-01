@@ -156,6 +156,9 @@ export function HeatmapsSection({ pageViews }: { pageViews: PageView[] }) {
         </div>
       </div>
 
+      {/* Mapa de calor PROPIO en tiempo real (clics reales sobre la página) */}
+      <RealClickHeatmap />
+
       {/* Métricas reales de Clarity (graficadas aquí, sin redirigir) */}
       {loading ? (
         <div className="rounded-2xl border border-[#ece2dc] bg-white p-8 flex items-center justify-center gap-2 text-sm text-[#9e8a84]">
@@ -383,6 +386,155 @@ function ScrollDepthMap({ avgScroll }: { avgScroll: number | null }) {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+// ── Mapa de calor PROPIO: clics reales pintados sobre una maqueta ───────────
+type ClickRow = { path: string; label: string; xr: number; yr: number; created_at: string }
+type ClicksResp = { ok: boolean; total?: number; byPath?: Record<string, number>; clicks?: ClickRow[]; error?: string }
+
+function RealClickHeatmap() {
+  const [data, setData] = useState<ClicksResp | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [path, setPath] = useState<string>("")
+
+  useEffect(() => {
+    let active = true
+    adminFetch("/api/admin/clicks?days=30")
+      .then((r) => r.json())
+      .then((d: ClicksResp) => { if (active) setData(d) })
+      .catch(() => { if (active) setData({ ok: false, clicks: [] }) })
+      .finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
+  }, [])
+
+  const clicks = data?.clicks ?? []
+  const paths = Object.entries(data?.byPath ?? {}).sort((a, b) => b[1] - a[1])
+  const activePath = path || paths[0]?.[0] || ""
+  const shown = clicks.filter((c) => c.path === activePath)
+
+  // Ranking de elementos más clicados (datos reales)
+  const labelMap = new Map<string, number>()
+  for (const c of shown) labelMap.set(c.label, (labelMap.get(c.label) || 0) + 1)
+  const ranked = Array.from(labelMap.entries())
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count)
+  const maxCount = ranked[0]?.count || 1
+  const total = shown.length
+
+  // Análisis automático
+  const emptyClicks = shown.filter((c) => c.label === "(zona vacía)").length
+  const top = ranked[0]
+  const analysis: string[] = []
+  if (total > 0) {
+    if (top) analysis.push(`Lo más caliente: “${top.label}” con ${top.count} clic(s) (${Math.round((top.count / total) * 100)}% del total).`)
+    const cold = ranked.filter((r) => r.label !== "(zona vacía)").slice(-1)[0]
+    if (cold && ranked.length > 2) analysis.push(`Lo más frío: “${cold.label}” casi no se toca — evalúa moverlo o resaltarlo.`)
+    if (emptyClicks > 0) analysis.push(`${Math.round((emptyClicks / total) * 100)}% de los clics caen en zonas SIN acción: la gente espera que algo ahí sea clicable (imagen, precio, texto). Conviértelo en enlace.`)
+  }
+
+  return (
+    <div className="rounded-2xl border border-[#ece2dc] bg-white p-5">
+      <div className="flex items-center justify-between flex-wrap gap-2 mb-1">
+        <p className="font-bold text-[#2D1A14] flex items-center gap-2">
+          <Flame className="w-4 h-4 text-red-500" /> Mapa de calor real (clics en vivo)
+        </p>
+        <span className="text-xs text-[#9e8a84]">{total} clic(s) · últimos 30 días</span>
+      </div>
+      <p className="text-xs text-[#9e8a84] mb-4">
+        Tus datos propios, en tiempo real. Cada mancha roja es donde la gente hace clic; mientras más intenso, más caliente.
+      </p>
+
+      {loading ? (
+        <div className="py-10 flex items-center justify-center gap-2 text-sm text-[#9e8a84]">
+          <Loader2 className="w-4 h-4 animate-spin" /> Cargando clics…
+        </div>
+      ) : total === 0 ? (
+        <div className="rounded-xl border border-dashed border-[#e7dcd6] bg-[#faf7f5] p-6 text-center">
+          <MousePointerClick className="w-6 h-6 text-[#c9b8b0] mx-auto mb-2" />
+          <p className="text-sm font-medium text-[#6b5a54]">Aún no hay clics registrados</p>
+          <p className="text-xs text-[#9e8a84] mt-1 max-w-md mx-auto">
+            Entra a la tienda <strong>aceptando las cookies</strong> y haz clic en botones. Aparecerán aquí al instante (a diferencia de Clarity, que tarda 1–2 días).
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Selector de página */}
+          {paths.length > 1 && (
+            <div className="flex flex-wrap gap-1.5 mb-4">
+              {paths.map(([p, n]) => (
+                <button
+                  key={p}
+                  onClick={() => setPath(p)}
+                  className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${p === activePath ? "bg-[#2D1A14] text-white border-[#2D1A14]" : "bg-white text-[#6b5a54] border-[#e7dcd6] hover:border-[#c9b8b0]"}`}
+                >
+                  {labelFor(p)} <span className="opacity-60">({n})</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="grid lg:grid-cols-[300px_1fr] gap-5">
+            {/* Maqueta con manchas de calor */}
+            <div className="relative mx-auto w-full max-w-[300px] rounded-xl border border-[#e7dcd6] bg-[#f7f4f2] overflow-hidden" style={{ height: 420 }}>
+              {/* Wireframe sutil de una página */}
+              <div className="absolute inset-0 p-3 flex flex-col gap-2 opacity-40 pointer-events-none">
+                <div className="h-6 rounded bg-[#e3d8d2]" />
+                <div className="h-28 rounded bg-[#e3d8d2]" />
+                <div className="h-3 w-2/3 rounded bg-[#e3d8d2]" />
+                <div className="h-3 w-1/2 rounded bg-[#e3d8d2]" />
+                <div className="mt-auto h-9 rounded-lg bg-[#d8c8c0]" />
+                <div className="h-9 rounded-lg bg-[#e3d8d2]" />
+              </div>
+              {/* Manchas de calor (se superponen → más rojo = más caliente) */}
+              {shown.map((c, i) => (
+                <span
+                  key={i}
+                  className="absolute rounded-full pointer-events-none"
+                  style={{
+                    left: `${c.xr * 100}%`,
+                    top: `${c.yr * 100}%`,
+                    width: 46, height: 46,
+                    transform: "translate(-50%,-50%)",
+                    background: "radial-gradient(circle, rgba(220,38,38,0.55) 0%, rgba(249,115,22,0.35) 45%, rgba(59,130,246,0) 75%)",
+                    mixBlendMode: "multiply",
+                  }}
+                />
+              ))}
+              <span className="absolute top-1.5 left-2 text-[10px] text-[#9e8a84] font-medium">{labelFor(activePath)}</span>
+            </div>
+
+            {/* Ranking real + análisis */}
+            <div>
+              <p className="text-xs font-semibold text-[#2D1A14] mb-2">Elementos más clicados (reales)</p>
+              <div className="space-y-2">
+                {ranked.slice(0, 8).map((r) => {
+                  const pct = Math.round((r.count / maxCount) * 100)
+                  return (
+                    <div key={r.label} className="flex items-center gap-3">
+                      <span className="w-40 text-xs text-[#2D1A14] truncate flex-shrink-0" title={r.label}>{r.label}</span>
+                      <div className="flex-1 h-4 rounded-full bg-[#f3ece9] overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${Math.max(pct, 6)}%`, backgroundColor: tempColor(r.count / maxCount) }} />
+                      </div>
+                      <span className="w-8 text-right text-xs font-semibold text-[#6b5a54] flex-shrink-0">{r.count}</span>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {analysis.length > 0 && (
+                <div className="mt-4 rounded-xl bg-[#faf7f5] border border-[#efe6e1] p-3">
+                  <p className="text-xs font-semibold text-[#2D1A14] mb-1.5 flex items-center gap-1.5"><Activity className="w-3.5 h-3.5 text-[#A67163]" /> Análisis automático</p>
+                  <ul className="text-xs text-[#6b5a54] space-y-1 list-disc pl-4">
+                    {analysis.map((a, i) => <li key={i}>{a}</li>)}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
