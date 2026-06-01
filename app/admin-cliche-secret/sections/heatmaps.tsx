@@ -49,6 +49,15 @@ function labelFor(path: string): string {
   return path
 }
 
+// Color por "temperatura" según un ratio 0..1 (1 = más caliente)
+function tempColor(ratio: number): string {
+  if (ratio > 0.75) return "#dc2626" // rojo — muy caliente
+  if (ratio > 0.5) return "#f97316"  // naranja
+  if (ratio > 0.3) return "#facc15"  // amarillo — templado
+  if (ratio > 0.15) return "#38bdf8" // celeste
+  return "#3b82f6"                    // azul — frío
+}
+
 // Lee el primer valor numérico disponible entre varias claves posibles
 function pickNum(info: Info | undefined, ...keys: string[]): number | null {
   if (!info) return null
@@ -169,19 +178,24 @@ export function HeatmapsSection({ pageViews }: { pageViews: PageView[] }) {
             <FrustrationCard icon={<AlertOctagon className="w-4 h-4 text-amber-500" />} label="Rebotes rápidos" value={quickBack} hint="Entran y salen al instante. Página no convence." />
           </div>
 
-          {/* Páginas populares según Clarity */}
+          {/* Mapa visual de scroll: hasta dónde llega la gente (caliente vs frío) */}
+          <ScrollDepthMap avgScroll={avgScroll} />
+
+          {/* Páginas populares según Clarity (barras coloreadas por temperatura) */}
           {popularPages.length > 0 && (
             <div className="rounded-2xl border border-[#ece2dc] bg-white p-5">
-              <p className="font-bold text-[#2D1A14] mb-3">Páginas más visitadas (Clarity)</p>
+              <p className="font-bold text-[#2D1A14] mb-1">Páginas más visitadas (Clarity)</p>
+              <p className="text-xs text-[#9e8a84] mb-3">Rojo = más caliente (más visitada) · Azul = más fría.</p>
               <div className="space-y-2.5">
                 {popularPages.map((p) => {
                   const max = popularPages[0].visits || 1
                   const pct = Math.round((p.visits / max) * 100)
+                  const color = tempColor(p.visits / max)
                   return (
                     <div key={p.url} className="flex items-center gap-3">
                       <span className="w-48 text-xs text-[#2D1A14] truncate flex-shrink-0">{p.url}</span>
                       <div className="flex-1 h-5 rounded-full bg-[#f3ece9] overflow-hidden">
-                        <div className="h-full rounded-full bg-[#A67163]" style={{ width: `${Math.max(pct, 6)}%` }} />
+                        <div className="h-full rounded-full transition-all" style={{ width: `${Math.max(pct, 6)}%`, backgroundColor: color }} />
                       </div>
                       <span className="w-12 text-right text-xs font-semibold text-[#6b5a54] flex-shrink-0">{p.visits}</span>
                     </div>
@@ -306,6 +320,67 @@ export function HeatmapsSection({ pageViews }: { pageViews: PageView[] }) {
           <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full" style={{ background: "#dc2626" }} /> Muy caliente</span>
           <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full" style={{ background: "#facc15" }} /> Templado</span>
           <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full" style={{ background: "#3b82f6" }} /> Frío</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Mapa visual de scroll: simula la página como una columna. Lo que la mayoría
+ * alcanza a ver se pinta CALIENTE (rojo→amarillo); lo que se pierden, FRÍO/gris.
+ * La línea marca el punto donde, en promedio, la gente deja de bajar.
+ */
+function ScrollDepthMap({ avgScroll }: { avgScroll: number | null }) {
+  const seen = avgScroll != null ? Math.max(2, Math.min(100, Math.round(avgScroll))) : null
+
+  let verdict: { title: string; tone: string; tip: string }
+  if (seen == null) verdict = { title: "Sin datos de scroll aún", tone: "text-[#9e8a84]", tip: "Necesita algo de tráfico para calcular hasta dónde baja la gente." }
+  else if (seen >= 75) verdict = { title: "Excelente alcance", tone: "text-red-600", tip: "La mayoría llega casi al final. Tus CTAs de abajo sí se ven." }
+  else if (seen >= 50) verdict = { title: "Alcance medio", tone: "text-orange-500", tip: `Cerca del ${100 - seen}% inferior se lo pierden. Pon lo importante antes del ${seen}%.` }
+  else if (seen >= 25) verdict = { title: "Alcance bajo", tone: "text-amber-500", tip: "Casi nadie ve la mitad de abajo. Mueve botones y oferta más arriba." }
+  else verdict = { title: "Alcance crítico", tone: "text-blue-600", tip: "Abandonan apenas entran. Revisa el primer pantallazo (hero, carga, precio)." }
+
+  return (
+    <div className="rounded-2xl border border-[#ece2dc] bg-white p-5">
+      <p className="font-bold text-[#2D1A14] mb-1">Mapa de scroll — ¿hasta dónde baja la gente?</p>
+      <p className="text-xs text-[#9e8a84] mb-4">
+        Simulación de tu página con el scroll promedio real de Clarity. La parte caliente es lo que sí ven; la fría/gris es lo que se pierden.
+      </p>
+      <div className="flex items-stretch gap-5">
+        {/* Maqueta de la página */}
+        <div className="relative w-28 sm:w-32 flex-shrink-0 rounded-xl overflow-hidden border border-[#e7dcd6]" style={{ height: 260 }}>
+          {/* Gradiente de calor completo */}
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, #dc2626 0%, #f97316 30%, #facc15 55%, #38bdf8 80%, #3b82f6 100%)" }} />
+          {/* Capa fría/gris sobre lo NO visto */}
+          {seen != null && (
+            <div className="absolute left-0 right-0 bottom-0 bg-[#1f2937]/70 backdrop-grayscale flex items-end justify-center pb-2" style={{ height: `${100 - seen}%` }}>
+              <span className="text-[10px] text-white/80 font-medium">no lo ven</span>
+            </div>
+          )}
+          {/* Línea de corte donde se detiene la mayoría */}
+          {seen != null && (
+            <div className="absolute left-0 right-0 flex items-center" style={{ top: `${seen}%` }}>
+              <div className="flex-1 border-t-2 border-dashed border-white" />
+              <span className="absolute -right-0 -translate-y-1/2 bg-white text-[10px] font-bold text-[#2D1A14] px-1.5 py-0.5 rounded-l-md shadow-sm">{seen}%</span>
+            </div>
+          )}
+          {/* Etiqueta superior */}
+          <span className="absolute top-1 left-0 right-0 text-center text-[10px] text-white font-medium drop-shadow">arriba (todos)</span>
+        </div>
+
+        {/* Lectura / interpretación */}
+        <div className="flex-1 flex flex-col justify-center">
+          <p className={`text-sm font-bold ${verdict.tone}`}>{verdict.title}</p>
+          {seen != null && (
+            <p className="text-3xl font-extrabold text-[#2D1A14] leading-none mt-1">{seen}%<span className="text-sm font-medium text-[#9e8a84] ml-1">de la página, en promedio</span></p>
+          )}
+          <p className="text-xs text-[#6b5a54] mt-2 leading-relaxed">{verdict.tip}</p>
+          <div className="flex items-center gap-3 mt-3 text-[10px] text-[#9e8a84]">
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm" style={{ background: "#dc2626" }} /> Lo ven todos</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm" style={{ background: "#3b82f6" }} /> Pocos llegan</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-[#1f2937]/70" /> No lo ven</span>
+          </div>
         </div>
       </div>
     </div>
