@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import crypto from "crypto"
-import { createServerClient } from "@/lib/supabase"
+import { supabase, createServerClient } from "@/lib/supabase"
 import { rateLimit } from "@/lib/rate-limit"
 
 const FREE_SHIPPING = 300_000
@@ -44,13 +44,20 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Precios REALES desde la base de datos (nunca confiar en el cliente) ──
+    // Los productos son de lectura pública (RLS products_public_read), así que
+    // usamos el cliente ANÓNIMO para validarlos. Antes esto usaba service-role
+    // y si la SUPABASE_SERVICE_ROLE_KEY estaba mal configurada, la validación
+    // fallaba con "No se pudieron validar los productos" aunque la tienda
+    // mostraba los productos sin problema. Con el cliente anónimo la validación
+    // es robusta frente a una service-role rota.
     const ids = [...new Set(requested.map((i) => i.product_id))]
-    const { data: products, error: prodErr } = await db
+    const { data: products, error: prodErr } = await supabase
       .from("products")
       .select("id, name, price, stock, is_active")
       .in("id", ids)
 
     if (prodErr || !products || products.length === 0) {
+      console.error("[checkout] validación de productos falló:", prodErr?.message)
       return NextResponse.json({ error: "No se pudieron validar los productos" }, { status: 400 })
     }
     const productMap = new Map(products.map((p) => [p.id, p]))
@@ -133,9 +140,13 @@ export async function POST(req: NextRequest) {
     const integrityString = `${reference}${amountInCents}${currency}${integritySecret}`
     const signature = crypto.createHash("sha256").update(integrityString).digest("hex")
 
-    // Guardar orden pendiente con montos AUTORITATIVOS del servidor
+    // Guardar orden pendiente con montos AUTORITATIVOS del servidor.
+    // Esto SÍ requiere service-role (RLS orders_service_only). Si la
+    // SUPABASE_SERVICE_ROLE_KEY está mal en producción, este insert falla y la
+    // orden nunca aparece en el panel de admin → registramos el error explícito
+    // para poder diagnosticarlo (antes el .catch silencioso lo ocultaba).
     try {
-      await db.from("orders").insert({
+      const { error: orderErr } = await db.from("orders").insert({
         stripe_session_id: reference,
         total: Math.round(total),
         status: "pending",
@@ -151,8 +162,12 @@ export async function POST(req: NextRequest) {
         discount_code: validatedCode,
         discount_amount,
       })
-    } catch {
-      console.error("[checkout] could not save pending order")
+      if (orderErr) {
+        console.error("[checkout] no se pudo guardar la orden pendiente:", orderErr.message,
+          "— revisa SUPABASE_SERVICE_ROLE_KEY en Vercel")
+      }
+    } catch (e) {
+      console.error("[checkout] excepción guardando orden pendiente:", e)
     }
 
     // URL de checkout Wompi
