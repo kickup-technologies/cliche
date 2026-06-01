@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useCart } from "@/context/cart-context"
 import { useFavorites } from "@/context/favorites-context"
+import { useSiteSettings } from "@/lib/use-site-settings"
 import type { Product } from "@/lib/supabase"
 
 function formatPrice(price: number) {
@@ -65,6 +66,11 @@ export function FeaturedProducts() {
   const sectionRef = useRef<HTMLDivElement>(null)
   const { addItem, openDrawer } = useCart()
   const { toggleFavorite, isFavorite } = useFavorites()
+  const settings = useSiteSettings()
+  const featuredTitle = settings.featured_title || "Productos Destacados"
+  const featuredSubtitle =
+    settings.featured_subtitle ||
+    "Los favoritos de nuestra comunidad, cuidadosamente seleccionados para tu bienestar."
 
   // Cargar productos reales desde Supabase via API
   useEffect(() => {
@@ -109,11 +115,19 @@ export function FeaturedProducts() {
     <section id="productos" ref={sectionRef} className="py-16 px-4 bg-background">
       <div className="container mx-auto max-w-6xl">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-serif font-bold text-foreground mb-4">
-            Productos Destacados
+          <h2
+            className="text-3xl md:text-4xl font-serif font-bold text-foreground mb-4"
+            data-cliche-edit="featured_title"
+            data-cliche-label="Título destacados"
+          >
+            {featuredTitle}
           </h2>
-          <p className="text-muted-foreground max-w-xl mx-auto">
-            Los favoritos de nuestra comunidad, cuidadosamente seleccionados para tu bienestar.
+          <p
+            className="text-muted-foreground max-w-xl mx-auto"
+            data-cliche-edit="featured_subtitle"
+            data-cliche-label="Subtítulo destacados"
+          >
+            {featuredSubtitle}
           </p>
         </div>
 

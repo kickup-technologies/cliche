@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { supabase, createServerClient } from '@/lib/supabase'
 
 // Claves públicas que el sitio (hero, barra, footer, whatsapp) puede leer.
 // Texto/toggles que el admin edita en la sección "Tienda".
@@ -17,6 +17,8 @@ const PUBLIC_KEYS = [
   'countdown_enabled',
   'stock_badge_enabled',
   'social_proof_enabled',
+  'featured_title',
+  'featured_subtitle',
 ] as const
 
 const DEFAULTS = {
@@ -33,13 +35,18 @@ const DEFAULTS = {
   countdown_enabled: true,
   stock_badge_enabled: true,
   social_proof_enabled: true,
+  featured_title: 'Productos Destacados',
+  featured_subtitle: 'Los favoritos de nuestra comunidad',
 }
 
 // GET /api/settings — devuelve todas las claves públicas de la tienda
 export async function GET() {
   try {
-    const db = createServerClient()
-    const { data, error } = await db
+    // Lectura con cliente ANÓNIMO: la policy RLS scoped `site_settings_scoped_public_read`
+    // permite leer SOLO las claves públicas (excluye meta_capi_token). Antes usaba
+    // service-role y si la SUPABASE_SERVICE_ROLE_KEY estaba mal en producción devolvía
+    // siempre los DEFAULTS, así que la tienda ignoraba lo que el admin configuraba.
+    const { data, error } = await supabase
       .from('site_settings')
       .select('key, value')
       .in('key', PUBLIC_KEYS as unknown as string[])
@@ -73,6 +80,8 @@ export async function GET() {
       countdown_enabled: raw.countdown_enabled !== 'false',
       stock_badge_enabled: raw.stock_badge_enabled !== 'false',
       social_proof_enabled: raw.social_proof_enabled !== 'false',
+      featured_title: raw.featured_title ?? DEFAULTS.featured_title,
+      featured_subtitle: raw.featured_subtitle ?? DEFAULTS.featured_subtitle,
     })
   } catch (err) {
     console.error('[settings GET]', err)

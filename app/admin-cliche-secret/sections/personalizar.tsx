@@ -51,6 +51,16 @@ const GROUPS: Group[] = [
     ],
   },
   {
+    id: "featured",
+    title: "Productos Destacados",
+    icon: Type,
+    desc: "Título y subtítulo de la sección de productos",
+    fields: [
+      { key: "featured_title", label: "Título", placeholder: "Productos Destacados" },
+      { key: "featured_subtitle", label: "Subtítulo", placeholder: "Los favoritos de nuestra comunidad", area: true },
+    ],
+  },
+  {
     id: "discount",
     title: "Descuento",
     icon: Tag,
@@ -111,13 +121,19 @@ export function PersonalizarSection({ settings, onSettingsUpdate }: Personalizar
   const [saved, setSaved] = useState(false)
   const [uploading, setUploading] = useState<number | null>(null)
   const [highlightedKey, setHighlightedKey] = useState<string | null>(null)
+  const [dirty, setDirty] = useState(false)
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const fieldRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  // Mientras se edita un texto EN SITIO no re-empujamos el preview (pisaría el
+  // cursor del usuario). El iframe ya muestra lo que escribe en tiempo real.
+  const inlineActiveRef = useRef(false)
 
   // Payload tipado que entiende useSiteSettings en la tienda.
   const buildPreview = useCallback(() => ({
     hero_title: local.hero_title || "",
     hero_subtitle: local.hero_subtitle || "",
+    featured_title: local.featured_title || "",
+    featured_subtitle: local.featured_subtitle || "",
     announcement_text: local.announcement_text || "",
     free_shipping_threshold: Number(local.free_shipping_threshold || 300000),
     discount_code: local.discount_code || "BIENVENIDA10",
@@ -132,6 +148,7 @@ export function PersonalizarSection({ settings, onSettingsUpdate }: Personalizar
   }), [local, slides])
 
   const pushPreview = useCallback(() => {
+    if (inlineActiveRef.current) return // no pisar el cursor mientras se escribe en sitio
     iframeRef.current?.contentWindow?.postMessage(
       { type: "cliche-preview-settings", settings: buildPreview() }, "*"
     )
@@ -139,10 +156,25 @@ export function PersonalizarSection({ settings, onSettingsUpdate }: Personalizar
 
   useEffect(() => { pushPreview() }, [pushPreview])
 
-  // El preview avisa qué bloque se clickeó → abrimos su grupo y enfocamos el campo.
+  // Mensajes desde el preview (overlay tipo Canva dentro del iframe).
   useEffect(() => {
     function onMessage(e: MessageEvent) {
-      if (e.data?.type === "cliche-edit-click" && e.data.key) focusField(e.data.key)
+      const d = e.data || {}
+      switch (d.type) {
+        case "cliche-edit-click":
+          if (d.key) focusField(d.key)
+          break
+        case "cliche-inline-start":
+          inlineActiveRef.current = true
+          break
+        case "cliche-inline-edit": // el usuario escribe sobre el bloque
+          if (d.key) { setField(d.key, d.value ?? ""); setDirty(true) }
+          break
+        case "cliche-inline-end": // soltó el bloque → sincronizamos el preview
+          inlineActiveRef.current = false
+          if (d.key) { setField(d.key, d.value ?? ""); setDirty(true) }
+          break
+      }
     }
     window.addEventListener("message", onMessage)
     return () => window.removeEventListener("message", onMessage)
@@ -171,6 +203,7 @@ export function PersonalizarSection({ settings, onSettingsUpdate }: Personalizar
 
   function setField(key: string, value: string) {
     setLocal(prev => ({ ...prev, [key]: value }))
+    setDirty(true)
   }
 
   async function uploadImage(file: File, index: number) {
@@ -195,6 +228,7 @@ export function PersonalizarSection({ settings, onSettingsUpdate }: Personalizar
         else next.push(url)
         return next
       })
+      setDirty(true)
     } finally {
       setUploading(null)
     }
@@ -208,10 +242,12 @@ export function PersonalizarSection({ settings, onSettingsUpdate }: Personalizar
       ;[next[i], next[j]] = [next[j], next[i]]
       return next
     })
+    setDirty(true)
   }
 
   function removeSlide(i: number) {
     setSlides(prev => prev.filter((_, idx) => idx !== i))
+    setDirty(true)
   }
 
   async function save() {
@@ -229,6 +265,7 @@ export function PersonalizarSection({ settings, onSettingsUpdate }: Personalizar
       }
       onSettingsUpdate(payload)
       setSaved(true)
+      setDirty(false)
       setTimeout(() => setSaved(false), 2500)
     } finally {
       setSaving(false)
@@ -265,10 +302,13 @@ export function PersonalizarSection({ settings, onSettingsUpdate }: Personalizar
             title="Recargar vista previa">
             <RefreshCw className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Refrescar</span>
           </button>
-          <button onClick={save} disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-[#2D1A14] text-white hover:bg-[#3D2A24] disabled:opacity-50 transition-all">
+          <button onClick={save} disabled={saving || (!dirty && !saved)}
+            className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50 ${dirty ? "bg-[#A67163] hover:bg-[#8B5A4A]" : "bg-[#2D1A14] hover:bg-[#3D2A24]"}`}>
             {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : saved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-            {saved ? "Guardado" : "Publicar"}
+            {saving ? "Guardando…" : saved ? "Guardado" : dirty ? "Publicar cambios" : "Publicar"}
+            {dirty && !saving && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-400 ring-2 ring-white" />
+            )}
           </button>
         </div>
       </div>

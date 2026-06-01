@@ -16,6 +16,8 @@ export interface SiteSettings {
   countdown_enabled: boolean
   stock_badge_enabled: boolean
   social_proof_enabled: boolean
+  featured_title: string
+  featured_subtitle: string
 }
 
 /**
