@@ -17,7 +17,7 @@ function formatPrice(price: number) {
 }
 
 export function CartDrawer() {
-  const { items, removeItem, updateQuantity, total, itemCount, checkout, isCheckingOut, isDrawerOpen, closeDrawer } = useCart()
+  const { items, removeItem, updateQuantity, total, itemCount, checkout, isCheckingOut, isDrawerOpen, closeDrawer, addItem } = useCart()
   const [recommendations, setRecommendations] = useState<Product[]>([])
 
   // Cargar recomendaciones — productos que NO están en el carrito
@@ -41,8 +41,6 @@ export function CartDrawer() {
   }, [isDrawerOpen])
 
   if (!isDrawerOpen) return null
-
-  const { addItem } = useCart()
 
   return (
     <>

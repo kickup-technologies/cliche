@@ -104,7 +104,9 @@ export function ProductDetail({ product, related }: Props) {
   // Configuración de Urgencia Inteligente (editable desde el admin → sección Urgencia)
   const settings = useSiteSettings()
   const urgency = parseUrgencyConfig(settings.urgency_config)
-  const [viewers, setViewers] = useState(() => Math.floor(Math.random() * 16) + 7)
+  // Valor determinista para SSR (evita hydration mismatch). El número real,
+  // aleatorio dentro del rango del admin, se siembra tras el montaje (efecto abajo).
+  const [viewers, setViewers] = useState(12)
   // Gallery: null = show 3D render, string = show that photo URL
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   // Urgency timer — 24h from first visit (sessionStorage persists across reloads)
@@ -167,7 +169,8 @@ export function ProductDetail({ product, related }: Props) {
   const spMin = urgency.social_proof.min
   const spMax = urgency.social_proof.max
   useEffect(() => {
-    setViewers((v) => Math.max(spMin, Math.min(spMax, v)))
+    // Tras el montaje (solo cliente) sembramos el número real aleatorio dentro del rango.
+    setViewers(Math.max(spMin, Math.min(spMax, Math.floor(Math.random() * 16) + 7)))
     const id = setInterval(() => {
       setViewers((v) => Math.max(spMin, Math.min(spMax, v + (Math.random() > 0.45 ? 1 : -1))))
     }, 18000)
