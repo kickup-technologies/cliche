@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import type { UrgencyConfig } from "@/lib/urgency"
 
 export interface SiteSettings {
   discount_percentage: number
@@ -18,6 +19,7 @@ export interface SiteSettings {
   social_proof_enabled: boolean
   featured_title: string
   featured_subtitle: string
+  urgency_config: UrgencyConfig
 }
 
 /**

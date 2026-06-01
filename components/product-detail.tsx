@@ -7,6 +7,8 @@ import dynamic from "next/dynamic"
 import { useCart } from "@/context/cart-context"
 import { useFavorites } from "@/context/favorites-context"
 import { useCAPI } from "@/lib/use-capi"
+import { useSiteSettings } from "@/lib/use-site-settings"
+import { parseUrgencyConfig, fillUrgency } from "@/lib/urgency"
 
 const SprayBottle3D = dynamic(
   () => import("@/components/spray-bottle-3d").then((m) => m.SprayBottle3D),
@@ -99,15 +101,20 @@ export function ProductDetail({ product, related }: Props) {
   const [qty, setQty] = useState(1)
   const [added, setAdded] = useState(false)
   const [activeTab, setActiveTab] = useState<"descripcion" | "uso" | "envio">("descripcion")
+  // Configuración de Urgencia Inteligente (editable desde el admin → sección Urgencia)
+  const settings = useSiteSettings()
+  const urgency = parseUrgencyConfig(settings.urgency_config)
   const [viewers, setViewers] = useState(() => Math.floor(Math.random() * 16) + 7)
   // Gallery: null = show 3D render, string = show that photo URL
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   // Urgency timer — 24h from first visit (sessionStorage persists across reloads)
   const [timeLeft, setTimeLeft] = useState({ h: 23, m: 59, s: 59 })
+  const countdownHours = urgency.countdown.hours
   useEffect(() => {
-    const KEY = `cliche_urgency_${product.id}`
+    // La duración (horas) la decide el admin. Si cambia, se reinicia la ventana.
+    const KEY = `cliche_urgency_${product.id}_${countdownHours}`
     const stored = sessionStorage.getItem(KEY)
-    const expiry = stored ? Number(stored) : Date.now() + 24 * 60 * 60 * 1000
+    const expiry = stored ? Number(stored) : Date.now() + countdownHours * 60 * 60 * 1000
     if (!stored) sessionStorage.setItem(KEY, String(expiry))
     const tick = () => {
       const diff = Math.max(0, expiry - Date.now())
@@ -120,7 +127,7 @@ export function ProductDetail({ product, related }: Props) {
     tick()
     const id = setInterval(tick, 1000)
     return () => clearInterval(id)
-  }, [product.id])
+  }, [product.id, countdownHours])
   const pad = (n: number) => String(n).padStart(2, "0")
   // Sticky CTA — show when page scrolled past the add-to-cart button
   const [showSticky, setShowSticky] = useState(false)
@@ -156,13 +163,16 @@ export function ProductDetail({ product, related }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Viewers en vivo — fluctúa cada 18s
+  // Viewers en vivo — fluctúa cada 18s dentro del rango configurado en el admin
+  const spMin = urgency.social_proof.min
+  const spMax = urgency.social_proof.max
   useEffect(() => {
+    setViewers((v) => Math.max(spMin, Math.min(spMax, v)))
     const id = setInterval(() => {
-      setViewers((v) => Math.max(4, Math.min(28, v + (Math.random() > 0.45 ? 1 : -1))))
+      setViewers((v) => Math.max(spMin, Math.min(spMax, v + (Math.random() > 0.45 ? 1 : -1))))
     }, 18000)
     return () => clearInterval(id)
-  }, [])
+  }, [spMin, spMax])
 
   // Fall-from-sky entrance — fires only once the GLB model is fully loaded
   const [fell, setFell] = useState(false)
@@ -287,9 +297,9 @@ export function ProductDetail({ product, related }: Props) {
                           </span>
                         </div>
                       )}
-                      {product.stock <= 10 && product.stock > 0 && (
+                      {urgency.low_stock.enabled && product.stock <= urgency.low_stock.threshold && product.stock > 0 && (
                         <div className={`absolute top-4 right-4 text-white text-xs font-bold px-3 py-1.5 rounded-full ${product.stock <= 3 ? "bg-red-600 animate-pulse" : "bg-orange-500"}`}>
-                          {product.stock <= 3 ? `¡Solo ${product.stock} quedan!` : "Pocas unidades"}
+                          {fillUrgency(urgency.low_stock.message, { stock: product.stock })}
                         </div>
                       )}
                     </>
@@ -351,13 +361,15 @@ export function ProductDetail({ product, related }: Props) {
                 transition: 'opacity 600ms ease 300ms, transform 600ms ease 300ms',
               }}
             >
-              {/* Live viewers */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="flex items-center gap-1.5 text-xs bg-green-50 text-green-700 font-medium px-2.5 py-1 rounded-full">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
-                  {viewers} personas viendo ahora
-                </span>
-              </div>
+              {/* Live viewers — prueba social en vivo (configurable en admin → Urgencia) */}
+              {urgency.social_proof.enabled && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="flex items-center gap-1.5 text-xs bg-green-50 text-green-700 font-medium px-2.5 py-1 rounded-full">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
+                    {fillUrgency(urgency.social_proof.message, { n: viewers })}
+                  </span>
+                </div>
+              )}
 
               {/* Title */}
               <h1 className="text-3xl lg:text-4xl font-serif font-bold text-foreground leading-tight">
@@ -381,13 +393,13 @@ export function ProductDetail({ product, related }: Props) {
                 )}
               </div>
 
-              {/* Urgency timer */}
-              {product.original_price && (
+              {/* Urgency timer — oferta por tiempo limitado (configurable en admin → Urgencia) */}
+              {urgency.countdown.enabled && product.original_price && (
                 <div className="flex items-center gap-3 bg-orange-50 border border-orange-200 rounded-2xl px-4 py-3">
                   <Timer className="w-5 h-5 text-orange-500 flex-shrink-0" />
                   <div className="flex-1">
-                    <p className="text-xs font-semibold text-orange-700 uppercase tracking-wide">Oferta por tiempo limitado</p>
-                    <p className="text-xs text-orange-600 mt-0.5">Termina en{" "}
+                    <p className="text-xs font-semibold text-orange-700 uppercase tracking-wide">{urgency.countdown.headline}</p>
+                    <p className="text-xs text-orange-600 mt-0.5">{urgency.countdown.message}{" "}
                       <span className="font-mono font-bold text-orange-800">{pad(timeLeft.h)}:{pad(timeLeft.m)}:{pad(timeLeft.s)}</span>
                     </p>
                   </div>

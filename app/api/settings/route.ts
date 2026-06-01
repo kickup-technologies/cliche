@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase, createServerClient } from '@/lib/supabase'
+import { parseUrgencyConfig, URGENCY_DEFAULTS } from '@/lib/urgency'
 
 // Claves públicas que el sitio (hero, barra, footer, whatsapp) puede leer.
 // Texto/toggles que el admin edita en la sección "Tienda".
@@ -19,6 +20,7 @@ const PUBLIC_KEYS = [
   'social_proof_enabled',
   'featured_title',
   'featured_subtitle',
+  'urgency_config',
 ] as const
 
 const DEFAULTS = {
@@ -37,6 +39,7 @@ const DEFAULTS = {
   social_proof_enabled: true,
   featured_title: 'Productos Destacados',
   featured_subtitle: 'Los favoritos de nuestra comunidad',
+  urgency_config: URGENCY_DEFAULTS,
 }
 
 // GET /api/settings — devuelve todas las claves públicas de la tienda
@@ -82,6 +85,7 @@ export async function GET() {
       social_proof_enabled: raw.social_proof_enabled !== 'false',
       featured_title: raw.featured_title ?? DEFAULTS.featured_title,
       featured_subtitle: raw.featured_subtitle ?? DEFAULTS.featured_subtitle,
+      urgency_config: parseUrgencyConfig(raw.urgency_config),
     })
   } catch (err) {
     console.error('[settings GET]', err)

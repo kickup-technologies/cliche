@@ -1,11 +1,60 @@
 "use client"
 import { useState } from "react"
-import { TrendingUp, TrendingDown, Minus, AlertCircle, Package } from "lucide-react"
+import Image from "next/image"
+import { TrendingUp, TrendingDown, Minus, AlertCircle, Package, Trophy, MousePointerClick, ImageOff } from "lucide-react"
 import { Order, PageView, Period, CONFIRMED, filterPeriod, filterPrevPeriod, fmt } from "../types"
 import { PeriodSelector } from "../components/period-selector"
 import type { Product } from "@/lib/supabase"
 
-export function ProductosStatsSection({ orders, products }: { orders: Order[]; products: Product[]; pageViews: PageView[] }) {
+function productImg(p?: { image_url?: string; image_urls?: string[] } | null): string | null {
+  if (!p) return null
+  if (p.image_url) return p.image_url
+  if (Array.isArray(p.image_urls) && p.image_urls[0]) return p.image_urls[0]
+  return null
+}
+
+/** Tarjeta visual de producto destacado con imagen + métricas. */
+function HighlightCard({
+  title, icon, accent, product, lines, empty,
+}: {
+  title: string
+  icon: React.ReactNode
+  accent: string
+  product?: Product | null
+  lines: string[]
+  empty: string
+}) {
+  const img = productImg(product)
+  return (
+    <div className="bg-white rounded-2xl border border-[#2D1A14]/8 p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <span className={`w-7 h-7 rounded-lg flex items-center justify-center ${accent}`}>{icon}</span>
+        <p className="text-xs text-[#2D1A14]/50 font-semibold uppercase tracking-wider">{title}</p>
+      </div>
+      {product ? (
+        <div className="flex items-center gap-4">
+          <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-[#F4EFE9] flex-shrink-0 flex items-center justify-center">
+            {img ? (
+              <Image src={img} alt={product.name} fill sizes="64px" className="object-cover" />
+            ) : (
+              <ImageOff className="w-6 h-6 text-[#2D1A14]/20" />
+            )}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-[#2D1A14] truncate">{product.name}</p>
+            {lines.map((l, i) => (
+              <p key={i} className="text-xs text-[#2D1A14]/45 mt-0.5">{l}</p>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <p className="text-sm text-[#2D1A14]/35 italic py-3">{empty}</p>
+      )}
+    </div>
+  )
+}
+
+export function ProductosStatsSection({ orders, products, pageViews }: { orders: Order[]; products: Product[]; pageViews: PageView[] }) {
   const [period, setPeriod] = useState<Period>("1m")
 
   const curr = filterPeriod(orders, period).filter(o => CONFIRMED.includes(o.status))
@@ -42,6 +91,17 @@ export function ProductosStatsSection({ orders, products }: { orders: Order[]; p
   const dormant = productRows.filter(p => p.is_active && p.units === 0)
   const totalRevenue = productRows.reduce((s, p) => s + p.revenue, 0)
 
+  // ── Producto más visitado (clicks reales en su página /productos/<slug>) ──
+  const visitsBySlug: Record<string, number> = {}
+  for (const v of pageViews || []) {
+    const m = v.path?.match(/^\/productos\/([^/?#]+)/)
+    if (m) visitsBySlug[m[1]] = (visitsBySlug[m[1]] || 0) + 1
+  }
+  const mostVisited = [...products]
+    .map(p => ({ p, visits: visitsBySlug[p.slug] || 0 }))
+    .sort((a, b) => b.visits - a.visits)[0]
+  const mostVisitedProduct = mostVisited && mostVisited.visits > 0 ? mostVisited.p : null
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -50,6 +110,37 @@ export function ProductosStatsSection({ orders, products }: { orders: Order[]; p
           <p className="text-sm text-[#2D1A14]/50 mt-0.5">Rendimiento por producto y velocidad de venta</p>
         </div>
         <PeriodSelector value={period} onChange={setPeriod} />
+      </div>
+
+      {/* Análisis de tienda — destacados con imagen + números */}
+      <div>
+        <p className="text-xs text-[#2D1A14]/45 font-semibold uppercase tracking-wider mb-3">Análisis de tienda</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <HighlightCard
+            title="Más vendido"
+            icon={<Trophy className="w-4 h-4 text-emerald-600" />}
+            accent="bg-emerald-50"
+            product={bestProduct && bestProduct.units > 0 ? bestProduct : null}
+            lines={bestProduct ? [`${bestProduct.units} uds vendidas`, `${fmt(bestProduct.revenue)} en ingresos`] : []}
+            empty="Aún no hay ventas en el periodo"
+          />
+          <HighlightCard
+            title="Menos vendido"
+            icon={<TrendingDown className="w-4 h-4 text-orange-600" />}
+            accent="bg-orange-50"
+            product={worstProduct || null}
+            lines={worstProduct ? [`${worstProduct.units} uds vendidas`, `${fmt(worstProduct.revenue)} en ingresos`] : []}
+            empty="Sin productos activos"
+          />
+          <HighlightCard
+            title="Más clickeado"
+            icon={<MousePointerClick className="w-4 h-4 text-blue-600" />}
+            accent="bg-blue-50"
+            product={mostVisitedProduct}
+            lines={mostVisitedProduct ? [`${mostVisited.visits} visitas a su página`, "Más interés que ninguno"] : []}
+            empty="Sin visitas registradas todavía"
+          />
+        </div>
       </div>
 
       {/* Summary cards */}
