@@ -7,6 +7,7 @@ import { CartDrawer } from '@/components/cart-drawer'
 import { ScrollRestoration } from '@/components/scroll-restoration'
 import { PageTracker } from '@/components/page-tracker'
 import { EditOverlay } from '@/components/edit-overlay'
+import { CookieConsent } from '@/components/cookie-consent'
 import Script from 'next/script'
 import './globals.css'
 
@@ -160,6 +161,7 @@ export default function RootLayout({
           </FavoritesProvider>
         </CartProvider>
         <EditOverlay />
+        <CookieConsent />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
