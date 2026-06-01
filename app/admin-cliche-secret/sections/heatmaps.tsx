@@ -5,6 +5,7 @@ import {
   Flame, Snowflake, MousePointerClick, Eye, Activity, ThermometerSun,
   Users, MousePointer2, ArrowDownWideNarrow, Timer, AlertOctagon, Zap,
   Loader2, KeyRound, ExternalLink,
+  Smartphone, Monitor, MoveVertical, FileText,
 } from "lucide-react"
 import { adminFetch } from "@/lib/admin-client"
 import type { PageView } from "../types"
@@ -391,7 +392,7 @@ function ScrollDepthMap({ avgScroll }: { avgScroll: number | null }) {
 }
 
 // ── Mapa de calor PROPIO: clics reales pintados sobre una maqueta ───────────
-type ClickRow = { path: string; label: string; xr: number; yr: number; created_at: string }
+type ClickRow = { path: string; label: string; xr: number; yr: number; vw?: number; created_at: string }
 type ClicksResp = { ok: boolean; total?: number; byPath?: Record<string, number>; clicks?: ClickRow[]; error?: string }
 
 function RealClickHeatmap() {
@@ -409,10 +410,26 @@ function RealClickHeatmap() {
     return () => { active = false }
   }, [])
 
-  const clicks = data?.clicks ?? []
-  const paths = Object.entries(data?.byPath ?? {}).sort((a, b) => b[1] - a[1])
+  const rawClicks = data?.clicks ?? []
+  // Separamos los eventos sintéticos de scroll-depth (label "__scroll") de los
+  // clics reales: el scroll no debe pintar manchas ni entrar en el ranking.
+  const clicks = rawClicks.filter((c) => c.label !== "__scroll")
+  const scrollRows = rawClicks.filter((c) => c.label === "__scroll")
+  // byPath cuenta TODO (incluye __scroll); reconstruimos conteo solo de clics reales
+  const realByPath: Record<string, number> = {}
+  for (const c of clicks) realByPath[c.path] = (realByPath[c.path] || 0) + 1
+  const paths = Object.entries(realByPath).sort((a, b) => b[1] - a[1])
   const activePath = path || paths[0]?.[0] || ""
   const shown = clicks.filter((c) => c.path === activePath)
+
+  // ── Métricas globales (todas las páginas) ──────────────────────────────
+  const mobile = clicks.filter((c) => (c.vw ?? 9999) < 768).length
+  const desktop = clicks.length - mobile
+  const pctMobile = clicks.length ? Math.round((mobile / clicks.length) * 100) : 0
+  const distinctPages = paths.length
+  const avgScroll = scrollRows.length
+    ? Math.round((scrollRows.reduce((s, r) => s + (r.yr || 0), 0) / scrollRows.length) * 100)
+    : null
 
   // Ranking de elementos más clicados (datos reales)
   const labelMap = new Map<string, number>()
@@ -460,6 +477,28 @@ function RealClickHeatmap() {
         </div>
       ) : (
         <>
+          {/* Resumen global: dispositivo, páginas y profundidad de scroll */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4">
+            <div className="rounded-xl border border-[#ece2dc] bg-[#faf7f5] p-3">
+              <div className="flex items-center gap-1.5 text-[#A67163] mb-1"><MousePointerClick className="w-3.5 h-3.5" /><span className="text-[10px] font-medium text-[#9e8a84] uppercase tracking-wide">Clics totales</span></div>
+              <p className="text-xl font-bold text-[#2D1A14]">{clicks.length}</p>
+            </div>
+            <div className="rounded-xl border border-[#ece2dc] bg-[#faf7f5] p-3">
+              <div className="flex items-center gap-1.5 text-[#A67163] mb-1"><Smartphone className="w-3.5 h-3.5" /><span className="text-[10px] font-medium text-[#9e8a84] uppercase tracking-wide">Móvil vs Escritorio</span></div>
+              <p className="text-xl font-bold text-[#2D1A14]">{pctMobile}%<span className="text-xs font-normal text-[#9e8a84]"> móvil</span></p>
+              <p className="text-[10px] text-[#9e8a84] flex items-center gap-1 mt-0.5"><Smartphone className="w-3 h-3" />{mobile} · <Monitor className="w-3 h-3" />{desktop}</p>
+            </div>
+            <div className="rounded-xl border border-[#ece2dc] bg-[#faf7f5] p-3">
+              <div className="flex items-center gap-1.5 text-[#A67163] mb-1"><FileText className="w-3.5 h-3.5" /><span className="text-[10px] font-medium text-[#9e8a84] uppercase tracking-wide">Páginas con clics</span></div>
+              <p className="text-xl font-bold text-[#2D1A14]">{distinctPages}</p>
+            </div>
+            <div className="rounded-xl border border-[#ece2dc] bg-[#faf7f5] p-3">
+              <div className="flex items-center gap-1.5 text-[#A67163] mb-1"><MoveVertical className="w-3.5 h-3.5" /><span className="text-[10px] font-medium text-[#9e8a84] uppercase tracking-wide">Scroll promedio</span></div>
+              <p className="text-xl font-bold text-[#2D1A14]">{avgScroll != null ? `${avgScroll}%` : "—"}</p>
+              {avgScroll != null && <p className="text-[10px] text-[#9e8a84] mt-0.5">de la página que ven</p>}
+            </div>
+          </div>
+
           {/* Selector de página */}
           {paths.length > 1 && (
             <div className="flex flex-wrap gap-1.5 mb-4">

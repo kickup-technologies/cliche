@@ -70,12 +70,50 @@ export function PageTracker() {
     }
     window.addEventListener("click", onClick, true)
 
+    // ── Captura de SCROLL-DEPTH ────────────────────────────────────────────
+    // Mide hasta dónde baja el visitante (0..1) y lo manda UNA vez al salir,
+    // como evento sintético (label "__scroll", yr = profundidad). Reutiliza la
+    // tabla click_events para no requerir migración. Respeta consentimiento.
+    let maxDepth = 0
+    let depthSent = false
+    const onScroll = () => {
+      const doc = document.documentElement
+      const scrollable = doc.scrollHeight - window.innerHeight
+      const depth = scrollable > 0 ? (window.scrollY || doc.scrollTop) / scrollable : 1
+      if (depth > maxDepth) maxDepth = Math.min(1, depth)
+    }
+    const sendDepth = () => {
+      if (depthSent) return
+      const consent = getConsent()
+      if (!consent || !consent.analytics) return
+      depthSent = true
+      const vw = window.innerWidth || 1
+      const vh = window.innerHeight || 1
+      try {
+        const body = JSON.stringify({ path: pathname, label: "__scroll", xr: 0, yr: maxDepth, vw, vh })
+        // sendBeacon sobrevive al cierre de la pestaña mejor que fetch
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon("/api/track/click", new Blob([body], { type: "application/json" }))
+        } else {
+          fetch("/api/track/click", { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true }).catch(() => {})
+        }
+      } catch { /* noop */ }
+    }
+    const onVisibility = () => { if (document.visibilityState === "hidden") sendDepth() }
+    window.addEventListener("scroll", onScroll, { passive: true })
+    document.addEventListener("visibilitychange", onVisibility)
+    window.addEventListener("pagehide", sendDepth)
+
     // Escuchar si el usuario da consentimiento en esta misma visita
     const onConsent = () => track()
     window.addEventListener("cliche-consent-change", onConsent)
     return () => {
+      sendDepth()
       window.removeEventListener("cliche-consent-change", onConsent)
       window.removeEventListener("click", onClick, true)
+      window.removeEventListener("scroll", onScroll)
+      document.removeEventListener("visibilitychange", onVisibility)
+      window.removeEventListener("pagehide", sendDepth)
     }
   }, [pathname])
 

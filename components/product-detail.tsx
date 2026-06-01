@@ -487,6 +487,7 @@ export function ProductDetail({ product, related }: Props) {
                 <div ref={ctaWrapRef} className="space-y-3">
                   <Button
                     size="lg"
+                    data-heat="Agregar al carrito"
                     className="w-full h-14 text-base font-semibold rounded-2xl"
                     onClick={handleAdd}
                     disabled={product.stock === 0}
@@ -500,6 +501,7 @@ export function ProductDetail({ product, related }: Props) {
                   <Button
                     size="lg"
                     variant="outline"
+                    data-heat="Comprar ahora"
                     className="w-full h-12 text-sm font-semibold rounded-2xl border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
                     onClick={handleBuyNow}
                     disabled={product.stock === 0 || isCheckingOut}

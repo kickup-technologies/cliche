@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     const sb = createServerClient()
     let q = sb
       .from("click_events")
-      .select("path,label,xr,yr,created_at")
+      .select("path,label,xr,yr,vw,created_at")
       .gte("created_at", since)
       .order("created_at", { ascending: false })
       .limit(5000)
