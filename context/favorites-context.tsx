@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
 import type { Product } from "@/lib/supabase"
+import { useCAPI } from "@/lib/use-capi"
 
 interface FavoritesContextType {
   ids: Set<string>
@@ -16,6 +17,7 @@ const FavoritesContext = createContext<FavoritesContextType | null>(null)
 export function FavoritesProvider({ children }: { children: ReactNode }) {
   const [ids, setIds] = useState<Set<string>>(new Set())
   const [products, setProducts] = useState<Product[]>([])
+  const { track } = useCAPI()
 
   // Hydrate from localStorage
   useEffect(() => {
@@ -43,10 +45,21 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
       } else {
         next.add(product.id)
         setProducts((ps) => [...ps, product])
+        // ── Meta Pixel + CAPI: AddToWishlist (solo al AGREGAR) ──
+        track({
+          event_name: "AddToWishlist",
+          custom_data: {
+            currency: "COP",
+            value: product.price,
+            content_ids: [product.id],
+            content_name: product.name,
+            content_type: "product",
+          },
+        })
       }
       return next
     })
-  }, [])
+  }, [track])
 
   const isFavorite = useCallback((productId: string) => ids.has(productId), [ids])
 

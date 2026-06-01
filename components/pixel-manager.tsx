@@ -14,6 +14,7 @@ import { getConsent } from "@/components/cookie-consent"
 const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || "2074090273450880"
 const GA4_ID = process.env.NEXT_PUBLIC_GA4_ID || ""
 const TIKTOK_PIXEL_ID = process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID || ""
+const CLARITY_ID = process.env.NEXT_PUBLIC_CLARITY_ID || ""
 
 function injectScript(src: string, id: string) {
   if (document.getElementById(id)) return
@@ -74,12 +75,31 @@ function loadTikTok() {
   ;(ttq.page as () => void)()
 }
 
+function loadClarity() {
+  if (!CLARITY_ID) return
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const w = window as any
+  if (w.clarity) return
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ;(function (c: any, l: Document, a: string, r: string, i: string) {
+    c[a] = c[a] || function (...args: unknown[]) { (c[a].q = c[a].q || []).push(args) }
+    const t = l.createElement(r) as HTMLScriptElement
+    t.async = true
+    t.src = "https://www.clarity.ms/tag/" + i
+    const y = l.getElementsByTagName(r)[0]
+    y.parentNode?.insertBefore(t, y)
+  })(w, document, "clarity", "script", CLARITY_ID)
+}
+
 export function PixelManager() {
   useEffect(() => {
     const apply = () => {
       const consent = getConsent()
       if (!consent) return
-      if (consent.analytics && GA4_ID) loadGA4()
+      if (consent.analytics) {
+        if (GA4_ID) loadGA4()
+        if (CLARITY_ID) loadClarity() // mapas de calor + grabaciones de sesión
+      }
       if (consent.marketing) {
         if (META_PIXEL_ID) loadMetaPixel()
         if (TIKTOK_PIXEL_ID) loadTikTok()

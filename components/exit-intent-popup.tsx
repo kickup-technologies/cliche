@@ -5,6 +5,7 @@ import { X, ShoppingBag, ShoppingCart, Sparkles, Leaf, CheckCircle } from "lucid
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useCart } from "@/context/cart-context"
+import { useCAPI } from "@/lib/use-capi"
 
 export function ExitIntentPopup() {
   const [isOpen, setIsOpen] = useState(false)
@@ -13,6 +14,7 @@ export function ExitIntentPopup() {
   const [isLoading, setIsLoading] = useState(false)
   const [discountCode, setDiscountCode] = useState("QUEDATE15")
   const { items } = useCart()
+  const { track } = useCAPI()
 
   const openPopup = useCallback(() => {
     // Coordinación: si CUALQUIER popup de captura ya apareció esta sesión, no mostrar otro
@@ -77,6 +79,12 @@ export function ExitIntentPopup() {
       const data = await res.json()
       if (data.discount_code) setDiscountCode(data.discount_code)
       setIsSubmitted(true)
+      // ── Meta Pixel + CAPI: Lead (suscripción al intentar salir) ──
+      track({
+        event_name: "Lead",
+        custom_data: { content_name: "exit_intent" },
+        user_data: { raw_email: email },
+      })
     } catch {
       console.error("Subscribe error")
     } finally {

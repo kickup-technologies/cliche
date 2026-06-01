@@ -14,7 +14,18 @@ declare global {
 }
 
 export interface CAPIEventPayload {
-  event_name: 'PageView' | 'ViewContent' | 'AddToCart' | 'InitiateCheckout' | 'Purchase'
+  event_name:
+    | 'PageView'
+    | 'ViewContent'
+    | 'AddToCart'
+    | 'AddToWishlist'
+    | 'InitiateCheckout'
+    | 'AddPaymentInfo'
+    | 'Purchase'
+    | 'Lead'
+    | 'Subscribe'
+    | 'CompleteRegistration'
+    | 'Search'
   custom_data?: {
     currency?: string
     value?: number

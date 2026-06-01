@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { X, Gift, Sparkles, Truck, ShieldCheck, Leaf, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useCAPI } from "@/lib/use-capi"
 
 export function SubscriptionPopup() {
   const [isOpen, setIsOpen] = useState(false)
@@ -11,6 +12,7 @@ export function SubscriptionPopup() {
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [discountCode, setDiscountCode] = useState("PRIMERA20")
+  const { track } = useCAPI()
 
   const openPopup = useCallback(() => {
     // Coordinación: si CUALQUIER popup de captura ya apareció esta sesión, no mostrar otro
@@ -58,6 +60,12 @@ export function SubscriptionPopup() {
       const data = await res.json()
       if (data.discount_code) setDiscountCode(data.discount_code)
       setIsSubmitted(true)
+      // ── Meta Pixel + CAPI: Lead (suscripción vía popup) ──
+      track({
+        event_name: "Lead",
+        custom_data: { content_name: "popup_bienvenida" },
+        user_data: { raw_email: email },
+      })
       setTimeout(handleClose, 3500)
     } catch {
       console.error("Error subscribing")

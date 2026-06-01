@@ -5,6 +5,7 @@ import { ArrowRight, Check, Gift, Users, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollAnimation } from "@/components/scroll-animation"
+import { useCAPI } from "@/lib/use-capi"
 
 export function Newsletter() {
   const [email, setEmail] = useState("")
@@ -12,6 +13,7 @@ export function Newsletter() {
   const [isLoading, setIsLoading] = useState(false)
   const [discountCode, setDiscountCode] = useState("BIENVENIDA10")
   const [discountPct, setDiscountPct] = useState(10)
+  const { track } = useCAPI()
 
   useEffect(() => {
     fetch("/api/settings")
@@ -33,6 +35,12 @@ export function Newsletter() {
       const data = await res.json()
       if (data.discount_code) setDiscountCode(data.discount_code)
       setIsSubmitted(true)
+      // ── Meta Pixel + CAPI: Lead (suscripción al newsletter) ──
+      track({
+        event_name: "Lead",
+        custom_data: { content_name: "newsletter" },
+        user_data: { raw_email: email },
+      })
     } catch {
       console.error("Error subscribing")
     } finally {

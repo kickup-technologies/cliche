@@ -5,6 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useCart } from "@/context/cart-context"
+import { useCAPI } from "@/lib/use-capi"
 import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Lock, Truck, Leaf, RotateCcw, Tag, ChevronDown, ChevronUp, Mail, RefreshCw, Phone, MapPin, User, ShieldCheck } from "lucide-react"
 
 function fmt(n: number) {
@@ -37,6 +38,7 @@ export default function CheckoutPage() {
   const [addressDept, setAddressDept] = useState("")
   const [addressNotes, setAddressNotes] = useState("")
   const router = useRouter()
+  const { track } = useCAPI()
 
   useEffect(() => {
     const stored = sessionStorage.getItem("checkout-back-url")
@@ -109,6 +111,22 @@ export default function CheckoutPage() {
     }
     setIsLoading(true)
     setError(null)
+    // ── Meta Pixel + CAPI: AddPaymentInfo (datos completos, va a pagar) ──
+    // Advanced Matching con email/teléfono → mejor match rate en retargeting
+    track({
+      event_name: "AddPaymentInfo",
+      custom_data: {
+        currency: "COP",
+        value: total,
+        content_ids: selectedItems.map((i) => i.product.id),
+        content_type: "product",
+        num_items: selectedItems.reduce((n, i) => n + i.quantity, 0),
+      },
+      user_data: {
+        raw_email: customerEmail.trim(),
+        ...(customerPhone.trim() && { raw_phone: customerPhone.trim() }),
+      },
+    })
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
