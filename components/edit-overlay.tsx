@@ -49,6 +49,70 @@ export function EditOverlay() {
       }
     }
 
+    // Claves de texto que se pueden editar EN SITIO (contentEditable), estilo
+    // Canva: clicas el texto y escribes directamente sobre el bloque.
+    const INLINE_KEYS = new Set([
+      "hero_title", "hero_subtitle", "announcement_text",
+      "featured_title", "featured_subtitle",
+    ])
+
+    let inlineEl: HTMLElement | null = null
+    let cleanupInline: (() => void) | null = null
+
+    const endInline = () => {
+      cleanupInline?.()
+      cleanupInline = null
+      inlineEl = null
+    }
+
+    const startInline = (el: HTMLElement, key: string) => {
+      if (inlineEl === el) { el.focus(); return }
+      endInline()
+      inlineEl = el
+      el.setAttribute("contenteditable", "plaintext-only")
+      el.setAttribute("spellcheck", "false")
+      el.style.outline = "none"
+      el.style.cursor = "text"
+      el.focus()
+      // Caret al final del texto
+      const sel = window.getSelection()
+      const range = document.createRange()
+      range.selectNodeContents(el)
+      range.collapse(false)
+      sel?.removeAllRanges()
+      sel?.addRange(range)
+      window.parent?.postMessage({ type: "cliche-inline-start", key }, "*")
+
+      const onInput = () => {
+        window.parent?.postMessage({ type: "cliche-inline-edit", key, value: el.innerText }, "*")
+      }
+      const onKeyDown = (ev: KeyboardEvent) => {
+        if (ev.key === "Enter" && !ev.shiftKey) { ev.preventDefault(); el.blur() }
+        if (ev.key === "Escape") { ev.preventDefault(); el.blur() }
+      }
+      const onBlur = () => {
+        const value = el.innerText
+        el.removeAttribute("contenteditable")
+        el.removeAttribute("spellcheck")
+        el.style.cursor = ""
+        el.removeEventListener("input", onInput)
+        el.removeEventListener("keydown", onKeyDown)
+        el.removeEventListener("blur", onBlur)
+        window.parent?.postMessage({ type: "cliche-inline-end", key, value }, "*")
+      }
+      el.addEventListener("input", onInput)
+      el.addEventListener("keydown", onKeyDown)
+      el.addEventListener("blur", onBlur)
+      cleanupInline = () => {
+        el.removeAttribute("contenteditable")
+        el.removeAttribute("spellcheck")
+        el.style.cursor = ""
+        el.removeEventListener("input", onInput)
+        el.removeEventListener("keydown", onKeyDown)
+        el.removeEventListener("blur", onBlur)
+      }
+    }
+
     const findEditable = (t: EventTarget | null): HTMLElement | null => {
       let el = t as HTMLElement | null
       while (el && el !== document.body) {
@@ -59,20 +123,25 @@ export function EditOverlay() {
     }
 
     const onMove = (e: MouseEvent) => {
+      if (inlineEl) return // mientras se edita en sitio no movemos el hover
       const el = findEditable(e.target)
       setHover(el ? rectOf(el) : null)
     }
 
     const onClick = (e: MouseEvent) => {
       const el = findEditable(e.target)
-      if (!el) return
+      // Click fuera de un bloque editable → cerrar edición en sitio
+      if (!el) { if (inlineEl) inlineEl.blur(); return }
       // En modo edición, un click selecciona el bloque (no navega ni compra).
       e.preventDefault()
       e.stopPropagation()
       const key = el.getAttribute("data-cliche-edit")!
       selectedKeyRef.current = key
       setSelected(rectOf(el))
+      setHover(null)
       window.parent?.postMessage({ type: "cliche-edit-click", key }, "*")
+      // Texto → edición directa sobre el bloque. Otros (imágenes) → panel lateral.
+      if (INLINE_KEYS.has(key)) startInline(el, key)
     }
 
     const onMsg = (e: MessageEvent) => {
@@ -105,6 +174,7 @@ export function EditOverlay() {
     window.addEventListener("resize", refresh)
 
     return () => {
+      endInline()
       document.removeEventListener("mousemove", onMove, true)
       document.removeEventListener("click", onClick, true)
       window.removeEventListener("message", onMsg)
@@ -137,7 +207,7 @@ export function EditOverlay() {
           fontFamily: "system-ui, sans-serif",
         }}
       >
-        ✏️ Haz clic en cualquier bloque para editarlo
+        ✏️ Clic en un texto para escribir aquí mismo · Enter para confirmar
       </div>
     </>
   )

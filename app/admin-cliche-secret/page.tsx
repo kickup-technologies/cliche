@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react"
 import { supabase } from "@/lib/supabase"
 import {
   LayoutDashboard, TrendingUp, BarChart3, Star, ShoppingBag, Zap,
-  Package, Settings, Lock, RefreshCw, AlertCircle, Eye, LogOut, Menu, X, Paintbrush,
+  Package, Settings, Lock, RefreshCw, AlertCircle, Eye, LogOut, Menu, X, Paintbrush, Flame,
 } from "lucide-react"
 import type { Product } from "@/lib/supabase"
 import { Order, PageView } from "./types"
@@ -21,8 +21,9 @@ import { UrgenciaSection } from "./sections/urgencia"
 import { InventarioSection } from "./sections/inventario"
 import { TiendaSection } from "./sections/tienda"
 import { PersonalizarSection } from "./sections/personalizar"
+import { HeatmapsSection } from "./sections/heatmaps"
 
-type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "pedidos" | "urgencia" | "inventario" | "tienda" | "personalizar"
+type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "heatmaps" | "pedidos" | "urgencia" | "inventario" | "tienda" | "personalizar"
 
 interface Setting { key: string; value: string }
 
@@ -34,6 +35,7 @@ const SIDEBAR = [
     { id: "ventas",          label: "Ventas",    icon: TrendingUp },
     { id: "trafico",         label: "Tráfico",   icon: BarChart3 },
     { id: "productos-stats", label: "Productos", icon: Star },
+    { id: "heatmaps",        label: "Mapas de Calor", icon: Flame },
   ]},
   { section: "OPERACIONES", items: [
     { id: "pedidos",  label: "Pedidos",              icon: ShoppingBag },
@@ -288,6 +290,7 @@ export default function AdminPage() {
           <a
             href="/"
             target="_blank"
+            rel="noopener noreferrer"
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-[#2D1A14]/60 hover:bg-[#2D1A14]/5 hover:text-[#2D1A14] transition-all"
           >
             <Eye className="w-4 h-4" /> Ver tienda
@@ -338,6 +341,9 @@ export default function AdminPage() {
           )}
           {activeSection === "productos-stats" && (
             <ProductosStatsSection orders={orders} products={products} pageViews={pageViews} />
+          )}
+          {activeSection === "heatmaps" && (
+            <HeatmapsSection pageViews={pageViews} />
           )}
           {activeSection === "pedidos" && (
             <PedidosSection orders={orders} onOrdersUpdate={handleOrderUpdate} />

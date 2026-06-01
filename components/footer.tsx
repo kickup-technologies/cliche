@@ -36,6 +36,7 @@ const footerLinks = {
   legal: [
     { name: "Términos y Condiciones", href: "/terminos" },
     { name: "Política de Privacidad", href: "/privacidad" },
+    { name: "Política de Cookies", href: "/cookies" },
   ],
 }
 

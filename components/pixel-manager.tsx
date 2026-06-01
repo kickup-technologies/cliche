@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
+import { usePathname } from "next/navigation"
 import { getConsent } from "@/components/cookie-consent"
 
 /**
@@ -14,7 +15,7 @@ import { getConsent } from "@/components/cookie-consent"
 const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || "2074090273450880"
 const GA4_ID = process.env.NEXT_PUBLIC_GA4_ID || ""
 const TIKTOK_PIXEL_ID = process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID || ""
-const CLARITY_ID = process.env.NEXT_PUBLIC_CLARITY_ID || ""
+const CLARITY_ID = process.env.NEXT_PUBLIC_CLARITY_ID || "x02j83u050"
 
 function injectScript(src: string, id: string) {
   if (document.getElementById(id)) return
@@ -92,7 +93,13 @@ function loadClarity() {
 }
 
 export function PixelManager() {
+  const pathname = usePathname()
+  const isAdminArea = pathname?.startsWith("/admin")
+
   useEffect(() => {
+    // No cargar pixels en el panel admin: evita ensuciar los datos de Meta
+    // con la navegación interna del administrador.
+    if (isAdminArea) return
     const apply = () => {
       const consent = getConsent()
       if (!consent) return
@@ -110,7 +117,7 @@ export function PixelManager() {
 
     window.addEventListener("cliche-consent-change", apply)
     return () => window.removeEventListener("cliche-consent-change", apply)
-  }, [])
+  }, [isAdminArea])
 
   return null
 }
