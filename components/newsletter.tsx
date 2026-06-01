@@ -13,13 +13,27 @@ export function Newsletter() {
   const [isLoading, setIsLoading] = useState(false)
   const [discountCode, setDiscountCode] = useState("BIENVENIDA10")
   const [discountPct, setDiscountPct] = useState(10)
+  const DEFAULT_SUBTITLE = "Suscríbete y recibe tu código de descuento al instante, más tips de aromaterapia y lanzamientos exclusivos."
+  const [subtitle, setSubtitle] = useState(DEFAULT_SUBTITLE)
   const { track } = useCAPI()
 
   useEffect(() => {
     fetch("/api/settings")
       .then((r) => r.json())
-      .then((d) => { setDiscountPct(d.discount_percentage); setDiscountCode(d.discount_code) })
+      .then((d) => {
+        setDiscountPct(d.discount_percentage)
+        setDiscountCode(d.discount_code)
+        if (d.newsletter_subtitle) setSubtitle(d.newsletter_subtitle)
+      })
       .catch(() => {})
+    // Reflejar en vivo los cambios del Editor Visual (preview)
+    function onMessage(e: MessageEvent) {
+      if (e.data?.type === "cliche-preview-settings" && e.data.settings?.newsletter_subtitle != null) {
+        setSubtitle(e.data.settings.newsletter_subtitle || DEFAULT_SUBTITLE)
+      }
+    }
+    window.addEventListener("message", onMessage)
+    return () => window.removeEventListener("message", onMessage)
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -71,8 +85,12 @@ export function Newsletter() {
                 <h2 className="text-2xl md:text-3xl font-serif font-bold text-foreground mb-3">
                   {discountPct}% OFF en tu primera compra
                 </h2>
-                <p className="text-muted-foreground mb-6 text-sm">
-                  Suscríbete y recibe tu código de descuento al instante, más tips de aromaterapia y lanzamientos exclusivos.
+                <p
+                  data-cliche-edit="newsletter_subtitle"
+                  data-cliche-label="Subtítulo newsletter"
+                  className="text-muted-foreground mb-6 text-sm"
+                >
+                  {subtitle}
                 </p>
 
                 {!isSubmitted ? (

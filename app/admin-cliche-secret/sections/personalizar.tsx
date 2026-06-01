@@ -61,6 +61,17 @@ const GROUPS: Group[] = [
     ],
   },
   {
+    id: "secciones",
+    title: "Secciones de la página",
+    icon: Type,
+    desc: "Textos que aparecen más abajo del inicio",
+    fields: [
+      { key: "cta_title", label: "Empresas · Título", placeholder: "¿Tienes una marca? Creamos tu identidad olfativa", area: true },
+      { key: "cta_subtitle", label: "Empresas · Subtítulo", placeholder: "Diseñamos aromas exclusivos...", area: true },
+      { key: "newsletter_subtitle", label: "Newsletter · Subtítulo", placeholder: "Suscríbete y recibe tu código...", area: true },
+    ],
+  },
+  {
     id: "discount",
     title: "Descuento",
     icon: Tag,
@@ -134,6 +145,9 @@ export function PersonalizarSection({ settings, onSettingsUpdate }: Personalizar
     hero_subtitle: local.hero_subtitle || "",
     featured_title: local.featured_title || "",
     featured_subtitle: local.featured_subtitle || "",
+    cta_title: local.cta_title || "",
+    cta_subtitle: local.cta_subtitle || "",
+    newsletter_subtitle: local.newsletter_subtitle || "",
     announcement_text: local.announcement_text || "",
     free_shipping_threshold: Number(local.free_shipping_threshold || 300000),
     discount_code: local.discount_code || "BIENVENIDA10",

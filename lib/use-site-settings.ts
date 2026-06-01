@@ -19,6 +19,9 @@ export interface SiteSettings {
   social_proof_enabled: boolean
   featured_title: string
   featured_subtitle: string
+  cta_title: string
+  cta_subtitle: string
+  newsletter_subtitle: string
   urgency_config: UrgencyConfig
 }
 

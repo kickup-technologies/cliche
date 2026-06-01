@@ -54,6 +54,7 @@ export function EditOverlay() {
     const INLINE_KEYS = new Set([
       "hero_title", "hero_subtitle", "announcement_text",
       "featured_title", "featured_subtitle",
+      "cta_title", "cta_subtitle", "newsletter_subtitle",
     ])
 
     let inlineEl: HTMLElement | null = null

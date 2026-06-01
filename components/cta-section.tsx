@@ -4,8 +4,14 @@ import Image from "next/image"
 import { ArrowRight, Check, Users, Award, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ScrollAnimation } from "@/components/scroll-animation"
+import { useSiteSettings } from "@/lib/use-site-settings"
 
 export function CTASection() {
+  const settings = useSiteSettings()
+  const ctaTitle = settings.cta_title || "¿Tienes una marca? Creamos tu identidad olfativa"
+  const ctaSubtitle =
+    settings.cta_subtitle ||
+    "Diseñamos aromas exclusivos para negocios que quieren diferenciarse. Hoteles, spas, tiendas y marcas deportivas ya confían en nosotros."
   return (
     <section className="py-20 bg-secondary/50 relative overflow-hidden">
       <div className="container mx-auto px-4">
@@ -18,11 +24,19 @@ export function CTASection() {
                   <Users className="w-4 h-4" />
                   Para Empresas y Marcas
                 </div>
-                <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground text-balance">
-                  ¿Tienes una marca? Creamos tu identidad olfativa
+                <h2
+                  data-cliche-edit="cta_title"
+                  data-cliche-label="Título empresas"
+                  className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground text-balance"
+                >
+                  {ctaTitle}
                 </h2>
-                <p className="text-lg text-muted-foreground leading-relaxed max-w-lg">
-                  Diseñamos aromas exclusivos para negocios que quieren diferenciarse. Hoteles, spas, tiendas y marcas deportivas ya confían en nosotros.
+                <p
+                  data-cliche-edit="cta_subtitle"
+                  data-cliche-label="Subtítulo empresas"
+                  className="text-lg text-muted-foreground leading-relaxed max-w-lg"
+                >
+                  {ctaSubtitle}
                 </p>
               </div>
 

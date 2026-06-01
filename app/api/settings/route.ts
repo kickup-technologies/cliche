@@ -20,6 +20,9 @@ const PUBLIC_KEYS = [
   'social_proof_enabled',
   'featured_title',
   'featured_subtitle',
+  'cta_title',
+  'cta_subtitle',
+  'newsletter_subtitle',
   'urgency_config',
 ] as const
 
@@ -39,6 +42,9 @@ const DEFAULTS = {
   social_proof_enabled: true,
   featured_title: 'Productos Destacados',
   featured_subtitle: 'Los favoritos de nuestra comunidad',
+  cta_title: '¿Tienes una marca? Creamos tu identidad olfativa',
+  cta_subtitle: 'Diseñamos aromas exclusivos para negocios que quieren diferenciarse. Hoteles, spas, tiendas y marcas deportivas ya confían en nosotros.',
+  newsletter_subtitle: 'Suscríbete y recibe tu código de descuento al instante, más tips de aromaterapia y lanzamientos exclusivos.',
   urgency_config: URGENCY_DEFAULTS,
 }
 
@@ -85,6 +91,9 @@ export async function GET() {
       social_proof_enabled: raw.social_proof_enabled !== 'false',
       featured_title: raw.featured_title ?? DEFAULTS.featured_title,
       featured_subtitle: raw.featured_subtitle ?? DEFAULTS.featured_subtitle,
+      cta_title: raw.cta_title ?? DEFAULTS.cta_title,
+      cta_subtitle: raw.cta_subtitle ?? DEFAULTS.cta_subtitle,
+      newsletter_subtitle: raw.newsletter_subtitle ?? DEFAULTS.newsletter_subtitle,
       urgency_config: parseUrgencyConfig(raw.urgency_config),
     })
   } catch (err) {
