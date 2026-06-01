@@ -4,12 +4,19 @@ import { useState } from "react"
 import { MessageCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCart } from "@/context/cart-context"
+import { useSiteSettings } from "@/lib/use-site-settings"
+
+const DEFAULT_PHONE = "573194565463"
+const DEFAULT_MESSAGE = "Hola! Vi sus productos en la tienda online y me gustaría saber más"
 
 export function WhatsAppButton() {
+  const settings = useSiteSettings()
   const [isHovered, setIsHovered] = useState(false)
   const { itemCount, isDrawerOpen } = useCart()
-  const phoneNumber = "573194565463"
-  const message = "Hola! Vi sus productos en la tienda online y me gustaría saber más"
+  const phoneNumber = settings.whatsapp_number
+    ? String(settings.whatsapp_number).replace(/\D/g, "")
+    : DEFAULT_PHONE
+  const message = settings.whatsapp_message || DEFAULT_MESSAGE
 
   // Se oculta cuando el drawer del carrito está abierto para no interferir
   if (isDrawerOpen) return null

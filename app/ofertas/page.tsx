@@ -228,7 +228,8 @@ export default function OfertasPage() {
       .then((r) => r.json())
       .then((all: Product[]) => {
         // Products with original_price are discounted
-        setProducts(all.filter((p) => p.original_price && p.original_price > p.price))
+        const list = Array.isArray(all) ? all : []
+        setProducts(list.filter((p) => p.original_price && p.original_price > p.price))
         setLoading(false)
       })
       .catch(() => setLoading(false))

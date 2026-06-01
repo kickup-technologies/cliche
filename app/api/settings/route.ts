@@ -1,29 +1,82 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
 
-// GET /api/settings — returns discount_percentage and discount_code
+// Claves públicas que el sitio (hero, barra, footer, whatsapp) puede leer.
+// Texto/toggles que el admin edita en la sección "Tienda".
+const PUBLIC_KEYS = [
+  'discount_percentage',
+  'discount_code',
+  'announcement_text',
+  'free_shipping_threshold',
+  'whatsapp_number',
+  'whatsapp_message',
+  'hero_title',
+  'hero_subtitle',
+  'hero_slides',
+  'urgency_bar_enabled',
+  'countdown_enabled',
+  'stock_badge_enabled',
+  'social_proof_enabled',
+] as const
+
+const DEFAULTS = {
+  discount_percentage: 10,
+  discount_code: 'BIENVENIDA10',
+  announcement_text: '',
+  free_shipping_threshold: 300000,
+  whatsapp_number: '',
+  whatsapp_message: '',
+  hero_title: '',
+  hero_subtitle: '',
+  hero_slides: [] as string[],
+  urgency_bar_enabled: true,
+  countdown_enabled: true,
+  stock_badge_enabled: true,
+  social_proof_enabled: true,
+}
+
+// GET /api/settings — devuelve todas las claves públicas de la tienda
 export async function GET() {
   try {
     const db = createServerClient()
     const { data, error } = await db
       .from('site_settings')
       .select('key, value')
-      .in('key', ['discount_percentage', 'discount_code'])
+      .in('key', PUBLIC_KEYS as unknown as string[])
 
     if (error) throw error
 
-    const settings: Record<string, string> = {}
+    const raw: Record<string, string> = {}
     for (const row of data ?? []) {
-      settings[row.key] = row.value
+      raw[row.key] = row.value
+    }
+
+    let heroSlides: string[] = DEFAULTS.hero_slides
+    if (raw.hero_slides) {
+      try {
+        const parsed = JSON.parse(raw.hero_slides)
+        if (Array.isArray(parsed)) heroSlides = parsed.filter((s) => typeof s === 'string')
+      } catch { /* valor corrupto: usar default */ }
     }
 
     return NextResponse.json({
-      discount_percentage: Number(settings.discount_percentage ?? 10),
-      discount_code: settings.discount_code ?? 'BIENVENIDA10',
+      discount_percentage: Number(raw.discount_percentage ?? DEFAULTS.discount_percentage),
+      discount_code: raw.discount_code ?? DEFAULTS.discount_code,
+      announcement_text: raw.announcement_text ?? DEFAULTS.announcement_text,
+      free_shipping_threshold: Number(raw.free_shipping_threshold ?? DEFAULTS.free_shipping_threshold),
+      whatsapp_number: raw.whatsapp_number ?? DEFAULTS.whatsapp_number,
+      whatsapp_message: raw.whatsapp_message ?? DEFAULTS.whatsapp_message,
+      hero_title: raw.hero_title ?? DEFAULTS.hero_title,
+      hero_subtitle: raw.hero_subtitle ?? DEFAULTS.hero_subtitle,
+      hero_slides: heroSlides,
+      urgency_bar_enabled: raw.urgency_bar_enabled !== 'false',
+      countdown_enabled: raw.countdown_enabled !== 'false',
+      stock_badge_enabled: raw.stock_badge_enabled !== 'false',
+      social_proof_enabled: raw.social_proof_enabled !== 'false',
     })
   } catch (err) {
     console.error('[settings GET]', err)
-    return NextResponse.json({ discount_percentage: 10, discount_code: 'BIENVENIDA10' })
+    return NextResponse.json(DEFAULTS)
   }
 }
 

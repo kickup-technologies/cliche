@@ -6,6 +6,7 @@ import { FavoritesProvider } from '@/context/favorites-context'
 import { CartDrawer } from '@/components/cart-drawer'
 import { ScrollRestoration } from '@/components/scroll-restoration'
 import { PageTracker } from '@/components/page-tracker'
+import { EditOverlay } from '@/components/edit-overlay'
 import Script from 'next/script'
 import './globals.css'
 
@@ -158,6 +159,7 @@ export default function RootLayout({
             <CartDrawer />
           </FavoritesProvider>
         </CartProvider>
+        <EditOverlay />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

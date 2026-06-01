@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react"
 import { supabase } from "@/lib/supabase"
 import {
   LayoutDashboard, TrendingUp, BarChart3, Star, ShoppingBag, Zap,
-  Package, Settings, Lock, RefreshCw, AlertCircle, Eye, LogOut, Menu, X,
+  Package, Settings, Lock, RefreshCw, AlertCircle, Eye, LogOut, Menu, X, Paintbrush,
 } from "lucide-react"
 import type { Product } from "@/lib/supabase"
 import { Order, PageView } from "./types"
@@ -20,8 +20,9 @@ import { PedidosSection } from "./sections/pedidos"
 import { UrgenciaSection } from "./sections/urgencia"
 import { InventarioSection } from "./sections/inventario"
 import { TiendaSection } from "./sections/tienda"
+import { PersonalizarSection } from "./sections/personalizar"
 
-type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "pedidos" | "urgencia" | "inventario" | "tienda"
+type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "pedidos" | "urgencia" | "inventario" | "tienda" | "personalizar"
 
 interface Setting { key: string; value: string }
 
@@ -37,6 +38,9 @@ const SIDEBAR = [
   { section: "OPERACIONES", items: [
     { id: "pedidos",  label: "Pedidos",              icon: ShoppingBag },
     { id: "urgencia", label: "Urgencia Inteligente", icon: Zap },
+  ]},
+  { section: "CONTENIDO", items: [
+    { id: "personalizar", label: "Editor Visual", icon: Paintbrush },
   ]},
   { section: "CONFIGURACIÓN", items: [
     { id: "inventario", label: "Inventario", icon: Package },
@@ -58,9 +62,18 @@ export default function AdminPage() {
   const [pageViews, setPageViews] = useState<PageView[]>([])
   const [settings, setSettings] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   // Check session on mount
   useEffect(() => {
+    // Bypass SOLO en desarrollo local: entra directo sin contraseña.
+    // En producción esta rama no se compila como activa (NODE_ENV === "production").
+    if (process.env.NODE_ENV !== "production") {
+      setAdminPw("dev")
+      sessionStorage.setItem("cliche_admin_auth", "ok")
+      setAuthed(true)
+      return
+    }
     const token = sessionStorage.getItem("cliche_admin_auth")
     if (token === "ok") setAuthed(true)
   }, [])
@@ -99,7 +112,15 @@ export default function AdminPage() {
       // Use service-role API route — anon client cannot read orders/page_views (RLS)
       const res = await adminFetch("/api/admin/data")
       if (res.status === 401) { handleLogout(); return }
-      if (!res.ok) throw new Error("Failed to load admin data")
+      if (!res.ok) {
+        // Degradar con elegancia: el panel queda usable con datos vacíos en lugar
+        // de romper la UI. (Ocurre p. ej. sin SUPABASE_SERVICE_ROLE_KEY en local.)
+        const { error } = await res.json().catch(() => ({ error: "" }))
+        setLoadError(error || "No se pudieron cargar los datos del panel.")
+        setOrders([]); setProducts([]); setPageViews([])
+        return
+      }
+      setLoadError(null)
       const { orders: ords, products: prods, settings: setts, pageViews: views } = await res.json()
       setOrders(ords || [])
       setProducts(prods || [])
@@ -107,8 +128,10 @@ export default function AdminPage() {
       const map: Record<string, string> = {}
       ;(setts || []).forEach((s: Setting) => { map[s.key] = s.value })
       setSettings(map)
-    } catch (err) {
-      console.error("[admin] loadAll failed:", err)
+    } catch {
+      // Fallo de red/parseo: dejar el panel utilizable con datos vacíos.
+      setLoadError("No se pudieron cargar los datos del panel.")
+      setOrders([]); setProducts([]); setPageViews([])
     } finally {
       setLoading(false)
     }
@@ -295,6 +318,15 @@ export default function AdminPage() {
 
         {/* Page content */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
+          {loadError && (
+            <div className="mb-5 flex items-start gap-3 rounded-xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              <span className="text-base leading-none">⚠️</span>
+              <div>
+                <p className="font-semibold">No se pudieron cargar los datos en vivo</p>
+                <p className="text-amber-800/80">{loadError} El panel sigue siendo usable; los datos aparecerán cuando la conexión esté disponible.</p>
+              </div>
+            </div>
+          )}
           {activeSection === "resumen" && (
             <OverviewSection orders={orders} pageViews={pageViews} products={products} />
           )}
@@ -315,6 +347,9 @@ export default function AdminPage() {
           )}
           {activeSection === "inventario" && (
             <InventarioSection products={products} onRefresh={loadAll} />
+          )}
+          {activeSection === "personalizar" && (
+            <PersonalizarSection settings={settings} onSettingsUpdate={setSettings} />
           )}
           {activeSection === "tienda" && (
             <TiendaSection settings={settings} onSettingsUpdate={setSettings} />

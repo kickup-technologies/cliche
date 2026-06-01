@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { ChevronRight, Star, Truck, Shield, Sparkles, ArrowRight } from "lucide-react"
+import { useSiteSettings } from "@/lib/use-site-settings"
 
 // Tiempo restante hasta medianoche de hoy. Se calcula al instante para que el
 // contador nunca aparezca en 00:00:00 durante el primer render.
@@ -41,24 +42,35 @@ const heroSlides = [
 ]
 
 export function Hero() {
+  const settings = useSiteSettings()
   const [currentSlide, setCurrentSlide] = useState(0)
   const [timeLeft, setTimeLeft] = useState(timeUntilMidnight)
-  const [discountPct, setDiscountPct] = useState(10)
+  const discountPct = settings.discount_percentage ?? 10
 
-  useEffect(() => {
-    fetch("/api/settings")
-      .then((r) => r.json())
-      .then((d) => setDiscountPct(d.discount_percentage))
-      .catch(() => {})
-  }, [])
+  // El admin puede sobreescribir el título/subtítulo del primer slide y
+  // reemplazar las imágenes del carrusel desde el Editor Visual. Se recalcula
+  // cuando cambian los settings (incluida la previsualización en vivo).
+  const slides = (() => {
+    const next = heroSlides.map((s) => ({ ...s }))
+    if (settings.hero_title) next[0].title = settings.hero_title
+    if (settings.hero_subtitle) next[0].subtitle = settings.hero_subtitle
+    if (Array.isArray(settings.hero_slides) && settings.hero_slides.length > 0) {
+      settings.hero_slides.forEach((img, i) => {
+        if (!img) return
+        if (next[i]) next[i].image = img
+        else next.push({ image: img, title: next[0].title, subtitle: next[0].subtitle, cta: next[0].cta })
+      })
+    }
+    return next
+  })()
 
   useEffect(() => {
     const slideTimer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % heroSlides.length)
+      setCurrentSlide((prev) => (prev + 1) % slides.length)
     }, 6000)
 
     return () => clearInterval(slideTimer)
-  }, [])
+  }, [slides.length])
 
   useEffect(() => {
     // Oferta siempre termina esta noche a medianoche — urgencia real y consistente
@@ -68,10 +80,14 @@ export function Hero() {
   }, [])
 
   return (
-    <section className="relative flex flex-col items-center overflow-hidden min-h-[72svh] lg:min-h-[100svh]">
+    <section
+      className="relative flex flex-col items-center overflow-hidden min-h-[72svh] lg:min-h-[100svh]"
+      data-cliche-edit="hero_slides"
+      data-cliche-label="Imágenes del hero"
+    >
 
       {/* Background Slides */}
-      {heroSlides.map((slide, index) => (
+      {slides.map((slide, index) => (
         <div
           key={index}
           className="absolute inset-0 transition-opacity duration-1000"
@@ -106,15 +122,19 @@ export function Hero() {
             </div>
 
             {/* Título — solo el del slide actual */}
-            <h1 className="text-2xl font-serif font-bold text-white mb-2 leading-tight">
-              {heroSlides[currentSlide].title}
+            <h1
+              className="text-2xl font-serif font-bold text-white mb-2 leading-tight"
+              data-cliche-edit="hero_title"
+              data-cliche-label="Título del hero"
+            >
+              {slides[currentSlide].title}
             </h1>
 
             {/* Urgency strip compacto */}
             <div className="flex items-center gap-2 mb-4">
               <Sparkles className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0" />
               <span className="text-white/70 text-xs">Oferta termina en:</span>
-              <span className="font-mono font-bold text-white text-sm">
+              <span className="font-mono font-bold text-white text-sm" suppressHydrationWarning>
                 {String(timeLeft.hours).padStart(2,"0")}:{String(timeLeft.minutes).padStart(2,"0")}:{String(timeLeft.seconds).padStart(2,"0")}
               </span>
             </div>
@@ -149,7 +169,7 @@ export function Hero() {
             </div>
 
             {/* Title with Animation */}
-            {heroSlides.map((slide, index) => (
+            {slides.map((slide, index) => (
               <div
                 key={index}
                 className="transition-all duration-700"
@@ -161,10 +181,18 @@ export function Hero() {
               >
                 {currentSlide === index && (
                   <>
-                    <h1 className="text-4xl lg:text-6xl font-serif font-bold text-white mb-4 leading-tight text-balance">
+                    <h1
+                      className="text-4xl lg:text-6xl font-serif font-bold text-white mb-4 leading-tight text-balance"
+                      data-cliche-edit="hero_title"
+                      data-cliche-label="Título del hero"
+                    >
                       {slide.title}
                     </h1>
-                    <p className="text-xl md:text-2xl text-white/80 mb-8">
+                    <p
+                      className="text-xl md:text-2xl text-white/80 mb-8"
+                      data-cliche-edit="hero_subtitle"
+                      data-cliche-label="Subtítulo del hero"
+                    >
                       {slide.subtitle}
                     </p>
                   </>
@@ -186,7 +214,7 @@ export function Hero() {
                     <div key={l} className="flex items-center gap-2">
                       {i > 0 && <span className="text-2xl font-bold">:</span>}
                       <div className="bg-white/20 px-3 py-1 rounded-lg text-center">
-                        <span className="font-mono font-bold text-xl">{String(v).padStart(2,"0")}</span>
+                        <span className="font-mono font-bold text-xl" suppressHydrationWarning>{String(v).padStart(2,"0")}</span>
                         <span className="text-xs block text-white/70">{l}</span>
                       </div>
                     </div>
@@ -223,7 +251,7 @@ export function Hero() {
 
       {/* Slide Indicators */}
       <div className="absolute bottom-4 lg:bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-        {heroSlides.map((_, index) => (
+        {slides.map((_, index) => (
           <button
             key={index}
             onClick={() => setCurrentSlide(index)}

@@ -78,18 +78,21 @@ export function VentasSection({ orders, products }: { orders: Order[]; products:
   }))
 
   // Product stats
-  const productStats: Record<string, { name: string; units: number; revenue: number; price: number }> = {}
+  const productStats: Record<string, { id: string; name: string; units: number; revenue: number; price: number }> = {}
   for (const o of curr) {
     for (const item of o.items || []) {
       const k = item.product_id
-      if (!productStats[k]) productStats[k] = { name: item.name || k, units: 0, revenue: 0, price: item.price || 0 }
+      if (!productStats[k]) productStats[k] = { id: k, name: item.name || k, units: 0, revenue: 0, price: item.price || 0 }
       productStats[k].units += item.quantity
       productStats[k].revenue += (item.price || 0) * item.quantity
     }
   }
   const sorted = Object.values(productStats).sort((a, b) => b.revenue - a.revenue)
   const topProducts = sorted.slice(0, 5)
-  const worstProducts = sorted.slice(-3).reverse()
+  // Bajo rendimiento: solo productos CON ventas que NO estén ya en el top,
+  // para no mostrar el mismo producto en ambas tablas cuando hay pocos productos.
+  const topIds = new Set(topProducts.map(p => p.id))
+  const worstProducts = sorted.filter(p => !topIds.has(p.id)).slice(-3).reverse()
   const totalRevenue = topProducts.reduce((s, p) => s + p.revenue, 0) || 1
   const zeroSales = products.filter(p => !productStats[p.id] && p.is_active)
 

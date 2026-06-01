@@ -70,7 +70,7 @@ export function FeaturedProducts() {
   useEffect(() => {
     fetch("/api/products")
       .then((r) => r.json())
-      .then(setProducts)
+      .then((data) => setProducts(Array.isArray(data) ? data : []))
       .catch(console.error)
   }, [])
 

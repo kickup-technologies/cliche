@@ -1,16 +1,21 @@
 import { createClient } from "@supabase/supabase-js"
 
+// Fallbacks para que createClient NO lance al importar el módulo cuando faltan
+// las variables de entorno (p. ej. en local sin .env.local). Sin esto, cualquier
+// route que importe este archivo respondería un 500 HTML y el frontend rompería
+// al hacer r.json(). Con placeholders, el módulo carga y las consultas fallan de
+// forma controlada (los routes ya las envuelven en try/catch y devuelven JSON).
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co"
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-anon-key"
+
 // Cliente público (frontend)
-export const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 // Cliente de servidor con permisos completos (solo en API routes)
 export function createServerClient() {
   return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY
   )
 }
 

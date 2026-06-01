@@ -26,6 +26,7 @@ export function CartDrawer() {
     fetch("/api/products")
       .then((r) => r.json())
       .then((all: Product[]) => {
+        if (!Array.isArray(all)) return
         const inCart = new Set(items.map((i) => i.product.id))
         const recs = all.filter((p) => !inCart.has(p.id) && p.stock > 0).slice(0, 3)
         setRecommendations(recs)

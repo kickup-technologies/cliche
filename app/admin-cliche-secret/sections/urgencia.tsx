@@ -3,6 +3,7 @@ import { useState } from "react"
 import { Zap, Info, AlertCircle, Check } from "lucide-react"
 import { Order, CONFIRMED } from "../types"
 import type { Product } from "@/lib/supabase"
+import { adminFetch } from "@/lib/admin-client"
 
 type UrgencyStrategy = "scarcity" | "time_limit" | "reverse_psychology" | "social_proof" | "flash_sale"
 type Priority = "critical" | "high" | "medium" | "low"
@@ -109,11 +110,25 @@ export function UrgenciaSection({ orders, products }: { orders: Order[]; product
 
   async function applyConfig() {
     setSaving(true)
-    // In a real implementation this would save to site_settings
-    await new Promise(r => setTimeout(r, 600))
-    setSaving(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+    try {
+      // Persiste qué productos tienen urgencia activa y con qué mensaje/estrategia.
+      const active = recs
+        .filter(r => r.enabled)
+        .map(r => ({ product_id: r.product_id, strategy: r.strategy, message: r.urgency_message }))
+      const res = await adminFetch("/api/admin/settings", {
+        method: "POST",
+        body: JSON.stringify({ settings: { urgency_overrides: JSON.stringify(active) } }),
+      })
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: "" }))
+        alert(error || "No se pudo guardar la configuración de urgencia")
+        return
+      }
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const enabledCount = recs.filter(r => r.enabled).length

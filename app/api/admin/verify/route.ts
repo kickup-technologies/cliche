@@ -7,6 +7,13 @@ export async function POST(req: NextRequest) {
   if (limited) return limited
 
   const { password } = await req.json()
+
+  // Bypass SOLO en desarrollo local: permite entrar sin contraseña.
+  // En producción este atajo no se ejecuta nunca.
+  if (process.env.NODE_ENV !== "production") {
+    return NextResponse.json({ ok: true, dev: true })
+  }
+
   const adminPassword = process.env.ADMIN_PASSWORD
 
   // SEGURIDAD: si ADMIN_PASSWORD no está configurada, NEGAR acceso.

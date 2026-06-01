@@ -182,3 +182,8 @@ html {
 .trust-badge {
   animation: trust-badge 3.2s ease-in-out infinite;
 }
+
+/* Editor Visual: en modo preview, los bloques editables muestran cursor de edición */
+html[data-cliche-edit-mode="1"] [data-cliche-edit] {
+  cursor: pointer !important;
+}
