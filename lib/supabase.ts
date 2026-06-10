@@ -8,6 +8,10 @@ import { createClient } from "@supabase/supabase-js"
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co"
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-anon-key"
 
+// true cuando hay credenciales reales. Permite saltar consultas (y su timeout
+// de ~7s) cuando se corre en local sin .env.local y usar el catálogo local.
+export const isSupabaseConfigured = !SUPABASE_URL.includes("placeholder")
+
 // Cliente público (frontend)
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 

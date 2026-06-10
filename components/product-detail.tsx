@@ -9,6 +9,7 @@ import { useFavorites } from "@/context/favorites-context"
 import { useCAPI } from "@/lib/use-capi"
 import { useSiteSettings } from "@/lib/use-site-settings"
 import { parseUrgencyConfig, fillUrgency } from "@/lib/urgency"
+import { getCatalogProduct } from "@/lib/catalog-data"
 
 const SprayBottle3D = dynamic(
   () => import("@/components/spray-bottle-3d").then((m) => m.SprayBottle3D),
@@ -198,7 +199,8 @@ export function ProductDetail({ product, related }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const notes = NOTES_MAP[product.slug] || []
+  const catalogItem = getCatalogProduct(product.slug)
+  const notes = NOTES_MAP[product.slug] || catalogItem?.notes || []
   const isKit = product.slug.startsWith("kit-")
   const savings = product.original_price ? product.original_price - product.price : 0
 
@@ -461,7 +463,7 @@ export function ProductDetail({ product, related }: Props) {
 
               {/* Description */}
               <p className="text-muted-foreground leading-relaxed">
-                {VALUE_MAP[product.slug] || product.description}
+                {VALUE_MAP[product.slug] || catalogItem?.description || product.description}
               </p>
 
               {/* Quantity + Add to cart */}
@@ -587,7 +589,7 @@ export function ProductDetail({ product, related }: Props) {
 
             {activeTab === "descripcion" && (
               <div className="prose prose-sm max-w-none text-muted-foreground">
-                <p className="text-base leading-relaxed mb-4">{VALUE_MAP[product.slug] || product.description}</p>
+                <p className="text-base leading-relaxed mb-4">{VALUE_MAP[product.slug] || catalogItem?.description || product.description}</p>
                 {isKit && (
                   <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 mt-4 flex gap-3">
                     <Gift className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />

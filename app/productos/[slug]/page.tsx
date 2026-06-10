@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation"
-import { supabase } from "@/lib/supabase"
+import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { ProductDetail } from "@/components/product-detail"
+import { CATALOG_AS_PRODUCTS, getCatalogProduct } from "@/lib/catalog-data"
 import type { Metadata } from "next"
 
 // Force dynamic so pages always render on-demand from Supabase
@@ -12,13 +13,16 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-  const { data: product } = await supabase
-    .from("products")
-    .select("name, description, image_url")
-    .eq("slug", slug)
-    .eq("is_active", true)
-    .single()
+  const { data: dbProduct } = isSupabaseConfigured
+    ? await supabase
+        .from("products")
+        .select("name, description, image_url")
+        .eq("slug", slug)
+        .eq("is_active", true)
+        .single()
+    : { data: null }
 
+  const product = dbProduct || getCatalogProduct(slug)
   if (!product) return { title: "Producto no encontrado" }
 
   return {
@@ -35,21 +39,32 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params
 
-  const { data: product } = await supabase
-    .from("products")
-    .select("*")
-    .eq("slug", slug)
-    .eq("is_active", true)
-    .single()
+  const { data: dbProduct } = isSupabaseConfigured
+    ? await supabase
+        .from("products")
+        .select("*")
+        .eq("slug", slug)
+        .eq("is_active", true)
+        .single()
+    : { data: null }
 
+  // Fallback al catálogo local cuando Supabase no está disponible / vacío
+  const product = dbProduct || getCatalogProduct(slug)
   if (!product) notFound()
 
-  const { data: related } = await supabase
-    .from("products")
-    .select("*")
-    .eq("is_active", true)
-    .neq("slug", slug)
-    .limit(4)
+  const { data: dbRelated } = isSupabaseConfigured
+    ? await supabase
+        .from("products")
+        .select("*")
+        .eq("is_active", true)
+        .neq("slug", slug)
+        .limit(4)
+    : { data: null }
+
+  const related =
+    dbRelated && dbRelated.length > 0
+      ? dbRelated
+      : CATALOG_AS_PRODUCTS.filter((p) => p.slug !== slug).slice(0, 4)
 
   const jsonLd = {
     "@context": "https://schema.org",
