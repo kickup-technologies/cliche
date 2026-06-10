@@ -19,4 +19,4 @@ node_modules
 
 # Build artifacts (auto-generated)
 tsconfig.tsbuildinfo
-next-env.d.ts
+next-env.d.tsdev-server.log

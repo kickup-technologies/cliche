@@ -1,0 +1,36 @@
+$ next dev
+⚠ Port 3000 is in use by process 23772, using available port 3001 instead.
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3001
+- Network:       http://192.168.1.5:3001
+✓ Ready in 2.7s
+
+ GET / 200 in 4.0s (next.js: 1561ms, application-code: 2.4s)
+[track] insert page_view falló: TypeError: fetch failed
+ POST /api/track 200 in 971ms (next.js: 692ms, application-code: 279ms)
+[settings GET] {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: Error: getaddrinfo ENOTFOUND placeholder.supabase.co (ENOTFOUND)\n' +
+    'Error: getaddrinfo ENOTFOUND placeholder.supabase.co\n' +
+    '    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n' +
+    '    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+ GET /api/settings 200 in 7.5s (next.js: 303ms, application-code: 7.2s)
+ GET /api/products 500 in 7.5s (next.js: 419ms, application-code: 7.1s)
+[settings GET] {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: Error: getaddrinfo ENOTFOUND placeholder.supabase.co (ENOTFOUND)\n' +
+    'Error: getaddrinfo ENOTFOUND placeholder.supabase.co\n' +
+    '    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n' +
+    '    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+ GET /api/settings 200 in 7.1s (next.js: 12ms, application-code: 7.1s)
+ GET /api/products 500 in 7.1s (next.js: 11ms, application-code: 7.1s)
