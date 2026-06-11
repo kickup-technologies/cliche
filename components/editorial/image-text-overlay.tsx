@@ -1,5 +1,7 @@
 import Image from "next/image"
 import Link from "next/link"
+import { SplitText } from "@/components/editorial/split-text"
+import { Magnetic } from "@/components/magnetic"
 
 /**
  * ImageTextOverlay — banda full-bleed con imagen de fondo y texto superpuesto
@@ -44,21 +46,25 @@ export function ImageTextOverlay({
               {eyebrow}
             </p>
           )}
-          <h2 className="font-serif text-3xl font-medium leading-tight text-white md:text-5xl">
-            {title}
-          </h2>
+          <SplitText
+            text={title}
+            as="h2"
+            className="font-serif text-3xl font-medium leading-tight text-white md:text-5xl"
+          />
           {text && (
             <p className="mt-5 text-base font-light leading-relaxed text-white/90 md:text-lg">
               {text}
             </p>
           )}
           {cta && (
-            <Link
-              href={cta.href}
-              className="mt-8 inline-flex items-center justify-center border border-white px-9 py-3.5 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-white transition-colors hover:bg-white hover:text-foreground"
-            >
-              {cta.label}
-            </Link>
+            <Magnetic className="mt-8">
+              <Link
+                href={cta.href}
+                className="inline-flex items-center justify-center border border-white px-9 py-3.5 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-white transition-colors hover:bg-white hover:text-foreground"
+              >
+                {cta.label}
+              </Link>
+            </Magnetic>
           )}
         </div>
       </div>

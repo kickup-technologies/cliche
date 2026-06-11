@@ -5,6 +5,8 @@ import Image from "next/image"
 import Link from "next/link"
 import { useCart } from "@/context/cart-context"
 import type { Product } from "@/lib/supabase"
+import { SplitText } from "@/components/editorial/split-text"
+import { Magnetic } from "@/components/magnetic"
 
 /**
  * ProductCollection — grid de productos minimal editorial (estilo renesme).
@@ -67,7 +69,11 @@ export function ProductCollection({
               {eyebrow}
             </p>
           )}
-          <h2 className="font-serif text-3xl font-medium text-foreground md:text-4xl">{title}</h2>
+          <SplitText
+            text={title}
+            as="h2"
+            className="font-serif text-3xl font-medium text-foreground md:text-4xl"
+          />
         </div>
 
         {loading ? (
@@ -149,12 +155,14 @@ export function ProductCollection({
 
         {ctaHref && (
           <div className="mt-14 text-center">
-            <Link
-              href={ctaHref}
-              className="inline-flex items-center justify-center border border-foreground px-9 py-3.5 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-foreground transition-colors hover:bg-foreground hover:text-background"
-            >
-              {ctaLabel}
-            </Link>
+            <Magnetic>
+              <Link
+                href={ctaHref}
+                className="inline-flex items-center justify-center border border-foreground px-9 py-3.5 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-foreground transition-colors hover:bg-foreground hover:text-background"
+              >
+                {ctaLabel}
+              </Link>
+            </Magnetic>
           </div>
         )}
       </div>

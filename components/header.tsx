@@ -215,7 +215,7 @@ export function Header() {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`text-sm font-medium transition-colors ${
+                  className={`link-underline text-sm font-medium transition-colors ${
                     useSolid ? "text-foreground hover:text-primary" : "text-white/90 hover:text-white"
                   }`}
                 >
@@ -240,7 +240,7 @@ export function Header() {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`text-sm font-medium transition-colors flex items-center gap-1 ${
+                className={`link-underline text-sm font-medium transition-colors flex items-center gap-1 ${
                   item.highlight 
                     ? "text-red-400 hover:text-red-300"
                     : useSolid
