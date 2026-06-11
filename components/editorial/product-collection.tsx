@@ -7,6 +7,8 @@ import { useCart } from "@/context/cart-context"
 import type { Product } from "@/lib/supabase"
 import { SplitText } from "@/components/editorial/split-text"
 import { Magnetic } from "@/components/magnetic"
+import { QuickView } from "@/components/editorial/quick-view"
+import { Eye } from "lucide-react"
 
 /**
  * ProductCollection — grid de productos minimal editorial (estilo renesme).
@@ -39,6 +41,7 @@ export function ProductCollection({
 }: ProductCollectionProps) {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
+  const [quickView, setQuickView] = useState<Product | null>(null)
   const { addItem, openDrawer } = useCart()
 
   useEffect(() => {
@@ -126,6 +129,19 @@ export function ProductCollection({
                       </span>
                     )}
 
+                    {/* Vista rápida — aparece en hover, arriba a la derecha */}
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        setQuickView(product)
+                      }}
+                      aria-label={`Vista rápida de ${product.name}`}
+                      className="absolute right-3 top-3 flex h-9 w-9 -translate-y-1 items-center justify-center rounded-full bg-white/95 text-foreground opacity-0 shadow-sm transition-all duration-300 hover:bg-foreground hover:text-background group-hover:translate-y-0 group-hover:opacity-100"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </button>
+
                     {/* Añadir a la cesta — aparece en hover */}
                     <button
                       onClick={(e) => handleAdd(e, product)}
@@ -166,6 +182,9 @@ export function ProductCollection({
           </div>
         )}
       </div>
+
+      {/* Modal de vista rápida */}
+      <QuickView product={quickView} onClose={() => setQuickView(null)} />
     </section>
   )
 }

@@ -708,3 +708,207 @@ Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
  GET / 200 in 405ms (next.js: 15ms, application-code: 390ms)
  GET /intro-options 200 in 185ms (next.js: 88ms, application-code: 97ms)
  GET / 200 in 195ms (next.js: 16ms, application-code: 179ms)
+✓ Compiled in 1610ms
+ GET / 200 in 1734ms (next.js: 12ms, application-code: 1722ms)
+ GET /api/products 200 in 97ms (next.js: 82ms, application-code: 14ms)
+ GET /api/products 200 in 18ms (next.js: 9ms, application-code: 8ms)
+[settings GET] {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: Error: getaddrinfo ENOTFOUND placeholder.supabase.co (ENOTFOUND)\n' +
+    'Error: getaddrinfo ENOTFOUND placeholder.supabase.co\n' +
+    '    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n' +
+    '    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+ GET /api/settings 200 in 7.5s (next.js: 232ms, application-code: 7.2s)
+[settings GET] {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: Error: getaddrinfo ENOTFOUND placeholder.supabase.co (ENOTFOUND)\n' +
+    'Error: getaddrinfo ENOTFOUND placeholder.supabase.co\n' +
+    '    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n' +
+    '    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+ GET /api/settings 200 in 7.1s (next.js: 7ms, application-code: 7.1s)
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <ErrorBoundary errorComponent={function Error} errorStyles={{...}} errorScripts={[...]}>
+      <ErrorBoundaryHandler pathname="/" errorComponent={function Error} errorStyles={{...}} errorScripts={[...]}>
+        <LoadingBoundary name="/" loading={null}>
+          <HTTPAccessFallbackBoundary notFound={{...}} forbidden={undefined} unauthorized={undefined}>
+            <HTTPAccessFallbackErrorBoundary pathname="/" notFound={{...}} forbidden={undefined} unauthorized={undefined} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <InnerLayoutRouter url="/" tree={[...]} params={{}} cacheNode={{rsc:{...}, ...}} segmentPath={[...]} ...>
+                    <SegmentViewNode type="page" pagePath="page.tsx">
+                      <SegmentTrieNode>
+                      <Home>
+                        <main className="min-h-screen">
+                          <IntroOverlay>
+                          <AnnouncementBar>
+                            <div className="bg-[#2D1A1...">
+                              <div className="container ...">
+                                <Zap>
+                                <span>
+                                <span>
+                                <span>
+                                <span>
+                                <span>
+                                <span>
+                                <div>
+                                <button
+                                  onClick={function onClick}
+                                  className="absolute right-4 p-1 hover:bg-[#FAF8F5]/10 rounded-full transition-colors..."
+                                  aria-label="Cerrar anuncio"
+-                                 fdprocessedid="21fciy"
+                                >
+                          ...
+                            <div className="flex h-16 ...">
+                              <div>
+                              ...
+                                <Primitive.div.Slot ref={function}>
+                                  <Primitive.div.SlotClone ref={function}>
+                                    <Primitive.button type="button" id="radix-_R_a..." aria-haspopup="menu" ...>
+                                      <button
+                                        type="button"
+                                        id="radix-_R_a75eqmlb_"
+                                        aria-haspopup="menu"
+                                        aria-expanded={false}
+                                        aria-controls={undefined}
+                                        data-state="closed"
+                                        data-disabled={undefined}
+                                        disabled={false}
+                                        data-slot="dropdown-menu-trigger"
+                                        className="flex items-center gap-1 text-sm font-medium transition-colors outli..."
+                                        onPointerDown={function handleEvent}
+                                        onKeyDown={function handleEvent}
+                                        ref={function}
+-                                       fdprocessedid="h9j2zi"
+                                      >
+                              <LinkComponent>
+                              <div>
+                              <div className="flex items...">
+                                <LinkComponent>
+                                <LinkComponent>
+                                <Button variant="ghost" size="icon" className="relative t..." ...>
+                                  <button
+                                    data-slot="button"
+                                    className={"inline-flex items-center justify-center gap-2 whitespace-nowrap round..."}
+                                    onClick={function CartProvider.useCallback[openDrawer]}
+-                                   fdprocessedid="fh76z"
+                                  >
+                          <EditorialHero>
+                            <section className="relative h...">
+                              <div>
+                              <div>
+                              <div>
+                              <div className="absolute b...">
+                                <button
+                                  aria-label="Ir al slide 1"
+                                  onClick={function onClick}
+                                  className="h-2 rounded-full transition-all duration-300 w-8 bg-white"
+-                                 fdprocessedid="gxtbsd"
+                                >
+                                <button
+                                  aria-label="Ir al slide 2"
+                                  onClick={function onClick}
+                                  className="h-2 rounded-full transition-all duration-300 w-2 bg-white/50 hover:bg-whi..."
+-                                 fdprocessedid="5kumcz"
+                                >
+                                <button
+                                  aria-label="Ir al slide 3"
+                                  onClick={function onClick}
+                                  className="h-2 rounded-full transition-all duration-300 w-2 bg-white/50 hover:bg-whi..."
+-                                 fdprocessedid="mkfpw"
+                                >
+                          <ScrollReveal>
+                          <ScrollReveal>
+                          <ScrollReveal>
+                          <ScrollReveal>
+                          <ScrollReveal>
+                          <ScrollReveal>
+                          <ScrollReveal>
+                          ...
+                            <section className="bg-backgro...">
+                              <div className="container ...">
+                                <p>
+                                <h2>
+                                <p>
+                                <form onSubmit={function handleSubmit} className="mx-auto mt...">
+                                  <input
+                                    type="email"
+                                    required={true}
+                                    value=""
+                                    onChange={function onChange}
+                                    placeholder="Tu correo electrónico"
+                                    className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-fo..."
+-                                   fdprocessedid="l3kwpm"
+                                  >
+                                  <button
+                                    type="submit"
+                                    className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-foreground..."
+-                                   fdprocessedid="cvijzc"
+                                  >
++                                   Suscribirse
+                          ...
+                    ...
+                  ...
+ 
+[browser] Image with src "/images/products/brillos-de-seda.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+✓ Compiled in 1399ms
+ GET /intro-options 200 in 3.3s (next.js: 710ms, application-code: 2.6s)
+ GET / 200 in 2.2s (next.js: 712ms, application-code: 1469ms)
+✓ Compiled in 1420ms
+ GET / 200 in 1527ms (next.js: 880ms, application-code: 647ms)
+ GET /intro-options 200 in 339ms (next.js: 39ms, application-code: 300ms)
+✓ Compiled in 1170ms
+ GET / 200 in 2.1s (next.js: 882ms, application-code: 1251ms)
+ GET /intro-options 200 in 469ms (next.js: 46ms, application-code: 423ms)
+✓ Compiled in 1397ms
+ GET / 200 in 2.3s (next.js: 978ms, application-code: 1363ms)
+ GET /intro-options 200 in 694ms (next.js: 135ms, application-code: 559ms)
+ GET / 200 in 3.4s (next.js: 22ms, application-code: 3.4s)
+ GET /api/products 200 in 1452ms (next.js: 1387ms, application-code: 65ms)
+ GET /api/products 200 in 61ms (next.js: 25ms, application-code: 36ms)
+[settings GET] {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: Error: getaddrinfo ENOTFOUND placeholder.supabase.co (ENOTFOUND)\n' +
+    'Error: getaddrinfo ENOTFOUND placeholder.supabase.co\n' +
+    '    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n' +
+    '    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+ GET /api/settings 200 in 8.6s (next.js: 757ms, application-code: 7.8s)
+[settings GET] {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: Error: getaddrinfo ENOTFOUND placeholder.supabase.co (ENOTFOUND)\n' +
+    'Error: getaddrinfo ENOTFOUND placeholder.supabase.co\n' +
+    '    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n' +
+    '    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+ GET /api/settings 200 in 7.1s (next.js: 13ms, application-code: 7.1s)

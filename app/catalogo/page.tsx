@@ -41,6 +41,32 @@ function categorize(slug: string): string {
   return "hogar"
 }
 
+// ── Familias olfativas — curaduría editorial del catálogo ──
+const FAMILIES = [
+  { label: "Todas", value: "all" },
+  { label: "Cítricos", value: "citricos" },
+  { label: "Florales", value: "florales" },
+  { label: "Amaderados", value: "amaderados" },
+  { label: "Dulces", value: "dulces" },
+  { label: "Frescos", value: "frescos" },
+]
+
+const FAMILY_MAP: Record<string, string> = {
+  "dulce-lana": "citricos", "brillos-de-seda": "citricos", "agua": "citricos",
+  "aire": "citricos", "frescura-de-lino": "citricos",
+  "vientos-de-lino": "florales", "sello-de-dios": "florales", "lycra-de-verano": "florales",
+  "tao": "florales", "romeo-y-julieta": "florales", "hilos-de-seda": "florales",
+  "seda-del-lejano-oriente": "florales",
+  "eternamente-indigo": "amaderados", "indigo-profundo": "amaderados",
+  "luxury": "amaderados", "tierra": "amaderados",
+  "calor-de-lana": "dulces", "mahai": "dulces", "coconut": "dulces", "watermelon": "dulces",
+  "best-friends": "frescos", "air-fresh": "frescos",
+}
+
+function familyOf(slug: string): string {
+  return FAMILY_MAP[slug.replace(/^aroma-/, "")] ?? "frescos"
+}
+
 // Session-stable views
 const viewsMap = new Map<string, number>()
 function getViews(id: string) {
@@ -153,6 +179,7 @@ function CatalogoInner() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [category, setCategory] = useState(initialCategory)
+  const [family, setFamily] = useState("all")
   const [sort, setSort] = useState("featured")
   const [showFilters, setShowFilters] = useState(false)
 
@@ -180,6 +207,11 @@ function CatalogoInner() {
       list = list.filter((p) => categorize(p.slug) === category)
     }
 
+    // Familia olfativa
+    if (family !== "all") {
+      list = list.filter((p) => familyOf(p.slug) === family)
+    }
+
     // Sort
     switch (sort) {
       case "price_asc":   list.sort((a, b) => a.price - b.price); break
@@ -189,10 +221,10 @@ function CatalogoInner() {
     }
 
     return list
-  }, [products, search, category, sort])
+  }, [products, search, category, family, sort])
 
-  const clearFilters = () => { setSearch(""); setCategory("all"); setSort("featured") }
-  const hasActiveFilters = search || category !== "all" || sort !== "featured"
+  const clearFilters = () => { setSearch(""); setCategory("all"); setFamily("all"); setSort("featured") }
+  const hasActiveFilters = search || category !== "all" || family !== "all" || sort !== "featured"
 
   return (
     <>
@@ -269,6 +301,25 @@ function CatalogoInner() {
                         }`}
                       >
                         {cat.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-sm text-foreground mb-3">Familia olfativa</h3>
+                  <div className="flex flex-wrap gap-1.5">
+                    {FAMILIES.map((f) => (
+                      <button
+                        key={f.value}
+                        onClick={() => setFamily(f.value)}
+                        className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
+                          family === f.value
+                            ? "border-primary bg-primary text-primary-foreground font-medium"
+                            : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                        }`}
+                      >
+                        {f.label}
                       </button>
                     ))}
                   </div>

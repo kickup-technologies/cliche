@@ -1,7 +1,7 @@
-import Image from "next/image"
 import Link from "next/link"
 import { SplitText } from "@/components/editorial/split-text"
 import { Magnetic } from "@/components/magnetic"
+import { ParallaxImage } from "@/components/editorial/parallax-image"
 
 /**
  * ImageTextOverlay — banda full-bleed con imagen de fondo y texto superpuesto
@@ -32,7 +32,7 @@ export function ImageTextOverlay({
         height === "tall" ? "h-[80vh] min-h-[520px]" : "h-[60vh] min-h-[420px]"
       }`}
     >
-      <Image src={image} alt={title} fill sizes="100vw" className="object-cover" />
+      <ParallaxImage src={image} alt={title} />
       <div className="absolute inset-0 bg-black/40" />
 
       <div

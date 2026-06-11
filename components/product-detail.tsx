@@ -466,6 +466,23 @@ export function ProductDetail({ product, related }: Props) {
                 {VALUE_MAP[product.slug] || catalogItem?.description || product.description}
               </p>
 
+              {/* ¿Para quién es este aroma? — mercado recomendado del catálogo */}
+              {catalogItem?.recommendedFor && (
+                <div className="border-l-2 border-primary/60 bg-secondary/50 px-5 py-4">
+                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-primary mb-1.5">
+                    Ideal para
+                  </p>
+                  <p className="font-serif text-base text-foreground leading-snug">
+                    {catalogItem.recommendedFor}
+                  </p>
+                  {catalogItem.tagline && (
+                    <p className="mt-1.5 text-sm italic text-muted-foreground">
+                      “{catalogItem.tagline}”
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Quantity + Add to cart */}
               <div className="space-y-4">
                 <div className="flex items-center gap-4">
@@ -694,17 +711,20 @@ export function ProductDetail({ product, related }: Props) {
       <Footer />
       <WhatsAppButton />
 
-      {/* Sticky CTA bar — appears on mobile when add-to-cart scrolls out of view */}
+      {/* Sticky CTA bar — aparece en todas las pantallas al perder de vista el CTA */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-40 lg:hidden transition-all duration-300"
+        className="fixed bottom-0 left-0 right-0 z-40 transition-all duration-300"
         style={{
           transform: showSticky ? 'translateY(0)' : 'translateY(100%)',
           opacity: showSticky ? 1 : 0,
         }}
       >
-        <div className="bg-card border-t border-border shadow-2xl px-4 py-3 flex items-center gap-3">
+        <div className="bg-card border-t border-border shadow-2xl px-4 py-3 flex items-center gap-3 lg:px-10">
+          <div className="hidden lg:block h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl bg-muted/30">
+            <img src={product.image_url || "/placeholder-product.jpg"} alt="" className="h-full w-full object-cover" />
+          </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-muted-foreground truncate">{product.name}</p>
+            <p className="text-xs text-muted-foreground truncate lg:font-serif lg:text-sm lg:text-foreground">{product.name}</p>
             <p className="font-bold text-foreground text-sm">${product.price.toLocaleString("es-CO")} COP</p>
           </div>
           <Button
