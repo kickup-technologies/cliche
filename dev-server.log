@@ -3179,3 +3179,171 @@ https://react.dev/link/hydration-mismatch
 ✓ Compiled in 557ms
  GET /intro-still 200 in 110ms (next.js: 27ms, application-code: 83ms)
  GET / 200 in 1146ms (next.js: 806ms, application-code: 341ms)
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <ErrorBoundary errorComponent={function Error} errorStyles={{...}} errorScripts={[...]}>
+      <ErrorBoundaryHandler pathname="/" errorComponent={function Error} errorStyles={{...}} errorScripts={[...]}>
+        <LoadingBoundary name="/" loading={null}>
+          <HTTPAccessFallbackBoundary notFound={{...}} forbidden={undefined} unauthorized={undefined}>
+            <HTTPAccessFallbackErrorBoundary pathname="/" notFound={{...}} forbidden={undefined} unauthorized={undefined} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <InnerLayoutRouter url="/" tree={[...]} params={{}} cacheNode={{rsc:{...}, ...}} segmentPath={[...]} ...>
+                    <SegmentViewNode type="page" pagePath="page.tsx">
+                      <SegmentTrieNode>
+                      <Home>
+                        <main className="min-h-screen">
+                          <IntroOverlay>
+                          <AnnouncementBar>
+                            <div className="bg-[#2D1A1...">
+                              <div className="container ...">
+                                <Zap>
+                                <span>
+                                <span>
+                                <span>
+                                <span>
+                                <span>
+                                <span>
+                                <div>
+                                <button
+                                  onClick={function onClick}
+                                  className="absolute right-4 p-1 hover:bg-[#FAF8F5]/10 rounded-full transition-colors..."
+                                  aria-label="Cerrar anuncio"
+-                                 fdprocessedid="5j4m3l"
+                                >
+                          ...
+                            <div className="flex h-16 ...">
+                              <div>
+                              ...
+                                <Primitive.div.Slot ref={function}>
+                                  <Primitive.div.SlotClone ref={function}>
+                                    <Primitive.button type="button" id="radix-_R_1..." aria-haspopup="menu" ...>
+                                      <button
+                                        type="button"
+                                        id="radix-_R_18slmqmlb_"
+                                        aria-haspopup="menu"
+                                        aria-expanded={false}
+                                        aria-controls={undefined}
+                                        data-state="closed"
+                                        data-disabled={undefined}
+                                        disabled={false}
+                                        data-slot="dropdown-menu-trigger"
+                                        className="flex items-center gap-1 text-sm font-medium transition-colors outli..."
+                                        onPointerDown={function handleEvent}
+                                        onKeyDown={function handleEvent}
+                                        ref={function}
+-                                       fdprocessedid="om97vg"
+                                      >
+                              <LinkComponent>
+                              <div>
+                              <div className="flex items...">
+                                <LinkComponent>
+                                <LinkComponent>
+                                <Button variant="ghost" size="icon" className="relative t..." ...>
+                                  <button
+                                    data-slot="button"
+                                    className={"inline-flex items-center justify-center gap-2 whitespace-nowrap round..."}
+                                    onClick={function CartProvider.useCallback[openDrawer]}
+-                                   fdprocessedid="5qlmyc"
+                                  >
+                          <EditorialHero>
+                            <section className="relative h...">
+                              <div>
+                              <div>
+                              <div>
+                              <div className="absolute b...">
+                                <button
+                                  aria-label="Ir al slide 1"
+                                  onClick={function onClick}
+                                  className="h-2 rounded-full transition-all duration-300 w-8 bg-white"
+-                                 fdprocessedid="ida92e"
+                                >
+                                <button
+                                  aria-label="Ir al slide 2"
+                                  onClick={function onClick}
+                                  className="h-2 rounded-full transition-all duration-300 w-2 bg-white/50 hover:bg-whi..."
+-                                 fdprocessedid="5ajt5c"
+                                >
+                                <button
+                                  aria-label="Ir al slide 3"
+                                  onClick={function onClick}
+                                  className="h-2 rounded-full transition-all duration-300 w-2 bg-white/50 hover:bg-whi..."
+-                                 fdprocessedid="gwkbi"
+                                >
+                          <ScrollReveal>
+                          <ScrollReveal>
+                          <ScrollReveal>
+                          <ScrollReveal>
+                          <ScrollReveal>
+                          <ScrollReveal>
+                          <ScrollReveal>
+                          ...
+                            <section className="bg-backgro...">
+                              <div className="container ...">
+                                <p>
+                                <h2>
+                                <p>
+                                <form onSubmit={function handleSubmit} className="mx-auto mt...">
+                                  <input
+                                    type="email"
+                                    required={true}
+                                    value=""
+                                    onChange={function onChange}
+                                    placeholder="Tu correo electrónico"
+                                    className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-fo..."
+-                                   fdprocessedid="xqauma"
+                                  >
+                                  <button
+                                    type="submit"
+                                    className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-foreground..."
+-                                   fdprocessedid="swwbp9"
+                                  >
++                                   Suscribirse
+                          ...
+                    ...
+                  ...
+ 
+[browser] Image with src "/images/lifestyle-living.jpg" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+ GET / 200 in 1016ms (next.js: 9ms, application-code: 1007ms)
+ GET /api/products 200 in 608ms (next.js: 545ms, application-code: 63ms)
+ GET /api/products 200 in 87ms (next.js: 22ms, application-code: 65ms)
+[settings GET] {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: Error: getaddrinfo ENOTFOUND placeholder.supabase.co (ENOTFOUND)\n' +
+    'Error: getaddrinfo ENOTFOUND placeholder.supabase.co\n' +
+    '    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n' +
+    '    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+ GET /api/settings 200 in 7.8s (next.js: 425ms, application-code: 7.3s)
+[settings GET] {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '\n' +
+    'Caused by: Error: getaddrinfo ENOTFOUND placeholder.supabase.co (ENOTFOUND)\n' +
+    'Error: getaddrinfo ENOTFOUND placeholder.supabase.co\n' +
+    '    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)\n' +
+    '    at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17)',
+  hint: '',
+  code: ''
+}
+ GET /api/settings 200 in 7.1s (next.js: 35ms, application-code: 7.1s)
+✓ Compiled in 793ms
+ GET /intro-still 200 in 1602ms (next.js: 698ms, application-code: 904ms)
+ GET / 200 in 1621ms (next.js: 1319ms, application-code: 301ms)
+ GET / 200 in 125ms (next.js: 7ms, application-code: 119ms)

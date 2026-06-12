@@ -4,13 +4,18 @@ import { useEffect, useState } from "react"
 
 /**
  * IntroOverlay — intro 100% código (ref: buckssauce.com).
- * Fondo: foto de seda en alta resolución con drift sutil (Ken Burns).
- * Wordmark "Cliché" revelado letra por letra dentro de máscaras, línea
- * trazada y tagline — todo tipografía nativa, nítida a cualquier
- * resolución. Salida: panel se desliza hacia arriba.
+ *
+ * Coreografía en 3 actos:
+ *  1. Cortina elíptica: el panel oscuro es un óvalo gigante que se expande;
+ *     los "arcos" terracota de los bordes son el fondo asomándose.
+ *  2. Profundidad: el wordmark nace lejos (pequeño + desenfocado) y crece
+ *     hacia la cámara hasta ocupar su lugar — letra a letra.
+ *  3. Salida: el panel completo se desliza hacia arriba revelando el sitio.
+ *
+ * Todo tipografía y CSS nativos — nítido a cualquier resolución.
  * Una vez por sesión; respeta prefers-reduced-motion.
  */
-const SHOW_MS = 3000
+const SHOW_MS = 3400
 const SLIDE_MS = 1000
 const LETTERS = ["C", "l", "i", "c", "h", "é"]
 
@@ -44,23 +49,23 @@ export function IntroOverlay() {
   return (
     <div
       aria-hidden
-      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden bg-[#16100c] transition-transform duration-[1000ms] ease-[cubic-bezier(0.76,0,0.24,1)] ${
+      className={`fixed inset-0 z-[9999] overflow-hidden bg-[#A67163] transition-transform duration-[1000ms] ease-[cubic-bezier(0.76,0,0.24,1)] ${
         phase === "out" ? "-translate-y-full" : "translate-y-0"
       }`}
     >
-      {/* Fondo seda alta resolución con drift lento */}
-      <div className="intro-bg absolute inset-0" />
-      {/* Velo para contraste del wordmark */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#16100c]/55 via-[#16100c]/35 to-[#16100c]/60" />
+      {/* Acto 1 — cortina elíptica: óvalo oscuro que se expande sobre el
+          fondo terracota; los arcos laterales son el fondo asomándose */}
+      <div className="intro-ellipse absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" />
 
-      <div className="relative z-10 flex flex-col items-center">
-        {/* Wordmark letra por letra, cada una en su máscara */}
+      {/* Acto 2 — contenido que viene desde la profundidad */}
+      <div className="intro-depth absolute inset-0 z-10 flex flex-col items-center justify-center">
+        {/* Wordmark letra por letra */}
         <h1 className="flex overflow-hidden font-serif text-6xl font-medium tracking-tight text-[#FAF8F5] md:text-8xl">
           {LETTERS.map((ch, i) => (
             <span
               key={i}
               className="intro-letter inline-block"
-              style={{ animationDelay: `${0.15 + i * 0.07}s` }}
+              style={{ animationDelay: `${0.9 + i * 0.06}s` }}
             >
               {ch}
             </span>
@@ -75,36 +80,63 @@ export function IntroOverlay() {
       </div>
 
       <style jsx>{`
-        .intro-bg {
-          background-image: url('/images/intro/intro-silk-clean.png');
-          background-size: cover;
-          background-position: center;
-          animation: intro-drift 5.5s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+        /* ── Acto 1: cortina elíptica ── */
+        .intro-ellipse {
+          width: 120vmax;
+          height: 120vmax;
+          background: #16100c;
+          border-radius: 50%;
+          transform: translate(-50%, -50%) scale(0.62);
+          animation: intro-curtain 1.6s cubic-bezier(0.65, 0, 0.35, 1) 0.25s forwards;
           will-change: transform;
         }
+        @keyframes intro-curtain {
+          to {
+            transform: translate(-50%, -50%) scale(1.6);
+          }
+        }
+
+        /* ── Acto 2: el bloque central viene desde lejos ── */
+        .intro-depth {
+          opacity: 0;
+          transform: scale(0.32);
+          filter: blur(10px);
+          animation: intro-approach 1.5s cubic-bezier(0.22, 1, 0.36, 1) 0.55s forwards;
+          will-change: transform, filter;
+        }
+        @keyframes intro-approach {
+          60% {
+            filter: blur(2px);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+            filter: blur(0);
+          }
+        }
+
+        /* ── Letras con máscara y stagger ── */
         .intro-letter {
           transform: translateY(115%);
           opacity: 0;
-          animation: intro-rise 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
-        }
-        .intro-line {
-          width: 0;
-          animation: intro-line 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.85s both;
-        }
-        .intro-tag {
-          opacity: 0;
-          animation: intro-fade 0.9s ease 1.1s both;
-        }
-        @keyframes intro-drift {
-          from { transform: scale(1.07) translateY(8px); }
-          to   { transform: scale(1) translateY(0); }
+          animation: intro-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
         @keyframes intro-rise {
           from { transform: translateY(115%); opacity: 0; }
           to   { transform: translateY(0);    opacity: 1; }
         }
+
+        .intro-line {
+          width: 0;
+          animation: intro-line 0.9s cubic-bezier(0.22, 1, 0.36, 1) 1.5s both;
+        }
         @keyframes intro-line {
           to { width: 8rem; }
+        }
+
+        .intro-tag {
+          opacity: 0;
+          animation: intro-fade 0.9s ease 1.75s both;
         }
         @keyframes intro-fade {
           to { opacity: 1; }
