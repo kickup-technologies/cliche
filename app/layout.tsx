@@ -9,7 +9,6 @@ import { PageTracker } from '@/components/page-tracker'
 import { EditOverlay } from '@/components/edit-overlay'
 import { CookieConsent } from '@/components/cookie-consent'
 import { PixelManager } from '@/components/pixel-manager'
-import { CustomCursor } from '@/components/custom-cursor'
 import { SmoothScroll } from '@/components/smooth-scroll'
 import Script from 'next/script'
 import './globals.css'
@@ -106,7 +105,6 @@ export default function RootLayout({
       </head>
       <body className="font-sans antialiased">
         <SmoothScroll />
-        <CustomCursor />
         <ScrollRestoration />
         <PageTracker />
         <CartProvider>

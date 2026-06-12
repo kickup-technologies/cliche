@@ -23,16 +23,15 @@ export function IntroOverlay() {
   const [phase, setPhase] = useState<"hidden" | "in" | "out">("hidden")
 
   useEffect(() => {
-    const seen = sessionStorage.getItem("cliche_intro_seen")
+    // Corre en cada carga/refresh de la página (sin flag de sesión).
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    if (seen || reduce) return
+    if (reduce) return
 
     setPhase("in")
     document.body.style.overflow = "hidden"
 
     const tOut = setTimeout(() => setPhase("out"), SHOW_MS)
     const tDone = setTimeout(() => {
-      sessionStorage.setItem("cliche_intro_seen", "1")
       document.body.style.overflow = ""
       setPhase("hidden")
     }, SHOW_MS + SLIDE_MS)
