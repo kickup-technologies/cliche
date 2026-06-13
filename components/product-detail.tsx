@@ -294,7 +294,7 @@ export function ProductDetail({ product, related }: Props) {
                   ) : (
                     /* 3D render — exactly as original, fully transparent, badges float over it */
                     <>
-                      <SprayBottle3D transparent zTilt={35 * Math.PI / 180} onReady={handleModelReady} />
+                      <SprayBottle3D transparent zTilt={35 * Math.PI / 180} onReady={handleModelReady} labelPhoto={product.image_url || undefined} flatLabel={`/labels/${product.slug}.png`} />
                       {product.badge && (
                         <div className="absolute top-4 left-4">
                           <span className={`${product.badge_color || "bg-primary"} text-white text-xs font-bold px-3 py-1.5 rounded-full`}>

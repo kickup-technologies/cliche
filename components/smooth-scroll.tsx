@@ -19,6 +19,8 @@ export function SmoothScroll() {
       wheelMultiplier: 1,
       touchMultiplier: 1.5,
     })
+    // Instancia accesible para scroll programático (anclas, devtools)
+    ;(window as unknown as { __lenis?: Lenis }).__lenis = lenis
 
     let raf = 0
     const loop = (time: number) => {

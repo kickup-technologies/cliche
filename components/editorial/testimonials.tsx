@@ -1,0 +1,108 @@
+"use client"
+
+import { Star } from "lucide-react"
+import { SplitText } from "@/components/editorial/split-text"
+
+/**
+ * Testimonials — prueba social en marquee de cards (etapa de confianza del
+ * embudo). Dos filas que se desplazan en direcciones opuestas y se pausan en
+ * hover; cada card tiene una rotación leve que se endereza al pasar el mouse,
+ * dando un aire editorial y juguetón sin perder elegancia.
+ */
+interface Review {
+  name: string
+  city: string
+  text: string
+  product: string
+}
+
+const REVIEWS: Review[] = [
+  { name: "Mariana G.", city: "Bogotá", text: "Mi apartamento huele a spa todos los días. Las visitas siempre preguntan qué es.", product: "Brillos de Seda" },
+  { name: "Catalina R.", city: "Medellín", text: "Lo uso en la ropa de mi bebé. No mancha, no irrita y huele divino.", product: "Vientos de Lino" },
+  { name: "Andrés P.", city: "Cali", text: "Compré uno de prueba y terminé pidiendo tres más. Duran muchísimo.", product: "Tierra" },
+  { name: "Laura V.", city: "Barranquilla", text: "El empaque es tan lindo que lo regalé tal cual. Mi mamá quedó enamorada.", product: "Romeo y Julieta" },
+  { name: "Daniela M.", city: "Bogotá", text: "Unos pufs en las cortinas y la sala huele increíble hasta el otro día.", product: "Sello de Dios" },
+  { name: "Juliana S.", city: "Pereira", text: "Llegó en dos días y venía con una nota escrita a mano. Esos detalles enamoran.", product: "Dulce Lana" },
+  { name: "Camila T.", city: "Bucaramanga", text: "Probé mil sprays de hogar y ninguno dura como estos. Ya es parte de mi rutina.", product: "Eternamente Índigo" },
+  { name: "Valentina H.", city: "Cartagena", text: "El aroma es elegante, no empalagoso. Se siente caro sin serlo.", product: "Luxury" },
+]
+
+function ReviewCard({ review, tilt }: { review: Review; tilt: number }) {
+  return (
+    <figure
+      className="group/card mx-3 w-[300px] shrink-0 border border-border bg-background p-6 transition-transform duration-500 ease-out hover:-translate-y-1.5 hover:rotate-0 hover:shadow-lg md:w-[340px]"
+      style={{ transform: `rotate(${tilt}deg)` }}
+    >
+      <div className="flex gap-0.5 text-primary">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Star key={i} className="h-3.5 w-3.5 fill-current" />
+        ))}
+      </div>
+      <blockquote className="mt-4 font-serif text-[1.05rem] leading-relaxed text-foreground">
+        “{review.text}”
+      </blockquote>
+      <figcaption className="mt-5 flex items-baseline justify-between gap-3">
+        <span className="text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-foreground">
+          {review.name} · {review.city}
+        </span>
+        <span className="truncate text-[0.64rem] uppercase tracking-[0.12em] text-muted-foreground">
+          {review.product}
+        </span>
+      </figcaption>
+    </figure>
+  )
+}
+
+export function Testimonials() {
+  const rowA = REVIEWS.slice(0, 4)
+  const rowB = REVIEWS.slice(4)
+  // tilt alternado leve para el aire "polaroid sobre la mesa"
+  const tilts = [-1.4, 1.1, -0.8, 1.6]
+
+  return (
+    <section className="overflow-hidden bg-secondary py-20 md:py-28">
+      <div className="container mx-auto mb-12 px-4 text-center">
+        <p className="mb-3 text-[0.7rem] font-semibold uppercase tracking-[0.3em] text-primary">
+          Más de 1.000 hogares perfumados
+        </p>
+        <SplitText
+          text="Ellas ya lo viven"
+          as="h2"
+          className="font-serif text-3xl font-medium text-foreground md:text-4xl"
+        />
+      </div>
+
+      {/* Fila A — hacia la izquierda */}
+      <div className="testimonial-row group flex">
+        <div className="testimonial-track flex w-max py-3 [animation:testi-left_46s_linear_infinite] group-hover:[animation-play-state:paused]">
+          {[...rowA, ...rowA, ...rowA].map((r, i) => (
+            <ReviewCard key={`a-${i}`} review={r} tilt={tilts[i % 4]} />
+          ))}
+        </div>
+      </div>
+
+      {/* Fila B — hacia la derecha */}
+      <div className="testimonial-row group mt-2 flex">
+        <div className="testimonial-track flex w-max py-3 [animation:testi-right_52s_linear_infinite] group-hover:[animation-play-state:paused]">
+          {[...rowB, ...rowB, ...rowB].map((r, i) => (
+            <ReviewCard key={`b-${i}`} review={r} tilt={tilts[(i + 2) % 4]} />
+          ))}
+        </div>
+      </div>
+
+      <style jsx global>{`
+        @keyframes testi-left {
+          from { transform: translateX(0); }
+          to   { transform: translateX(-33.333%); }
+        }
+        @keyframes testi-right {
+          from { transform: translateX(-33.333%); }
+          to   { transform: translateX(0); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .testimonial-track { animation: none !important; }
+        }
+      `}</style>
+    </section>
+  )
+}

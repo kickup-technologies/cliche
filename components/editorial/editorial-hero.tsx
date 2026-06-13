@@ -78,7 +78,12 @@ export function EditorialHero() {
               slide.align === "left" ? "items-start text-left md:px-20" : "items-center text-center"
             }`}
           >
-            <div className="max-w-2xl">
+            {/* el contenido sube y aparece con cada cambio de slide */}
+            <div
+              className={`max-w-2xl transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                i === active ? "translate-y-0 opacity-100 delay-300" : "translate-y-6 opacity-0"
+              }`}
+            >
               {slide.eyebrow && (
                 <p className="mb-4 text-[0.7rem] font-semibold uppercase tracking-[0.32em] text-white/85">
                   {slide.eyebrow}
@@ -100,6 +105,10 @@ export function EditorialHero() {
                   {slide.cta.label}
                 </Link>
               )}
+              {/* microcopy de confianza — desactiva el freno antes del click */}
+              <p className="mt-5 text-[0.64rem] font-medium uppercase tracking-[0.2em] text-white/70">
+                100% natural · No mancha · Envío gratis desde $300.000
+              </p>
             </div>
           </div>
         </div>

@@ -10,6 +10,7 @@ import { EditOverlay } from '@/components/edit-overlay'
 import { CookieConsent } from '@/components/cookie-consent'
 import { PixelManager } from '@/components/pixel-manager'
 import { SmoothScroll } from '@/components/smooth-scroll'
+import { FilmGrain } from '@/components/editorial/film-grain'
 import Script from 'next/script'
 import './globals.css'
 
@@ -113,6 +114,7 @@ export default function RootLayout({
             <CartDrawer />
           </FavoritesProvider>
         </CartProvider>
+        <FilmGrain />
         <EditOverlay />
         <CookieConsent />
         <PixelManager />

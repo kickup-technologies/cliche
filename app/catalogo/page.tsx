@@ -4,12 +4,13 @@ import { useState, useEffect, useMemo, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
-import { Search, Heart, ShoppingCart, Star, SlidersHorizontal, X, Flame, Eye } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { useFavorites } from "@/context/favorites-context"
+import { Search, X, Eye } from "lucide-react"
 import { useCart } from "@/context/cart-context"
 import { Header } from "@/components/header"
 import { AnnouncementBar } from "@/components/announcement-bar"
+import { Footer } from "@/components/footer"
+import { SplitText } from "@/components/editorial/split-text"
+import { QuickView } from "@/components/editorial/quick-view"
 import type { Product } from "@/lib/supabase"
 
 function formatPrice(price: number) {
@@ -24,7 +25,6 @@ const CATEGORIES = [
   { label: "Todos", value: "all" },
   { label: "Hogar", value: "hogar" },
   { label: "Ropa y textiles", value: "ropa" },
-  { label: "Kits de regalo", value: "kit" },
 ]
 
 const SORT_OPTIONS = [
@@ -35,10 +35,14 @@ const SORT_OPTIONS = [
   { label: "Nombre A–Z", value: "name" },
 ]
 
+// Los slugs reales del API no llevan prefijo "aroma-"
+const ROPA_SLUGS = new Set([
+  "vientos-de-lino", "frescura-de-lino", "calor-de-lana",
+  "dulce-lana", "hilos-de-seda", "lycra-de-verano",
+])
+
 function categorize(slug: string): string {
-  if (slug.startsWith("kit-")) return "kit"
-  if (["aroma-vientos-de-lino", "aroma-frescura-de-lino", "aroma-calor-de-lana", "aroma-dulce-lana", "aroma-hilos-de-seda", "aroma-lycra-de-verano"].includes(slug)) return "ropa"
-  return "hogar"
+  return ROPA_SLUGS.has(slug.replace(/^aroma-/, "")) ? "ropa" : "hogar"
 }
 
 // ── Familias olfativas — curaduría editorial del catálogo ──
@@ -67,105 +71,111 @@ function familyOf(slug: string): string {
   return FAMILY_MAP[slug.replace(/^aroma-/, "")] ?? "frescos"
 }
 
-// Session-stable views
-const viewsMap = new Map<string, number>()
-function getViews(id: string) {
-  if (!viewsMap.has(id)) viewsMap.set(id, Math.floor(Math.random() * 38) + 9)
-  return viewsMap.get(id)!
-}
-
-function ProductCard({ product }: { product: Product }) {
-  const { toggleFavorite, isFavorite } = useFavorites()
+function ProductCard({
+  product,
+  index,
+  onQuickView,
+}: {
+  product: Product
+  index: number
+  onQuickView: (p: Product) => void
+}) {
   const { addItem, openDrawer } = useCart()
   const [added, setAdded] = useState(false)
-  const fav = isFavorite(product.id)
+  const secondImg = product.image_urls?.[1]
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     addItem(product)
+    // micro-feedback en el botón antes de abrir el carrito
     setAdded(true)
-    setTimeout(() => { setAdded(false); openDrawer() }, 600)
-  }
-
-  const handleFav = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    toggleFavorite(product)
+    setTimeout(() => {
+      setAdded(false)
+      openDrawer()
+    }, 650)
   }
 
   return (
     <Link
       href={`/productos/${product.slug}`}
-      className="group bg-white border border-border rounded-2xl overflow-hidden hover:shadow-xl hover:border-primary/20 transition-all duration-300 block"
+      className="catalog-card group block text-center"
+      style={{ animationDelay: `${Math.min(index, 11) * 60}ms` }}
     >
-      <div className="relative aspect-square bg-muted overflow-hidden">
+      <div className="relative aspect-[3/4] w-full overflow-hidden bg-secondary">
         <Image
           src={product.image_url || "/images/placeholder.jpg"}
           alt={product.name}
           fill
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"
+          className={`object-cover transition-all duration-700 ${
+            secondImg ? "group-hover:opacity-0" : "group-hover:scale-105"
+          }`}
         />
-        {/* Badges */}
-        <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+        {secondImg && (
+          <Image
+            src={secondImg}
+            alt={product.name}
+            fill
+            sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"
+            className="object-cover opacity-0 transition-opacity duration-700 group-hover:opacity-100"
+          />
+        )}
+
+        {/* Badges editoriales */}
+        <div className="absolute left-3 top-3 flex flex-col items-start gap-1.5">
           {product.badge && (
-            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold text-white ${product.badge_color}`}>
+            <span className="bg-white/95 px-2.5 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.15em] text-foreground">
               {product.badge}
             </span>
           )}
           {product.stock > 0 && product.stock <= 3 && (
-            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-600 text-white flex items-center gap-1 animate-pulse">
-              <Flame className="w-3 h-3" />¡{product.stock === 1 ? "Última" : `Solo ${product.stock}`}!
+            <span className="bg-foreground/90 px-2.5 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.15em] text-background">
+              Últimas unidades
             </span>
           )}
           {product.stock === 0 && (
-            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-400 text-white">Agotado</span>
+            <span className="bg-foreground/60 px-2.5 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.15em] text-background">
+              Agotado
+            </span>
           )}
         </div>
 
-        {/* Views */}
-        <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full flex items-center gap-1 text-xs">
-          <Eye className="w-3 h-3 text-muted-foreground" />
-          <span className="text-muted-foreground font-medium">{getViews(product.id)}</span>
-        </div>
-
-        {/* Favorite button */}
+        {/* Vista rápida */}
         <button
-          onClick={handleFav}
-          className="absolute bottom-3 right-3 w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full shadow flex items-center justify-center hover:scale-110 transition-all"
-          aria-label={fav ? "Quitar de favoritos" : "Guardar en favoritos"}
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onQuickView(product)
+          }}
+          aria-label={`Vista rápida de ${product.name}`}
+          className="absolute right-3 top-3 flex h-9 w-9 -translate-y-1 items-center justify-center rounded-full bg-white/95 text-foreground opacity-0 shadow-sm transition-all duration-300 hover:bg-foreground hover:text-background group-hover:translate-y-0 group-hover:opacity-100"
         >
-          <Heart className={`w-4 h-4 transition-colors ${fav ? "fill-red-500 text-red-500" : "text-muted-foreground group-hover:text-red-400"}`} />
+          <Eye className="h-4 w-4" />
         </button>
 
-        {/* Add to cart — hover overlay */}
-        <div className="absolute inset-x-3 bottom-3 opacity-0 translate-y-3 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 pr-12">
-          <Button
-            className="w-full rounded-full font-semibold text-sm"
-            onClick={handleAdd}
-            disabled={product.stock === 0}
-          >
-            {added ? "¡Agregado!" : <><ShoppingCart className="w-3.5 h-3.5 mr-1.5" />Al carrito</>}
-          </Button>
-        </div>
+        {/* Añadir a la cesta */}
+        <button
+          onClick={handleAdd}
+          disabled={product.stock === 0}
+          className={`absolute inset-x-3 bottom-3 translate-y-3 py-3 text-[0.66rem] font-semibold uppercase tracking-[0.2em] text-background opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-50 ${
+            added ? "bg-primary" : "bg-foreground hover:bg-primary"
+          }`}
+        >
+          {product.stock === 0 ? "Agotado" : added ? "Agregado ✓" : "Añadir a la cesta"}
+        </button>
       </div>
 
-      <div className="p-4 space-y-1.5">
-        <h3 className="font-semibold text-sm text-foreground leading-tight group-hover:text-primary transition-colors">
-          {product.name}
-        </h3>
-        <div className="flex items-center gap-1">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Star key={i} className={`w-3 h-3 ${i < Math.floor(product.rating) ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`} />
-          ))}
-          <span className="text-xs text-muted-foreground ml-1">({product.reviews})</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="font-bold text-foreground">{formatPrice(product.price)}</span>
-          {product.original_price && (
-            <span className="text-sm text-muted-foreground line-through">{formatPrice(product.original_price)}</span>
-          )}
-        </div>
+      <h3 className="mt-4 font-serif text-lg font-medium text-foreground">
+        {product.name}
+      </h3>
+      <div className="mt-1 flex items-center justify-center gap-2">
+        <span className="text-sm text-foreground">{formatPrice(product.price)}</span>
+        {product.original_price && product.original_price > product.price && (
+          <span className="text-xs text-muted-foreground line-through">
+            {formatPrice(product.original_price)}
+          </span>
+        )}
       </div>
     </Link>
   )
@@ -181,7 +191,7 @@ function CatalogoInner() {
   const [category, setCategory] = useState(initialCategory)
   const [family, setFamily] = useState("all")
   const [sort, setSort] = useState("featured")
-  const [showFilters, setShowFilters] = useState(false)
+  const [quickView, setQuickView] = useState<Product | null>(null)
 
   useEffect(() => {
     fetch("/api/products")
@@ -193,7 +203,6 @@ function CatalogoInner() {
   const filtered = useMemo(() => {
     let list = [...products]
 
-    // Search
     if (search.trim()) {
       const q = search.toLowerCase()
       list = list.filter((p) =>
@@ -202,17 +211,14 @@ function CatalogoInner() {
       )
     }
 
-    // Category
     if (category !== "all") {
       list = list.filter((p) => categorize(p.slug) === category)
     }
 
-    // Familia olfativa
     if (family !== "all") {
       list = list.filter((p) => familyOf(p.slug) === family)
     }
 
-    // Sort
     switch (sort) {
       case "price_asc":   list.sort((a, b) => a.price - b.price); break
       case "price_desc":  list.sort((a, b) => b.price - a.price); break
@@ -230,153 +236,183 @@ function CatalogoInner() {
     <>
       <AnnouncementBar />
       <Header />
-      <main className="min-h-screen bg-background pt-32 pb-20">
-        <div className="container mx-auto max-w-7xl px-4">
-          {/* Page header */}
-          <div className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-serif font-bold text-foreground mb-2">
-              Catálogo completo
-            </h1>
-            <p className="text-muted-foreground">
-              {loading ? "Cargando..." : `${products.length} aromas artesanales · Colombia`}
+      <main className="min-h-screen bg-background pb-24 pt-32">
+        {/* ── Cabecera editorial asimétrica ── */}
+        <header className="container mx-auto flex flex-wrap items-end justify-between gap-x-10 gap-y-4 px-4 pb-12 pt-6 md:pb-16">
+          <div>
+            <p className="mb-4 text-[0.7rem] font-semibold uppercase tracking-[0.32em] text-primary">
+              La colección
             </p>
+            <SplitText
+              text="Todos nuestros aromas"
+              as="h1"
+              className="font-serif text-4xl font-medium leading-tight text-foreground md:text-6xl"
+            />
           </div>
+          <p className="mb-2 text-sm font-light tracking-wide text-muted-foreground">
+            {loading ? "Curando la colección…" : `${products.length} aromas artesanales · hechos en Colombia`}
+          </p>
+        </header>
 
-          {/* Toolbar */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-6">
-            {/* Search */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Buscar aroma..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
-              {search && (
-                <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <X className="w-4 h-4 text-muted-foreground" />
-                </button>
-              )}
+        {/* ── Barra de filtros editorial ── */}
+        <div className="sticky top-20 z-30 border-y border-border/70 bg-background/90 backdrop-blur-md">
+          <div className="container mx-auto flex flex-col gap-0 px-4">
+            {/* Fila 1: categorías + buscar + ordenar */}
+            <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-2 py-3.5">
+              <nav className="flex flex-wrap items-center gap-x-7 gap-y-1">
+                {CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.value}
+                    onClick={() => setCategory(cat.value)}
+                    className={`relative py-1 text-[0.72rem] font-semibold uppercase tracking-[0.18em] transition-colors after:absolute after:inset-x-0 after:bottom-0 after:h-px after:origin-left after:scale-x-0 after:bg-foreground after:transition-transform after:duration-300 hover:text-foreground ${
+                      category === cat.value
+                        ? "text-foreground after:scale-x-100"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </nav>
+
+              <div className="flex flex-1 items-center justify-end gap-6">
+                {/* Buscar — línea minimal */}
+                <div className="relative w-full max-w-[220px]">
+                  <Search className="pointer-events-none absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    type="text"
+                    placeholder="Buscar aroma"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full border-b border-border bg-transparent py-1.5 pl-6 pr-6 text-xs tracking-wide text-foreground placeholder:text-muted-foreground/70 focus:border-foreground focus:outline-none"
+                  />
+                  {search && (
+                    <button
+                      onClick={() => setSearch("")}
+                      className="absolute right-0 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Ordenar — select sin caja */}
+                <select
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value)}
+                  className="cursor-pointer appearance-none border-b border-transparent bg-transparent py-1.5 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-foreground hover:border-border focus:outline-none"
+                >
+                  {SORT_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            {/* Sort */}
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value)}
-              className="px-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 min-w-[200px]"
-            >
-              {SORT_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+            {/* Fila 2: familias olfativas */}
+            <div className="flex flex-wrap items-center gap-2 border-t border-border/50 py-3">
+              <span className="mr-2 text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                Familia olfativa
+              </span>
+              {FAMILIES.map((f) => (
+                <button
+                  key={f.value}
+                  onClick={() => setFamily(f.value)}
+                  className={`rounded-full border px-3.5 py-1 text-[0.66rem] font-medium uppercase tracking-[0.12em] transition-colors ${
+                    family === f.value
+                      ? "border-foreground bg-foreground text-background"
+                      : "border-border text-muted-foreground hover:border-foreground/50 hover:text-foreground"
+                  }`}
+                >
+                  {f.label}
+                </button>
               ))}
-            </select>
-
-            {/* Filter toggle mobile */}
-            <Button
-              variant="outline"
-              className="sm:hidden flex items-center gap-2 rounded-xl"
-              onClick={() => setShowFilters((v) => !v)}
-            >
-              <SlidersHorizontal className="w-4 h-4" />
-              Filtros
-            </Button>
-          </div>
-
-          <div className="flex gap-6">
-            {/* Sidebar filters — desktop always visible, mobile toggleable */}
-            <aside className={`w-52 shrink-0 ${showFilters ? "block" : "hidden sm:block"}`}>
-              <div className="bg-white border border-border rounded-2xl p-5 space-y-6 sticky top-28">
-                <div>
-                  <h3 className="font-semibold text-sm text-foreground mb-3">Categoría</h3>
-                  <div className="space-y-2">
-                    {CATEGORIES.map((cat) => (
-                      <button
-                        key={cat.value}
-                        onClick={() => setCategory(cat.value)}
-                        className={`w-full text-left text-sm px-3 py-2 rounded-lg transition-colors ${
-                          category === cat.value
-                            ? "bg-primary text-primary-foreground font-medium"
-                            : "text-muted-foreground hover:bg-muted"
-                        }`}
-                      >
-                        {cat.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-sm text-foreground mb-3">Familia olfativa</h3>
-                  <div className="flex flex-wrap gap-1.5">
-                    {FAMILIES.map((f) => (
-                      <button
-                        key={f.value}
-                        onClick={() => setFamily(f.value)}
-                        className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
-                          family === f.value
-                            ? "border-primary bg-primary text-primary-foreground font-medium"
-                            : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
-                        }`}
-                      >
-                        {f.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {hasActiveFilters && (
-                  <button
-                    onClick={clearFilters}
-                    className="w-full flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground border border-dashed border-border rounded-lg py-2 transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                    Limpiar filtros
-                  </button>
-                )}
-              </div>
-            </aside>
-
-            {/* Products grid */}
-            <div className="flex-1 min-w-0">
-              {loading ? (
-                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {Array.from({ length: 8 }).map((_, i) => (
-                    <div key={i} className="bg-muted rounded-2xl aspect-square animate-pulse" />
-                  ))}
-                </div>
-              ) : filtered.length === 0 ? (
-                <div className="text-center py-20">
-                  <p className="text-muted-foreground text-lg mb-4">
-                    No encontramos aromas con ese filtro.
-                  </p>
-                  <Button variant="outline" onClick={clearFilters} className="rounded-full">
-                    Ver todos los aromas
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  <p className="text-xs text-muted-foreground mb-4">
-                    {filtered.length} {filtered.length === 1 ? "resultado" : "resultados"}
-                  </p>
-                  <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {filtered.map((product) => (
-                      <ProductCard key={product.id} product={product} />
-                    ))}
-                  </div>
-                </>
+              {hasActiveFilters && (
+                <button
+                  onClick={clearFilters}
+                  className="ml-auto flex items-center gap-1.5 text-[0.66rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+                >
+                  <X className="h-3 w-3" />
+                  Limpiar
+                </button>
               )}
             </div>
           </div>
         </div>
+
+        {/* ── Grid de productos ── */}
+        <div className="container mx-auto px-4 pt-12">
+          {loading ? (
+            <div className="grid grid-cols-2 gap-x-5 gap-y-12 md:grid-cols-3 xl:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="aspect-[3/4] w-full bg-secondary" />
+                  <div className="mx-auto mt-4 h-3 w-2/3 bg-secondary" />
+                  <div className="mx-auto mt-2 h-3 w-1/3 bg-secondary" />
+                </div>
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="py-24 text-center">
+              <p className="font-serif text-2xl font-medium text-foreground">
+                No encontramos aromas con ese filtro
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Prueba con otra búsqueda o explora la colección completa.
+              </p>
+              <button
+                onClick={clearFilters}
+                className="mt-8 inline-flex items-center justify-center border border-foreground px-9 py-3.5 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-foreground transition-colors hover:bg-foreground hover:text-background"
+              >
+                Ver todos los aromas
+              </button>
+            </div>
+          ) : (
+            <>
+              <p className="mb-8 text-center text-[0.66rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                {filtered.length} {filtered.length === 1 ? "resultado" : "resultados"}
+              </p>
+              <div
+                key={`${category}-${family}-${sort}-${search}`}
+                className="grid grid-cols-2 gap-x-5 gap-y-12 md:grid-cols-3 xl:grid-cols-4"
+              >
+                {filtered.map((product, i) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    index={i}
+                    onQuickView={setQuickView}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       </main>
+      <Footer />
+
+      <QuickView product={quickView} onClose={() => setQuickView(null)} />
+
+      <style jsx global>{`
+        .catalog-card {
+          opacity: 0;
+          transform: translateY(28px);
+          animation: catalog-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        @keyframes catalog-rise {
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .catalog-card { animation: none; opacity: 1; transform: none; }
+        }
+      `}</style>
     </>
   )
 }
 
 export default function CatalogoPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-background animate-pulse" />}>
+    <Suspense fallback={<div className="min-h-screen animate-pulse bg-background" />}>
       <CatalogoInner />
     </Suspense>
   )
