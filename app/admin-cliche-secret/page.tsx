@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react"
 import { supabase } from "@/lib/supabase"
 import {
   LayoutDashboard, TrendingUp, BarChart3, Star, ShoppingBag, Zap,
-  Package, Settings, Lock, RefreshCw, AlertCircle, Eye, LogOut, Menu, X, Paintbrush, Flame, Ticket,
+  Package, Settings, Lock, RefreshCw, AlertCircle, Eye, LogOut, Menu, X, Paintbrush, Flame, Ticket, MessageCircle,
 } from "lucide-react"
 import type { Product } from "@/lib/supabase"
 import { Order, PageView } from "./types"
@@ -23,8 +23,9 @@ import { TiendaSection } from "./sections/tienda"
 import { PersonalizarSection } from "./sections/personalizar"
 import { HeatmapsSection } from "./sections/heatmaps"
 import { DescuentosSection } from "./sections/descuentos"
+import { AsistenteSection } from "./sections/asistente"
 
-type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "heatmaps" | "pedidos" | "urgencia" | "descuentos" | "inventario" | "tienda" | "personalizar"
+type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "heatmaps" | "pedidos" | "urgencia" | "descuentos" | "inventario" | "tienda" | "personalizar" | "asistente"
 
 interface Setting { key: string; value: string }
 
@@ -42,6 +43,9 @@ const SIDEBAR = [
     { id: "pedidos",   label: "Pedidos",              icon: ShoppingBag },
     { id: "urgencia",  label: "Urgencia Inteligente", icon: Zap },
     { id: "descuentos", label: "Códigos de descuento", icon: Ticket },
+  ]},
+  { section: "ASISTENTE", items: [
+    { id: "asistente", label: "Asistente WhatsApp", icon: MessageCircle },
   ]},
   { section: "CONTENIDO", items: [
     { id: "personalizar", label: "Editor Visual", icon: Paintbrush },
@@ -361,6 +365,9 @@ export default function AdminPage() {
           )}
           {activeSection === "tienda" && (
             <TiendaSection settings={settings} onSettingsUpdate={setSettings} />
+          )}
+          {activeSection === "asistente" && (
+            <AsistenteSection />
           )}
         </main>
       </div>

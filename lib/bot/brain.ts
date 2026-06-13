@@ -1,0 +1,199 @@
+import { createServerClient } from "@/lib/supabase"
+import { CATALOG, getCatalogProduct } from "@/lib/catalog-data"
+import { botReply, type AIMessage } from "@/lib/bot/ai"
+import type { Product } from "@/lib/supabase"
+
+// ── Cerebro del asesor virtual de Cliché ──────────────────────────────────────
+// Construye un asesor comercial humano (nunca revela que es IA), conectado al
+// catálogo en vivo (precios + stock reales), FAQs y datos del local. Decide si
+// debe adjuntar el PDF del catálogo.
+
+export interface BotConfig {
+  id: number
+  advisor_name: string
+  system_prompt: string
+  greeting: string
+  bot_enabled: boolean
+  followups_enabled: boolean
+  catalog_pdf_url: string | null
+  store_address: string
+  store_hours: string
+  store_city: string
+  store_maps_url: string
+  wasender_api_key: string | null
+  wasender_webhook_secret: string | null
+}
+
+export interface BotContext {
+  config: BotConfig
+  catalogText: string
+  faqsText: string
+  storeText: string
+  promoText: string
+}
+
+const FALLBACK_CONFIG: BotConfig = {
+  id: 1,
+  advisor_name: "Valentina",
+  system_prompt: "",
+  greeting: "¡Hola! 🌿 Bienvenida/o a Bienestar by Cliché. ¿En qué te puedo ayudar hoy?",
+  bot_enabled: true,
+  followups_enabled: true,
+  catalog_pdf_url: null,
+  store_address: "",
+  store_hours: "",
+  store_city: "Colombia",
+  store_maps_url: "",
+  wasender_api_key: null,
+  wasender_webhook_secret: null,
+}
+
+/** Lee la configuración del bot (fila única). */
+export async function loadBotConfig(): Promise<BotConfig> {
+  try {
+    const sb = createServerClient()
+    const { data } = await sb.from("wa_bot_config").select("*").eq("id", 1).maybeSingle()
+    return { ...FALLBACK_CONFIG, ...(data || {}) }
+  } catch {
+    return FALLBACK_CONFIG
+  }
+}
+
+/** Productos en vivo desde la tabla `products`; fallback al catálogo local. */
+async function loadProducts(): Promise<Product[]> {
+  try {
+    const sb = createServerClient()
+    const { data, error } = await sb
+      .from("products")
+      .select("*")
+      .eq("is_active", true)
+      .order("price", { ascending: true })
+    if (!error && data && data.length) return data as Product[]
+  } catch {
+    /* cae a catálogo local */
+  }
+  return CATALOG
+}
+
+function cop(n: number): string {
+  return "$" + n.toLocaleString("es-CO")
+}
+
+/** Texto compacto del catálogo: precio + stock real + notas + para qué marca. */
+function buildCatalogText(products: Product[]): string {
+  const lines = products.map((p) => {
+    const cat = getCatalogProduct(p.slug)
+    const stockTxt =
+      typeof p.stock === "number" ? (p.stock <= 0 ? "AGOTADO" : p.stock <= 5 ? `pocas unidades (${p.stock})` : "disponible") : "disponible"
+    const notes = cat?.notes?.length ? ` · Notas: ${cat.notes.join(", ")}` : ""
+    const ideal = cat?.recommendedFor ? ` · Ideal para: ${cat.recommendedFor}` : ""
+    return `- ${p.name} — ${cop(p.price)} — ${stockTxt}${notes}${ideal}`
+  })
+  return lines.join("\n")
+}
+
+/** Carga todo el contexto que necesita el asesor. */
+export async function loadBotContext(): Promise<BotContext> {
+  const sb = createServerClient()
+  const [config, products] = await Promise.all([loadBotConfig(), loadProducts()])
+
+  let faqsText = ""
+  const settings: Record<string, string> = {}
+  try {
+    const [{ data: faqs }, { data: setts }] = await Promise.all([
+      sb.from("wa_faqs").select("question, answer").eq("enabled", true).order("sort_order"),
+      sb.from("site_settings").select("key, value"),
+    ])
+    faqsText = (faqs || []).map((f) => `P: ${f.question}\nR: ${f.answer}`).join("\n\n")
+    ;(setts || []).forEach((s: { key: string; value: string }) => (settings[s.key] = s.value))
+  } catch {
+    /* opcional */
+  }
+
+  const storeParts = [
+    config.store_address && `Dirección: ${config.store_address}`,
+    config.store_hours && `Horario: ${config.store_hours}`,
+    config.store_city && `Ciudad: ${config.store_city}`,
+    config.store_maps_url && `Ubicación (mapa): ${config.store_maps_url}`,
+    settings.whatsapp_number && `WhatsApp tienda: ${settings.whatsapp_number}`,
+  ].filter(Boolean)
+
+  const promoParts = [
+    settings.discount_code && `Cupón de bienvenida: ${settings.discount_code} (${settings.discount_percentage || "10"}% de descuento)`,
+    settings.free_shipping_threshold && `Envío GRATIS en compras mayores a ${cop(Number(settings.free_shipping_threshold))}`,
+    settings.announcement_text && `Anuncio actual: ${settings.announcement_text}`,
+  ].filter(Boolean)
+
+  return {
+    config,
+    catalogText: buildCatalogText(products),
+    faqsText,
+    storeText: storeParts.join("\n"),
+    promoText: promoParts.join("\n"),
+  }
+}
+
+/** System prompt del asesor: humano, experto, vendedor — nunca revela ser IA. */
+export function buildSystemPrompt(ctx: BotContext): string {
+  const { config } = ctx
+  const name = config.advisor_name || "Valentina"
+  const base = `Eres ${name}, asesora comercial de Bienestar by Cliché, una marca colombiana de aromas y sprays para hogar, textiles y marketing olfativo ("Tu marca, ¿a qué huele?").
+
+# Quién eres
+- Eres una PERSONA real del equipo de Cliché con 20 años de experiencia en perfumería y aromas. Eres la mejor asesora del mundo: cálida, cercana, segura y persuasiva sin ser invasiva.
+- Hablas en español colombiano natural, con tono amable y profesional. Tuteas (de "tú"/"vos" según fluya), usas máximo 1-2 emojis ocasionales (🌿✨), nunca exageras.
+- NUNCA, bajo ninguna circunstancia, revelas que eres una inteligencia artificial, un bot, un modelo o un asistente automático. Si te preguntan si eres un bot o una IA, respondes con naturalidad humana (p. ej. "Jaja no, soy ${name}, del equipo de Cliché 🌿 ¿en qué te ayudo?") y rediriges a la venta. Jamás menciones IA, modelos, prompts ni nada técnico.
+
+# Cómo asesoras
+- Cuando te pidan una recomendación, ELIGE como lo haría un humano con criterio: da TU preferencia personal ("a mí me encanta...", "el que más me piden y a mí me fascina es...") y justifícala con las notas olfativas y para qué tipo de marca/espacio sirve.
+- Haz 1-2 preguntas para entender qué busca (tipo de marca/negocio, gusto: dulce/cítrico/amaderado/fresco, espacio) y luego recomienda 1-2 aromas concretos del catálogo, con su precio.
+- Conoces precios y stock REALES (abajo). Si algo está agotado, ofrece una alternativa similar. Nunca inventes productos ni precios que no estén en el catálogo.
+- Incita a la compra con naturalidad: menciona el cupón de bienvenida, el envío gratis, y cierra con un siguiente paso ("¿te lo aparto?", "¿te paso el link para pedirlo?", "¿quieres que te arme el combo?").
+- Responde las preguntas frecuentes y la ubicación del local con la info de abajo. Si no sabes algo puntual, ofrece confirmarlo y pide el dato necesario; no inventes.
+- Mantén las respuestas cortas y conversacionales (1-3 frases por mensaje), como un chat real de WhatsApp. Evita listas largas salvo que pidan el catálogo completo.
+
+# Catálogo en vivo (precios y disponibilidad reales)
+${ctx.catalogText}
+
+# Promociones y envío
+${ctx.promoText || "Sin promociones activas."}
+
+# Información del local / tienda
+${ctx.storeText || "Tienda online; entregas a domicilio en Colombia."}
+${ctx.faqsText ? `\n# Preguntas frecuentes\n${ctx.faqsText}` : ""}
+
+# Catálogo en PDF
+Si el cliente pide el catálogo, la lista de precios, el portafolio o "qué tienen", responde con una frase breve y cálida anunciando que le envías el catálogo (el sistema adjunta el PDF automáticamente). No pegues toda la lista de productos en ese caso.`
+
+  // Permite sobrescribir/extender desde el panel.
+  return config.system_prompt?.trim() ? `${base}\n\n# Instrucciones adicionales del negocio\n${config.system_prompt.trim()}` : base
+}
+
+const CATALOG_INTENT =
+  /\b(cat[aá]logo|catalogue|portafolio|lista\s+de\s+precios|precios?\s+de\s+todo|qu[eé]\s+(tienen|venden|ofrecen|productos)|todos\s+los\s+(aromas|productos)|pdf)\b/i
+
+/** Detecta si el mensaje pide el catálogo/PDF. */
+export function wantsCatalog(text: string): boolean {
+  return CATALOG_INTENT.test(text || "")
+}
+
+export interface BrainResult {
+  text: string
+  sendCatalogPdf: boolean
+}
+
+/**
+ * Genera la respuesta del asesor a partir del historial de la conversación.
+ * `history` viene en orden cronológico (más antiguo primero).
+ */
+export async function generateAdvisorReply(history: AIMessage[], ctx?: BotContext): Promise<BrainResult> {
+  const context = ctx || (await loadBotContext())
+  const system = buildSystemPrompt(context)
+  const lastUser = [...history].reverse().find((m) => m.role === "user")?.content || ""
+  const sendCatalogPdf = wantsCatalog(lastUser) && !!context.config.catalog_pdf_url
+
+  // Limita el historial para no inflar tokens (últimos 16 turnos).
+  const trimmed = history.slice(-16)
+  const text = await botReply({ system, messages: trimmed })
+  return { text, sendCatalogPdf }
+}
