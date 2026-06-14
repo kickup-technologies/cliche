@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import Image from "next/image"
 import {
-  Star, MessageSquare, CheckCircle, User, BadgeCheck,
+  Star, MessageSquare, CheckCircle, BadgeCheck, ThumbsUp, ChevronDown,
   ImagePlus, X, Play, Loader2, ChevronLeft, ChevronRight, Trash2
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -13,9 +13,15 @@ import type { Review } from "@/lib/supabase"
 const MAX_FILES = 6
 const MAX_SIZE_MB = 50
 
-interface Props { productId: string }
+interface Props {
+  productId: string
+  productName?: string
+  productImage?: string | null
+}
 
-// ── Star picker ──────────────────────────────────────────────────────────────
+type SortKey = "rating" | "recent"
+
+// ── Star picker (formulario) ──────────────────────────────────────────────────
 function StarRating({ value, onChange }: { value: number; onChange?: (v: number) => void }) {
   const [hovered, setHovered] = useState(0)
   return (
@@ -30,11 +36,38 @@ function StarRating({ value, onChange }: { value: number; onChange?: (v: number)
           className={onChange ? "cursor-pointer" : "cursor-default"}
           aria-label={`${star} estrella${star > 1 ? "s" : ""}`}
         >
-          <Star className={`w-6 h-6 transition-colors ${star <= (hovered || value) ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
+          <Star className={`w-6 h-6 transition-colors ${star <= (hovered || value) ? "fill-primary text-primary" : "fill-none text-foreground/25"}`} />
         </button>
       ))}
     </div>
   )
+}
+
+// ── Estrellas de solo lectura (oscuras, estilo editorial) ──────────────────────
+function Stars({ value, size = 15 }: { value: number; size?: number }) {
+  return (
+    <div className="flex gap-0.5" aria-label={`${value} de 5`}>
+      {[1, 2, 3, 4, 5].map((s) => (
+        <Star
+          key={s}
+          style={{ width: size, height: size }}
+          className={s <= Math.round(value) ? "fill-foreground text-foreground" : "fill-none text-foreground/20"}
+        />
+      ))}
+    </div>
+  )
+}
+
+// Separa la primera frase (titular en serif) del resto (cuerpo)
+function splitComment(c: string) {
+  const t = (c || "").trim()
+  if (!t) return { title: "", body: "" }
+  const idx = t.search(/[.!?]\s/)
+  if (idx > 0 && idx < 80) {
+    return { title: t.slice(0, idx + 1).trim(), body: t.slice(idx + 1).trim() }
+  }
+  if (t.length <= 70) return { title: t, body: "" }
+  return { title: "", body: t }
 }
 
 // ── Media lightbox ───────────────────────────────────────────────────────────
@@ -90,14 +123,14 @@ function Lightbox({ urls, startIndex, onClose }: { urls: string[]; startIndex: n
   )
 }
 
-// ── Media grid inside a review card ─────────────────────────────────────────
+// ── Media grid dentro de una reseña ────────────────────────────────────────────
 function MediaGrid({ urls }: { urls: string[] }) {
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null)
   if (!urls.length) return null
 
   return (
     <>
-      <div className={`grid gap-2 pl-12 ${urls.length === 1 ? "grid-cols-1 max-w-xs" : urls.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
+      <div className={`grid gap-2 ${urls.length === 1 ? "grid-cols-1 max-w-xs" : urls.length === 2 ? "grid-cols-2 max-w-sm" : "grid-cols-3 max-w-md"}`}>
         {urls.map((url, i) => {
           const isVideo = /\.(mp4|webm|mov)(\?|$)/i.test(url)
           return (
@@ -132,12 +165,16 @@ function MediaGrid({ urls }: { urls: string[] }) {
   )
 }
 
-// ── Review card ──────────────────────────────────────────────────────────────
-function ReviewCard({ review, onDelete }: { review: Review; onDelete: (id: string) => void }) {
+// ── Review card (layout editorial: meta izquierda · contenido derecha) ─────────
+function ReviewCard({ review, productName, productImage, onDelete }: {
+  review: Review; productName?: string; productImage?: string | null; onDelete: (id: string) => void
+}) {
   const date = new Date(review.created_at).toLocaleDateString("es-CO", {
-    year: "numeric", month: "long", day: "numeric",
+    day: "numeric", month: "long", year: "numeric",
   })
   const urls = review.media_urls ?? []
+  const { title, body } = splitComment(review.comment ?? "")
+  const recommends = review.rating >= 4
   const [confirming, setConfirming] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
@@ -152,44 +189,66 @@ function ReviewCard({ review, onDelete }: { review: Review; onDelete: (id: strin
   }
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-5 space-y-3 group relative">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-            <User className="w-4 h-4 text-primary" />
-          </div>
-          <div>
-            <p className="font-semibold text-sm text-foreground">{review.reviewer_name}</p>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <p className="text-xs text-muted-foreground">{date}</p>
-              <span className="flex items-center gap-0.5 text-[10px] text-green-600 font-medium">
-                <BadgeCheck className="w-3 h-3" />Compra verificada
-              </span>
+    <div className="group relative grid gap-5 border-b border-border py-8 md:grid-cols-[190px_1fr]">
+      {/* Meta del reseñador */}
+      <div className="space-y-3">
+        <div>
+          <p className="text-sm font-medium text-foreground">{review.reviewer_name}</p>
+          <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-foreground/70">
+            <BadgeCheck className="w-3.5 h-3.5 text-primary" /> Comprador verificado
+          </p>
+        </div>
+
+        {productName && (
+          <div className="flex items-center gap-2.5">
+            {productImage && (
+              <div className="relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-lg bg-muted/40">
+                <Image src={productImage} alt={productName} fill className="object-contain p-1" />
+              </div>
+            )}
+            <div className="text-xs leading-tight">
+              <p className="text-muted-foreground">Reseñando</p>
+              <p className="font-medium text-primary">{productName}</p>
             </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <StarRating value={review.rating} />
-          {/* Delete button — visible on hover */}
-          <button
-            onClick={handleDelete}
-            disabled={deleting}
-            className={`opacity-0 group-hover:opacity-100 transition-all p-1.5 rounded-lg text-xs font-medium flex items-center gap-1 ${
-              confirming
-                ? "opacity-100 bg-red-50 text-red-600 border border-red-200"
-                : "text-muted-foreground hover:text-red-500 hover:bg-red-50"
-            }`}
-            title={confirming ? "Confirmar eliminación" : "Eliminar reseña"}
-          >
-            {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-            {confirming && <span>¿Eliminar?</span>}
-          </button>
-        </div>
+        )}
+
+        {recommends && (
+          <p className="flex items-center gap-1.5 text-xs text-foreground/80">
+            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-foreground text-background">
+              <ThumbsUp className="h-2.5 w-2.5" />
+            </span>
+            Recomiendo este producto
+          </p>
+        )}
       </div>
-      {review.comment && (
-        <p className="text-sm text-muted-foreground leading-relaxed pl-12">{review.comment}</p>
-      )}
-      {urls.length > 0 && <MediaGrid urls={urls.slice(0, 6)} />}
+
+      {/* Contenido */}
+      <div className="space-y-3">
+        <div className="flex items-start justify-between gap-4">
+          <Stars value={review.rating} size={15} />
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">{date}</span>
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className={`flex items-center gap-1 rounded-lg p-1 text-xs font-medium transition-all ${
+                confirming
+                  ? "bg-red-50 text-red-600 opacity-100"
+                  : "text-muted-foreground/50 opacity-0 hover:text-red-500 group-hover:opacity-100"
+              }`}
+              title={confirming ? "Confirmar eliminación" : "Eliminar reseña"}
+            >
+              {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+              {confirming && <span>¿Eliminar?</span>}
+            </button>
+          </div>
+        </div>
+
+        {title && <h3 className="font-serif text-lg font-bold leading-snug text-foreground">{title}</h3>}
+        {body && <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>}
+        {urls.length > 0 && <MediaGrid urls={urls.slice(0, 6)} />}
+      </div>
     </div>
   )
 }
@@ -222,14 +281,15 @@ function FileThumbnail({ file, onRemove }: { file: File; onRemove: () => void })
   )
 }
 
-// ── Main component ───────────────────────────────────────────────────────────
-export function ReviewsSection({ productId }: Props) {
+// ── Componente principal ───────────────────────────────────────────────────────
+export function ReviewsSection({ productId, productName, productImage }: Props) {
   const [reviews, setReviews] = useState<Review[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [uploadError, setUploadError] = useState("")
+  const [sort, setSort] = useState<SortKey>("rating")
   const [form, setForm] = useState({ reviewer_name: "", rating: 0, comment: "" })
   const [mediaFiles, setMediaFiles] = useState<File[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -253,6 +313,25 @@ export function ReviewsSection({ productId }: Props) {
     ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
     : 0
 
+  // Distribución 5★ → 1★
+  const dist = useMemo(
+    () => [5, 4, 3, 2, 1].map((star) => ({
+      star,
+      count: reviews.filter((r) => Math.round(r.rating) === star).length,
+    })),
+    [reviews],
+  )
+
+  const sortedReviews = useMemo(() => {
+    const arr = [...reviews]
+    if (sort === "rating") {
+      arr.sort((a, b) => b.rating - a.rating || +new Date(b.created_at) - +new Date(a.created_at))
+    } else {
+      arr.sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))
+    }
+    return arr
+  }, [reviews, sort])
+
   const handleFiles = (files: FileList | null) => {
     if (!files) return
     setUploadError("")
@@ -274,7 +353,6 @@ export function ReviewsSection({ productId }: Props) {
     setUploadError("")
 
     try {
-      // 1. Upload media first (if any)
       let media_urls: string[] = []
       if (mediaFiles.length > 0) {
         const fd = new FormData()
@@ -284,10 +362,8 @@ export function ReviewsSection({ productId }: Props) {
           const upData = await upRes.json()
           media_urls = upData.urls ?? []
         }
-        // If upload fails, continue without media (don't block the review)
       }
 
-      // 2. Post review
       const res = await fetch("/api/reviews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -301,7 +377,6 @@ export function ReviewsSection({ productId }: Props) {
       }
 
       const newReview = await res.json()
-      // Optimistic: add the new review to the list immediately
       setReviews((prev) => [newReview, ...prev])
       setSubmitted(true)
       setShowForm(false)
@@ -315,35 +390,77 @@ export function ReviewsSection({ productId }: Props) {
   }
 
   return (
-    <section id="resenas" className="mt-20 pt-8 border-t border-border">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-        <div>
-          <h2 className="text-2xl font-serif font-bold text-foreground">Reseñas</h2>
-          {reviews.length > 0 && (
-            <div className="flex items-center gap-2 mt-1">
-              <StarRating value={Math.round(avgRating)} />
-              <span className="text-sm text-muted-foreground">
-                {avgRating.toFixed(1)} de 5 · {reviews.length} reseña{reviews.length !== 1 ? "s" : ""}
-              </span>
+    <section id="resenas" className="pt-8">
+      {/* Título centrado */}
+      <h2 className="text-center font-serif text-3xl font-bold text-foreground mb-10">Reseñas</h2>
+
+      {/* Resumen + distribución */}
+      {reviews.length > 0 && (
+        <div className="mb-10">
+          <div className="mb-8 flex flex-col items-center gap-2 text-center">
+            <div className="flex items-center gap-3">
+              <span className="font-serif text-4xl font-bold text-foreground">{avgRating.toFixed(1)}</span>
+              <Stars value={avgRating} size={22} />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Basado en {reviews.length} reseña{reviews.length !== 1 ? "s" : ""}
+            </p>
+          </div>
+
+          <div className="mx-auto max-w-md space-y-2">
+            {dist.map(({ star, count }) => (
+              <div key={star} className="flex items-center gap-3 text-sm">
+                <span className="flex w-8 items-center gap-1 text-foreground">
+                  {star} <Star className="h-3 w-3 fill-foreground text-foreground" />
+                </span>
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-foreground transition-all duration-700"
+                    style={{ width: `${reviews.length ? (count / reviews.length) * 100 : 0}%` }}
+                  />
+                </div>
+                <span className="w-6 text-right text-muted-foreground">{count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Barra de acciones */}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border pt-6">
+        <p className="text-sm text-muted-foreground">
+          {reviews.length} reseña{reviews.length !== 1 ? "s" : ""}
+        </p>
+        <div className="flex items-center gap-3">
+          {reviews.length > 1 && (
+            <div className="relative">
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as SortKey)}
+                className="appearance-none rounded-full border border-border bg-transparent py-2 pl-4 pr-9 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="rating">Mejor calificación</option>
+                <option value="recent">Más recientes</option>
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             </div>
           )}
+          {!submitted && (
+            <Button
+              variant={showForm ? "outline" : "default"}
+              onClick={() => setShowForm((v) => !v)}
+              className="shrink-0 rounded-full"
+            >
+              <MessageSquare className="mr-2 h-4 w-4" />
+              {showForm ? "Cancelar" : "Escribir reseña"}
+            </Button>
+          )}
         </div>
-        {!submitted && (
-          <Button
-            variant={showForm ? "outline" : "default"}
-            onClick={() => setShowForm((v) => !v)}
-            className="shrink-0"
-          >
-            <MessageSquare className="w-4 h-4 mr-2" />
-            {showForm ? "Cancelar" : "Escribir reseña"}
-          </Button>
-        )}
       </div>
 
-      {/* Form */}
+      {/* Formulario */}
       {showForm && !submitted && (
-        <form onSubmit={handleSubmit} className="bg-muted/30 border border-border rounded-2xl p-6 mb-8 space-y-5">
+        <form onSubmit={handleSubmit} className="mt-8 space-y-5 rounded-2xl border border-border bg-muted/30 p-6">
           <h3 className="font-semibold text-foreground">Tu experiencia</h3>
 
           <div className="space-y-1.5">
@@ -364,21 +481,20 @@ export function ReviewsSection({ productId }: Props) {
 
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-foreground">
-              Comentario <span className="text-muted-foreground font-normal">(opcional)</span>
+              Comentario <span className="font-normal text-muted-foreground">(opcional)</span>
             </label>
             <textarea
               value={form.comment}
               onChange={(e) => setForm((f) => ({ ...f, comment: e.target.value }))}
               placeholder="Cuéntanos qué te pareció el aroma, la duración, la presentación..."
               rows={4}
-              className="w-full px-4 py-3 rounded-xl border border-input bg-card text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+              className="w-full resize-none rounded-xl border border-input bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
 
-          {/* Media upload */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">
-              Fotos / Videos <span className="text-muted-foreground font-normal">(opcional · máx. {MAX_FILES} archivos · {MAX_SIZE_MB}MB c/u)</span>
+              Fotos / Videos <span className="font-normal text-muted-foreground">(opcional · máx. {MAX_FILES} archivos · {MAX_SIZE_MB}MB c/u)</span>
             </label>
             <div className="flex flex-wrap gap-2">
               {mediaFiles.map((file, i) => (
@@ -392,9 +508,9 @@ export function ReviewsSection({ productId }: Props) {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-20 h-20 rounded-xl border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 flex flex-col items-center justify-center gap-1 transition-colors text-muted-foreground hover:text-primary"
+                  className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border text-muted-foreground transition-colors hover:border-primary hover:bg-primary/5 hover:text-primary"
                 >
-                  <ImagePlus className="w-6 h-6" />
+                  <ImagePlus className="h-6 w-6" />
                   <span className="text-[10px] font-medium">Agregar</span>
                 </button>
               )}
@@ -407,9 +523,7 @@ export function ReviewsSection({ productId }: Props) {
               className="hidden"
               onChange={(e) => handleFiles(e.target.files)}
             />
-            {uploadError && (
-              <p className="text-sm text-red-600 font-medium">{uploadError}</p>
-            )}
+            {uploadError && <p className="text-sm font-medium text-red-600">{uploadError}</p>}
           </div>
 
           <Button
@@ -419,16 +533,16 @@ export function ReviewsSection({ productId }: Props) {
             size="lg"
           >
             {isSubmitting ? (
-              <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Publicando...</>
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Publicando...</>
             ) : "Publicar reseña"}
           </Button>
         </form>
       )}
 
-      {/* Success */}
+      {/* Éxito */}
       {submitted && (
-        <div className="bg-primary/10 border border-primary/20 rounded-2xl p-5 mb-8 flex items-center gap-4">
-          <CheckCircle className="w-6 h-6 text-primary flex-shrink-0" />
+        <div className="mt-8 flex items-center gap-4 rounded-2xl border border-primary/20 bg-primary/10 p-5">
+          <CheckCircle className="h-6 w-6 flex-shrink-0 text-primary" />
           <div>
             <p className="font-semibold text-foreground">¡Gracias por tu reseña!</p>
             <p className="text-sm text-muted-foreground">Tu opinión ya es visible para la comunidad.</p>
@@ -436,23 +550,29 @@ export function ReviewsSection({ productId }: Props) {
         </div>
       )}
 
-      {/* Reviews list */}
+      {/* Lista */}
       {isLoading ? (
-        <div className="space-y-4">
+        <div className="mt-6 space-y-4">
           {[1, 2].map((i) => (
-            <div key={i} className="bg-muted/30 rounded-2xl h-24 animate-pulse" />
+            <div key={i} className="h-28 animate-pulse rounded-2xl bg-muted/30" />
           ))}
         </div>
       ) : reviews.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <MessageSquare className="w-10 h-10 mx-auto mb-3 opacity-30" />
+        <div className="py-12 text-center text-muted-foreground">
+          <MessageSquare className="mx-auto mb-3 h-10 w-10 opacity-30" />
           <p className="font-medium">Sé el primero en dejar tu reseña</p>
-          <p className="text-sm mt-1">Tu experiencia ayuda a otros a elegir sus aromas.</p>
+          <p className="mt-1 text-sm">Tu experiencia ayuda a otros a elegir sus aromas.</p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {reviews.map((review) => (
-            <ReviewCard key={review.id} review={review} onDelete={handleDelete} />
+        <div className="mt-2">
+          {sortedReviews.map((review) => (
+            <ReviewCard
+              key={review.id}
+              review={review}
+              productName={productName}
+              productImage={productImage}
+              onDelete={handleDelete}
+            />
           ))}
         </div>
       )}

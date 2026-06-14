@@ -723,7 +723,7 @@ export function ProductDetail({ product, related }: Props) {
 
           {/* Reseñas — debajo de las recomendaciones */}
           <div className="mt-24 lg:mt-28">
-            <ReviewsSection productId={product.id} />
+            <ReviewsSection productId={product.id} productName={product.name} productImage={product.image_url} />
           </div>
         </div>
       </main>
