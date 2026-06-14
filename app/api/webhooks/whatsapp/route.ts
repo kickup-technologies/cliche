@@ -137,17 +137,19 @@ export async function POST(req: NextRequest) {
         .map((m) => ({ role: m.direction === "in" ? "user" : "assistant", content: m.body }))
 
       const result = await generateAdvisorReply(history, ctx)
+      const catalogUrl = ctx.config.catalog_pdf_url || config.catalog_pdf_url
+      console.log(`[WA] reply len=${result.text.length} sendCatalogPdf=${result.sendCatalogPdf} hasCatalogUrl=${!!catalogUrl}`)
       await sendWhatsAppBotReply(from, result.text, apiKey)
       await sb.from("wa_messages").insert({ contact_phone: from, direction: "out", role: "assistant", body: result.text })
 
-      if (result.sendCatalogPdf && config.catalog_pdf_url) {
-        await sendWhatsAppDocument(from, config.catalog_pdf_url, "Catalogo-Cliche.pdf", "Aquí tienes nuestro catálogo completo 🌿", apiKey)
+      if (result.sendCatalogPdf && catalogUrl) {
+        await sendWhatsAppDocument(from, catalogUrl, "Catalogo-Cliche.pdf", "Aquí tienes nuestro catálogo completo 🌿", apiKey)
         await sb.from("wa_messages").insert({
           contact_phone: from,
           direction: "out",
           role: "assistant",
           body: "📎 Catálogo enviado",
-          media_url: config.catalog_pdf_url,
+          media_url: catalogUrl,
           media_type: "document",
         })
       }
