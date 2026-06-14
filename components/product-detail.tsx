@@ -401,6 +401,18 @@ export function ProductDetail({ product, related }: Props) {
                 </div>
               )}
 
+              {/* Notas aromáticas — teaser olfativo bajo el título */}
+              {notes.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 -mt-1">
+                  <span className="mr-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground/60">Notas</span>
+                  {notes.map((note) => (
+                    <span key={note} className="rounded-full border border-foreground/[0.06] bg-secondary/50 px-3 py-1 text-[12px] text-foreground/75">
+                      {note}
+                    </span>
+                  ))}
+                </div>
+              )}
+
               {/* Price */}
               <div className="flex items-baseline gap-3 flex-wrap">
                 <span className="text-[2.15rem] font-semibold text-foreground tracking-tight leading-none">
@@ -429,7 +441,7 @@ export function ProductDetail({ product, related }: Props) {
                       <span className="font-mono font-semibold text-foreground">{pad(timeLeft.h)}:{pad(timeLeft.m)}:{pad(timeLeft.s)}</span>
                     </p>
                   </div>
-                  <span className="text-xs font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-lg">
+                  <span className="text-xs font-medium text-foreground/60 bg-foreground/[0.05] border border-foreground/10 px-2.5 py-1 rounded-lg">
                     -{Math.round((1 - product.price / product.original_price) * 100)}%
                   </span>
                 </div>
@@ -466,22 +478,6 @@ export function ProductDetail({ product, related }: Props) {
                 )
               })()}
 
-              {/* Fragrance notes */}
-              {notes.length > 0 && (
-                <div className="pt-1">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground/70 mb-3">
-                    Notas aromáticas
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {notes.map((note) => (
-                      <span key={note} className="text-[13px] bg-secondary/60 border border-foreground/[0.06] rounded-full px-3.5 py-1.5 text-foreground/80">
-                        {note}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* Description */}
               <p className="text-[15px] text-muted-foreground leading-[1.75]">
                 {VALUE_MAP[product.slug] || catalogItem?.description || product.description}
@@ -505,7 +501,7 @@ export function ProductDetail({ product, related }: Props) {
               )}
 
               {/* Quantity + Add to cart */}
-              <div className="space-y-4">
+              <div className="space-y-4 border-t border-foreground/[0.06] pt-6">
                 <div className="flex items-center gap-4">
                   <div className="flex items-center border border-border rounded-xl overflow-hidden">
                     <button
