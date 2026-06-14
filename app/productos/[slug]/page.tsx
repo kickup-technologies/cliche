@@ -2,6 +2,7 @@ import { notFound } from "next/navigation"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { ProductDetail } from "@/components/product-detail"
 import { CATALOG_AS_PRODUCTS, getCatalogProduct } from "@/lib/catalog-data"
+import { seededReviews } from "@/lib/seed-reviews"
 import type { Metadata } from "next"
 
 // Force dynamic so pages always render on-demand from Supabase
@@ -82,13 +83,19 @@ export default async function ProductPage({ params }: Props) {
         : "https://schema.org/OutOfStock",
       seller: { "@type": "Organization", name: "Cliché Aromas" },
     },
-    ...(product.rating > 0 && {
-      aggregateRating: {
-        "@type": "AggregateRating",
-        ratingValue: product.rating,
-        reviewCount: product.reviews,
-      },
-    }),
+    ...(() => {
+      // Mismas reseñas semilla que ve el usuario → structured data consistente
+      const seeds = seededReviews(product.id)
+      if (!seeds.length) return {}
+      const avg = seeds.reduce((s, r) => s + r.rating, 0) / seeds.length
+      return {
+        aggregateRating: {
+          "@type": "AggregateRating",
+          ratingValue: Number(avg.toFixed(1)),
+          reviewCount: seeds.length,
+        },
+      }
+    })(),
   }
 
   return (

@@ -34,6 +34,7 @@ import { WhatsAppButton } from "@/components/whatsapp-button"
 import { ReviewsSection } from "@/components/reviews-section"
 import { ProductRecommendations } from "@/components/product-recommendations"
 import { recordView } from "@/lib/recently-viewed"
+import { useReviewStats } from "@/lib/use-review-stats"
 
 interface Props {
   product: Product
@@ -101,6 +102,8 @@ export function ProductDetail({ product, related }: Props) {
   const { addItem, openDrawer, total, checkout, isCheckingOut } = useCart()
   const { toggleFavorite, isFavorite } = useFavorites()
   const fav = isFavorite(product.id)
+  // Rating y conteo unificados (semilla + reales) — misma fuente que la sección
+  const reviewStats = useReviewStats(product.id)
   const [qty, setQty] = useState(1)
   const [added, setAdded] = useState(false)
   // Acordeón de info — qué sección está abierta (una a la vez; null = todas cerradas por defecto)
@@ -384,21 +387,21 @@ export function ProductDetail({ product, related }: Props) {
                 {product.name}
               </h1>
 
-              {/* Rating */}
-              {product.rating > 0 && (
-                <div className="flex items-center gap-2 -mt-1">
+              {/* Rating — unificado con la sección de reseñas */}
+              {reviewStats.count > 0 && (
+                <a href="#resenas" className="flex items-center gap-2 -mt-1 group">
                   <div className="flex items-center gap-0.5">
                     {[1, 2, 3, 4, 5].map((i) => (
                       <Star
                         key={i}
-                        className={`w-3.5 h-3.5 ${i <= Math.round(product.rating) ? "fill-primary text-primary" : "text-muted-foreground/30"}`}
+                        className={`w-3.5 h-3.5 ${i <= Math.round(reviewStats.avg) ? "fill-primary text-primary" : "text-muted-foreground/30"}`}
                       />
                     ))}
                   </div>
-                  <span className="text-xs text-muted-foreground">
-                    {product.rating.toFixed(1)} · {product.reviews} reseñas
+                  <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+                    {reviewStats.avg.toFixed(1)} · {reviewStats.count} reseña{reviewStats.count !== 1 ? "s" : ""}
                   </span>
-                </div>
+                </a>
               )}
 
               {/* Notas aromáticas — teaser olfativo bajo el título */}
