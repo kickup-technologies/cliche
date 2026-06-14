@@ -26,16 +26,7 @@ const SLIDES: Slide[] = [
     subtitle: "Fragancias artesanales 100% naturales. Un puf y tu espacio se transforma en segundos.",
     cta: { label: "Descubrir aromas", href: "/catalogo" },
     microcopy: "100% natural · No mancha · Envío gratis desde $300.000",
-    align: "center",
-  },
-  {
-    media: { type: "video", src: "/videos/hero-2.mp4" },
-    eyebrow: "Hecho en Colombia",
-    title: "Un aroma para\ncada espacio",
-    subtitle: "Diseñadas para durar todo el día. No irritan, no manchan.",
-    cta: { label: "Ver colección", href: "/catalogo" },
-    microcopy: "Más de 500 hogares transformados",
-    align: "center",
+    align: "left",
   },
   {
     media: { type: "image", src: "/images/hero-main.jpg" },
@@ -44,6 +35,15 @@ const SLIDES: Slide[] = [
     subtitle: "Encuentra el aroma que define tu espacio y tu historia.",
     cta: { label: "Explorar aromas", href: "/catalogo" },
     microcopy: "100% artesanal · Fabricado en Colombia",
+    align: "left",
+  },
+  {
+    media: { type: "video", src: "/videos/hero-2.mp4" },
+    eyebrow: "Hecho en Colombia",
+    title: "Un aroma para\ncada espacio",
+    subtitle: "Diseñadas para durar todo el día. No irritan, no manchan.",
+    cta: { label: "Ver colección", href: "/catalogo" },
+    microcopy: "Más de 500 hogares transformados",
     align: "left",
   },
 ]
