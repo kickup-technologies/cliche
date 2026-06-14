@@ -34,9 +34,28 @@ export function CartDrawer() {
       .catch(() => {})
   }, [isDrawerOpen, items])
 
+  // Bloqueo de scroll del fondo a prueba de balas: fijamos el body con
+  // position:fixed para que la rueda/trackpad nunca mueva el landing detrás,
+  // sin importar dónde esté el cursor. Restauramos la posición al cerrar.
   useEffect(() => {
-    document.body.style.overflow = isDrawerOpen ? "hidden" : ""
-    return () => { document.body.style.overflow = "" }
+    if (!isDrawerOpen) return
+    const scrollY = window.scrollY
+    const body = document.body
+    body.style.position = "fixed"
+    body.style.top = `-${scrollY}px`
+    body.style.left = "0"
+    body.style.right = "0"
+    body.style.width = "100%"
+    body.style.overflow = "hidden"
+    return () => {
+      body.style.position = ""
+      body.style.top = ""
+      body.style.left = ""
+      body.style.right = ""
+      body.style.width = ""
+      body.style.overflow = ""
+      window.scrollTo(0, scrollY)
+    }
   }, [isDrawerOpen])
 
   if (!isDrawerOpen) return null
@@ -75,7 +94,7 @@ export function CartDrawer() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto overscroll-contain">
           {items.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full py-16 text-center px-8 animate-in fade-in duration-500">
               <ShoppingBag className="w-9 h-9 mb-5 opacity-30" style={{ color: TERRA }} />

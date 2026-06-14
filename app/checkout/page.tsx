@@ -178,7 +178,7 @@ export default function CheckoutPage() {
       {/* ══════════════════════════════════════
           COLUMNA IZQUIERDA — productos
       ══════════════════════════════════════ */}
-      <div className="flex-1 lg:overflow-y-auto">
+      <div className="flex-1 lg:min-h-0 lg:overflow-y-auto overscroll-contain">
         <div className="max-w-2xl mx-auto px-5 sm:px-8 lg:px-14 pt-8 lg:pt-10 pb-8 lg:pb-24 animate-in fade-in slide-in-from-bottom-2 duration-500">
 
           {/* Top nav */}
@@ -405,7 +405,7 @@ export default function CheckoutPage() {
       {/* ══════════════════════════════════════
           DERECHA — resumen (desktop only)
       ══════════════════════════════════════ */}
-      <div className="hidden lg:flex w-[400px] xl:w-[440px] flex-shrink-0 bg-[#2D1A14] h-screen overflow-y-auto flex-col animate-in fade-in slide-in-from-right duration-500">
+      <div className="hidden lg:flex w-[400px] xl:w-[440px] flex-shrink-0 bg-[#2D1A14] h-screen min-h-0 overflow-y-auto overscroll-contain flex-col animate-in fade-in slide-in-from-right duration-500">
         <div className="flex flex-col min-h-full px-10 xl:px-12 pt-14 pb-10">
 
           <p className="text-[#FAF8F5]/25 text-[9px] tracking-[0.25em] uppercase mb-8">Resumen del pedido</p>
