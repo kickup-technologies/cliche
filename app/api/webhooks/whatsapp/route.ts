@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse, after } from "next/server"
 import { timingSafeEqual } from "crypto"
 import { createServerClient } from "@/lib/supabase"
-import { sendWhatsAppBotReply, sendWhatsAppDocument, decryptWasenderMedia } from "@/lib/whatsapp"
+import { sendWhatsAppBotReply, sendWhatsAppDocument, decryptWasenderMedia, waNotifyAdmin } from "@/lib/whatsapp"
 import { loadBotConfig, loadBotContext, generateAdvisorReply } from "@/lib/bot/brain"
 import { transcribeAudio, describeImage } from "@/lib/bot/media"
+import { checkContactAbuse } from "@/lib/bot/safety"
 import type { AIMessage } from "@/lib/bot/ai"
 
 export const runtime = "nodejs"
@@ -30,6 +31,10 @@ interface WaKey {
   cleanedSenderPn?: string
   cleanedParticipantPn?: string
 }
+
+// Señales de intención de compra → avisar al equipo para cerrar la venta.
+const BUY_INTENT =
+  /(lo\s+quiero|quiero\s+(comprar|pedir|llevar|uno|dos|tres|\d)|me\s+lo\s+llevo|c[oó]mo\s+(compro|pago|lo\s+pido|hago\s+el\s+pedido)|hacer\s+el\s+pedido|realizar\s+(la\s+compra|el\s+pedido)|comprar(lo|los)?|lo\s+pido|me\s+interesa\s+comprar|d[oó]nde\s+pago)/i
 
 export async function POST(req: NextRequest) {
   const rawBody = await req.text()
@@ -116,8 +121,16 @@ export async function POST(req: NextRequest) {
   if (!config.bot_enabled) return NextResponse.json({ ok: true, stored: true, bot: "disabled" })
 
   // Handoff: humano tomó la conversación → el bot no responde.
-  const { data: contact } = await sb.from("wa_contacts").select("handoff").eq("phone", from).maybeSingle()
+  const { data: contact } = await sb.from("wa_contacts").select("handoff, tags").eq("phone", from).maybeSingle()
   if (contact?.handoff) return NextResponse.json({ ok: true, stored: true, bot: "handoff" })
+
+  // Anti-abuso: si el contacto inunda el chat o lo usa indebidamente, pausa el bot.
+  const abuse = await checkContactAbuse(sb, from)
+  if (abuse.blocked) {
+    await sb.from("wa_contacts").update({ handoff: true }).eq("phone", from)
+    await waNotifyAdmin(`⚠️ Bot pausado para +${from} por posible abuso: ${abuse.reason}. Revísalo en el panel.`, config.wasender_api_key || undefined)
+    return NextResponse.json({ ok: true, blocked: "abuse" })
+  }
 
   // ── Trabajo pesado DESPUÉS de responder 200 (IA + envío con delays) ──────────
   after(async () => {
@@ -187,6 +200,15 @@ export async function POST(req: NextRequest) {
           media_url: catalogUrl,
           media_type: "document",
         })
+      }
+
+      // Intención de compra → avisa al equipo (una sola vez por contacto).
+      if (BUY_INTENT.test(userText)) {
+        const tags = (contact?.tags as string[] | null) || []
+        if (!tags.includes("compra")) {
+          await sb.from("wa_contacts").update({ tags: [...tags, "compra"] }).eq("phone", from)
+          await waNotifyAdmin(`🛒 Posible venta — +${from} mostró intención de compra.\nDijo: "${userText.slice(0, 140)}"\nCiérrala en el panel (Asistente WhatsApp).`, apiKey)
+        }
       }
 
       if (config.followups_enabled) {
