@@ -172,6 +172,7 @@ Todavía NO está confirmada esta información: costos y tiempos de envío, mét
 
 # Contacto del equipo
 Correo (si lo piden, o para confirmar envíos/pagos/garantías/servicios): monica@clichecolombia.com
+Instagram (si lo piden o para que vean más): @clichearomasoficial — https://www.instagram.com/clichearomasoficial
 
 # Catálogo en vivo (precios y disponibilidad reales)
 ${ctx.catalogText}
