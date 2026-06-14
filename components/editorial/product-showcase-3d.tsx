@@ -1,28 +1,22 @@
 import Link from "next/link"
-import Image from "next/image"
+import { Product3D } from "@/components/editorial/product-3d"
 import { SplitText } from "@/components/editorial/split-text"
 import { ScrollReveal } from "@/components/editorial/scroll-reveal"
 import { Magnetic } from "@/components/magnetic"
 
 /**
- * ProductShowcase3D — vitrina del frasco real. Split editorial: el render
- * oficial del producto a la izquierda (fondo blanco fundido con la sección
- * vía mix-blend-multiply), el copy de objeto-de-deseo a la derecha.
+ * ProductShowcase3D — vitrina del frasco renderizado en vivo. Split editorial:
+ * el render 3D a la izquierda (parado firme, vertical, con leve balanceo y
+ * seguimiento del mouse), el copy de objeto-de-deseo a la derecha.
  */
 export function ProductShowcase3D() {
   return (
     <section className="overflow-hidden bg-secondary">
       <div className="container mx-auto grid grid-cols-1 items-center gap-10 px-4 py-20 md:grid-cols-2 md:py-28">
-        {/* Render oficial */}
+        {/* Render vivo */}
         <ScrollReveal distance={32}>
-          <div className="group relative mx-auto aspect-[4/5] w-full max-w-[440px]">
-            <Image
-              src="/images/products/calor-de-lana.png"
-              alt="Frasco Calor de Lana — Bienestar by Cliché"
-              fill
-              sizes="(max-width: 768px) 100vw, 440px"
-              className="object-contain mix-blend-multiply transition-transform duration-[1.1s] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04]"
-            />
+          <div className="relative mx-auto aspect-[4/5] w-full max-w-[440px]">
+            <Product3D className="absolute inset-0" />
           </div>
         </ScrollReveal>
 

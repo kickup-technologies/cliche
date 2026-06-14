@@ -32,6 +32,8 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { WhatsAppButton } from "@/components/whatsapp-button"
 import { ReviewsSection } from "@/components/reviews-section"
+import { ProductRecommendations } from "@/components/product-recommendations"
+import { recordView } from "@/lib/recently-viewed"
 
 interface Props {
   product: Product
@@ -101,7 +103,8 @@ export function ProductDetail({ product, related }: Props) {
   const fav = isFavorite(product.id)
   const [qty, setQty] = useState(1)
   const [added, setAdded] = useState(false)
-  const [activeTab, setActiveTab] = useState<"descripcion" | "uso" | "envio">("descripcion")
+  // Acordeón de info — qué sección está abierta (una a la vez; null = todas cerradas)
+  const [openSection, setOpenSection] = useState<string | null>("descripcion")
   // Configuración de Urgencia Inteligente (editable desde el admin → sección Urgencia)
   const settings = useSiteSettings()
   const urgency = parseUrgencyConfig(settings.urgency_config)
@@ -184,8 +187,10 @@ export function ProductDetail({ product, related }: Props) {
 
   const { track } = useCAPI()
 
-  // ViewContent — dispara cuando se carga la página del producto
+  // ViewContent — dispara cuando se carga la página del producto.
+  // Además registra el producto en el historial "Vistos recientemente".
   useEffect(() => {
+    recordView(product)
     track({
       event_name: 'ViewContent',
       custom_data: {
@@ -294,7 +299,7 @@ export function ProductDetail({ product, related }: Props) {
                   ) : (
                     /* 3D render — exactly as original, fully transparent, badges float over it */
                     <>
-                      <SprayBottle3D transparent zTilt={35 * Math.PI / 180} onReady={handleModelReady} labelPhoto={product.image_url || undefined} flatLabel={`/labels/${product.slug}.png`} />
+                      <SprayBottle3D transparent zTilt={0} onReady={handleModelReady} labelPhoto={product.image_url || undefined} flatLabel={`/labels/${product.slug}.png`} />
                       {product.badge && (
                         <div className="absolute top-4 left-4">
                           <span className={`${product.badge_color || "bg-primary"} text-white text-xs font-bold px-3 py-1.5 rounded-full`}>
@@ -600,127 +605,126 @@ export function ProductDetail({ product, related }: Props) {
             </div>
           </div>
 
-          {/* Tabs */}
-          <div className="mb-20">
-            <div className="flex border-b border-border mb-8">
-              {(["descripcion", "uso", "envio"] as const).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-6 py-3 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${
-                    activeTab === tab
-                      ? "border-primary text-primary"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {tab === "descripcion" ? "Descripción" : tab === "uso" ? "¿Cómo usarlo?" : "Envíos"}
-                </button>
-              ))}
-            </div>
-
-            {activeTab === "descripcion" && (
-              <div className="prose prose-sm max-w-none text-muted-foreground">
-                <p className="text-base leading-relaxed mb-4">{VALUE_MAP[product.slug] || catalogItem?.description || product.description}</p>
-                {isKit && (
-                  <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 mt-4 flex gap-3">
-                    <Gift className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-semibold text-foreground text-sm">Kit incluye:</p>
-                      <p className="text-muted-foreground text-sm mt-1">Varios frascos de 250ml — aromatiza hasta 160 prendas o espacios por frasco. Ideal como regalo.</p>
-                    </div>
-                  </div>
-                )}
-                <div className="grid sm:grid-cols-2 gap-4 mt-6">
-                  {["Alta concentración", "No mancha", "Sin parabenos", "Hecho en Colombia"].map((feat) => (
-                    <div key={feat} className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />
-                      <span className="text-sm">{feat}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {activeTab === "uso" && (
-              <div className="space-y-4 text-muted-foreground">
-                <div className="grid sm:grid-cols-2 gap-4">
-                  {[
-                    { icon: Wind,         title: "Para espacios",  desc: "Aplica 3-5 puf en habitaciones de hasta 20m²." },
-                    { icon: Shirt,        title: "Para ropa",      desc: "3 puf en prendas superiores, 5 en jeans e inferiores." },
-                    { icon: Home,         title: "Duración",       desc: "Efecto olfativo hasta 8 horas en espacios cerrados." },
-                    { icon: AlertTriangle,title: "Precauciones",   desc: "Evitar contacto con ojos. Alejar de menores de edad." },
-                  ].map((step) => (
-                    <div key={step.title} className="flex gap-3 p-4 bg-muted/30 rounded-xl">
-                      <step.icon className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="font-semibold text-foreground text-sm">{step.title}</p>
-                        <p className="text-sm mt-0.5">{step.desc}</p>
+          {/* Info en acordeón — cada botón guarda/despliega su contenido */}
+          <div className="max-w-3xl mb-20">
+            {[
+              {
+                id: "descripcion",
+                label: "Descripción",
+                Icon: Sparkles,
+                content: (
+                  <div className="text-muted-foreground">
+                    <p className="text-base leading-relaxed mb-4">{VALUE_MAP[product.slug] || catalogItem?.description || product.description}</p>
+                    {isKit && (
+                      <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 mt-4 flex gap-3">
+                        <Gift className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-semibold text-foreground text-sm">Kit incluye:</p>
+                          <p className="text-muted-foreground text-sm mt-1">Varios frascos de 250ml — aromatiza hasta 160 prendas o espacios por frasco. Ideal como regalo.</p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {activeTab === "envio" && (
-              <div className="space-y-4 text-muted-foreground">
-                {[
-                  { icon: Truck,    title: "Envío estándar", desc: "3–5 días hábiles. Costo según zona." },
-                  { icon: Gift,     title: "Envío gratis",   desc: "En compras mayores a $300.000 COP a todo Colombia." },
-                  { icon: Package,  title: "Empaque",        desc: "Embalaje protegido y sellado para garantizar la calidad." },
-                  { icon: RotateCcw,title: "Devoluciones",   desc: "30 días para cambios o devoluciones sin preguntas." },
-                ].map((item) => (
-                  <div key={item.title} className="flex gap-3 p-4 bg-muted/30 rounded-xl">
-                    <item.icon className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-semibold text-foreground text-sm">{item.title}</p>
-                      <p className="text-sm mt-0.5">{item.desc}</p>
+                    )}
+                    <div className="grid sm:grid-cols-2 gap-4 mt-6">
+                      {["Alta concentración", "No mancha", "Sin parabenos", "Hecho en Colombia"].map((feat) => (
+                        <div key={feat} className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />
+                          <span className="text-sm">{feat}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+                ),
+              },
+              {
+                id: "uso",
+                label: "¿Cómo usarlo?",
+                Icon: Wind,
+                content: (
+                  <div className="grid sm:grid-cols-2 gap-4 text-muted-foreground">
+                    {[
+                      { icon: Wind,         title: "Para espacios",  desc: "Aplica 3-5 puf en habitaciones de hasta 20m²." },
+                      { icon: Shirt,        title: "Para ropa",      desc: "3 puf en prendas superiores, 5 en jeans e inferiores." },
+                      { icon: Home,         title: "Duración",       desc: "Efecto olfativo hasta 8 horas en espacios cerrados." },
+                      { icon: AlertTriangle,title: "Precauciones",   desc: "Evitar contacto con ojos. Alejar de menores de edad." },
+                    ].map((step) => (
+                      <div key={step.title} className="flex gap-3 p-4 bg-muted/30 rounded-xl">
+                        <step.icon className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-semibold text-foreground text-sm">{step.title}</p>
+                          <p className="text-sm mt-0.5">{step.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ),
+              },
+              {
+                id: "envio",
+                label: "Envíos & devoluciones",
+                Icon: Truck,
+                content: (
+                  <div className="space-y-3 text-muted-foreground">
+                    {[
+                      { icon: Truck,    title: "Envío estándar", desc: "3–5 días hábiles. Costo según zona." },
+                      { icon: Gift,     title: "Envío gratis",   desc: "En compras mayores a $300.000 COP a todo Colombia." },
+                      { icon: Package,  title: "Empaque",        desc: "Embalaje protegido y sellado para garantizar la calidad." },
+                      { icon: RotateCcw,title: "Devoluciones",   desc: "30 días para cambios o devoluciones sin preguntas." },
+                    ].map((item) => (
+                      <div key={item.title} className="flex gap-3 p-4 bg-muted/30 rounded-xl">
+                        <item.icon className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-semibold text-foreground text-sm">{item.title}</p>
+                          <p className="text-sm mt-0.5">{item.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ),
+              },
+            ].map(({ id, label, Icon, content }) => {
+              const open = openSection === id
+              return (
+                <div key={id} className="border-b border-border">
+                  <button
+                    onClick={() => setOpenSection(open ? null : id)}
+                    aria-expanded={open}
+                    className="group flex w-full items-center justify-between gap-4 py-5 text-left"
+                  >
+                    <span className="flex items-center gap-3">
+                      <Icon className="w-4 h-4 text-primary" />
+                      <span className="font-medium text-foreground">{label}</span>
+                    </span>
+                    <span
+                      className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border transition-all duration-300 ${
+                        open
+                          ? "border-primary bg-primary text-white"
+                          : "border-border text-muted-foreground group-hover:border-primary group-hover:text-primary"
+                      }`}
+                    >
+                      {open ? <Minus className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                    </span>
+                  </button>
+                  <div
+                    className={`grid transition-all duration-300 ease-out ${
+                      open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                    }`}
+                  >
+                    <div className="overflow-hidden">
+                      <div className="pb-6">{content}</div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
           </div>
 
-          {/* Reviews */}
-          <ReviewsSection productId={product.id} />
+          {/* Te puede gustar / Vistos recientemente — recomendación inteligente + historial */}
+          <ProductRecommendations product={product} fallback={related} />
 
-          {/* Related products */}
-          {related.length > 0 && (
-            <div className="mt-24 lg:mt-28">
-              <div className="text-center mb-10">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-muted-foreground/70 mb-2">También te puede gustar</p>
-                <h2 className="font-serif text-2xl lg:text-3xl font-bold text-foreground">Completa tu ritual</h2>
-              </div>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-                {related.map((p) => (
-                  <div key={p.id} className="group bg-card border border-border rounded-2xl overflow-hidden hover:shadow-lg transition-all hover:-translate-y-1 flex flex-col">
-                    <Link href={`/productos/${p.slug}`}>
-                      <div className="aspect-square bg-muted/30 overflow-hidden">
-                        <img
-                          src={p.image_url || "/placeholder-product.jpg"}
-                          alt={p.name}
-                          className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-300"
-                        />
-                      </div>
-                    </Link>
-                    <div className="p-3 flex flex-col gap-2 flex-1">
-                      <p className="font-medium text-sm text-foreground line-clamp-1">{p.name}</p>
-                      <p className="text-primary font-bold text-sm">
-                        ${p.price.toLocaleString("es-CO")} COP
-                      </p>
-                      <button
-                        onClick={() => addItem(p)}
-                        className="mt-auto w-full py-1.5 text-xs font-semibold rounded-xl border border-primary text-primary hover:bg-primary hover:text-white transition-colors"
-                      >
-                        + Agregar
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Reseñas — debajo de las recomendaciones */}
+          <div className="mt-24 lg:mt-28">
+            <ReviewsSection productId={product.id} />
+          </div>
         </div>
       </main>
       <Footer />
