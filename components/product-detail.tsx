@@ -248,20 +248,20 @@ export function ProductDetail({ product, related }: Props) {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-background pt-24 pb-16">
+      <main className="min-h-screen bg-background pt-28 pb-24">
         {/* Breadcrumb */}
-        <div className="container mx-auto px-4 mb-6">
-          <nav className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="container mx-auto px-4 sm:px-6 mb-8">
+          <nav className="flex items-center gap-2 text-[11px] uppercase tracking-[0.15em] text-muted-foreground/70">
             <Link href="/" className="hover:text-primary transition-colors">Inicio</Link>
             <ChevronRight className="w-3 h-3" />
-            <Link href="/#productos" className="hover:text-primary transition-colors">Productos</Link>
+            <Link href="/catalogo" className="hover:text-primary transition-colors">Aromas</Link>
             <ChevronRight className="w-3 h-3" />
-            <span className="text-foreground font-medium truncate max-w-[200px]">{product.name}</span>
+            <span className="text-foreground/80 truncate max-w-[200px] normal-case tracking-normal">{product.name}</span>
           </nav>
         </div>
 
-        <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-12 mb-20">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-20 items-start mb-24 lg:mb-28">
             {/* Product Image / Gallery */}
             <div
               className="relative"
@@ -303,7 +303,7 @@ export function ProductDetail({ product, related }: Props) {
                         </div>
                       )}
                       {urgency.low_stock.enabled && product.stock <= urgency.low_stock.threshold && product.stock > 0 && (
-                        <div className={`absolute top-4 right-4 text-white text-xs font-bold px-3 py-1.5 rounded-full ${product.stock <= 3 ? "bg-red-600 animate-pulse" : "bg-orange-500"}`}>
+                        <div className="absolute top-4 right-4 text-[11px] font-medium tracking-wide text-foreground/80 bg-background/80 backdrop-blur-sm border border-foreground/10 px-3 py-1.5 rounded-full">
                           {fillUrgency(urgency.low_stock.message, { stock: product.stock })}
                         </div>
                       )}
@@ -359,56 +359,72 @@ export function ProductDetail({ product, related }: Props) {
 
             {/* Product Info */}
             <div
-              className="flex flex-col gap-6"
+              className="flex flex-col gap-7 lg:pt-2"
               style={{
                 opacity: fell ? 1 : 0,
                 transform: fell ? 'translateY(0)' : 'translateY(20px)',
                 transition: 'opacity 600ms ease 300ms, transform 600ms ease 300ms',
               }}
             >
-              {/* Live viewers — prueba social en vivo (configurable en admin → Urgencia) */}
+              {/* Live viewers — prueba social, discreta */}
               {urgency.social_proof.enabled && (
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="flex items-center gap-1.5 text-xs bg-green-50 text-green-700 font-medium px-2.5 py-1 rounded-full">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
-                    {fillUrgency(urgency.social_proof.message, { n: viewers })}
+                <p className="flex items-center gap-2 text-[11px] uppercase tracking-[0.15em] text-muted-foreground/70">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
+                  {fillUrgency(urgency.social_proof.message, { n: viewers })}
+                </p>
+              )}
+
+              {/* Title */}
+              <h1 className="font-serif text-[2rem] lg:text-[2.75rem] font-bold text-foreground leading-[1.08] tracking-tight">
+                {product.name}
+              </h1>
+
+              {/* Rating */}
+              {product.rating > 0 && (
+                <div className="flex items-center gap-2 -mt-1">
+                  <div className="flex items-center gap-0.5">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <Star
+                        key={i}
+                        className={`w-3.5 h-3.5 ${i <= Math.round(product.rating) ? "fill-primary text-primary" : "text-muted-foreground/30"}`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {product.rating.toFixed(1)} · {product.reviews} reseñas
                   </span>
                 </div>
               )}
 
-              {/* Title */}
-              <h1 className="text-3xl lg:text-4xl font-serif font-bold text-foreground leading-tight">
-                {product.name}
-              </h1>
-
               {/* Price */}
-              <div className="flex items-baseline gap-3">
-                <span className="text-3xl font-bold text-foreground">
-                  ${product.price.toLocaleString("es-CO")} COP
+              <div className="flex items-baseline gap-3 flex-wrap">
+                <span className="text-[1.75rem] font-semibold text-foreground tracking-tight">
+                  ${product.price.toLocaleString("es-CO")}
+                  <span className="text-sm font-normal text-muted-foreground ml-1.5">COP</span>
                 </span>
                 {product.original_price && (
                   <>
-                    <span className="text-lg text-muted-foreground line-through">
+                    <span className="text-base text-muted-foreground/70 line-through">
                       ${product.original_price.toLocaleString("es-CO")}
                     </span>
-                    <Badge className="bg-primary/10 text-primary border-0 font-semibold">
+                    <span className="text-xs font-medium text-primary bg-primary/8 border border-primary/15 rounded-full px-2.5 py-0.5">
                       Ahorras ${savings.toLocaleString("es-CO")}
-                    </Badge>
+                    </span>
                   </>
                 )}
               </div>
 
               {/* Urgency timer — oferta por tiempo limitado (configurable en admin → Urgencia) */}
               {urgency.countdown.enabled && product.original_price && (
-                <div className="flex items-center gap-3 bg-orange-50 border border-orange-200 rounded-2xl px-4 py-3">
-                  <Timer className="w-5 h-5 text-orange-500 flex-shrink-0" />
+                <div className="flex items-center gap-3 bg-secondary/60 border border-primary/15 rounded-2xl px-4 py-3">
+                  <Timer className="w-4 h-4 text-primary flex-shrink-0" />
                   <div className="flex-1">
-                    <p className="text-xs font-semibold text-orange-700 uppercase tracking-wide">{urgency.countdown.headline}</p>
-                    <p className="text-xs text-orange-600 mt-0.5">{urgency.countdown.message}{" "}
-                      <span className="font-mono font-bold text-orange-800">{pad(timeLeft.h)}:{pad(timeLeft.m)}:{pad(timeLeft.s)}</span>
+                    <p className="text-[11px] font-semibold text-foreground/80 uppercase tracking-[0.12em]">{urgency.countdown.headline}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{urgency.countdown.message}{" "}
+                      <span className="font-mono font-semibold text-foreground">{pad(timeLeft.h)}:{pad(timeLeft.m)}:{pad(timeLeft.s)}</span>
                     </p>
                   </div>
-                  <span className="text-xs font-bold text-orange-700 bg-orange-100 px-2 py-1 rounded-lg">
+                  <span className="text-xs font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-lg">
                     -{Math.round((1 - product.price / product.original_price) * 100)}%
                   </span>
                 </div>
@@ -447,13 +463,13 @@ export function ProductDetail({ product, related }: Props) {
 
               {/* Fragrance notes */}
               {notes.length > 0 && (
-                <div className="bg-muted/40 rounded-2xl p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                <div className="pt-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground/70 mb-3">
                     Notas aromáticas
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {notes.map((note) => (
-                      <span key={note} className="text-sm bg-background border border-border rounded-full px-3 py-1 text-foreground">
+                      <span key={note} className="text-[13px] bg-secondary/60 border border-foreground/[0.06] rounded-full px-3.5 py-1.5 text-foreground/80">
                         {note}
                       </span>
                     ))}
@@ -462,7 +478,7 @@ export function ProductDetail({ product, related }: Props) {
               )}
 
               {/* Description */}
-              <p className="text-muted-foreground leading-relaxed">
+              <p className="text-[15px] text-muted-foreground leading-[1.75]">
                 {VALUE_MAP[product.slug] || catalogItem?.description || product.description}
               </p>
 
@@ -510,7 +526,7 @@ export function ProductDetail({ product, related }: Props) {
                   <Button
                     size="lg"
                     data-heat="Agregar al carrito"
-                    className="w-full h-14 text-base font-semibold rounded-2xl"
+                    className="w-full h-14 text-[15px] font-semibold rounded-full shadow-sm hover:shadow-md transition-shadow"
                     onClick={handleAdd}
                     disabled={product.stock === 0}
                   >
@@ -524,7 +540,7 @@ export function ProductDetail({ product, related }: Props) {
                     size="lg"
                     variant="outline"
                     data-heat="Comprar ahora"
-                    className="w-full h-12 text-sm font-semibold rounded-2xl border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+                    className="w-full h-12 text-sm font-medium rounded-full border border-primary/40 text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
                     onClick={handleBuyNow}
                     disabled={product.stock === 0 || isCheckingOut}
                   >
@@ -540,7 +556,7 @@ export function ProductDetail({ product, related }: Props) {
                   <Button
                     variant="outline"
                     size="lg"
-                    className={`flex-1 h-12 rounded-2xl transition-colors ${fav ? "border-red-300 bg-red-50 text-red-600 hover:bg-red-100" : ""}`}
+                    className={`flex-1 h-12 rounded-full transition-colors ${fav ? "border-red-300 bg-red-50 text-red-600 hover:bg-red-100" : "border-foreground/15"}`}
                     onClick={() => toggleFavorite(product)}
                   >
                     <Heart className={`w-4 h-4 mr-2 transition-all ${fav ? "fill-red-500 text-red-500 scale-110" : ""}`} />
@@ -549,7 +565,7 @@ export function ProductDetail({ product, related }: Props) {
                   <Button
                     variant="outline"
                     size="icon"
-                    className={`h-12 w-12 rounded-2xl transition-colors ${shared ? "border-green-400 bg-green-50 text-green-600" : ""}`}
+                    className={`h-12 w-12 rounded-full transition-colors ${shared ? "border-green-400 bg-green-50 text-green-600" : "border-foreground/15"}`}
                     onClick={handleShare}
                     title={shared ? "¡Link copiado!" : "Compartir"}
                   >
@@ -568,20 +584,18 @@ export function ProductDetail({ product, related }: Props) {
                 )}
               </div>
 
-              {/* Trust signals — animated (keyframes in globals.css) */}
-              <div className="grid grid-cols-3 gap-3 pt-2">
-                <div className="flex flex-col items-center text-center gap-1.5 p-3 bg-muted/30 rounded-xl">
-                  <Truck className="w-6 h-6 text-primary trust-truck" />
-                  <span className="text-xs text-muted-foreground leading-tight font-medium">Envío gratis &gt;$300k</span>
-                </div>
-                <div className="flex flex-col items-center text-center gap-1.5 p-3 bg-muted/30 rounded-xl">
-                  <ShieldCheck className="w-6 h-6 text-primary trust-shield" />
-                  <span className="text-xs text-muted-foreground leading-tight font-medium">Pago 100% seguro</span>
-                </div>
-                <div className="flex flex-col items-center text-center gap-1.5 p-3 bg-muted/30 rounded-xl">
-                  <BadgeCheck className="w-6 h-6 text-primary trust-badge" />
-                  <span className="text-xs text-muted-foreground leading-tight font-medium">30 días garantía</span>
-                </div>
+              {/* Trust signals — fila refinada con divisores */}
+              <div className="grid grid-cols-3 pt-5 mt-1 border-t border-foreground/[0.06] divide-x divide-foreground/[0.06]">
+                {[
+                  { Icon: Truck, label: "Envío gratis +$300k", cls: "trust-truck" },
+                  { Icon: ShieldCheck, label: "Pago 100% seguro", cls: "trust-shield" },
+                  { Icon: BadgeCheck, label: "30 días garantía", cls: "trust-badge" },
+                ].map(({ Icon, label, cls }) => (
+                  <div key={label} className="flex flex-col items-center text-center gap-2 px-2 py-1">
+                    <Icon className={`w-5 h-5 text-primary ${cls}`} />
+                    <span className="text-[11px] text-muted-foreground leading-tight">{label}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -673,11 +687,12 @@ export function ProductDetail({ product, related }: Props) {
 
           {/* Related products */}
           {related.length > 0 && (
-            <div className="mt-20">
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-2xl font-serif font-bold text-foreground">Los que lo compran también llevan</h2>
+            <div className="mt-24 lg:mt-28">
+              <div className="text-center mb-10">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-muted-foreground/70 mb-2">También te puede gustar</p>
+                <h2 className="font-serif text-2xl lg:text-3xl font-bold text-foreground">Completa tu ritual</h2>
               </div>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
                 {related.map((p) => (
                   <div key={p.id} className="group bg-card border border-border rounded-2xl overflow-hidden hover:shadow-lg transition-all hover:-translate-y-1 flex flex-col">
                     <Link href={`/productos/${p.slug}`}>
