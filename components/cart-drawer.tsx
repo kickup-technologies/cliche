@@ -93,8 +93,8 @@ export function CartDrawer() {
           </button>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto overscroll-contain">
+        {/* Content — data-lenis-prevent: Lenis ignora la rueda aquí y deja el scroll nativo */}
+        <div className="flex-1 overflow-y-auto overscroll-contain" data-lenis-prevent>
           {items.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full py-16 text-center px-8 animate-in fade-in duration-500">
               <ShoppingBag className="w-9 h-9 mb-5 opacity-30" style={{ color: TERRA }} />

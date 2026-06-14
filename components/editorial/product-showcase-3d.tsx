@@ -1,22 +1,28 @@
 import Link from "next/link"
-import { Product3D } from "@/components/editorial/product-3d"
+import Image from "next/image"
 import { SplitText } from "@/components/editorial/split-text"
 import { ScrollReveal } from "@/components/editorial/scroll-reveal"
 import { Magnetic } from "@/components/magnetic"
 
 /**
- * ProductShowcase3D — vitrina del frasco renderizado en vivo. Split editorial:
- * el render 3D interactivo a la izquierda (gira solo, persigue el mouse),
- * el copy de objeto-de-deseo a la derecha.
+ * ProductShowcase3D — vitrina del frasco real. Split editorial: el render
+ * oficial del producto a la izquierda (fondo blanco fundido con la sección
+ * vía mix-blend-multiply), el copy de objeto-de-deseo a la derecha.
  */
 export function ProductShowcase3D() {
   return (
     <section className="overflow-hidden bg-secondary">
       <div className="container mx-auto grid grid-cols-1 items-center gap-10 px-4 py-20 md:grid-cols-2 md:py-28">
-        {/* Render vivo */}
+        {/* Render oficial */}
         <ScrollReveal distance={32}>
-          <div className="relative mx-auto aspect-[4/5] w-full max-w-[440px]">
-            <Product3D className="absolute inset-0" />
+          <div className="group relative mx-auto aspect-[4/5] w-full max-w-[440px]">
+            <Image
+              src="/images/products/calor-de-lana.png"
+              alt="Frasco Calor de Lana — Bienestar by Cliché"
+              fill
+              sizes="(max-width: 768px) 100vw, 440px"
+              className="object-contain mix-blend-multiply transition-transform duration-[1.1s] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04]"
+            />
           </div>
         </ScrollReveal>
 
@@ -33,7 +39,7 @@ export function ProductShowcase3D() {
           <p className="mx-auto mt-6 max-w-md text-sm font-light leading-relaxed text-muted-foreground md:mx-0 md:text-base">
             Vidrio, proporción y un aroma que se queda. Cada frasco está
             pensado para vivir a la vista: en la repisa del baño, la mesa de
-            noche o el recibidor. Gíralo — es tuyo.
+            noche o el recibidor. Hazlo tuyo.
           </p>
           <Magnetic className="mt-9">
             <Link
