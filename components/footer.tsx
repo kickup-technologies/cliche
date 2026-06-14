@@ -20,7 +20,7 @@ const footerLinks = {
     { name: "Kit Armonía x3", href: "/productos/kit-armonia-x3" },
   ],
   empresa: [
-    { name: "Nuestra Historia", href: "/#nosotros" },
+    { name: "Nuestra Historia", href: "/nosotros" },
     { name: "Marcas aliadas", href: "/#marcas" },
     { name: "Crea tu aroma", href: "https://clichecolombia.com/pages/quiero-crear-un-aroma-para-mi-marca" },
     { name: "Distribuidores", href: "https://wa.me/573194565463?text=Hola!+Quiero+info+sobre+distribuidores" },

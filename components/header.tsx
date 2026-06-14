@@ -27,7 +27,7 @@ const navigation = [
     ],
   },
   { name: "Ofertas", href: "/ofertas", highlight: true },
-  { name: "Nosotros", href: "/#nosotros" },
+  { name: "Nosotros", href: "/nosotros" },
 ]
 
 export function Header() {

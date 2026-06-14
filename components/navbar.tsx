@@ -16,7 +16,7 @@ export function Navbar() {
     { name: "Productos", href: "#productos" },
     { name: "Kits", href: "#kits" },
     { name: "Aromas Personalizados", href: "#personalizados" },
-    { name: "Nosotros", href: "#nosotros" },
+    { name: "Nosotros", href: "/nosotros" },
   ]
 
   return (
