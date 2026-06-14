@@ -1,11 +1,15 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 
+type SlideMedia =
+  | { type: "video"; src: string; poster?: string }
+  | { type: "image"; src: string }
+
 interface Slide {
-  image: string
+  media: SlideMedia
   eyebrow?: string
   title: string
   subtitle?: string
@@ -16,16 +20,16 @@ interface Slide {
 
 const SLIDES: Slide[] = [
   {
-    image: "/images/hero-main.jpg",
+    media: { type: "video", src: "/videos/hero-1.mp4" },
     eyebrow: "Bienestar by Cliché",
     title: "Tu hogar\noliendo a spa",
     subtitle: "Fragancias artesanales 100% naturales. Un puf y tu espacio se transforma en segundos.",
     cta: { label: "Descubrir aromas", href: "/catalogo" },
     microcopy: "100% natural · No mancha · Envío gratis desde $300.000",
-    align: "left",
+    align: "center",
   },
   {
-    image: "/images/lifestyle-living.jpg",
+    media: { type: "video", src: "/videos/hero-2.mp4" },
     eyebrow: "Hecho en Colombia",
     title: "Un aroma para\ncada espacio",
     subtitle: "Diseñadas para durar todo el día. No irritan, no manchan.",
@@ -34,23 +38,37 @@ const SLIDES: Slide[] = [
     align: "center",
   },
   {
-    image: "/images/lifestyle-bedroom.jpg",
+    media: { type: "image", src: "/images/hero-main.jpg" },
     eyebrow: "Rituales diarios",
     title: "Un momento\nque huele a ti",
     subtitle: "Encuentra el aroma que define tu espacio y tu historia.",
     cta: { label: "Explorar aromas", href: "/catalogo" },
     microcopy: "100% artesanal · Fabricado en Colombia",
-    align: "center",
+    align: "left",
   },
 ]
 
 export function EditorialHero() {
   const [active, setActive] = useState(0)
+  const videoRefs = useRef<(HTMLVideoElement | null)[]>([])
 
   useEffect(() => {
-    const t = setInterval(() => setActive((i) => (i + 1) % SLIDES.length), 6500)
+    const t = setInterval(() => setActive((i) => (i + 1) % SLIDES.length), 7000)
     return () => clearInterval(t)
   }, [])
+
+  // Reproduce solo el video del slide activo; pausa los demás (rendimiento)
+  useEffect(() => {
+    videoRefs.current.forEach((v, i) => {
+      if (!v) return
+      if (i === active) {
+        v.currentTime = 0
+        v.play().catch(() => {})
+      } else {
+        v.pause()
+      }
+    })
+  }, [active])
 
   return (
     <section className="relative h-[82vh] min-h-[560px] w-full overflow-hidden bg-[#2D1A14]">
@@ -65,27 +83,40 @@ export function EditorialHero() {
               isActive ? "opacity-100" : "opacity-0 pointer-events-none"
             }`}
           >
-            <Image
-              src={slide.image}
-              alt={slide.title}
-              fill
-              priority={i === 0}
-              sizes="100vw"
-              className="object-cover"
-            />
+            {/* Media de fondo: video o imagen */}
+            {slide.media.type === "video" ? (
+              <video
+                ref={(el) => { videoRefs.current[i] = el }}
+                src={slide.media.src}
+                poster={slide.media.poster}
+                muted
+                loop
+                playsInline
+                autoPlay={i === 0}
+                preload={i === 0 ? "auto" : "metadata"}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            ) : (
+              <Image
+                src={slide.media.src}
+                alt={slide.title.replace(/\n/g, " ")}
+                fill
+                priority={i === 0}
+                sizes="100vw"
+                className="object-cover"
+              />
+            )}
 
             {/* Gradiente direccional según alineación del texto */}
             {isLeft ? (
               <>
-                {/* Sombra lateral izquierda para legibilidad del texto */}
                 <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-transparent" />
-                {/* Sombra inferior sutil para anclar la imagen */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/15" />
               </>
             ) : (
               <>
-                <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-black/55" />
-                <div className="absolute inset-0 bg-black/10" />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/15 to-black/55" />
+                <div className="absolute inset-0 bg-black/15" />
               </>
             )}
 
@@ -99,7 +130,6 @@ export function EditorialHero() {
             >
               <div className={isLeft ? "max-w-[54%] md:max-w-[46%]" : "max-w-2xl"}>
 
-                {/* Eyebrow — entra primero */}
                 {slide.eyebrow && (
                   <p
                     className="mb-4 text-[0.65rem] font-semibold uppercase tracking-[0.38em] text-white/75 transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
@@ -113,11 +143,11 @@ export function EditorialHero() {
                   </p>
                 )}
 
-                {/* Título — el más grande, entra con delay */}
                 <h1
                   className="font-serif font-medium leading-[1.04] text-white whitespace-pre-line transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
                   style={{
                     fontSize: "clamp(2.4rem, 5vw, 4rem)",
+                    textShadow: "0 2px 24px rgba(0,0,0,0.35)",
                     opacity: isActive ? 1 : 0,
                     transform: isActive ? "translateY(0px)" : "translateY(18px)",
                     transitionDelay: isActive ? "320ms" : "0ms",
@@ -126,7 +156,6 @@ export function EditorialHero() {
                   {slide.title}
                 </h1>
 
-                {/* Separador decorativo */}
                 <div
                   className="my-5 h-[1px] bg-white/25 transition-all duration-700 ease-out"
                   style={{
@@ -135,10 +164,11 @@ export function EditorialHero() {
                   }}
                 />
 
-                {/* Subtítulo */}
                 {slide.subtitle && (
                   <p
-                    className="max-w-sm text-[0.95rem] font-light leading-relaxed text-white/85 transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                    className={`text-[0.95rem] font-light leading-relaxed text-white/85 transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                      isLeft ? "max-w-sm" : "mx-auto max-w-md"
+                    }`}
                     style={{
                       opacity: isActive ? 1 : 0,
                       transform: isActive ? "translateY(0px)" : "translateY(16px)",
@@ -149,7 +179,6 @@ export function EditorialHero() {
                   </p>
                 )}
 
-                {/* CTA */}
                 {slide.cta && (
                   <div
                     className="transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
@@ -169,7 +198,6 @@ export function EditorialHero() {
                   </div>
                 )}
 
-                {/* Microcopy de confianza */}
                 {slide.microcopy && (
                   <p
                     className="mt-5 text-[0.6rem] font-medium uppercase tracking-[0.22em] text-white/45 transition-all duration-700 ease-out"
@@ -199,16 +227,6 @@ export function EditorialHero() {
             }`}
           />
         ))}
-      </div>
-
-      {/* Indicador de scroll */}
-      <div
-        className="absolute bottom-8 right-8 hidden flex-col items-center gap-2 transition-all duration-700 ease-out md:flex"
-        style={{ opacity: active === 0 ? 0.45 : 0, transitionDelay: "1000ms" }}
-        aria-hidden="true"
-      >
-        <span className="text-[0.55rem] font-semibold uppercase tracking-[0.3em] text-white">Scroll</span>
-        <div className="h-8 w-[1px] bg-white/40" />
       </div>
     </section>
   )
