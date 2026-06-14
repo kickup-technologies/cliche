@@ -3,24 +3,25 @@
 import { useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { X, Plus, Minus, ShoppingBag, Trash2, ArrowRight, Sparkles, Truck, PartyPopper } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { X, Plus, Minus, ShoppingBag, Trash2, ArrowRight, Truck, Check } from "lucide-react"
 import { useCart } from "@/context/cart-context"
 import type { Product } from "@/lib/supabase"
 
+// Paleta de marca (fiel al landing / checkout)
+const CREAM = "#FAF8F5"
+const BROWN = "#2D1A14"
+const TERRA = "#A67163"
+
 function formatPrice(price: number) {
-  return new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    minimumFractionDigits: 0,
-  }).format(price)
+  return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(price)
 }
+
+const FREE_SHIPPING = 300000
 
 export function CartDrawer() {
   const { items, removeItem, updateQuantity, total, itemCount, checkout, isCheckingOut, isDrawerOpen, closeDrawer, addItem } = useCart()
   const [recommendations, setRecommendations] = useState<Product[]>([])
 
-  // Cargar recomendaciones — productos que NO están en el carrito
   useEffect(() => {
     if (!isDrawerOpen) return
     fetch("/api/products")
@@ -28,13 +29,11 @@ export function CartDrawer() {
       .then((all: Product[]) => {
         if (!Array.isArray(all)) return
         const inCart = new Set(items.map((i) => i.product.id))
-        const recs = all.filter((p) => !inCart.has(p.id) && p.stock > 0).slice(0, 3)
-        setRecommendations(recs)
+        setRecommendations(all.filter((p) => !inCart.has(p.id) && p.stock > 0).slice(0, 3))
       })
       .catch(() => {})
   }, [isDrawerOpen, items])
 
-  // Bloquear scroll al abrir
   useEffect(() => {
     document.body.style.overflow = isDrawerOpen ? "hidden" : ""
     return () => { document.body.style.overflow = "" }
@@ -42,82 +41,101 @@ export function CartDrawer() {
 
   if (!isDrawerOpen) return null
 
+  const remaining = Math.max(0, FREE_SHIPPING - total)
+  const progress = Math.min(100, (total / FREE_SHIPPING) * 100)
+
   return (
     <>
       {/* Overlay */}
       <div
-        className="fixed inset-0 bg-black/40 z-50 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/40 z-50 backdrop-blur-sm animate-in fade-in duration-300"
         onClick={closeDrawer}
       />
 
       {/* Drawer */}
-      <div className="fixed top-0 right-0 h-full w-full max-w-[420px] bg-background z-50 shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+      <div
+        className="fixed top-0 right-0 h-full w-full max-w-[440px] z-50 shadow-2xl flex flex-col animate-in slide-in-from-right duration-300 ease-out"
+        style={{ background: CREAM }}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-border">
-          <div className="flex items-center gap-2">
-            <ShoppingBag className="w-5 h-5 text-primary" />
-            <h2 className="font-serif text-lg font-bold text-foreground">
-              Tu carrito
-              {itemCount > 0 && (
-                <span className="ml-2 text-sm font-normal text-muted-foreground">({itemCount} producto{itemCount !== 1 ? "s" : ""})</span>
-              )}
-            </h2>
+        <div className="flex items-center justify-between px-7 py-6 border-b" style={{ borderColor: `${BROWN}12` }}>
+          <div>
+            <h2 className="font-serif text-xl font-light" style={{ color: BROWN }}>Tu carrito</h2>
+            <p className="text-[10px] tracking-[0.25em] uppercase mt-0.5" style={{ color: `${BROWN}40` }}>
+              {itemCount > 0 ? `${itemCount} artículo${itemCount !== 1 ? "s" : ""}` : "Vacío"}
+            </p>
           </div>
           <button
             onClick={closeDrawer}
-            className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/70 transition-colors"
+            aria-label="Cerrar"
+            className="w-9 h-9 rounded-full flex items-center justify-center transition-colors hover:bg-[#2D1A14]/5"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4" style={{ color: BROWN }} />
           </button>
         </div>
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
           {items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full py-16 text-center px-6">
-              <ShoppingBag className="w-14 h-14 text-muted-foreground/30 mb-4" />
-              <p className="font-semibold text-foreground mb-1">Tu carrito está vacío</p>
-              <p className="text-sm text-muted-foreground mb-6">Descubre nuestros aromas y encuentra el tuyo.</p>
-              <Button onClick={closeDrawer} variant="outline" asChild>
-                <Link href="/#productos">Explorar productos</Link>
-              </Button>
+            <div className="flex flex-col items-center justify-center h-full py-16 text-center px-8 animate-in fade-in duration-500">
+              <ShoppingBag className="w-9 h-9 mb-5 opacity-30" style={{ color: TERRA }} />
+              <p className="font-serif text-2xl font-light mb-2" style={{ color: BROWN }}>Tu carrito está vacío</p>
+              <p className="text-sm mb-8 max-w-[240px] leading-relaxed" style={{ color: `${BROWN}50` }}>
+                Descubre nuestra colección de aromas y encuentra el que transforma tu espacio.
+              </p>
+              <Link
+                href="/catalogo"
+                onClick={closeDrawer}
+                className="inline-flex items-center gap-2 border text-sm font-medium px-8 py-3 rounded-full transition-colors duration-300 hover:text-[#FAF8F5]"
+                style={{ borderColor: BROWN, color: BROWN }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = BROWN)}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+              >
+                Explorar colección
+              </Link>
             </div>
           ) : (
-            <div className="px-6 py-4 space-y-4">
-              {/* Cart items */}
-              {items.map(({ product, quantity }) => (
-                <div key={product.id} className="flex gap-4 py-3 border-b border-border/50 last:border-0">
-                  <div className="w-18 h-18 bg-muted/40 rounded-xl overflow-hidden flex-shrink-0 w-[72px] h-[72px]">
+            <div className="px-7 py-5">
+              {items.map(({ product, quantity }, idx) => (
+                <div
+                  key={product.id}
+                  className="flex gap-4 py-5 border-b last:border-0 animate-in fade-in slide-in-from-right-2 duration-300"
+                  style={{ borderColor: `${BROWN}08`, animationDelay: `${idx * 60}ms`, animationFillMode: "both" }}
+                >
+                  <div className="w-[76px] h-[76px] flex-shrink-0 overflow-hidden" style={{ background: `${BROWN}08` }}>
                     <Image
                       src={product.image_url || "/images/placeholder.jpg"}
                       alt={product.name}
-                      width={72}
-                      height={72}
-                      className="w-full h-full object-contain p-1"
+                      width={76}
+                      height={76}
+                      className="w-full h-full object-cover"
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground leading-tight">{product.name}</p>
-                    <p className="text-sm font-bold text-primary mt-1">{formatPrice(product.price)}</p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <div className="flex items-center border border-border rounded-lg overflow-hidden">
+                    <p className="font-serif text-[15px] leading-snug" style={{ color: BROWN }}>{product.name}</p>
+                    <p className="text-sm font-medium mt-1" style={{ color: TERRA }}>{formatPrice(product.price)}</p>
+                    <div className="flex items-center gap-2 mt-3">
+                      <div className="flex items-center border" style={{ borderColor: `${BROWN}15` }}>
                         <button
                           onClick={() => updateQuantity(product.id, quantity - 1)}
-                          className="w-7 h-7 flex items-center justify-center hover:bg-muted transition-colors"
+                          className="w-8 h-8 flex items-center justify-center transition-colors hover:bg-[#2D1A14]/5"
+                          style={{ color: `${BROWN}60` }}
                         >
                           <Minus className="w-3 h-3" />
                         </button>
-                        <span className="w-7 text-center text-sm font-medium">{quantity}</span>
+                        <span className="w-8 text-center text-sm" style={{ color: BROWN }}>{quantity}</span>
                         <button
                           onClick={() => updateQuantity(product.id, quantity + 1)}
-                          className="w-7 h-7 flex items-center justify-center hover:bg-muted transition-colors"
+                          className="w-8 h-8 flex items-center justify-center transition-colors hover:bg-[#2D1A14]/5"
+                          style={{ color: `${BROWN}60` }}
                         >
                           <Plus className="w-3 h-3" />
                         </button>
                       </div>
                       <button
                         onClick={() => removeItem(product.id)}
-                        className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors ml-auto"
+                        aria-label="Eliminar"
+                        className="w-8 h-8 flex items-center justify-center ml-auto transition-colors text-[#2D1A14]/25 hover:text-red-400"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -126,32 +144,27 @@ export function CartDrawer() {
                 </div>
               ))}
 
-              {/* Recommendations */}
+              {/* Recomendaciones */}
               {recommendations.length > 0 && (
-                <div className="pt-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Sparkles className="w-4 h-4 text-primary" />
-                    <p className="text-sm font-semibold text-foreground">Completa tu ritual</p>
-                  </div>
+                <div className="pt-6 mt-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.25em] mb-4" style={{ color: `${BROWN}40` }}>
+                    Completa tu ritual
+                  </p>
                   <div className="space-y-3">
                     {recommendations.map((rec) => (
-                      <div key={rec.id} className="flex items-center gap-3 bg-muted/30 rounded-xl p-3">
-                        <div className="w-12 h-12 bg-background rounded-lg overflow-hidden flex-shrink-0">
-                          <Image
-                            src={rec.image_url || "/images/placeholder.jpg"}
-                            alt={rec.name}
-                            width={48}
-                            height={48}
-                            className="w-full h-full object-contain p-1"
-                          />
+                      <div key={rec.id} className="flex items-center gap-3">
+                        <div className="w-11 h-11 flex-shrink-0 overflow-hidden" style={{ background: `${BROWN}08` }}>
+                          <Image src={rec.image_url || "/images/placeholder.jpg"} alt={rec.name} width={44} height={44} className="w-full h-full object-cover" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-foreground leading-tight truncate">{rec.name}</p>
-                          <p className="text-xs text-primary font-bold mt-0.5">{formatPrice(rec.price)}</p>
+                          <p className="font-serif text-[13px] leading-tight truncate" style={{ color: BROWN }}>{rec.name}</p>
+                          <p className="text-xs mt-0.5" style={{ color: TERRA }}>{formatPrice(rec.price)}</p>
                         </div>
                         <button
                           onClick={() => addItem(rec)}
-                          className="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center hover:bg-accent transition-colors flex-shrink-0"
+                          aria-label="Agregar"
+                          className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white transition-transform hover:scale-105 active:scale-95"
+                          style={{ background: TERRA }}
                         >
                           <Plus className="w-3.5 h-3.5" />
                         </button>
@@ -166,44 +179,44 @@ export function CartDrawer() {
 
         {/* Footer */}
         {items.length > 0 && (
-          <div className="border-t border-border px-6 py-5 space-y-4 bg-background">
+          <div className="border-t px-7 py-6 space-y-4" style={{ borderColor: `${BROWN}12`, background: CREAM }}>
             {/* Barra envío gratis */}
-            {(() => {
-              const FREE_SHIPPING = 300000
-              const remaining = Math.max(0, FREE_SHIPPING - total)
-              const progress = Math.min(100, (total / FREE_SHIPPING) * 100)
-              return (
-                <div className="space-y-1.5">
-                  {remaining > 0 ? (
-                    <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
-                      Agrega <span className="font-bold text-foreground">{formatPrice(remaining)}</span> más y tu envío es <span className="font-bold text-green-600 flex items-center gap-0.5"><Truck className="w-3 h-3" />GRATIS</span>
-                    </p>
-                  ) : (
-                    <p className="text-xs text-center font-semibold text-green-600 flex items-center justify-center gap-1"><PartyPopper className="w-3.5 h-3.5" />¡Tienes envío gratis!</p>
-                  )}
-                  <div className="w-full bg-muted rounded-full h-1.5">
-                    <div
-                      className="bg-green-500 h-1.5 rounded-full transition-all duration-500"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                </div>
-              )
-            })()}
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Subtotal</span>
-              <span className="text-lg font-bold text-foreground">{formatPrice(total)}</span>
+            <div className="space-y-2">
+              {remaining > 0 ? (
+                <p className="text-[11px] text-center" style={{ color: `${BROWN}55` }}>
+                  Agrega <span className="font-semibold" style={{ color: BROWN }}>{formatPrice(remaining)}</span> más y el envío es{" "}
+                  <span className="font-semibold inline-flex items-center gap-0.5" style={{ color: TERRA }}><Truck className="w-3 h-3" />gratis</span>
+                </p>
+              ) : (
+                <p className="text-[11px] text-center font-semibold inline-flex items-center justify-center gap-1 w-full" style={{ color: TERRA }}>
+                  <Check className="w-3.5 h-3.5" /> ¡Tienes envío gratis!
+                </p>
+              )}
+              <div className="h-[3px] w-full overflow-hidden rounded-full" style={{ background: `${BROWN}10` }}>
+                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${progress}%`, background: TERRA }} />
+              </div>
             </div>
-            <Button
-              size="lg"
-              className="w-full h-13 text-base font-semibold"
+
+            <div className="flex justify-between items-baseline pt-1">
+              <span className="text-[11px] tracking-[0.2em] uppercase" style={{ color: `${BROWN}45` }}>Subtotal</span>
+              <span className="font-serif text-2xl font-light" style={{ color: BROWN }}>{formatPrice(total)}</span>
+            </div>
+
+            <button
               onClick={() => { sessionStorage.setItem("checkout-back-url", window.location.pathname + window.location.search); checkout(); closeDrawer() }}
               disabled={isCheckingOut}
+              className="group w-full h-14 rounded-full flex items-center justify-center gap-2 text-white text-sm font-semibold tracking-wide transition-all duration-200 active:scale-[0.99] disabled:opacity-50"
+              style={{ background: TERRA }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#8B5E52")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = TERRA)}
             >
-              {isCheckingOut ? "PROCESANDO..." : (
-                <>PROCEDER AL PAGO <ArrowRight className="ml-2 w-4 h-4" /></>
+              {isCheckingOut ? "Procesando..." : (
+                <>Proceder al pago <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" /></>
               )}
-            </Button>
+            </button>
+            <p className="text-[10px] text-center tracking-wide" style={{ color: `${BROWN}30` }}>
+              Pago cifrado · Envío a todo Colombia
+            </p>
           </div>
         )}
       </div>

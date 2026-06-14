@@ -165,7 +165,7 @@ export default function CheckoutPage() {
         <p className="text-sm text-[#2D1A14]/50 mb-10 max-w-xs leading-relaxed">
           Descubre nuestra colección de aromas artesanales y encuentra el que transforma tu espacio.
         </p>
-        <Link href="/catalogo" className="inline-flex items-center gap-2 border border-[#2D1A14] text-[#2D1A14] text-sm font-medium px-8 py-3 hover:bg-[#2D1A14] hover:text-[#FAF8F5] transition-colors duration-300">
+        <Link href="/catalogo" className="inline-flex items-center gap-2 border border-[#2D1A14] text-[#2D1A14] text-sm font-medium px-8 py-3 rounded-full hover:bg-[#2D1A14] hover:text-[#FAF8F5] transition-colors duration-300">
           Explorar colección
         </Link>
       </div>
@@ -179,7 +179,7 @@ export default function CheckoutPage() {
           COLUMNA IZQUIERDA — productos
       ══════════════════════════════════════ */}
       <div className="flex-1 lg:overflow-y-auto">
-        <div className="max-w-2xl mx-auto px-5 sm:px-8 lg:px-14 pt-8 lg:pt-10 pb-8 lg:pb-24">
+        <div className="max-w-2xl mx-auto px-5 sm:px-8 lg:px-14 pt-8 lg:pt-10 pb-8 lg:pb-24 animate-in fade-in slide-in-from-bottom-2 duration-500">
 
           {/* Top nav */}
           <div className="flex items-center justify-between mb-5 lg:mb-6">
@@ -266,7 +266,7 @@ export default function CheckoutPage() {
 
             {/* Nombre + Teléfono */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="flex border border-[#2D1A14]/15 hover:border-[#2D1A14]/30 transition-colors duration-200">
+              <div className="flex border border-[#2D1A14]/15 hover:border-[#2D1A14]/30 focus-within:border-[#A67163]/70 transition-colors duration-200">
                 <div className="pl-3 flex items-center">
                   <User className="w-3.5 h-3.5 text-[#2D1A14]/20" />
                 </div>
@@ -278,7 +278,7 @@ export default function CheckoutPage() {
                   className="flex-1 px-3 py-3 text-sm bg-transparent text-[#2D1A14] placeholder:text-[#2D1A14]/25 outline-none font-light"
                 />
               </div>
-              <div className="flex border border-[#2D1A14]/15 hover:border-[#2D1A14]/30 transition-colors duration-200">
+              <div className="flex border border-[#2D1A14]/15 hover:border-[#2D1A14]/30 focus-within:border-[#A67163]/70 transition-colors duration-200">
                 <div className="pl-3 flex items-center">
                   <Phone className="w-3.5 h-3.5 text-[#2D1A14]/20" />
                 </div>
@@ -293,7 +293,7 @@ export default function CheckoutPage() {
             </div>
 
             {/* Email */}
-            <div className="flex border border-[#2D1A14]/15 hover:border-[#2D1A14]/30 transition-colors duration-200">
+            <div className="flex border border-[#2D1A14]/15 hover:border-[#2D1A14]/30 focus-within:border-[#A67163]/70 transition-colors duration-200">
               <div className="pl-3 flex items-center">
                 <Mail className="w-3.5 h-3.5 text-[#2D1A14]/20" />
               </div>
@@ -307,7 +307,7 @@ export default function CheckoutPage() {
             </div>
 
             {/* Dirección */}
-            <div className="flex border border-[#2D1A14]/15 hover:border-[#2D1A14]/30 transition-colors duration-200">
+            <div className="flex border border-[#2D1A14]/15 hover:border-[#2D1A14]/30 focus-within:border-[#A67163]/70 transition-colors duration-200">
               <input
                 type="text"
                 placeholder="Dirección: calle, número, barrio *"
@@ -319,7 +319,7 @@ export default function CheckoutPage() {
 
             {/* Ciudad + Departamento */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="flex border border-[#2D1A14]/15 hover:border-[#2D1A14]/30 transition-colors duration-200">
+              <div className="flex border border-[#2D1A14]/15 hover:border-[#2D1A14]/30 focus-within:border-[#A67163]/70 transition-colors duration-200">
                 <input
                   type="text"
                   placeholder="Ciudad / Municipio *"
@@ -328,7 +328,7 @@ export default function CheckoutPage() {
                   className="flex-1 px-4 py-3 text-sm bg-transparent text-[#2D1A14] placeholder:text-[#2D1A14]/25 outline-none font-light"
                 />
               </div>
-              <div className="flex border border-[#2D1A14]/15 hover:border-[#2D1A14]/30 transition-colors duration-200">
+              <div className="flex border border-[#2D1A14]/15 hover:border-[#2D1A14]/30 focus-within:border-[#A67163]/70 transition-colors duration-200">
                 <input
                   type="text"
                   placeholder="Departamento *"
@@ -405,7 +405,7 @@ export default function CheckoutPage() {
       {/* ══════════════════════════════════════
           DERECHA — resumen (desktop only)
       ══════════════════════════════════════ */}
-      <div className="hidden lg:flex w-[400px] xl:w-[440px] flex-shrink-0 bg-[#2D1A14] h-screen overflow-y-auto flex-col">
+      <div className="hidden lg:flex w-[400px] xl:w-[440px] flex-shrink-0 bg-[#2D1A14] h-screen overflow-y-auto flex-col animate-in fade-in slide-in-from-right duration-500">
         <div className="flex flex-col min-h-full px-10 xl:px-12 pt-14 pb-10">
 
           <p className="text-[#FAF8F5]/25 text-[9px] tracking-[0.25em] uppercase mb-8">Resumen del pedido</p>
@@ -479,7 +479,7 @@ export default function CheckoutPage() {
             <button
               onClick={handlePay}
               disabled={isLoading || selectedItems.length === 0}
-              className="w-full rounded-xl py-4 px-6 flex items-center justify-center gap-3 bg-[#A67163] text-white font-semibold text-sm tracking-wide hover:bg-[#8B5E52] active:scale-[0.99] transition-all duration-200 disabled:opacity-25 disabled:cursor-not-allowed"
+              className="w-full rounded-full py-4 px-6 flex items-center justify-center gap-3 bg-[#A67163] text-white font-semibold text-sm tracking-wide hover:bg-[#8B5E52] active:scale-[0.99] transition-all duration-200 disabled:opacity-25 disabled:cursor-not-allowed"
             >
               {isLoading
                 ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Procesando...</>
@@ -609,7 +609,7 @@ export default function CheckoutPage() {
           <button
             onClick={handlePay}
             disabled={isLoading || selectedItems.length === 0}
-            className="flex-shrink-0 rounded-xl py-3.5 px-6 flex items-center justify-center gap-2 bg-[#A67163] text-white font-semibold text-sm tracking-wide hover:bg-[#8B5E52] active:scale-[0.98] transition-all duration-200 disabled:opacity-25 disabled:cursor-not-allowed"
+            className="flex-shrink-0 rounded-full py-3.5 px-6 flex items-center justify-center gap-2 bg-[#A67163] text-white font-semibold text-sm tracking-wide hover:bg-[#8B5E52] active:scale-[0.98] transition-all duration-200 disabled:opacity-25 disabled:cursor-not-allowed"
           >
             {isLoading
               ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Procesando</>
