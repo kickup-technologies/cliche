@@ -69,7 +69,11 @@ export async function botReply(opts: {
   if (!hasAnyAIProvider()) throw new Error("No hay proveedor de IA configurado (define GROQ_API_KEY u otra).")
 
   const p = providers()
-  const base = { system, messages, maxTokens: maxOutputTokens }
+  // El system prompt se inyecta como primer mensaje de rol "system" dentro del
+  // array (más robusto entre proveedores que el parámetro `system`, que algunos
+  // ignoran). Usamos maxOutputTokens (nombre correcto en AI SDK v6).
+  const fullMessages = [{ role: "system", content: system }, ...messages] as Array<{ role: string; content: string }>
+  const base = { messages: fullMessages, maxOutputTokens }
   const withTemp = (supports: boolean) => (supports ? { ...base, temperature } : base)
 
   const chain: Array<[boolean, () => Promise<string | null>]> = [
