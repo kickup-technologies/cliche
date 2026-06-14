@@ -59,7 +59,6 @@ export function ProductRecommendations({ product, fallback }: Props) {
     [recent, pool],
   )
 
-  const hasRecent = recentCards.length > 0
   const cards = tab === "recent" ? recentCards : recoCards
 
   return (
@@ -79,21 +78,19 @@ export function ProductRecommendations({ product, fallback }: Props) {
             }`}
           />
         </button>
-        {hasRecent && (
-          <button
-            onClick={() => setTab("recent")}
-            className={`relative pb-4 text-sm font-medium tracking-wide transition-colors ${
-              tab === "recent" ? "text-foreground" : "text-muted-foreground hover:text-foreground/80"
+        <button
+          onClick={() => setTab("recent")}
+          className={`relative pb-4 text-sm font-medium tracking-wide transition-colors ${
+            tab === "recent" ? "text-foreground" : "text-muted-foreground hover:text-foreground/80"
+          }`}
+        >
+          Vistos recientemente
+          <span
+            className={`absolute -bottom-px left-0 right-0 h-0.5 rounded-full bg-primary transition-transform duration-300 ${
+              tab === "recent" ? "scale-x-100" : "scale-x-0"
             }`}
-          >
-            Vistos recientemente
-            <span
-              className={`absolute -bottom-px left-0 right-0 h-0.5 rounded-full bg-primary transition-transform duration-300 ${
-                tab === "recent" ? "scale-x-100" : "scale-x-0"
-              }`}
-            />
-          </button>
-        )}
+          />
+        </button>
       </div>
 
       {cards.length === 0 ? (

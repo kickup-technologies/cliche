@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import type { Review } from "@/lib/supabase"
+import { seededReviews } from "@/lib/seed-reviews"
 
 const MAX_FILES = 6
 const MAX_SIZE_MB = 50
@@ -175,6 +176,7 @@ function ReviewCard({ review, productName, productImage, onDelete }: {
   const urls = review.media_urls ?? []
   const { title, body } = splitComment(review.comment ?? "")
   const recommends = review.rating >= 4
+  const isSeed = review.id.startsWith("seed-")
   const [confirming, setConfirming] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
@@ -229,19 +231,21 @@ function ReviewCard({ review, productName, productImage, onDelete }: {
           <Stars value={review.rating} size={15} />
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">{date}</span>
-            <button
-              onClick={handleDelete}
-              disabled={deleting}
-              className={`flex items-center gap-1 rounded-lg p-1 text-xs font-medium transition-all ${
-                confirming
-                  ? "bg-red-50 text-red-600 opacity-100"
-                  : "text-muted-foreground/50 opacity-0 hover:text-red-500 group-hover:opacity-100"
-              }`}
-              title={confirming ? "Confirmar eliminación" : "Eliminar reseña"}
-            >
-              {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-              {confirming && <span>¿Eliminar?</span>}
-            </button>
+            {!isSeed && (
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className={`flex items-center gap-1 rounded-lg p-1 text-xs font-medium transition-all ${
+                  confirming
+                    ? "bg-red-50 text-red-600 opacity-100"
+                    : "text-muted-foreground/50 opacity-0 hover:text-red-500 group-hover:opacity-100"
+                }`}
+                title={confirming ? "Confirmar eliminación" : "Eliminar reseña"}
+              >
+                {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                {confirming && <span>¿Eliminar?</span>}
+              </button>
+            )}
           </div>
         </div>
 
@@ -309,28 +313,32 @@ export function ReviewsSection({ productId, productName, productImage }: Props) 
 
   useEffect(() => { fetchReviews() }, [fetchReviews])
 
-  const avgRating = reviews.length
-    ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
+  // Reseñas reales (BD) + semilla (prueba social) combinadas para todo lo visible
+  const seeds = useMemo(() => seededReviews(productId), [productId])
+  const combined = useMemo(() => [...reviews, ...seeds], [reviews, seeds])
+
+  const avgRating = combined.length
+    ? combined.reduce((s, r) => s + r.rating, 0) / combined.length
     : 0
 
   // Distribución 5★ → 1★
   const dist = useMemo(
     () => [5, 4, 3, 2, 1].map((star) => ({
       star,
-      count: reviews.filter((r) => Math.round(r.rating) === star).length,
+      count: combined.filter((r) => Math.round(r.rating) === star).length,
     })),
-    [reviews],
+    [combined],
   )
 
   const sortedReviews = useMemo(() => {
-    const arr = [...reviews]
+    const arr = [...combined]
     if (sort === "rating") {
       arr.sort((a, b) => b.rating - a.rating || +new Date(b.created_at) - +new Date(a.created_at))
     } else {
       arr.sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))
     }
     return arr
-  }, [reviews, sort])
+  }, [combined, sort])
 
   const handleFiles = (files: FileList | null) => {
     if (!files) return
@@ -395,7 +403,7 @@ export function ReviewsSection({ productId, productName, productImage }: Props) 
       <h2 className="text-center font-serif text-3xl font-bold text-foreground mb-10">Reseñas</h2>
 
       {/* Resumen + distribución */}
-      {reviews.length > 0 && (
+      {combined.length > 0 && (
         <div className="mb-10">
           <div className="mb-8 flex flex-col items-center gap-2 text-center">
             <div className="flex items-center gap-3">
@@ -403,7 +411,7 @@ export function ReviewsSection({ productId, productName, productImage }: Props) 
               <Stars value={avgRating} size={22} />
             </div>
             <p className="text-sm text-muted-foreground">
-              Basado en {reviews.length} reseña{reviews.length !== 1 ? "s" : ""}
+              Basado en {combined.length} reseña{combined.length !== 1 ? "s" : ""}
             </p>
           </div>
 
@@ -416,7 +424,7 @@ export function ReviewsSection({ productId, productName, productImage }: Props) 
                 <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
                   <div
                     className="h-full rounded-full bg-foreground transition-all duration-700"
-                    style={{ width: `${reviews.length ? (count / reviews.length) * 100 : 0}%` }}
+                    style={{ width: `${combined.length ? (count / combined.length) * 100 : 0}%` }}
                   />
                 </div>
                 <span className="w-6 text-right text-muted-foreground">{count}</span>
@@ -429,10 +437,10 @@ export function ReviewsSection({ productId, productName, productImage }: Props) 
       {/* Barra de acciones */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border pt-6">
         <p className="text-sm text-muted-foreground">
-          {reviews.length} reseña{reviews.length !== 1 ? "s" : ""}
+          {combined.length} reseña{combined.length !== 1 ? "s" : ""}
         </p>
         <div className="flex items-center gap-3">
-          {reviews.length > 1 && (
+          {combined.length > 1 && (
             <div className="relative">
               <select
                 value={sort}
@@ -557,7 +565,7 @@ export function ReviewsSection({ productId, productName, productImage }: Props) 
             <div key={i} className="h-28 animate-pulse rounded-2xl bg-muted/30" />
           ))}
         </div>
-      ) : reviews.length === 0 ? (
+      ) : combined.length === 0 ? (
         <div className="py-12 text-center text-muted-foreground">
           <MessageSquare className="mx-auto mb-3 h-10 w-10 opacity-30" />
           <p className="font-medium">Sé el primero en dejar tu reseña</p>

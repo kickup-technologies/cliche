@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { shouldPlayIntro } from "@/lib/intro-gate"
 
 const SHOW_MS = 5000
 const SLIDE_MS = 1000
@@ -12,6 +13,8 @@ export function IntroOverlay() {
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches
     if (reduce) return
+    // Solo en carga directa/refresh de la landing — nunca en navegación interna
+    if (!shouldPlayIntro()) return
 
     setPhase("in")
     document.body.style.overflow = "hidden"

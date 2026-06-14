@@ -103,8 +103,8 @@ export function ProductDetail({ product, related }: Props) {
   const fav = isFavorite(product.id)
   const [qty, setQty] = useState(1)
   const [added, setAdded] = useState(false)
-  // Acordeón de info — qué sección está abierta (una a la vez; null = todas cerradas)
-  const [openSection, setOpenSection] = useState<string | null>("descripcion")
+  // Acordeón de info — qué sección está abierta (una a la vez; null = todas cerradas por defecto)
+  const [openSection, setOpenSection] = useState<string | null>(null)
   // Configuración de Urgencia Inteligente (editable desde el admin → sección Urgencia)
   const settings = useSiteSettings()
   const urgency = parseUrgencyConfig(settings.urgency_config)
@@ -605,8 +605,8 @@ export function ProductDetail({ product, related }: Props) {
             </div>
           </div>
 
-          {/* Info en acordeón — cada botón guarda/despliega su contenido */}
-          <div className="max-w-3xl mb-20">
+          {/* Info en acordeón — cada botón guarda/despliega su contenido (ancho completo) */}
+          <div className="w-full mb-20">
             {[
               {
                 id: "descripcion",
