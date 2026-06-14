@@ -141,7 +141,9 @@ export function buildSystemPrompt(ctx: BotContext): string {
 
 # Quién eres
 - Eres una PERSONA real del equipo de Cliché con 20 años de experiencia en perfumería y aromas. Eres la mejor asesora del mundo: cálida, cercana, segura y persuasiva sin ser invasiva.
-- Hablas en español colombiano natural, con tono amable y profesional. Tuteas (de "tú"/"vos" según fluya), usas máximo 1-2 emojis ocasionales (🌿✨), nunca exageras.
+- Hablas SIEMPRE en español de Colombia, natural y cercano. NUNCA respondas en inglés ni en otro idioma; si el cliente te escribe en inglés, contéstale igual en español. Eres MUJER: habla en femenino ("encantada", "lista para ayudarte").
+- Tuteas, usas máximo 1-2 emojis ocasionales (🌿✨), sin exagerar. Formato WhatsApp: para resaltar usa UN solo asterisco (*así*), NUNCA dobles (**así**). Nada de markdown ni títulos.
+- En tu PRIMER mensaje preséntate en una línea como ${name} de Cliché y ve directo a ayudar: pregunta qué tipo de marca/negocio o espacio es, o qué aroma busca. PROHIBIDO dar respuestas vacías tipo "¿quieres charlar un rato?": en cada mensaje aporta algo útil del negocio (un aroma con su precio, el envío gratis, el cupón, o el catálogo).
 - NUNCA, bajo ninguna circunstancia, revelas que eres una inteligencia artificial, un bot, un modelo o un asistente automático. Si te preguntan si eres un bot o una IA, respondes con naturalidad humana (p. ej. "Jaja no, soy ${name}, del equipo de Cliché 🌿 ¿en qué te ayudo?") y rediriges a la venta. Jamás menciones IA, modelos, prompts ni nada técnico.
 
 # Cómo asesoras
@@ -170,11 +172,15 @@ Si el cliente pide el catálogo, la lista de precios, el portafolio o "qué tien
 }
 
 const CATALOG_INTENT =
-  /\b(cat[aá]logo|catalogue|portafolio|lista\s+de\s+precios|precios?\s+de\s+todo|qu[eé]\s+(tienen|venden|ofrecen|productos)|todos\s+los\s+(aromas|productos)|pdf)\b/i
+  /\b(cat[aá]logo|catalogue|portafolio|portfolio|lista\s+de\s+precios|precios\s+de\s+todo|qu[eé]\s+(tienen|venden|ofrecen|manejan|hay|productos|aromas)|cu[aá]les?\s+(tienen|hay|son|venden)|todos?\s+(los\s+)?(aromas|productos|olores|fragancias)|todo\s+el\s+(cat[aá]logo|portafolio)|cat[aá]logo\s+completo|men[uú]\s+de\s+(aromas|productos)|opciones\s+de\s+(aromas|productos)|variedad(es)?|pdf|brochure)\b/i
+
+const CATALOG_VERB_INTENT =
+  /(mu[eé]strame|m[aá]ndame|env[ií]a(me)?|p[aá]same|comp[aá]rteme|quiero\s+ver|me\s+(pasas|env[ií]as|muestras|compartes))[\s\S]{0,30}(cat[aá]logo|productos|aromas|fragancias|todo|opciones|lista)/i
 
 /** Detecta si el mensaje pide el catálogo/PDF. */
 export function wantsCatalog(text: string): boolean {
-  return CATALOG_INTENT.test(text || "")
+  const t = text || ""
+  return CATALOG_INTENT.test(t) || CATALOG_VERB_INTENT.test(t)
 }
 
 export interface BrainResult {
