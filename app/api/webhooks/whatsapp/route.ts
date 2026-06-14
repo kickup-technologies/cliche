@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse, after } from "next/server"
 import { timingSafeEqual } from "crypto"
 import { createServerClient } from "@/lib/supabase"
-import { sendWhatsAppBotReply, sendWhatsAppDocument } from "@/lib/whatsapp"
+import { sendWhatsAppBotReply, sendWhatsAppDocument, decryptWasenderMedia } from "@/lib/whatsapp"
 import { loadBotConfig, loadBotContext, generateAdvisorReply } from "@/lib/bot/brain"
+import { transcribeAudio, describeImage } from "@/lib/bot/media"
 import type { AIMessage } from "@/lib/bot/ai"
 
 export const runtime = "nodejs"
@@ -82,6 +83,7 @@ export async function POST(req: NextRequest) {
   const from = ((key.cleanedParticipantPn ?? key.cleanedSenderPn) as string | undefined)?.replace(/\D/g, "") ?? ""
   const body = ((messages.messageBody as string) ?? "").trim()
   const msgId = (key.id as string) ?? ""
+  const msgContent = (messages.message ?? {}) as Record<string, Record<string, string> | undefined>
 
   // Ignorar grupos: si NO hay cleanedSenderPn/Participant y el jid es de grupo.
   if (typeof remoteJid === "string" && remoteJid.endsWith("@g.us") && !key.cleanedParticipantPn) {
@@ -98,13 +100,17 @@ export async function POST(req: NextRequest) {
   // Upsert del contacto + persistir entrante (operaciones rápidas).
   await sb.from("wa_contacts").upsert({ phone: from, last_seen: new Date().toISOString() }, { onConflict: "phone" })
   await sb.from("wa_contacts").update({ unread: 1, last_seen: new Date().toISOString() }).eq("phone", from)
-  await sb.from("wa_messages").insert({
-    contact_phone: from,
-    direction: "in",
-    role: "user",
-    body: body || "(mensaje multimedia)",
-    wa_message_id: msgId || null,
-  })
+  const { data: inboundRow } = await sb
+    .from("wa_messages")
+    .insert({
+      contact_phone: from,
+      direction: "in",
+      role: "user",
+      body: body || "(mensaje multimedia)",
+      wa_message_id: msgId || null,
+    })
+    .select("id")
+    .maybeSingle()
 
   // Bot apagado → solo registrar.
   if (!config.bot_enabled) return NextResponse.json({ ok: true, stored: true, bot: "disabled" })
@@ -117,9 +123,33 @@ export async function POST(req: NextRequest) {
   after(async () => {
     const apiKey = config.wasender_api_key || undefined
     try {
-      // Sin texto utilizable → pedir amablemente que escriba.
-      if (!body) {
-        const ask = "¡Hola! 🌿 Cuéntame por aquí en qué te puedo ayudar y con gusto te asesoro."
+      // Texto efectivo del cliente: el texto/caption, o el resultado de procesar
+      // una nota de voz (transcripción) o una imagen (descripción de visión).
+      let userText = body
+      if (!userText) {
+        const audio = msgContent.audioMessage || msgContent.pttMessage
+        const image = msgContent.imageMessage
+        if (audio) {
+          const url = await decryptWasenderMedia(msgId, "audioMessage", audio, apiKey)
+          const t = url ? await transcribeAudio(url) : null
+          if (t) {
+            userText = t
+            if (inboundRow?.id) await sb.from("wa_messages").update({ body: `🎤 ${t}`, media_type: "audio" }).eq("id", inboundRow.id)
+          }
+        } else if (image) {
+          const url = await decryptWasenderMedia(msgId, "imageMessage", image, apiKey)
+          const caption = (image.caption as string) || ""
+          const d = url ? await describeImage(url, caption) : null
+          if (d) {
+            userText = caption ? `${caption}\n[Imagen del cliente: ${d}]` : `[El cliente envió una imagen: ${d}]`
+            if (inboundRow?.id) await sb.from("wa_messages").update({ body: caption ? `🖼️ ${caption}` : `🖼️ ${d.slice(0, 100)}`, media_url: url, media_type: "image" }).eq("id", inboundRow.id)
+          }
+        }
+      }
+
+      // Si no se pudo entender la media → pedir un textito con calidez.
+      if (!userText) {
+        const ask = "¡Hola! 🌿 Por aquí no me cargó bien tu mensaje. ¿Me cuentas en un textico qué aroma o para qué marca buscas?"
         await sendWhatsAppBotReply(from, ask, apiKey)
         await sb.from("wa_messages").insert({ contact_phone: from, direction: "out", role: "assistant", body: ask })
         return
@@ -135,6 +165,11 @@ export async function POST(req: NextRequest) {
       const history: AIMessage[] = (histRows || [])
         .reverse()
         .map((m) => ({ role: m.direction === "in" ? "user" : "assistant", content: m.body }))
+
+      // El último turno del usuario debe usar el texto efectivo (audio/imagen ya procesados).
+      for (let i = history.length - 1; i >= 0; i--) {
+        if (history[i].role === "user") { history[i].content = userText; break }
+      }
 
       const result = await generateAdvisorReply(history, ctx)
       const catalogUrl = ctx.config.catalog_pdf_url || config.catalog_pdf_url
