@@ -4,7 +4,7 @@ import { supabase, createServerClient } from "@/lib/supabase"
 import { rateLimit } from "@/lib/rate-limit"
 
 const FREE_SHIPPING = 300_000
-const SHIPPING_COST = 15_000
+const SHIPPING_COST = 20_500
 
 type IncomingItem = { product_id: string; quantity: number; name?: string }
 
