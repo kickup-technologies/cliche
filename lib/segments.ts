@@ -38,13 +38,19 @@ export const SEGMENT_LABEL: Record<string, string> = Object.fromEntries(
   SEGMENTS.map((s) => [s.key, s.label]),
 )
 
-/** slug del aroma → segmentos de marca recomendados (del documento). */
+/**
+ * slug normalizado del aroma → segmentos de marca recomendados (del documento).
+ * Las claves NO llevan prefijo "aroma-": normalizamos antes de buscar, porque
+ * en la BD los slugs vienen como "aroma-dulce-lana" y en el catálogo local como
+ * "dulce-lana".
+ */
 export const PRODUCT_SEGMENTS: Record<string, string[]> = {
   "dulce-lana":             ["infantiles", "femeninas"],
   "vientos-de-lino":        ["femeninas", "accesorios"],
   "eternamente-indigo":     ["unisex", "deportivas", "masculinas"],
   "sello-de-dios":          ["infantiles", "spa", "hogar"],
   "brillos-de-seda":        ["femeninas", "deportivas", "accesorios", "infantiles"],
+  "brillos-seda":           ["femeninas", "deportivas", "accesorios", "infantiles"],
   "calor-de-lana":          ["femeninas", "infantiles"],
   "indigo-profundo":        ["masculinas", "unisex"],
   "tierra":                 ["femeninas", "deportivas", "accesorios", "hoteles"],
@@ -62,22 +68,32 @@ export const PRODUCT_SEGMENTS: Record<string, string[]> = {
   "coconut":                ["bano", "infantiles"],
   "watermelon":             ["infantiles"],
   "air-fresh":              ["mascotas"],
+  // aromas que solo existen en la BD
+  "crema":                  ["femeninas", "infantiles", "hogar"],
+  "fuego":                  ["masculinas", "hoteles", "hogar"],
+  "happiness":              ["femeninas", "infantiles", "deportivas"],
+  "navidad":                ["hogar", "hoteles"],
 }
 
-/** Segmentos de un aroma por slug. */
+/** Quita el prefijo "aroma-" para unificar slugs de BD y catálogo. */
+function baseSlug(slug: string): string {
+  return slug.replace(/^aroma-/, "")
+}
+
+/** Segmentos de un aroma por slug (BD o catálogo). */
 export function segmentsForSlug(slug: string): string[] {
-  return PRODUCT_SEGMENTS[slug] ?? []
+  return PRODUCT_SEGMENTS[baseSlug(slug)] ?? []
 }
 
-/** Filtra una lista de productos por segmento (sirve para BD o catálogo: el slug coincide). */
+/** Filtra una lista de productos por segmento. */
 export function productsBySegment<T extends Pick<Product, "slug">>(
   segmentKey: string,
   pool: T[],
 ): T[] {
-  return pool.filter((p) => (PRODUCT_SEGMENTS[p.slug] ?? []).includes(segmentKey))
+  return pool.filter((p) => (PRODUCT_SEGMENTS[baseSlug(p.slug)] ?? []).includes(segmentKey))
 }
 
 /** Segmentos que efectivamente tienen productos en el pool dado, en orden de prioridad. */
 export function activeSegments<T extends Pick<Product, "slug">>(pool: T[]): Segment[] {
-  return SEGMENTS.filter((s) => pool.some((p) => (PRODUCT_SEGMENTS[p.slug] ?? []).includes(s.key)))
+  return SEGMENTS.filter((s) => pool.some((p) => (PRODUCT_SEGMENTS[baseSlug(p.slug)] ?? []).includes(s.key)))
 }
