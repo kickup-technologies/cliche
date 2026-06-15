@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
+import { segmentsForSlug, SEGMENT_LABEL } from "@/lib/segments"
 import Image from "next/image"
 import Link from "next/link"
 import { Search, X, Eye } from "lucide-react"
@@ -184,11 +185,13 @@ function ProductCard({
 function CatalogoInner() {
   const searchParams = useSearchParams()
   const initialCategory = searchParams.get("categoria") ?? "all"
+  const initialSegment = searchParams.get("segmento") ?? "all"
 
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [category, setCategory] = useState(initialCategory)
+  const [segment, setSegment] = useState(initialSegment)
   const [family, setFamily] = useState("all")
   const [sort, setSort] = useState("featured")
   const [quickView, setQuickView] = useState<Product | null>(null)
@@ -215,6 +218,10 @@ function CatalogoInner() {
       list = list.filter((p) => categorize(p.slug) === category)
     }
 
+    if (segment !== "all") {
+      list = list.filter((p) => segmentsForSlug(p.slug).includes(segment))
+    }
+
     if (family !== "all") {
       list = list.filter((p) => familyOf(p.slug) === family)
     }
@@ -227,10 +234,10 @@ function CatalogoInner() {
     }
 
     return list
-  }, [products, search, category, family, sort])
+  }, [products, search, category, segment, family, sort])
 
-  const clearFilters = () => { setSearch(""); setCategory("all"); setFamily("all"); setSort("featured") }
-  const hasActiveFilters = search || category !== "all" || family !== "all" || sort !== "featured"
+  const clearFilters = () => { setSearch(""); setCategory("all"); setSegment("all"); setFamily("all"); setSort("featured") }
+  const hasActiveFilters = search || category !== "all" || segment !== "all" || family !== "all" || sort !== "featured"
 
   return (
     <>
@@ -369,11 +376,17 @@ function CatalogoInner() {
             </div>
           ) : (
             <>
+              {segment !== "all" && SEGMENT_LABEL[segment] && (
+                <div className="mb-6 text-center">
+                  <p className="text-[0.62rem] font-semibold uppercase tracking-[0.3em] text-primary">Aromas recomendados para</p>
+                  <h2 className="mt-1 font-serif text-2xl font-medium text-foreground md:text-3xl">{SEGMENT_LABEL[segment]}</h2>
+                </div>
+              )}
               <p className="mb-8 text-center text-[0.66rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
                 {filtered.length} {filtered.length === 1 ? "resultado" : "resultados"}
               </p>
               <div
-                key={`${category}-${family}-${sort}-${search}`}
+                key={`${category}-${segment}-${family}-${sort}-${search}`}
                 className="grid grid-cols-2 gap-x-5 gap-y-12 md:grid-cols-3 xl:grid-cols-4"
               >
                 {filtered.map((product, i) => (
