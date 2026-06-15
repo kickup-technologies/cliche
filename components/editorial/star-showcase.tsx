@@ -13,8 +13,8 @@ import type { Product } from "@/lib/supabase"
  * brevemente al cursor. Leve tilt + levitación continua.
  */
 const STAR_SLUGS = ["dulce-lana", "agua", "eternamente-indigo", "sello-de-dios", "luxury", "tao"]
-const EXIT_MS = 520
-const ENTER_MS = 600
+const EXIT_MS = 820
+const ENTER_MS = 760
 
 function baseSlug(slug: string) {
   return slug.replace(/^aroma-/, "")
@@ -76,7 +76,7 @@ export function StarShowcase() {
   useEffect(() => {
     if (paused || stars.length < 2) return
     if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
-    const t = setInterval(() => change(1), 5500)
+    const t = setInterval(() => change(1), 7000)
     return () => clearInterval(t)
   }, [paused, stars.length, change])
 
@@ -111,7 +111,7 @@ export function StarShowcase() {
           </h2>
         </div>
 
-        <div className="relative mx-auto max-w-5xl">
+        <div className="relative mx-auto max-w-6xl">
           {/* Etiquetas sobre línea punteada */}
           <div className="relative mb-2 hidden h-5 items-center md:flex">
             <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-[#2D1A14]/20" />
@@ -134,7 +134,7 @@ export function StarShowcase() {
               onClick={() => change(-1)}
               aria-label="Aroma anterior"
               style={{ opacity: buttonsVisible ? 1 : 0, pointerEvents: buttonsVisible ? "auto" : "none" }}
-              className="absolute left-0 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-[#2D1A14] text-[#FAF8F5] shadow-lg transition-all duration-300 hover:bg-[#A67163] md:h-[72px] md:w-[72px]"
+              className="absolute left-0 z-20 flex h-16 w-16 items-center justify-center rounded-full bg-[#2D1A14] text-[#FAF8F5] shadow-lg transition-all duration-300 hover:bg-[#A67163] md:h-[88px] md:w-[88px]"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
@@ -143,10 +143,10 @@ export function StarShowcase() {
               ref={stageRef}
               onMouseMove={onMove}
               onMouseLeave={onLeave}
-              className="relative z-10 mx-auto h-[380px] w-full max-w-[420px] md:h-[440px]"
+              className="relative z-10 mx-auto h-[420px] w-full max-w-[480px] md:h-[560px] md:max-w-[520px]"
             >
-              {/* Círculo terracota + sombra */}
-              <div className="absolute left-1/2 top-1/2 h-[290px] w-[290px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#A67163] md:h-[330px] md:w-[330px]" />
+              {/* Círculo terracota (palpita) + sombra */}
+              <div className="star-circle absolute left-1/2 top-1/2 h-[300px] w-[300px] rounded-full bg-[#A67163] md:h-[440px] md:w-[440px]" />
               <div className="absolute bottom-8 left-1/2 h-5 w-44 -translate-x-1/2 rounded-[50%] bg-[#2D1A14]/15 blur-xl" />
 
               {/* Frasco: wrapper(exit/enter) > middle(imán) > img(tilt+float) */}
@@ -155,7 +155,7 @@ export function StarShowcase() {
                 className={`absolute inset-0 ${phase === "entering" ? "star-enter" : ""}`}
                 style={{
                   transition: phase === "exiting" ? `transform ${EXIT_MS}ms cubic-bezier(0.55,0,0.85,0.2), opacity ${EXIT_MS}ms ease` : undefined,
-                  transform: phase === "exiting" ? `translateX(${dir * 260}px) scale(0.12)` : undefined,
+                  transform: phase === "exiting" ? `translateX(${dir * 340}px) scale(0.1)` : undefined,
                   opacity: phase === "exiting" ? 0 : 1,
                 }}
               >
@@ -178,7 +178,7 @@ export function StarShowcase() {
               onClick={() => change(1)}
               aria-label="Siguiente aroma"
               style={{ opacity: buttonsVisible ? 1 : 0, pointerEvents: buttonsVisible ? "auto" : "none" }}
-              className="absolute right-0 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-[#2D1A14] text-[#FAF8F5] shadow-lg transition-all duration-300 hover:bg-[#A67163] md:h-[72px] md:w-[72px]"
+              className="absolute right-0 z-20 flex h-16 w-16 items-center justify-center rounded-full bg-[#2D1A14] text-[#FAF8F5] shadow-lg transition-all duration-300 hover:bg-[#A67163] md:h-[88px] md:w-[88px]"
             >
               <ArrowRight className="h-5 w-5" />
             </button>
@@ -213,6 +213,11 @@ export function StarShowcase() {
       </div>
 
       <style jsx>{`
+        .star-circle { animation: star-pulse 3.4s ease-in-out infinite; }
+        @keyframes star-pulse {
+          0%, 100% { transform: translate(-50%, -50%) scale(1); }
+          50% { transform: translate(-50%, -50%) scale(1.06); }
+        }
         .star-bottle { animation: star-float 4.5s ease-in-out infinite; transform-origin: center bottom; }
         @keyframes star-float {
           0%, 100% { transform: rotate(-7deg) translateY(0); }
@@ -230,6 +235,7 @@ export function StarShowcase() {
         }
         @media (prefers-reduced-motion: reduce) {
           .star-bottle { animation: none; transform: rotate(-7deg); }
+          .star-circle { animation: none; transform: translate(-50%, -50%); }
         }
       `}</style>
     </section>
