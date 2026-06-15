@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import type { Product } from "@/lib/supabase"
 import { productsBySegment, activeSegments } from "@/lib/segments"
-import { ScrollReveal } from "@/components/editorial/scroll-reveal"
+import { ScrollFade } from "@/components/editorial/scroll-fade"
 
 /**
  * SegmentShowcase — jerarquía segmentada del landing.
@@ -114,15 +114,14 @@ export function SegmentShowcase() {
             )
 
             return (
-              <ScrollReveal key={seg.key} distance={36}>
-                <div
-                  className={`grid grid-cols-1 gap-6 lg:gap-8 ${
-                    bannerRight ? "lg:grid-cols-[1fr_minmax(0,360px)]" : "lg:grid-cols-[minmax(0,360px)_1fr]"
-                  }`}
-                >
-                  {bannerRight ? (<>{productGrid}{banner}</>) : (<>{banner}{productGrid}</>)}
-                </div>
-              </ScrollReveal>
+              <ScrollFade
+                key={seg.key}
+                className={`grid grid-cols-1 gap-6 lg:gap-8 ${
+                  bannerRight ? "lg:grid-cols-[1fr_minmax(0,360px)]" : "lg:grid-cols-[minmax(0,360px)_1fr]"
+                }`}
+              >
+                {bannerRight ? (<>{productGrid}{banner}</>) : (<>{banner}{productGrid}</>)}
+              </ScrollFade>
             )
           })}
         </div>
