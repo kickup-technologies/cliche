@@ -20,6 +20,7 @@ import { Guarantees } from "@/components/editorial/guarantees"
 import { Faq } from "@/components/editorial/faq"
 import { ProductShowcase3D } from "@/components/editorial/product-showcase-3d"
 import { SegmentShowcase } from "@/components/editorial/segment-showcase"
+import { StarShowcase } from "@/components/editorial/star-showcase"
 
 /**
  * Landing — arquitectura de embudo de ventas (AIDA + objeciones + riesgo):
@@ -54,15 +55,9 @@ export default function Home() {
         <Marquee />
       </ScrollReveal>
 
-      {/* 3. DESEO — el producto estrella manda, sin hacer scroll de más */}
+      {/* 3. DESEO — exposición de aromas estrella (carrusel sobre disco) */}
       <ScrollReveal>
-        <ProductCollection
-          eyebrow="Los favoritos de las marcas"
-          title="Los más pedidos para vestir marcas"
-          limit={8}
-          ctaLabel="Ver todos los aromas"
-          ctaHref="/catalogo"
-        />
+        <StarShowcase />
       </ScrollReveal>
 
       {/* 3b. SEGMENTACIÓN B2B — un aroma para cada tipo de marca */}
