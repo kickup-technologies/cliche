@@ -19,6 +19,7 @@ import { OfferBand } from "@/components/editorial/offer-band"
 import { Guarantees } from "@/components/editorial/guarantees"
 import { Faq } from "@/components/editorial/faq"
 import { ProductShowcase3D } from "@/components/editorial/product-showcase-3d"
+import { SegmentShowcase } from "@/components/editorial/segment-showcase"
 
 /**
  * Landing — arquitectura de embudo de ventas (AIDA + objeciones + riesgo):
@@ -63,6 +64,9 @@ export default function Home() {
           ctaHref="/catalogo"
         />
       </ScrollReveal>
+
+      {/* 3b. SEGMENTACIÓN B2B — un aroma para cada tipo de marca */}
+      <SegmentShowcase />
 
       {/* 4. CREENCIA — razones para confiar (stagger interno) */}
       <ValuesColumns />
