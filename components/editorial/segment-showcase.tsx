@@ -85,15 +85,18 @@ export function SegmentShowcase() {
               </div>
             )
 
-            // Productos en flex-wrap: crecen para llenar la fila (sin huecos
-            // cuando la categoría tiene pocos productos). 3 por fila en desktop.
+            // Rejilla balanceada para que no quede un producto solo y gigante:
+            // 4 → 2×2, 6 → 3×2, etc. Tarjetas con ancho máximo para tamaño parejo.
+            const count = products.length
+            const colClass =
+              count === 1 ? "grid-cols-1" : count <= 4 ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-3"
             const productGrid = (
-              <div className="flex flex-wrap gap-4">
+              <div className={`grid ${colClass} gap-4`}>
                 {products.map((p) => (
                   <Link
                     key={p.id}
                     href={`/productos/${p.slug}`}
-                    className="group flex grow basis-[46%] flex-col lg:basis-[28%]"
+                    className="group mx-auto flex w-full max-w-[260px] flex-col"
                   >
                     <div className="relative aspect-square overflow-hidden rounded-xl bg-secondary/40">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
