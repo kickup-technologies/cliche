@@ -66,7 +66,7 @@ export function SegmentShowcase() {
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,360px)_1fr] lg:gap-8">
                   {/* Banner de la categoría */}
                   <div
-                    className={`relative flex min-h-[220px] flex-col justify-between overflow-hidden rounded-2xl p-7 lg:min-h-full lg:p-9 ${bannerRight ? "lg:order-2" : ""}`}
+                    className={`relative flex min-h-[220px] flex-col justify-start overflow-hidden rounded-2xl p-7 lg:min-h-full lg:p-9 ${bannerRight ? "lg:order-2" : ""}`}
                     style={{ background: panel.bg, color: panel.fg }}
                   >
                     <div>
