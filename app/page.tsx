@@ -19,7 +19,7 @@ import { OfferBand } from "@/components/editorial/offer-band"
 import { Guarantees } from "@/components/editorial/guarantees"
 import { Faq } from "@/components/editorial/faq"
 import { ProductShowcase3D } from "@/components/editorial/product-showcase-3d"
-import { SegmentShowcase } from "@/components/editorial/segment-showcase"
+import { SegmentScroll } from "@/components/editorial/segment-scroll"
 import { StarShowcase } from "@/components/editorial/star-showcase"
 
 /**
@@ -55,13 +55,13 @@ export default function Home() {
         <Marquee />
       </ScrollReveal>
 
-      {/* 3. DESEO — exposición de aromas estrella (carrusel sobre disco) */}
+      {/* 3. SEGMENTACIÓN B2B — categorías en sección fija (pinned scroll) */}
+      <SegmentScroll />
+
+      {/* 3b. DESEO — favoritos: exposición de aromas estrella (debajo de categorías) */}
       <ScrollReveal>
         <StarShowcase />
       </ScrollReveal>
-
-      {/* 3b. SEGMENTACIÓN B2B — un aroma para cada tipo de marca */}
-      <SegmentShowcase />
 
       {/* 4. CREENCIA — razones para confiar (stagger interno) */}
       <ValuesColumns />
