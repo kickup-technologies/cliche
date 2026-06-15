@@ -21,14 +21,14 @@ export function EditorialNewsletter() {
     <section className="bg-background py-20 md:py-28">
       <div className="container mx-auto max-w-xl px-4 text-center">
         <p className="mb-3 text-[0.7rem] font-semibold uppercase tracking-[0.3em] text-primary">
-          Solo para la comunidad
+          Para marcas y negocios
         </p>
         <h2 className="font-serif text-3xl font-medium text-foreground md:text-4xl">
-          10% off en tu primer pedido
+          10% off en el primer pedido de tu marca
         </h2>
         <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
-          Suscríbete y recibe tu código de bienvenida, además de lanzamientos
-          y reposiciones antes que nadie.
+          Suscríbete y recibe tu código de bienvenida, ideas de marketing olfativo
+          y los lanzamientos antes que nadie.
         </p>
 
         {sent ? (

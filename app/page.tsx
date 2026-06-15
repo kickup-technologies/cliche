@@ -82,7 +82,7 @@ export default function Home() {
       />
 
       {/* 6. Pausa editorial — titular gigante sobre humo WebGL */}
-      <BigTextScroll text="Aromas que transforman" />
+      <BigTextScroll text="Aromas que transforman marcas" />
 
       {/* 6b. OBJETO DE DESEO — el frasco renderizado en 3D vivo */}
       <ProductShowcase3D />

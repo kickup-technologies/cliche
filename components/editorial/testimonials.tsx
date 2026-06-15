@@ -17,14 +17,14 @@ interface Review {
 }
 
 const REVIEWS: Review[] = [
-  { name: "Mariana G.", city: "Bogotá", text: "Mi apartamento huele a spa todos los días. Las visitas siempre preguntan qué es.", product: "Brillos de Seda" },
-  { name: "Catalina R.", city: "Medellín", text: "Lo uso en la ropa de mi bebé. No mancha, no irrita y huele divino.", product: "Vientos de Lino" },
-  { name: "Andrés P.", city: "Cali", text: "Compré uno de prueba y terminé pidiendo tres más. Duran muchísimo.", product: "Tierra" },
-  { name: "Laura V.", city: "Barranquilla", text: "El empaque es tan lindo que lo regalé tal cual. Mi mamá quedó enamorada.", product: "Romeo y Julieta" },
-  { name: "Daniela M.", city: "Bogotá", text: "Unos pufs en las cortinas y la sala huele increíble hasta el otro día.", product: "Sello de Dios" },
-  { name: "Juliana S.", city: "Pereira", text: "Llegó en dos días y venía con una nota escrita a mano. Esos detalles enamoran.", product: "Dulce Lana" },
-  { name: "Camila T.", city: "Bucaramanga", text: "Probé mil sprays de hogar y ninguno dura como estos. Ya es parte de mi rutina.", product: "Eternamente Índigo" },
-  { name: "Valentina H.", city: "Cartagena", text: "El aroma es elegante, no empalagoso. Se siente caro sin serlo.", product: "Luxury" },
+  { name: "Mariana G.", city: "Boutique · Bogotá", text: "Mis clientas entran y lo primero que dicen es '¿qué huele tan rico?'. Ahora la tienda tiene su sello.", product: "Brillos de Seda" },
+  { name: "Catalina R.", city: "Ropa infantil · Medellín", text: "Perfumo cada prenda antes de empacarla. No mancha y las mamás aman el detalle.", product: "Vientos de Lino" },
+  { name: "Andrés P.", city: "Hotel boutique · Cali", text: "Pedí uno de prueba para el lobby y terminé aromatizando todo el hotel. Los huéspedes preguntan por él.", product: "Tierra" },
+  { name: "Laura V.", city: "Accesorios · Barranquilla", text: "Cada pedido sale con su aroma y una nota. Mis clientas vuelven solo por la experiencia.", product: "Romeo y Julieta" },
+  { name: "Daniela M.", city: "Spa · Bogotá", text: "Mis clientas se relajan apenas entran. El aroma ya es parte de mi servicio.", product: "Sello de Dios" },
+  { name: "Juliana S.", city: "Tienda de regalos · Pereira", text: "Llegó en dos días y rinde muchísimo. Lo uso en toda la tienda y todavía me sobra.", product: "Dulce Lana" },
+  { name: "Camila T.", city: "Marca deportiva · Bucaramanga", text: "Probé mil aromatizantes y ninguno dura como este en la ropa. Ya es parte de mi marca.", product: "Eternamente Índigo" },
+  { name: "Valentina H.", city: "Marca premium · Cartagena", text: "El aroma es elegante, no empalagoso. Le da a mi marca ese aire caro que buscaba.", product: "Luxury" },
 ]
 
 function ReviewCard({ review, tilt }: { review: Review; tilt: number }) {
@@ -63,10 +63,10 @@ export function Testimonials() {
     <section className="overflow-hidden bg-secondary py-20 md:py-28">
       <div className="container mx-auto mb-12 px-4 text-center">
         <p className="mb-3 text-[0.7rem] font-semibold uppercase tracking-[0.3em] text-primary">
-          Más de 1.000 hogares perfumados
+          Más de 500 marcas con su aroma
         </p>
         <SplitText
-          text="Ellas ya lo viven"
+          text="Marcas que ya tienen el suyo"
           as="h2"
           className="font-serif text-3xl font-medium text-foreground md:text-4xl"
         />

@@ -14,9 +14,9 @@ interface StoryCard {
 }
 
 const CARDS: StoryCard[] = [
-  { image: "/images/category-diffusers.jpg", caption: "Para el hogar", href: "/catalogo?categoria=hogar" },
-  { image: "/images/category-essences.jpg", caption: "Para la ropa", href: "/catalogo?categoria=ropa" },
-  { image: "/images/category-kits.jpg", caption: "El regalo perfecto", href: "/catalogo" },
+  { image: "/images/category-diffusers.jpg", caption: "Hoteles, spa y oficina", href: "/catalogo?segmento=hoteles" },
+  { image: "/images/category-essences.jpg", caption: "Marcas de ropa", href: "/catalogo?segmento=femeninas" },
+  { image: "/images/category-kits.jpg", caption: "Kits para tu marca", href: "/catalogo" },
 ]
 
 export function EditorialStory() {
@@ -25,10 +25,10 @@ export function EditorialStory() {
       <div className="container mx-auto px-4">
         <div className="mb-12 text-center">
           <p className="mb-3 text-[0.7rem] font-semibold uppercase tracking-[0.3em] text-primary">
-            Coleccionar historias
+            Para cada negocio
           </p>
           <SplitText
-            text="Cada aroma, un recuerdo"
+            text="Un aroma para tu tipo de negocio"
             as="h2"
             className="font-serif text-3xl font-medium text-foreground md:text-4xl"
           />

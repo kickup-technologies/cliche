@@ -23,7 +23,7 @@ export function OfferBand() {
           className="font-serif text-3xl font-medium leading-tight md:text-5xl"
         />
         <p className="mx-auto mt-5 max-w-md text-sm font-light leading-relaxed text-background/80 md:text-base">
-          Arma tu ritual completo y nosotros lo llevamos hasta tu puerta,
+          Arma el kit para tu marca o negocio y lo llevamos hasta tu puerta,
           en cualquier ciudad de Colombia.
         </p>
         <Magnetic className="mt-9">
@@ -31,7 +31,7 @@ export function OfferBand() {
             href="/catalogo"
             className="inline-flex items-center justify-center border border-background px-10 py-4 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-background transition-colors hover:bg-background hover:text-foreground"
           >
-            Armar mi pedido
+            Armar el kit de mi marca
           </Link>
         </Magnetic>
       </div>

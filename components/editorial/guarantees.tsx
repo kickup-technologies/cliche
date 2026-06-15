@@ -10,7 +10,7 @@ const ITEMS = [
   {
     icon: Leaf,
     title: "100% Natural",
-    text: "Sin parabenos ni aceites grasos. Seguro para tu familia.",
+    text: "Sin parabenos ni aceites grasos. Seguro para tus clientes y tus productos.",
   },
   {
     icon: Sparkles,

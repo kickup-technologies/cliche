@@ -13,11 +13,11 @@ interface MarqueeProps {
 }
 
 const DEFAULT_ITEMS = [
+  "Marketing olfativo",
   "Aromas artesanales",
   "Hecho en Colombia",
-  "100% Natural",
   "No mancha textiles",
-  "Envío a todo el país",
+  "+500 marcas confían",
 ]
 
 export function Marquee({

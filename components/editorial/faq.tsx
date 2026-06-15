@@ -12,20 +12,24 @@ import { SplitText } from "@/components/editorial/split-text"
  */
 const QA = [
   {
-    q: "¿Mancha la ropa o los muebles?",
-    a: "No. Nuestra fórmula no contiene aceites grasos ni colorantes: puedes rociarla directamente sobre textiles claros, cortinas, sábanas y tapicería sin dejar residuo.",
+    q: "¿Venden por unidad o en kits para mi marca?",
+    a: "Ambos. Cada aroma se ofrece por unidad ($78.000) o en kits del mismo aroma: x3 ($145.000), x4 ($190.000) y x6 ($280.000), con mejor precio por frasco — ideal para abastecer tu negocio.",
+  },
+  {
+    q: "¿Mancha las prendas o la mercancía?",
+    a: "No. La fórmula no contiene aceites grasos ni colorantes: puedes rociarla sobre prendas, telas, empaques y mobiliario claro sin dejar residuo.",
   },
   {
     q: "¿Cuánto dura el aroma?",
-    a: "La alta concentración hace que unos pocos pufs perfumen un espacio o una prenda durante horas — en textiles, el aroma puede acompañarte todo el día.",
+    a: "La alta concentración hace que unos pocos pufs perfumen tu local o cada prenda que despachas durante horas — en textiles, el aroma acompaña a tu cliente todo el día.",
   },
   {
-    q: "¿Es seguro con niños y mascotas?",
-    a: "Sí. Son fórmulas 100% naturales, libres de parabenos. Como con cualquier fragancia, recomendamos rociar en el ambiente y no directamente sobre la piel.",
+    q: "¿Hacen aroma personalizado para mi marca?",
+    a: "Sí. Diseñamos identidades olfativas a la medida para marcas, tiendas, hoteles y spas. Cuéntanos sobre tu marca y lo coordinamos con el equipo.",
   },
   {
     q: "¿Hacen envíos a todo el país?",
-    a: "Despachamos a toda Colombia con transportadoras aliadas. Y si tu compra supera los $300.000, el envío va por nuestra cuenta.",
+    a: "Despachamos a toda Colombia con transportadoras aliadas: flete de $20.500 (entrega de 7 a 9 días hábiles) y gratis en pedidos desde $300.000.",
   },
   {
     q: "¿Cómo puedo pagar?",
