@@ -57,8 +57,8 @@ export default function Home() {
       {/* 3. DESEO — el producto estrella manda, sin hacer scroll de más */}
       <ScrollReveal>
         <ProductCollection
-          eyebrow="Los más vendidos"
-          title="Los que todas quieren"
+          eyebrow="Los favoritos de las marcas"
+          title="Los más pedidos para vestir marcas"
           limit={8}
           ctaLabel="Ver todos los aromas"
           ctaHref="/catalogo"
@@ -74,10 +74,10 @@ export default function Home() {
       {/* 5. EMOCIÓN — banda full-bleed con parallax */}
       <ImageTextOverlay
         image="/images/lifestyle-bedroom.jpg"
-        eyebrow="Rituales diarios"
-        title="Tu hogar oliendo a spa en 3 segundos"
-        text="Unos pufs duran todo el día. 100% natural, no mancha, no irrita."
-        cta={{ label: "Comprar ahora", href: "/catalogo" }}
+        eyebrow="Experiencia de marca"
+        title="El aroma que hace que quieran quedarse"
+        text="Un ambiente que enamora a tus clientes desde que entran. Unos pufs duran todo el día —100% natural, no mancha."
+        cta={{ label: "Ver aromas", href: "/catalogo" }}
         height="tall"
       />
 

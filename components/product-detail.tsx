@@ -543,7 +543,7 @@ export function ProductDetail({ product, related }: Props) {
 
               {/* Description */}
               <p className="text-[15px] text-muted-foreground leading-[1.75]">
-                {VALUE_MAP[product.slug] || catalogItem?.description || product.description}
+                {catalogItem?.description || VALUE_MAP[product.slug] || product.description}
               </p>
 
               {/* ¿Para quién es este aroma? — mercado recomendado del catálogo */}
@@ -663,7 +663,7 @@ export function ProductDetail({ product, related }: Props) {
                 Icon: Sparkles,
                 content: (
                   <div className="text-muted-foreground">
-                    <p className="text-base leading-relaxed mb-4">{VALUE_MAP[product.slug] || catalogItem?.description || product.description}</p>
+                    <p className="text-base leading-relaxed mb-4">{catalogItem?.description || VALUE_MAP[product.slug] || product.description}</p>
                     {isKit && (
                       <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 mt-4 flex gap-3">
                         <Gift className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />

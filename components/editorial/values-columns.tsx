@@ -13,15 +13,15 @@ interface ValueItem {
 const VALUES: ValueItem[] = [
   {
     title: "100% Natural",
-    text: "Sin parabenos ni aceites grasos. Fórmulas seguras para tu familia y tus textiles.",
+    text: "Sin parabenos ni aceites grasos. Fórmulas seguras para tus clientes, tus prendas y tus espacios.",
   },
   {
     title: "Hecho en Colombia",
-    text: "Aromas artesanales creados localmente, con identidad y alma colombiana.",
+    text: "Aromas artesanales creados localmente, con identidad y alma para tu marca.",
   },
   {
     title: "Dura todo el día",
-    text: "Alta concentración: unos pufs perfuman tu espacio y tu ropa por horas.",
+    text: "Alta concentración: unos pufs perfuman tu local, tu producto o tu evento por horas.",
   },
 ]
 
@@ -34,7 +34,7 @@ export function ValuesColumns() {
             En lo que creemos
           </p>
           <SplitText
-            text="Más que un aroma, un ritual"
+            text="Más que un aroma, una firma de marca"
             as="h2"
             className="font-serif text-3xl font-medium text-foreground md:text-4xl"
           />
