@@ -6,13 +6,13 @@ import { ArrowLeft, ArrowRight } from "lucide-react"
 import type { Product } from "@/lib/supabase"
 
 /**
- * StarShowcase — exposición de aromas estrella (ref: buckssauce.com).
- * Stage oscuro premium: un frasco recortado (PNG transparente) a la vez sobre
- * un disco terracota luminoso. La entrada es una interpolación fluida —el
- * frasco entrante se desliza desde el lado, rota y se asienta en el centro—
- * con flotación continua, flechas, dots y autoplay (pausa en hover).
+ * StarShowcase — exposición de aromas estrella (layout ref: buckssauce.com,
+ * paleta Cliché). Fondo crema, círculo terracota, líneas punteadas guía,
+ * flechas circulares grandes y botón "Comprar ahora". El frasco entra
+ * deslizándose y se asienta (interpolación fluida), con leve tilt, levitación
+ * continua y reacción al hover.
  */
-const STAR_SLUGS = ["agua", "eternamente-indigo", "sello-de-dios", "luxury", "tao", "dulce-lana"]
+const STAR_SLUGS = ["dulce-lana", "agua", "eternamente-indigo", "sello-de-dios", "luxury", "tao"]
 
 function baseSlug(slug: string) {
   return slug.replace(/^aroma-/, "")
@@ -57,75 +57,77 @@ export function StarShowcase() {
 
   return (
     <section
-      className="relative overflow-hidden bg-[#211109] py-16 text-[#FAF8F5] md:py-24"
+      className="relative overflow-hidden bg-[#FAF8F5] py-16 md:py-24"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
       <div className="container mx-auto px-4">
-        <div className="mb-10 text-center md:mb-14">
-          <p className="mb-3 text-[0.7rem] font-semibold uppercase tracking-[0.3em] text-[#C99B8C]">
+        <div className="mb-8 text-center md:mb-12">
+          <p className="mb-3 text-[0.7rem] font-semibold uppercase tracking-[0.3em] text-[#A67163]">
             Aromas estrella
           </p>
-          <h2 className="font-serif text-3xl font-medium text-[#FAF8F5] md:text-5xl">
+          <h2 className="font-serif text-3xl font-medium text-[#2D1A14] md:text-5xl">
             Los favoritos de las marcas
           </h2>
         </div>
 
-        <div className="relative mx-auto max-w-4xl">
-          {/* Etiquetas laterales (desktop) */}
-          <div className="pointer-events-none mb-4 hidden items-center justify-between md:flex">
-            <span className="text-[0.66rem] font-semibold uppercase tracking-[0.32em] text-[#FAF8F5]/40">
+        <div className="relative mx-auto max-w-5xl">
+          {/* Etiquetas sobre línea punteada (estilo Bucks) */}
+          <div className="relative mb-2 hidden h-5 items-center md:flex">
+            <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-[#2D1A14]/20" />
+            <span className="relative bg-[#FAF8F5] pr-4 text-[0.66rem] font-semibold uppercase tracking-[0.32em] text-[#2D1A14]/55">
               Aroma N.º {String(active + 1).padStart(2, "0")}
             </span>
-            <span key={cur.product.id} className="star-fade font-serif text-lg text-[#FAF8F5]/85">
+            <span
+              key={cur.product.id}
+              className="star-fade relative ml-auto bg-[#FAF8F5] pl-4 text-[0.66rem] font-semibold uppercase tracking-[0.32em] text-[#2D1A14]/80"
+            >
               {cur.product.name}
             </span>
           </div>
 
-          {/* Stage */}
+          {/* Stage con flechas sobre línea punteada */}
           <div className="relative flex items-center justify-center">
+            <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-[#2D1A14]/15" />
+
             <button
               onClick={() => go(-1)}
               aria-label="Aroma anterior"
-              className="absolute left-0 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-[#FAF8F5]/20 bg-[#FAF8F5]/5 text-[#FAF8F5] backdrop-blur transition-colors hover:border-[#C99B8C] hover:text-[#C99B8C] md:h-12 md:w-12"
+              className="absolute left-0 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-[#2D1A14] text-[#FAF8F5] shadow-lg transition-colors hover:bg-[#A67163] md:h-[72px] md:w-[72px]"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-5 w-5" />
             </button>
 
-            <div className="relative mx-auto h-[360px] w-full max-w-[380px] md:h-[420px]">
-              {/* Glow + disco + anillo */}
-              <div
-                className="absolute left-1/2 top-1/2 h-[420px] w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-70"
-                style={{ background: "radial-gradient(circle, rgba(166,113,99,0.55) 0%, rgba(166,113,99,0) 65%)" }}
-              />
-              <div className="absolute left-1/2 top-1/2 h-[260px] w-[260px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#A67163]/25" />
-              <div className="absolute left-1/2 top-1/2 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 animate-[spin_30s_linear_infinite] rounded-full border border-dashed border-[#C99B8C]/30" />
-              {/* sombra de contacto */}
-              <div className="absolute bottom-7 left-1/2 h-5 w-40 -translate-x-1/2 rounded-[50%] bg-black/40 blur-xl" />
+            <div className="relative z-10 mx-auto h-[380px] w-full max-w-[420px] md:h-[440px]">
+              {/* Círculo terracota */}
+              <div className="absolute left-1/2 top-1/2 h-[290px] w-[290px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#A67163] md:h-[330px] md:w-[330px]" />
+              {/* Sombra de contacto */}
+              <div className="absolute bottom-8 left-1/2 h-5 w-44 -translate-x-1/2 rounded-[50%] bg-[#2D1A14]/15 blur-xl" />
 
-              {/* Frascos — wrapper hace el slide; img hace el float (sin chocar transforms) */}
+              {/* Frascos: wrapper(carrusel) > hover-lift > img(tilt+float) */}
               {stars.map((st, i) => {
                 const isActive = i === active
                 const rel = i - active
-                const tx = isActive ? 0 : rel < 0 ? -60 : 60
-                const rot = isActive ? 0 : rel < 0 ? -6 : 6
+                const tx = isActive ? 0 : rel < 0 ? -70 : 70
                 return (
                   <div
                     key={st.product.id}
                     className="absolute inset-0 transition-all duration-[800ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
                     style={{
                       opacity: isActive ? 1 : 0,
-                      transform: `translateX(${tx}px) rotate(${rot}deg) scale(${isActive ? 1 : 0.9})`,
+                      transform: `translateX(${tx}px) scale(${isActive ? 1 : 0.9})`,
                       pointerEvents: isActive ? "auto" : "none",
                     }}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={st.cutout}
-                      alt={st.product.name}
-                      onError={(e) => { e.currentTarget.src = st.product.image_url || "/placeholder-product.jpg" }}
-                      className="star-bottle h-full w-full object-contain drop-shadow-2xl"
-                    />
+                    <div className="group h-full w-full transition-transform duration-500 ease-out hover:-translate-y-3 hover:scale-[1.04]">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={st.cutout}
+                        alt={st.product.name}
+                        onError={(e) => { e.currentTarget.src = st.product.image_url || "/placeholder-product.jpg" }}
+                        className="star-bottle h-full w-full object-contain drop-shadow-2xl"
+                      />
+                    </div>
                   </div>
                 )
               })}
@@ -134,33 +136,32 @@ export function StarShowcase() {
             <button
               onClick={() => go(1)}
               aria-label="Siguiente aroma"
-              className="absolute right-0 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-[#FAF8F5]/20 bg-[#FAF8F5]/5 text-[#FAF8F5] backdrop-blur transition-colors hover:border-[#C99B8C] hover:text-[#C99B8C] md:h-12 md:w-12"
+              className="absolute right-0 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-[#2D1A14] text-[#FAF8F5] shadow-lg transition-colors hover:bg-[#A67163] md:h-[72px] md:w-[72px]"
             >
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-5 w-5" />
             </button>
           </div>
 
-          {/* Nombre (móvil) + precio + CTA + dots */}
-          <div className="mt-8 text-center">
-            <p className="font-serif text-xl text-[#FAF8F5] md:hidden">{cur.product.name}</p>
-            <p className="mt-1 font-semibold text-[#C99B8C]">
-              ${fmt(cur.product.price)} <span className="text-xs font-normal text-[#FAF8F5]/40">COP</span>
-            </p>
+          {/* Botón Comprar (estilo SHOP NOW, superpuesto al círculo) */}
+          <div className="relative z-20 -mt-6 flex flex-col items-center md:-mt-8">
             <Link
               href={`/productos/${cur.product.slug}`}
-              className="mt-5 inline-flex items-center gap-2 bg-[#A67163] px-9 py-4 text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-white transition-colors hover:bg-[#FAF8F5] hover:text-[#211109]"
+              className="inline-flex items-center gap-3 rounded-md bg-[#2D1A14] px-12 py-4 text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-[#FAF8F5] shadow-xl transition-colors hover:bg-[#A67163] md:py-5"
             >
-              Comprar ahora <ArrowRight className="h-3.5 w-3.5" />
+              Comprar ahora <ArrowRight className="h-4 w-4" />
             </Link>
+            <p className="mt-4 text-sm font-semibold text-[#A67163]">
+              ${fmt(cur.product.price)} <span className="text-xs font-normal text-[#2D1A14]/40">COP</span>
+            </p>
 
-            <div className="mt-7 flex justify-center gap-2.5">
+            <div className="mt-5 flex justify-center gap-2.5">
               {stars.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => setActive(i)}
                   aria-label={`Ir al aroma ${i + 1}`}
                   className={`h-[3px] rounded-full transition-all duration-500 ${
-                    i === active ? "w-8 bg-[#C99B8C]" : "w-3 bg-[#FAF8F5]/20 hover:bg-[#FAF8F5]/40"
+                    i === active ? "w-8 bg-[#A67163]" : "w-3 bg-[#2D1A14]/20 hover:bg-[#2D1A14]/40"
                   }`}
                 />
               ))}
@@ -170,18 +171,18 @@ export function StarShowcase() {
       </div>
 
       <style jsx>{`
-        .star-bottle { animation: star-float 4.5s ease-in-out infinite; }
+        .star-bottle { animation: star-float 4.5s ease-in-out infinite; transform-origin: center bottom; }
         @keyframes star-float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-14px); }
+          0%, 100% { transform: rotate(-7deg) translateY(0); }
+          50% { transform: rotate(-7deg) translateY(-16px); }
         }
         .star-fade { animation: star-fade-in 0.6s ease; }
         @keyframes star-fade-in {
-          from { opacity: 0; transform: translateY(8px); }
+          from { opacity: 0; transform: translateY(6px); }
           to { opacity: 1; transform: translateY(0); }
         }
         @media (prefers-reduced-motion: reduce) {
-          .star-bottle { animation: none; }
+          .star-bottle { animation: none; transform: rotate(-7deg); }
         }
       `}</style>
     </section>
