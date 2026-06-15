@@ -61,48 +61,63 @@ export function SegmentShowcase() {
             if (!products.length) return null
             const panel = PANELS[i % PANELS.length]
             const bannerRight = i % 2 === 1
+
+            const banner = (
+              <div
+                className="relative flex min-h-[220px] flex-col justify-start overflow-hidden rounded-2xl p-7 lg:min-h-full lg:p-9"
+                style={{ background: panel.bg, color: panel.fg }}
+              >
+                <div>
+                  <p className="text-[0.62rem] font-semibold uppercase tracking-[0.3em]" style={{ color: panel.sub }}>
+                    Para
+                  </p>
+                  <h3 className="mt-2 font-serif text-2xl font-medium leading-tight md:text-3xl">{seg.label}</h3>
+                  <div className="my-4 h-px w-10" style={{ background: panel.line }} />
+                  <p className="max-w-xs text-sm leading-relaxed" style={{ color: panel.sub }}>{seg.tagline}</p>
+                </div>
+                <Link
+                  href={`/catalogo?segmento=${seg.key}`}
+                  className="mt-6 inline-flex w-fit items-center gap-2 text-[0.7rem] font-semibold uppercase tracking-[0.2em] transition-opacity hover:opacity-70"
+                  style={{ color: panel.fg }}
+                >
+                  Ver la categoría <span aria-hidden>→</span>
+                </Link>
+              </div>
+            )
+
+            // Productos en flex-wrap: crecen para llenar la fila (sin huecos
+            // cuando la categoría tiene pocos productos). 3 por fila en desktop.
+            const productGrid = (
+              <div className="flex flex-wrap gap-4">
+                {products.map((p) => (
+                  <Link
+                    key={p.id}
+                    href={`/productos/${p.slug}`}
+                    className="group flex grow basis-[46%] flex-col lg:basis-[28%]"
+                  >
+                    <div className="relative aspect-square overflow-hidden rounded-xl bg-secondary/40">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={p.image_url || "/placeholder-product.jpg"}
+                        alt={p.name}
+                        className="h-full w-full object-contain p-3 transition-transform duration-500 group-hover:scale-105"
+                      />
+                    </div>
+                    <p className="mt-2 line-clamp-1 text-sm font-medium text-foreground transition-colors group-hover:text-primary">{p.name}</p>
+                    <p className="text-sm text-primary">${fmt(p.price)}</p>
+                  </Link>
+                ))}
+              </div>
+            )
+
             return (
               <ScrollReveal key={seg.key} distance={36}>
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,360px)_1fr] lg:gap-8">
-                  {/* Banner de la categoría */}
-                  <div
-                    className={`relative flex min-h-[220px] flex-col justify-start overflow-hidden rounded-2xl p-7 lg:min-h-full lg:p-9 ${bannerRight ? "lg:order-2" : ""}`}
-                    style={{ background: panel.bg, color: panel.fg }}
-                  >
-                    <div>
-                      <p className="text-[0.62rem] font-semibold uppercase tracking-[0.3em]" style={{ color: panel.sub }}>
-                        Para
-                      </p>
-                      <h3 className="mt-2 font-serif text-2xl font-medium leading-tight md:text-3xl">{seg.label}</h3>
-                      <div className="my-4 h-px w-10" style={{ background: panel.line }} />
-                      <p className="max-w-xs text-sm leading-relaxed" style={{ color: panel.sub }}>{seg.tagline}</p>
-                    </div>
-                    <Link
-                      href={`/catalogo?segmento=${seg.key}`}
-                      className="mt-6 inline-flex w-fit items-center gap-2 text-[0.7rem] font-semibold uppercase tracking-[0.2em] transition-opacity hover:opacity-70"
-                      style={{ color: panel.fg }}
-                    >
-                      Ver la categoría <span aria-hidden>→</span>
-                    </Link>
-                  </div>
-
-                  {/* Productos — dos hileras */}
-                  <div className={`grid grid-cols-2 gap-4 sm:grid-cols-3 ${bannerRight ? "lg:order-1" : ""}`}>
-                    {products.map((p) => (
-                      <Link key={p.id} href={`/productos/${p.slug}`} className="group flex flex-col">
-                        <div className="relative aspect-square overflow-hidden rounded-xl bg-secondary/40">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={p.image_url || "/placeholder-product.jpg"}
-                            alt={p.name}
-                            className="h-full w-full object-contain p-3 transition-transform duration-500 group-hover:scale-105"
-                          />
-                        </div>
-                        <p className="mt-2 line-clamp-1 text-sm font-medium text-foreground transition-colors group-hover:text-primary">{p.name}</p>
-                        <p className="text-sm text-primary">${fmt(p.price)}</p>
-                      </Link>
-                    ))}
-                  </div>
+                <div
+                  className={`grid grid-cols-1 gap-6 lg:gap-8 ${
+                    bannerRight ? "lg:grid-cols-[1fr_minmax(0,360px)]" : "lg:grid-cols-[minmax(0,360px)_1fr]"
+                  }`}
+                >
+                  {bannerRight ? (<>{productGrid}{banner}</>) : (<>{banner}{productGrid}</>)}
                 </div>
               </ScrollReveal>
             )
