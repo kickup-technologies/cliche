@@ -3,6 +3,7 @@ import { Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/render
 import fs from "fs"
 import path from "path"
 import { CATALOG, type CatalogProduct } from "@/lib/catalog-data"
+import { PRICE_TIERS } from "@/lib/pricing"
 
 // ── Catálogo Cliché en PDF — diseño de marca ───────────────────────────────────
 // Paleta: crema #FAF8F5 · café #2D1A14 · terracota #A67163.
@@ -61,9 +62,11 @@ const s = StyleSheet.create({
   label: { fontFamily: "Helvetica-Bold", fontSize: 7, color: MUTED, letterSpacing: 1.5, textTransform: "uppercase", marginTop: 6 },
   notes: { fontFamily: "Helvetica", fontSize: 9, color: "#5b4d46", lineHeight: 1.4 },
   ideal: { fontFamily: "Helvetica", fontSize: 9, color: "#5b4d46", lineHeight: 1.4 },
-  priceRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 10, borderTopWidth: 1, borderTopColor: "#f0eae4", paddingTop: 8 },
-  price: { fontFamily: "Helvetica-Bold", fontSize: 14, color: BROWN },
-  priceLabel: { fontFamily: "Helvetica", fontSize: 8, color: MUTED },
+  tierBlock: { marginTop: 10, borderTopWidth: 1, borderTopColor: "#f0eae4", paddingTop: 8 },
+  tierGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", marginTop: 4 },
+  tierCell: { width: "48%", flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", marginBottom: 3 },
+  tierName: { fontFamily: "Helvetica", fontSize: 8, color: MUTED },
+  tierPrice: { fontFamily: "Helvetica-Bold", fontSize: 9.5, color: BROWN },
 
   footer: { position: "absolute", bottom: 22, left: 40, right: 40, flexDirection: "row", justifyContent: "space-between", borderTopWidth: 1, borderTopColor: "#e3dcd5", paddingTop: 8 },
   footerText: { fontFamily: "Helvetica", fontSize: 8, color: MUTED },
@@ -92,9 +95,16 @@ function ProductCard({ p }: { p: CatalogProduct }) {
           <Text style={s.ideal}>{p.recommendedFor}</Text>
         </>
       ) : null}
-      <View style={s.priceRow}>
-        <Text style={s.priceLabel}>Precio</Text>
-        <Text style={s.price}>{cop(p.price)}</Text>
+      <View style={s.tierBlock}>
+        <Text style={s.label}>Presentaciones (mismo aroma)</Text>
+        <View style={s.tierGrid}>
+          {PRICE_TIERS.map((t) => (
+            <View key={t.id} style={s.tierCell}>
+              <Text style={s.tierName}>{t.label}</Text>
+              <Text style={s.tierPrice}>{cop(t.id === "unit" ? p.price : t.price)}</Text>
+            </View>
+          ))}
+        </View>
       </View>
     </View>
   )
@@ -125,6 +135,7 @@ export function CatalogDocument({
           <Text style={s.coverMeta}>
             Catálogo de aromas y sprays para hogar, textiles y marca.{"\n"}
             {products.length} fragancias artesanales · Colombia{"\n"}
+            Envío {cop(20500)} · gratis desde {cop(300000)} · entrega 7 a 9 días hábiles{"\n"}
             {whatsapp ? `WhatsApp ${whatsapp}` : ""}{web ? `   ·   ${web}` : ""}
           </Text>
         </View>
