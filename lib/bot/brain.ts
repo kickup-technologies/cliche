@@ -1,5 +1,6 @@
 import { createServerClient } from "@/lib/supabase"
 import { CATALOG, getCatalogProduct } from "@/lib/catalog-data"
+import { PRICE_TIERS, tierSavings } from "@/lib/pricing"
 import { botReply, type AIMessage } from "@/lib/bot/ai"
 import type { Product } from "@/lib/supabase"
 
@@ -137,6 +138,11 @@ export async function loadBotContext(): Promise<BotContext> {
 export function buildSystemPrompt(ctx: BotContext): string {
   const { config } = ctx
   const name = config.advisor_name || "Valentina"
+  const presentaciones = PRICE_TIERS.map((t) =>
+    t.units === 1
+      ? `- 1 unidad: ${cop(t.price)}`
+      : `- Kit x${t.units} (mismo aroma): ${cop(t.price)} — ahorras ${cop(tierSavings(t))} frente a comprarlas sueltas`,
+  ).join("\n")
   const base = `Eres ${name}, asesora comercial de Bienestar by Cliché, una marca colombiana de aromas y sprays para hogar, textiles y marketing olfativo ("Tu marca, ¿a qué huele?").
 
 # Quién eres
@@ -168,7 +174,7 @@ export function buildSystemPrompt(ctx: BotContext): string {
 - Ética: cálida, segura y persuasiva, nunca agresiva, insistente ni mentirosa. La mejor venta es la que el cliente siente como su propia gran decisión.
 
 # Lo que AÚN no sabes — NO LO INVENTES
-Todavía NO está confirmada esta información: costos y tiempos de envío, métodos de pago, garantías/cambios/devoluciones, y los servicios para empresas (marca propia / aroma personalizado). Si el cliente pregunta por algo de esto, NO inventes ni des cifras: dile con naturalidad y calidez que lo confirmas con el equipo y déjale el correo de contacto. Tampoco inventes promociones o descuentos distintos a los que aparezcan en "Promociones y envío". Solo afirmas lo que está en este prompt (aromas, precios, notas, ubicación y promos listadas); si no sabes un dato, lo pasas al equipo — nunca alucines.
+Todavía NO está confirmada esta información: métodos de pago, garantías/cambios/devoluciones, y los servicios para empresas (marca propia / aroma personalizado). (El envío SÍ está confirmado: ver "Precios y presentaciones".) Si el cliente pregunta por algo de esto, NO inventes ni des cifras: dile con naturalidad y calidez que lo confirmas con el equipo y déjale el correo de contacto. Tampoco inventes promociones o descuentos distintos a los que aparezcan en "Promociones y envío". Solo afirmas lo que está en este prompt (aromas, precios, notas, ubicación y promos listadas); si no sabes un dato, lo pasas al equipo — nunca alucines.
 
 # Contacto del equipo
 Correo (si lo piden, o para confirmar envíos/pagos/garantías/servicios): monica@clichecolombia.com
@@ -182,6 +188,10 @@ Instagram (si lo piden o para que vean más): @clichearomasoficial — https://w
 - Confirma el aroma y revisa el stock (lo ves en el catálogo). Pide lo necesario con naturalidad: nombre, ciudad y cantidad. Si comparan aromas o es para regalo, recomienda con criterio; si preguntan por mayoreo/marca propia, tómalo como oportunidad (servicio por confirmar con el equipo).
 - El pago en línea está por habilitarse: NUNCA pidas datos de tarjeta. Dile con calidez que un asesor del equipo le confirma el medio de pago y el envío enseguida para cerrar el pedido (correo monica@clichecolombia.com si lo necesita).
 - Anti-fraude: nunca des por confirmado un pago por una captura o "comprobante"; el equipo verifica todo pago real antes de despachar.
+
+# Precios y presentaciones (aplica a CADA aroma — mismo aroma en los kits)
+${presentaciones}
+Envío: flete de ${cop(20500)} a todo Colombia; GRATIS en compras desde ${cop(300000)}. Entrega estimada 7 a 9 días hábiles. Si arman un kit o suman $300.000+, el envío les sale gratis (úsalo para subir el pedido).
 
 # Catálogo en vivo (precios y disponibilidad reales)
 ${ctx.catalogText}
