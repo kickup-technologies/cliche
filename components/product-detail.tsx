@@ -35,6 +35,7 @@ import { ReviewsSection } from "@/components/reviews-section"
 import { ProductRecommendations } from "@/components/product-recommendations"
 import { recordView } from "@/lib/recently-viewed"
 import { useReviewStats } from "@/lib/use-review-stats"
+import { PRICE_TIERS, TIER_BY_ID, UNIT_PRICE, makeVariantId, tierSavings } from "@/lib/pricing"
 
 interface Props {
   product: Product
@@ -105,6 +106,11 @@ export function ProductDetail({ product, related }: Props) {
   // Rating y conteo unificados (semilla + reales) — misma fuente que la sección
   const reviewStats = useReviewStats(product.id)
   const [qty, setQty] = useState(1)
+  // Tier de compra: unidad / kit x3 / x4 / x6 (mismo aroma)
+  const [tierId, setTierId] = useState("unit")
+  const tier = TIER_BY_ID[tierId] ?? TIER_BY_ID["unit"]
+  const maxQty = Math.max(1, Math.floor(product.stock / tier.units))
+  useEffect(() => { setQty((q) => Math.min(q, maxQty)) }, [maxQty])
   const [added, setAdded] = useState(false)
   // Acordeón de info — qué sección está abierta (una a la vez; null = todas cerradas por defecto)
   const [openSection, setOpenSection] = useState<string | null>(null)
@@ -228,15 +234,26 @@ export function ProductDetail({ product, related }: Props) {
     }
   }
 
+  // Producto "variante" según el tier elegido — id, nombre y precio del kit.
+  // El unitario conserva el id real; los kits usan id::tier (el checkout lo parsea).
+  function buildVariant(): Product {
+    return {
+      ...product,
+      id: makeVariantId(product.id, tier.id),
+      name: tier.units > 1 ? `${product.name} — Kit x${tier.units}` : product.name,
+      price: tier.price,
+    }
+  }
+
   function handleAdd() {
     // addItem ya dispara el evento AddToCart (Pixel + CAPI) una sola vez
-    addItem(product, qty)
+    addItem(buildVariant(), qty)
     setAdded(true)
     setTimeout(() => setAdded(false), 2000)
   }
 
   function handleBuyNow() {
-    addItem(product, qty)
+    addItem(buildVariant(), qty)
     // ── Meta Pixel + CAPI: InitiateCheckout (compra directa) ──
     track({
       event_name: 'InitiateCheckout',
@@ -245,8 +262,8 @@ export function ProductDetail({ product, related }: Props) {
         content_name: product.name,
         content_type: 'product',
         currency: 'COP',
-        value: product.price * qty,
-        num_items: qty,
+        value: tier.price * qty,
+        num_items: qty * tier.units,
       },
     })
     sessionStorage.setItem("checkout-back-url", window.location.pathname + window.location.search)
@@ -416,13 +433,22 @@ export function ProductDetail({ product, related }: Props) {
                 </div>
               )}
 
-              {/* Price */}
+              {/* Price — según el tier seleccionado */}
               <div className="flex items-baseline gap-3 flex-wrap">
                 <span className="text-[2.15rem] font-semibold text-foreground tracking-tight leading-none">
-                  ${product.price.toLocaleString("es-CO")}
+                  ${tier.price.toLocaleString("es-CO")}
                   <span className="text-sm font-normal text-muted-foreground ml-1.5">COP</span>
                 </span>
-                {product.original_price && (
+                {tier.units > 1 ? (
+                  <>
+                    <span className="text-base text-muted-foreground/70 line-through">
+                      ${(tier.units * UNIT_PRICE).toLocaleString("es-CO")}
+                    </span>
+                    <span className="text-xs font-medium text-primary bg-primary/8 border border-primary/15 rounded-full px-2.5 py-0.5">
+                      Ahorras ${tierSavings(tier).toLocaleString("es-CO")}
+                    </span>
+                  </>
+                ) : product.original_price ? (
                   <>
                     <span className="text-base text-muted-foreground/70 line-through">
                       ${product.original_price.toLocaleString("es-CO")}
@@ -431,7 +457,41 @@ export function ProductDetail({ product, related }: Props) {
                       Ahorras ${savings.toLocaleString("es-CO")}
                     </span>
                   </>
-                )}
+                ) : null}
+              </div>
+
+              {/* Selector de presentación — unidad o kit (mismo aroma) */}
+              <div>
+                <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70">
+                  Presentación
+                </p>
+                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+                  {PRICE_TIERS.map((t) => {
+                    const active = t.id === tierId
+                    return (
+                      <button
+                        key={t.id}
+                        onClick={() => setTierId(t.id)}
+                        className={`relative flex flex-col items-start rounded-xl border px-3 py-2.5 text-left transition-all ${
+                          active
+                            ? "border-primary bg-primary/[0.06] ring-1 ring-primary/30"
+                            : "border-foreground/12 hover:border-foreground/30"
+                        }`}
+                      >
+                        {t.badge && (
+                          <span className="absolute -top-2 right-2 rounded-full bg-foreground px-2 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-background">
+                            {t.badge}
+                          </span>
+                        )}
+                        <span className={`text-[13px] font-semibold ${active ? "text-primary" : "text-foreground"}`}>{t.label}</span>
+                        <span className="mt-0.5 text-[13px] text-foreground/80">${t.price.toLocaleString("es-CO")}</span>
+                        {t.units > 1 && (
+                          <span className="text-[10px] text-muted-foreground">${Math.round(t.price / t.units).toLocaleString("es-CO")} c/u</span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
 
               {/* Urgency timer — oferta por tiempo limitado (configurable en admin → Urgencia) */}
@@ -515,14 +575,16 @@ export function ProductDetail({ product, related }: Props) {
                     </button>
                     <span className="w-12 text-center font-semibold">{qty}</span>
                     <button
-                      onClick={() => setQty(Math.min(product.stock, qty + 1))}
+                      onClick={() => setQty(Math.min(maxQty, qty + 1))}
                       className="px-4 py-3 hover:bg-muted transition-colors"
                     >
                       <Plus className="w-4 h-4" />
                     </button>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {product.stock} en existencia
+                    {tier.units > 1
+                      ? `${qty} kit${qty !== 1 ? "s" : ""} · ${qty * tier.units} frascos`
+                      : `${product.stock} en existencia`}
                   </p>
                 </div>
 
@@ -731,7 +793,7 @@ export function ProductDetail({ product, related }: Props) {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs text-muted-foreground truncate lg:font-serif lg:text-sm lg:text-foreground">{product.name}</p>
-            <p className="font-bold text-foreground text-sm">${product.price.toLocaleString("es-CO")} COP</p>
+            <p className="font-bold text-foreground text-sm">${tier.price.toLocaleString("es-CO")} COP{tier.units > 1 ? ` · Kit x${tier.units}` : ""}</p>
           </div>
           <Button
             size="sm"

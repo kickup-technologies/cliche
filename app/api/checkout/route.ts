@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import crypto from "crypto"
 import { supabase, createServerClient } from "@/lib/supabase"
 import { rateLimit } from "@/lib/rate-limit"
+import { parseVariantId } from "@/lib/pricing"
 
 const FREE_SHIPPING = 300_000
 const SHIPPING_COST = 20_500
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
     // fallaba con "No se pudieron validar los productos" aunque la tienda
     // mostraba los productos sin problema. Con el cliente anónimo la validación
     // es robusta frente a una service-role rota.
-    const ids = [...new Set(requested.map((i) => i.product_id))]
+    const ids = [...new Set(requested.map((i) => parseVariantId(i.product_id).baseId))]
     const { data: products, error: prodErr } = await supabase
       .from("products")
       .select("id, name, price, stock, is_active")
@@ -66,21 +67,27 @@ export async function POST(req: NextRequest) {
     let subtotal = 0
     const safeItems: Array<{ product_id: string; quantity: number; name: string; price: number }> = []
     for (const it of requested) {
-      const p = productMap.get(it.product_id)
+      const { baseId, tier } = parseVariantId(it.product_id)
+      const p = productMap.get(baseId)
       if (!p || p.is_active === false) {
         return NextResponse.json(
           { error: "Uno de los productos ya no está disponible" },
           { status: 400 }
         )
       }
-      if (typeof p.stock === "number" && p.stock < it.quantity) {
+      // un kit consume tier.units frascos por cada unidad pedida
+      const unitsNeeded = it.quantity * tier.units
+      if (typeof p.stock === "number" && p.stock < unitsNeeded) {
         return NextResponse.json(
           { error: `Stock insuficiente para ${p.name}` },
           { status: 409 }
         )
       }
-      subtotal += Number(p.price) * it.quantity
-      safeItems.push({ product_id: p.id, quantity: it.quantity, name: p.name, price: Number(p.price) })
+      // precio FIJO por tier (kit) o el de la BD para el unitario
+      const linePrice = tier.id === "unit" ? Number(p.price) : tier.price
+      const lineName = tier.units > 1 ? `${p.name} — Kit x${tier.units}` : p.name
+      subtotal += linePrice * it.quantity
+      safeItems.push({ product_id: p.id, quantity: it.quantity, name: lineName, price: linePrice })
     }
 
     if (subtotal <= 0) {
