@@ -1,32 +1,131 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import type { Product } from "@/lib/supabase"
-import { productsBySegment, activeSegments } from "@/lib/segments"
-import { ScrollFade } from "@/components/editorial/scroll-fade"
+import { productsBySegment, activeSegments, type Segment } from "@/lib/segments"
 import { PRICE_TIERS } from "@/lib/pricing"
 
-// Línea compacta de kits para las cards (precios fijos, iguales para todo aroma)
+/**
+ * SegmentShowcase — categorías en layout editorial premium. Cada categoría:
+ * banner de marca + grilla de aromas, con un reveal escalonado al entrar en
+ * pantalla (el banner aparece y los productos caen en cascada). Aire generoso,
+ * sin cajas pesadas.
+ */
+const INITIAL = 4
+const EASE = "cubic-bezier(0.22, 1, 0.36, 1)"
+
+const PANELS = [
+  { bg: "#2D1A14", fg: "#FAF8F5", sub: "rgba(250,248,245,0.6)", line: "rgba(250,248,245,0.18)", num: "rgba(250,248,245,0.10)" },
+  { bg: "#A67163", fg: "#FFFFFF", sub: "rgba(255,255,255,0.72)", line: "rgba(255,255,255,0.28)", num: "rgba(255,255,255,0.16)" },
+  { bg: "#EAE0D5", fg: "#2D1A14", sub: "rgba(45,26,20,0.55)", line: "rgba(45,26,20,0.16)", num: "rgba(45,26,20,0.08)" },
+]
+
 const KIT_LINE = PRICE_TIERS.filter((t) => t.units > 1)
   .map((t) => `x${t.units} $${t.price.toLocaleString("es-CO")}`)
   .join(" · ")
 
-/**
- * SegmentShowcase — categorías en flujo normal (se ve todo el contenido) con
- * animación de entrada/salida ligada al scroll: la que sale sube y se
- * desvanece, la que llega entra y aparece. Layout/spacing interno intactos.
- */
-const INITIAL = 4
-
-const PANELS = [
-  { bg: "#2D1A14", fg: "#FAF8F5", sub: "rgba(250,248,245,0.6)", line: "rgba(250,248,245,0.25)" },
-  { bg: "#A67163", fg: "#FFFFFF", sub: "rgba(255,255,255,0.72)", line: "rgba(255,255,255,0.32)" },
-  { bg: "#EAE0D5", fg: "#2D1A14", sub: "rgba(45,26,20,0.55)", line: "rgba(45,26,20,0.2)" },
-]
-
 function fmt(n: number) {
   return n.toLocaleString("es-CO")
+}
+
+function useInView<T extends HTMLElement>() {
+  const ref = useRef<T>(null)
+  const [inView, setInView] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { setInView(true); return }
+    const io = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) { setInView(true); io.disconnect() } },
+      { threshold: 0.15, rootMargin: "0px 0px -12% 0px" },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+  return { ref, inView }
+}
+
+function Category({ seg, i, pool }: { seg: Segment; i: number; pool: Product[] }) {
+  const { ref, inView } = useInView<HTMLDivElement>()
+  const products = productsBySegment(seg.key, pool).slice(0, 6)
+  if (!products.length) return null
+
+  const panel = PANELS[i % PANELS.length]
+  const bannerRight = i % 2 === 1
+  const reveal = (delay: number) => ({
+    opacity: inView ? 1 : 0,
+    transform: inView ? "none" : "translateY(34px)",
+    transition: `opacity 0.8s ${EASE} ${delay}ms, transform 0.8s ${EASE} ${delay}ms`,
+  })
+
+  const banner = (
+    <div
+      style={{ background: panel.bg, color: panel.fg, ...reveal(0) }}
+      className="relative flex min-h-[240px] flex-col justify-center overflow-hidden rounded-2xl p-8 lg:min-h-full lg:p-12"
+    >
+      <span
+        aria-hidden
+        className="pointer-events-none absolute right-6 top-5 font-serif text-7xl font-medium leading-none"
+        style={{ color: panel.num }}
+      >
+        {String(i + 1).padStart(2, "0")}
+      </span>
+      <p className="text-[0.6rem] font-semibold uppercase tracking-[0.35em]" style={{ color: panel.sub }}>
+        Para
+      </p>
+      <h3 className="mt-3 font-serif text-3xl font-medium leading-[1.1] md:text-4xl">{seg.label}</h3>
+      <div className="my-5 h-px w-12" style={{ background: panel.line }} />
+      <p className="max-w-xs text-sm leading-relaxed" style={{ color: panel.sub }}>{seg.tagline}</p>
+      <Link
+        href={`/catalogo?segmento=${seg.key}`}
+        className="mt-8 inline-flex w-fit items-center gap-2 text-[0.7rem] font-semibold uppercase tracking-[0.22em] transition-opacity hover:opacity-70"
+        style={{ color: panel.fg }}
+      >
+        Ver la categoría <span aria-hidden>→</span>
+      </Link>
+    </div>
+  )
+
+  const count = products.length
+  const colClass = count === 1 ? "grid-cols-1" : count <= 4 ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-3"
+  const grid = (
+    <div className={`grid ${colClass} gap-x-5 gap-y-8`}>
+      {products.map((p, idx) => (
+        <Link
+          key={p.id}
+          href={`/productos/${p.slug}`}
+          className="group mx-auto flex w-full max-w-[260px] flex-col"
+          style={reveal(160 + idx * 90)}
+        >
+          <div className="relative aspect-square overflow-hidden rounded-xl bg-secondary/40">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={p.image_url || "/placeholder-product.jpg"}
+              alt={p.name}
+              className="h-full w-full object-contain p-3 transition-transform duration-700 ease-out group-hover:scale-105"
+            />
+          </div>
+          <p className="mt-3 line-clamp-1 font-serif text-[15px] text-foreground transition-colors group-hover:text-primary">{p.name}</p>
+          <p className="mt-0.5 text-sm font-semibold text-primary">
+            ${fmt(PRICE_TIERS[0].price)}<span className="text-[10px] font-normal text-muted-foreground"> /und</span>
+          </p>
+          <p className="text-[10.5px] leading-snug text-muted-foreground">{KIT_LINE}</p>
+        </Link>
+      ))}
+    </div>
+  )
+
+  return (
+    <div
+      ref={ref}
+      className={`grid grid-cols-1 items-center gap-8 lg:gap-14 ${
+        bannerRight ? "lg:grid-cols-[1fr_minmax(0,340px)]" : "lg:grid-cols-[minmax(0,340px)_1fr]"
+      }`}
+    >
+      {bannerRight ? (<>{grid}{banner}</>) : (<>{banner}{grid}</>)}
+    </div>
+  )
 }
 
 export function SegmentShowcase() {
@@ -46,106 +145,37 @@ export function SegmentShowcase() {
   const shown = showAll ? segs : segs.slice(0, INITIAL)
 
   return (
-    <section className="bg-background py-20 md:py-28">
-      <div className="container mx-auto mb-12 px-4 text-center md:mb-16">
-        <p className="mb-3 text-[0.7rem] font-semibold uppercase tracking-[0.3em] text-primary">
-          ¿A qué huele tu marca?
-        </p>
-        <h2 className="font-serif text-3xl font-medium text-foreground md:text-5xl">
-          Un aroma para cada marca
-        </h2>
-        <p className="mx-auto mt-4 max-w-xl text-sm text-muted-foreground md:text-base">
-          Elige tu segmento y descubre las fragancias diseñadas para conectar con tu público.
-        </p>
-      </div>
-
-      {/* Categorías en flujo normal (se ve todo el contenido) */}
-      <div className="container mx-auto space-y-24 px-4 md:space-y-32">
-        {shown.map((seg, i) => {
-          const products = productsBySegment(seg.key, pool).slice(0, 6)
-          if (!products.length) return null
-          const panel = PANELS[i % PANELS.length]
-          const bannerRight = i % 2 === 1
-
-          const banner = (
-            <div
-              className="relative flex min-h-[220px] flex-col justify-start overflow-hidden rounded-2xl p-7 lg:min-h-full lg:p-9"
-              style={{ background: panel.bg, color: panel.fg }}
-            >
-              <div>
-                <p className="text-[0.62rem] font-semibold uppercase tracking-[0.3em]" style={{ color: panel.sub }}>
-                  Para
-                </p>
-                <h3 className="mt-2 font-serif text-2xl font-medium leading-tight md:text-3xl">{seg.label}</h3>
-                <div className="my-4 h-px w-10" style={{ background: panel.line }} />
-                <p className="max-w-xs text-sm leading-relaxed" style={{ color: panel.sub }}>{seg.tagline}</p>
-              </div>
-              <Link
-                href={`/catalogo?segmento=${seg.key}`}
-                className="mt-6 inline-flex w-fit items-center gap-2 text-[0.7rem] font-semibold uppercase tracking-[0.2em] transition-opacity hover:opacity-70"
-                style={{ color: panel.fg }}
-              >
-                Ver la categoría <span aria-hidden>→</span>
-              </Link>
-            </div>
-          )
-
-          // Rejilla balanceada: 4 → 2×2, 6 → 3×2, etc. Tarjetas de tamaño parejo.
-          const count = products.length
-          const colClass =
-            count === 1 ? "grid-cols-1" : count <= 4 ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-3"
-          const productGrid = (
-            <div className={`grid ${colClass} gap-4`}>
-              {products.map((p) => (
-                <Link
-                  key={p.id}
-                  href={`/productos/${p.slug}`}
-                  className="group mx-auto flex w-full max-w-[260px] flex-col"
-                >
-                  <div className="relative aspect-square overflow-hidden rounded-xl bg-secondary/40">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={p.image_url || "/placeholder-product.jpg"}
-                      alt={p.name}
-                      className="h-full w-full object-contain p-3 transition-transform duration-500 group-hover:scale-105"
-                    />
-                  </div>
-                  <p className="mt-2 line-clamp-1 text-sm font-medium text-foreground transition-colors group-hover:text-primary">{p.name}</p>
-                  <p className="text-sm font-semibold text-primary">
-                    ${fmt(PRICE_TIERS[0].price)}<span className="text-[10px] font-normal text-muted-foreground"> /und</span>
-                  </p>
-                  <p className="text-[10.5px] leading-snug text-muted-foreground">{KIT_LINE}</p>
-                </Link>
-              ))}
-            </div>
-          )
-
-          return (
-            <ScrollFade key={seg.key}>
-              <div className="rounded-[2rem] border border-border bg-card p-5 shadow-[0_24px_70px_-40px_rgba(45,26,20,0.30)] md:p-9">
-                <div
-                  className={`grid grid-cols-1 items-center gap-6 lg:gap-8 ${
-                    bannerRight ? "lg:grid-cols-[1fr_minmax(0,360px)]" : "lg:grid-cols-[minmax(0,360px)_1fr]"
-                  }`}
-                >
-                  {bannerRight ? (<>{productGrid}{banner}</>) : (<>{banner}{productGrid}</>)}
-                </div>
-              </div>
-            </ScrollFade>
-          )
-        })}
-      </div>
-
-      {segs.length > INITIAL && (
-        <div className="container mx-auto mt-16 px-4 text-center">
-          <button
-            onClick={() => setShowAll((v) => !v)}
-            className="inline-flex items-center gap-2 border border-foreground/20 px-9 py-3.5 text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-foreground transition-colors hover:bg-foreground hover:text-background"
-          >
-            {showAll ? "Ver menos" : `Ver todas las categorías (${segs.length})`}
-          </button>
+    <section className="bg-background py-24 md:py-32">
+      <div className="container mx-auto px-4">
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="mb-4 text-[0.7rem] font-semibold uppercase tracking-[0.35em] text-primary">
+            ¿A qué huele tu marca?
+          </p>
+          <h2 className="font-serif text-3xl font-medium leading-tight text-foreground md:text-5xl">
+            Un aroma para cada marca
+          </h2>
+          <p className="mx-auto mt-5 max-w-xl text-sm leading-relaxed text-muted-foreground md:text-base">
+            Elige tu segmento y descubre las fragancias diseñadas para conectar con tu público.
+          </p>
         </div>
-      )}
+
+        <div className="mt-20 space-y-28 md:mt-28 md:space-y-40">
+          {shown.map((seg, i) => (
+            <Category key={seg.key} seg={seg} i={i} pool={pool} />
+          ))}
+        </div>
+
+        {segs.length > INITIAL && (
+          <div className="mt-20 text-center md:mt-28">
+            <button
+              onClick={() => setShowAll((v) => !v)}
+              className="inline-flex items-center gap-2 border border-foreground/20 px-10 py-4 text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-foreground transition-colors hover:bg-foreground hover:text-background"
+            >
+              {showAll ? "Ver menos" : `Ver todas las categorías (${segs.length})`}
+            </button>
+          </div>
+        )}
+      </div>
     </section>
   )
 }
