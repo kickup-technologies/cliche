@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import type { Product } from "@/lib/supabase"
 import { productsBySegment, activeSegments, type Segment } from "@/lib/segments"
 import { PRICE_TIERS } from "@/lib/pricing"
@@ -20,6 +21,12 @@ const PANELS = [
   { bg: "#A67163", fg: "#FFFFFF", sub: "rgba(255,255,255,0.72)", line: "rgba(255,255,255,0.28)", num: "rgba(255,255,255,0.16)" },
   { bg: "#EAE0D5", fg: "#2D1A14", sub: "rgba(45,26,20,0.55)", line: "rgba(45,26,20,0.16)", num: "rgba(45,26,20,0.08)" },
 ]
+
+// Foto de fondo por segmento (B2B: alguien usando el spray en ese negocio).
+// Si un segmento no tiene foto, cae al panel de color sólido.
+const SEGMENT_IMAGES: Record<string, string> = {
+  femeninas: "/images/segments/femeninas.jpg",
+}
 
 const KIT_LINE = PRICE_TIERS.filter((t) => t.units > 1)
   .map((t) => `x${t.units} $${t.price.toLocaleString("es-CO")}`)
@@ -52,6 +59,11 @@ function Category({ seg, i, pool }: { seg: Segment; i: number; pool: Product[] }
   if (!products.length) return null
 
   const panel = PANELS[i % PANELS.length]
+  const img = SEGMENT_IMAGES[seg.key]
+  // Cuando hay foto, el texto va en blanco sobre el degradado oscuro
+  const view = img
+    ? { fg: "#FAF8F5", sub: "rgba(255,255,255,0.78)", line: "rgba(255,255,255,0.5)", num: "rgba(255,255,255,0.2)" }
+    : panel
   const bannerRight = i % 2 === 1
   const reveal = (delay: number) => ({
     opacity: inView ? 1 : 0,
@@ -61,14 +73,22 @@ function Category({ seg, i, pool }: { seg: Segment; i: number; pool: Product[] }
 
   const banner = (
     <div
-      style={{ background: panel.bg, color: panel.fg, ...reveal(0) }}
-      className="relative flex min-h-[240px] flex-col justify-center overflow-hidden rounded-2xl p-8 lg:min-h-full lg:p-12"
+      style={{ ...(img ? {} : { background: panel.bg }), color: view.fg, ...reveal(0) }}
+      className={`relative flex flex-col overflow-hidden rounded-2xl p-8 lg:min-h-full lg:p-10 ${
+        img ? "min-h-[440px] justify-end" : "min-h-[240px] justify-center"
+      }`}
     >
+      {img && (
+        <>
+          <Image src={img} alt={seg.label} fill sizes="(max-width: 1024px) 100vw, 360px" className="object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/10" />
+        </>
+      )}
       <span
         aria-hidden
-        className="pointer-events-none absolute right-6 top-5 font-serif text-7xl font-medium leading-none"
+        className="pointer-events-none absolute right-6 top-5 z-10 font-serif text-7xl font-medium leading-none"
         style={{
-          color: panel.num,
+          color: view.num,
           opacity: inView ? 1 : 0,
           transform: inView ? "scale(1)" : "scale(0.65)",
           transition: `opacity 1s ${EASE} 120ms, transform 1s ${EASE} 120ms`,
@@ -76,19 +96,21 @@ function Category({ seg, i, pool }: { seg: Segment; i: number; pool: Product[] }
       >
         {String(i + 1).padStart(2, "0")}
       </span>
-      <p className="text-[0.6rem] font-semibold uppercase tracking-[0.35em]" style={{ color: panel.sub }}>
-        Para
-      </p>
-      <h3 className="mt-3 font-serif text-3xl font-medium leading-[1.1] md:text-4xl">{seg.label}</h3>
-      <div className="my-5 h-px" style={{ background: panel.line, width: inView ? "48px" : "0px", transition: `width 0.9s ${EASE} 260ms` }} />
-      <p className="max-w-xs text-sm leading-relaxed" style={{ color: panel.sub }}>{seg.tagline}</p>
-      <Link
-        href={`/catalogo?segmento=${seg.key}`}
-        className="mt-8 inline-flex w-fit items-center gap-2 text-[0.7rem] font-semibold uppercase tracking-[0.22em] transition-opacity hover:opacity-70"
-        style={{ color: panel.fg }}
-      >
-        Ver la categoría <span aria-hidden>→</span>
-      </Link>
+      <div className="relative z-10">
+        <p className="text-[0.6rem] font-semibold uppercase tracking-[0.35em]" style={{ color: view.sub }}>
+          Para
+        </p>
+        <h3 className="mt-3 font-serif text-3xl font-medium leading-[1.1] md:text-4xl">{seg.label}</h3>
+        <div className="my-5 h-px" style={{ background: view.line, width: inView ? "48px" : "0px", transition: `width 0.9s ${EASE} 260ms` }} />
+        <p className="max-w-xs text-sm leading-relaxed" style={{ color: view.sub }}>{seg.tagline}</p>
+        <Link
+          href={`/catalogo?segmento=${seg.key}`}
+          className="mt-8 inline-flex w-fit items-center gap-2 text-[0.7rem] font-semibold uppercase tracking-[0.22em] transition-opacity hover:opacity-70"
+          style={{ color: view.fg }}
+        >
+          Ver la categoría <span aria-hidden>→</span>
+        </Link>
+      </div>
     </div>
   )
 
