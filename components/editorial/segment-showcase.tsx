@@ -67,7 +67,12 @@ function Category({ seg, i, pool }: { seg: Segment; i: number; pool: Product[] }
       <span
         aria-hidden
         className="pointer-events-none absolute right-6 top-5 font-serif text-7xl font-medium leading-none"
-        style={{ color: panel.num }}
+        style={{
+          color: panel.num,
+          opacity: inView ? 1 : 0,
+          transform: inView ? "scale(1)" : "scale(0.65)",
+          transition: `opacity 1s ${EASE} 120ms, transform 1s ${EASE} 120ms`,
+        }}
       >
         {String(i + 1).padStart(2, "0")}
       </span>
@@ -75,7 +80,7 @@ function Category({ seg, i, pool }: { seg: Segment; i: number; pool: Product[] }
         Para
       </p>
       <h3 className="mt-3 font-serif text-3xl font-medium leading-[1.1] md:text-4xl">{seg.label}</h3>
-      <div className="my-5 h-px w-12" style={{ background: panel.line }} />
+      <div className="my-5 h-px" style={{ background: panel.line, width: inView ? "48px" : "0px", transition: `width 0.9s ${EASE} 260ms` }} />
       <p className="max-w-xs text-sm leading-relaxed" style={{ color: panel.sub }}>{seg.tagline}</p>
       <Link
         href={`/catalogo?segmento=${seg.key}`}
@@ -91,28 +96,50 @@ function Category({ seg, i, pool }: { seg: Segment; i: number; pool: Product[] }
   const colClass = count === 1 ? "grid-cols-1" : count <= 4 ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-3"
   const grid = (
     <div className={`grid ${colClass} gap-x-5 gap-y-8`}>
-      {products.map((p, idx) => (
-        <Link
-          key={p.id}
-          href={`/productos/${p.slug}`}
-          className="group mx-auto flex w-full max-w-[260px] flex-col"
-          style={reveal(160 + idx * 90)}
-        >
-          <div className="relative aspect-square overflow-hidden rounded-xl bg-secondary/40">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={p.image_url || "/placeholder-product.jpg"}
-              alt={p.name}
-              className="h-full w-full object-contain p-3 transition-transform duration-700 ease-out group-hover:scale-105"
-            />
-          </div>
-          <p className="mt-3 line-clamp-1 font-serif text-[15px] text-foreground transition-colors group-hover:text-primary">{p.name}</p>
-          <p className="mt-0.5 text-sm font-semibold text-primary">
-            ${fmt(PRICE_TIERS[0].price)}<span className="text-[10px] font-normal text-muted-foreground"> /und</span>
-          </p>
-          <p className="text-[10.5px] leading-snug text-muted-foreground">{KIT_LINE}</p>
-        </Link>
-      ))}
+      {products.map((p, idx) => {
+        const delay = 180 + idx * 110
+        return (
+          <Link
+            key={p.id}
+            href={`/productos/${p.slug}`}
+            className="group mx-auto flex w-full max-w-[260px] flex-col"
+          >
+            {/* Cortina: la imagen se descubre de abajo hacia arriba con leve zoom-out */}
+            <div
+              className="relative aspect-square overflow-hidden rounded-xl bg-secondary/40"
+              style={{
+                clipPath: inView ? "inset(0 0 0 0)" : "inset(100% 0 0 0)",
+                transition: `clip-path 0.95s ${EASE} ${delay}ms`,
+              }}
+            >
+              <div
+                className="h-full w-full"
+                style={{ transform: inView ? "scale(1)" : "scale(1.14)", transition: `transform 1.2s ${EASE} ${delay}ms` }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={p.image_url || "/placeholder-product.jpg"}
+                  alt={p.name}
+                  className="h-full w-full object-contain p-3 transition-transform duration-700 ease-out group-hover:scale-105"
+                />
+              </div>
+            </div>
+            <div
+              style={{
+                opacity: inView ? 1 : 0,
+                transform: inView ? "none" : "translateY(14px)",
+                transition: `opacity 0.7s ${EASE} ${delay + 300}ms, transform 0.7s ${EASE} ${delay + 300}ms`,
+              }}
+            >
+              <p className="mt-3 line-clamp-1 font-serif text-[15px] text-foreground transition-colors group-hover:text-primary">{p.name}</p>
+              <p className="mt-0.5 text-sm font-semibold text-primary">
+                ${fmt(PRICE_TIERS[0].price)}<span className="text-[10px] font-normal text-muted-foreground"> /und</span>
+              </p>
+              <p className="text-[10.5px] leading-snug text-muted-foreground">{KIT_LINE}</p>
+            </div>
+          </Link>
+        )
+      })}
     </div>
   )
 
