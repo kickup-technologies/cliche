@@ -4,12 +4,12 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import type { Product } from "@/lib/supabase"
 import { productsBySegment, activeSegments } from "@/lib/segments"
+import { ScrollFade } from "@/components/editorial/scroll-fade"
 
 /**
- * SegmentShowcase — categorías en "sticky stacking": cada categoría se fija a
- * pantalla completa y, al llegar a su piso, la siguiente sube y la cubre como
- * una card que llega (no se siente scroll, sino que algo aterriza). El layout
- * interno de cada categoría (banner + grid) es exactamente el de siempre.
+ * SegmentShowcase — categorías en flujo normal (se ve todo el contenido) con
+ * animación de entrada/salida ligada al scroll: la que sale sube y se
+ * desvanece, la que llega entra y aparece. Layout/spacing interno intactos.
  */
 const INITIAL = 4
 
@@ -40,7 +40,7 @@ export function SegmentShowcase() {
   const shown = showAll ? segs : segs.slice(0, INITIAL)
 
   return (
-    <section className="bg-background pt-20 md:pt-28">
+    <section className="bg-background py-20 md:py-28">
       <div className="container mx-auto mb-12 px-4 text-center md:mb-16">
         <p className="mb-3 text-[0.7rem] font-semibold uppercase tracking-[0.3em] text-primary">
           ¿A qué huele tu marca?
@@ -53,8 +53,8 @@ export function SegmentShowcase() {
         </p>
       </div>
 
-      {/* Pila sticky de categorías */}
-      <div className="relative">
+      {/* Categorías en flujo normal (se ve todo el contenido) */}
+      <div className="container mx-auto space-y-24 px-4 md:space-y-32">
         {shown.map((seg, i) => {
           const products = productsBySegment(seg.key, pool).slice(0, 6)
           if (!products.length) return null
@@ -112,27 +112,20 @@ export function SegmentShowcase() {
           )
 
           return (
-            <div
+            <ScrollFade
               key={seg.key}
-              className="sticky top-0 flex min-h-screen items-center bg-background"
-              style={{ zIndex: i + 1, boxShadow: i > 0 ? "0 -28px 60px -28px rgba(45,26,20,0.12)" : undefined }}
+              className={`grid grid-cols-1 items-center gap-6 lg:gap-8 ${
+                bannerRight ? "lg:grid-cols-[1fr_minmax(0,360px)]" : "lg:grid-cols-[minmax(0,360px)_1fr]"
+              }`}
             >
-              <div className="container mx-auto w-full px-4 py-12">
-                <div
-                  className={`grid grid-cols-1 gap-6 lg:gap-8 ${
-                    bannerRight ? "lg:grid-cols-[1fr_minmax(0,360px)]" : "lg:grid-cols-[minmax(0,360px)_1fr]"
-                  }`}
-                >
-                  {bannerRight ? (<>{productGrid}{banner}</>) : (<>{banner}{productGrid}</>)}
-                </div>
-              </div>
-            </div>
+              {bannerRight ? (<>{productGrid}{banner}</>) : (<>{banner}{productGrid}</>)}
+            </ScrollFade>
           )
         })}
       </div>
 
       {segs.length > INITIAL && (
-        <div className="relative z-[100] bg-background py-16 text-center">
+        <div className="container mx-auto mt-16 px-4 text-center">
           <button
             onClick={() => setShowAll((v) => !v)}
             className="inline-flex items-center gap-2 border border-foreground/20 px-9 py-3.5 text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-foreground transition-colors hover:bg-foreground hover:text-background"
