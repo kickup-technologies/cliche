@@ -7,11 +7,6 @@ import { productsBySegment, activeSegments } from "@/lib/segments"
 import { ScrollFade } from "@/components/editorial/scroll-fade"
 import { PRICE_TIERS } from "@/lib/pricing"
 
-const KIT_LINE = PRICE_TIERS.filter((t) => t.units > 1)
-  .map((t) => `x${t.units} $${t.price.toLocaleString("es-CO")}`)
-  .join(" · ")
-import { PRICE_TIERS } from "@/lib/pricing"
-
 // Línea compacta de kits para las cards (precios fijos, iguales para todo aroma)
 const KIT_LINE = PRICE_TIERS.filter((t) => t.units > 1)
   .map((t) => `x${t.units} $${t.price.toLocaleString("es-CO")}`)
