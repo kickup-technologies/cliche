@@ -5,6 +5,17 @@ import Link from "next/link"
 import type { Product } from "@/lib/supabase"
 import { productsBySegment, activeSegments } from "@/lib/segments"
 import { ScrollFade } from "@/components/editorial/scroll-fade"
+import { PRICE_TIERS } from "@/lib/pricing"
+
+const KIT_LINE = PRICE_TIERS.filter((t) => t.units > 1)
+  .map((t) => `x${t.units} $${t.price.toLocaleString("es-CO")}`)
+  .join(" · ")
+import { PRICE_TIERS } from "@/lib/pricing"
+
+// Línea compacta de kits para las cards (precios fijos, iguales para todo aroma)
+const KIT_LINE = PRICE_TIERS.filter((t) => t.units > 1)
+  .map((t) => `x${t.units} $${t.price.toLocaleString("es-CO")}`)
+  .join(" · ")
 
 /**
  * SegmentShowcase — categorías en flujo normal (se ve todo el contenido) con
@@ -105,20 +116,26 @@ export function SegmentShowcase() {
                     />
                   </div>
                   <p className="mt-2 line-clamp-1 text-sm font-medium text-foreground transition-colors group-hover:text-primary">{p.name}</p>
-                  <p className="text-sm text-primary">${fmt(p.price)}</p>
+                  <p className="text-sm font-semibold text-primary">
+                    ${fmt(PRICE_TIERS[0].price)}<span className="text-[10px] font-normal text-muted-foreground"> /und</span>
+                  </p>
+                  <p className="text-[10.5px] leading-snug text-muted-foreground">{KIT_LINE}</p>
                 </Link>
               ))}
             </div>
           )
 
           return (
-            <ScrollFade
-              key={seg.key}
-              className={`grid grid-cols-1 items-center gap-6 lg:gap-8 ${
-                bannerRight ? "lg:grid-cols-[1fr_minmax(0,360px)]" : "lg:grid-cols-[minmax(0,360px)_1fr]"
-              }`}
-            >
-              {bannerRight ? (<>{productGrid}{banner}</>) : (<>{banner}{productGrid}</>)}
+            <ScrollFade key={seg.key}>
+              <div className="rounded-[2rem] border border-border bg-card p-5 shadow-[0_24px_70px_-40px_rgba(45,26,20,0.30)] md:p-9">
+                <div
+                  className={`grid grid-cols-1 items-center gap-6 lg:gap-8 ${
+                    bannerRight ? "lg:grid-cols-[1fr_minmax(0,360px)]" : "lg:grid-cols-[minmax(0,360px)_1fr]"
+                  }`}
+                >
+                  {bannerRight ? (<>{productGrid}{banner}</>) : (<>{banner}{productGrid}</>)}
+                </div>
+              </div>
             </ScrollFade>
           )
         })}

@@ -13,7 +13,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react"
  * reorganiza el layout.
  */
 const PLATEAU = 0.5 // mitad central del recorrido: totalmente visible
-const TRAVEL = 70 // px de desplazamiento al desvanecer
+const TRAVEL = 90 // px de desplazamiento al desvanecer (sube al salir / entra desde abajo)
 
 export function ScrollFade({ children, className }: { children: ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null)
