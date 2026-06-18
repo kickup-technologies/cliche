@@ -52,6 +52,7 @@ const PRODUCT_MODELS: Record<string, string> = {
   "dulce-lana": "/models/dulce-lana.glb",
   "vientos-de-lino": "/models/vientos-de-lino.glb",
   "eternamente-indigo": "/models/eternamente-indigo.glb",
+  "sello-de-dios": "/models/sello-de-dios.glb",
 }
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
