@@ -33,6 +33,10 @@ const SEGMENT_IMAGES: Record<string, string> = {
   accesorios: "/images/segments/accesorios.jpg",
   bano: "/images/segments/bano.jpg",
   hoteles: "/images/segments/hoteles.jpg",
+  spa: "/images/segments/spa.jpg",
+  hogar: "/images/segments/hogar.jpg",
+  mascotas: "/images/segments/mascotas.jpg",
+  luxury: "/images/segments/luxury.jpg",
 }
 
 const KIT_LINE = PRICE_TIERS.filter((t) => t.units > 1)
