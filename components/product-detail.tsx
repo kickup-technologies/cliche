@@ -49,6 +49,7 @@ const PRODUCT_MODELS: Record<string, string> = {
   "best-friends": "/models/best-friends.glb",
   "lycra-de-verano": "/models/lycra-de-verano.glb",
   "mahai": "/models/mahai.glb",
+  "dulce-lana": "/models/dulce-lana.glb",
 }
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
