@@ -90,6 +90,10 @@ const NOTES_MAP: Record<string, string[]> = {
   "aroma-best-friends":      ["Frambuesa", "Flores Dulces", "Azúcar Suave"],
   "aroma-happiness":         ["Cítricos Alegres", "Flores de Primavera", "Almizcle Fresco"],
   "aroma-navidad":           ["Pino Natural", "Canela", "Naranja Especiada"],
+  "aroma-coconut":           ["Coco", "Almendra", "Piña", "Tonka", "Almizcle"],
+  "aroma-watermelon":        ["Sandía", "Candy Dulce"],
+  "aroma-air-fresh":         ["Notas Limpias", "Frescor Neutro"],
+  "aroma-seda-del-lejano-oriente": ["Vainilla", "Cedro", "Almizcle", "Cardamomo"],
 }
 
 const VALUE_MAP: Record<string, string> = {
