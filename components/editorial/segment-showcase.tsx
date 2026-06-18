@@ -29,6 +29,10 @@ const SEGMENT_IMAGES: Record<string, string> = {
   masculinas: "/images/segments/masculinas.jpg",
   unisex: "/images/segments/unisex.jpg",
   infantiles: "/images/segments/infantiles.jpg",
+  deportivas: "/images/segments/deportivas.jpg",
+  accesorios: "/images/segments/accesorios.jpg",
+  bano: "/images/segments/bano.jpg",
+  hoteles: "/images/segments/hoteles.jpg",
 }
 
 const KIT_LINE = PRICE_TIERS.filter((t) => t.units > 1)
