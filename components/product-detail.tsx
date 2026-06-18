@@ -19,6 +19,21 @@ const SprayBottle3D = dynamic(
     </div>
   )}
 )
+
+// Visor del modelo 3D real (GLB de Meshy) para los productos que ya lo tienen.
+const MeshyViewer = dynamic(
+  () => import("@/components/meshy-viewer").then((m) => m.MeshyViewer),
+  { ssr: false, loading: () => (
+    <div className="relative aspect-square bg-muted/30 rounded-3xl overflow-hidden flex items-center justify-center">
+      <div className="w-16 h-16 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+    </div>
+  )}
+)
+
+// slug (sin prefijo "aroma-") → modelo 3D real disponible.
+const PRODUCT_MODELS: Record<string, string> = {
+  "calor-de-lana": "/models/calor-de-lana.glb",
+}
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -317,9 +332,13 @@ export function ProductDetail({ product, related }: Props) {
                       )}
                     </div>
                   ) : (
-                    /* 3D render — exactly as original, fully transparent, badges float over it */
+    /* 3D render — modelo real (Meshy) si existe, si no el genérico */
                     <>
-                      <SprayBottle3D transparent zTilt={0} onReady={handleModelReady} labelPhoto={product.image_url || undefined} flatLabel={`/labels/${product.slug}.png`} />
+                      {PRODUCT_MODELS[product.slug.replace(/^aroma-/, "")] ? (
+                        <MeshyViewer url={PRODUCT_MODELS[product.slug.replace(/^aroma-/, "")]} onReady={handleModelReady} />
+                      ) : (
+                        <SprayBottle3D transparent zTilt={0} onReady={handleModelReady} labelPhoto={product.image_url || undefined} flatLabel={`/labels/${product.slug}.png`} />
+                      )}
                       {product.badge && (
                         <div className="absolute top-4 left-4">
                           <span className={`${product.badge_color || "bg-primary"} text-white text-xs font-bold px-3 py-1.5 rounded-full`}>
