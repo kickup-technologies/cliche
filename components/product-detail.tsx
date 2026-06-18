@@ -46,6 +46,7 @@ const PRODUCT_MODELS: Record<string, string> = {
   "tierra": "/models/tierra.glb",
   "agua": "/models/agua.glb",
   "aire": "/models/aire.glb",
+  "best-friends": "/models/best-friends.glb",
 }
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
