@@ -40,6 +40,7 @@ const PRODUCT_MODELS: Record<string, string> = {
   "romeo-y-julieta": "/models/romeo-y-julieta.glb",
   "frescura-de-lino": "/models/frescura-de-lino.glb",
   "seda-del-lejano-oriente": "/models/seda-del-lejano-oriente.glb",
+  "luxury": "/models/luxury.glb",
 }
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
