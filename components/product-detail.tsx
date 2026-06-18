@@ -33,6 +33,7 @@ const MeshyViewer = dynamic(
 // slug (sin prefijo "aroma-") → modelo 3D real disponible.
 const PRODUCT_MODELS: Record<string, string> = {
   "calor-de-lana": "/models/calor-de-lana.glb",
+  "coconut": "/models/coconut.glb",
 }
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
