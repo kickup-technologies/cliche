@@ -38,6 +38,7 @@ const PRODUCT_MODELS: Record<string, string> = {
   "air-fresh": "/models/air-fresh.glb",
   "tao": "/models/tao.glb",
   "romeo-y-julieta": "/models/romeo-y-julieta.glb",
+  "frescura-de-lino": "/models/frescura-de-lino.glb",
 }
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
