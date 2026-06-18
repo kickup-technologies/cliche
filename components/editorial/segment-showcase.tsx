@@ -26,6 +26,9 @@ const PANELS = [
 // Si un segmento no tiene foto, cae al panel de color sólido.
 const SEGMENT_IMAGES: Record<string, string> = {
   femeninas: "/images/segments/femeninas.jpg",
+  masculinas: "/images/segments/masculinas.jpg",
+  unisex: "/images/segments/unisex.jpg",
+  infantiles: "/images/segments/infantiles.jpg",
 }
 
 const KIT_LINE = PRICE_TIERS.filter((t) => t.units > 1)
