@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useEffect, useMemo, useRef, type MutableRefObject } from "react"
+import { Suspense, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { useGLTF, OrbitControls, ContactShadows } from "@react-three/drei"
 import * as THREE from "three"
@@ -66,12 +66,29 @@ function Model({ url, onReady, dragging }: { url: string; onReady?: () => void; 
 
 export function MeshyViewer({ url, onReady }: { url: string; onReady?: () => void }) {
   const dragging = useRef(false)
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const [active, setActive] = useState(true)
+
+  // Rendimiento: el Canvas solo renderiza cuando está cerca del viewport.
+  // Fuera de pantalla pausa el render loop (frameloop="never") → libera GPU/CPU.
+  useEffect(() => {
+    const el = wrapRef.current
+    if (!el) return
+    const io = new IntersectionObserver(
+      ([e]) => setActive(e.isIntersecting),
+      { rootMargin: "250px" },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+
   return (
-    <div className="relative aspect-square w-full">
+    <div ref={wrapRef} className="relative aspect-square w-full">
       <Canvas
+        frameloop={active ? "always" : "never"}
         camera={{ position: [0, 0.3, 4.6], fov: 35 }}
-        gl={{ alpha: true, antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
-        dpr={[1, 2]}
+        gl={{ alpha: true, antialias: true, toneMapping: THREE.ACESFilmicToneMapping, powerPreference: "high-performance" }}
+        dpr={[1, 1.75]}
         style={{ background: "transparent" }}
       >
         <ambientLight intensity={0.45} />

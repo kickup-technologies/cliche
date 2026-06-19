@@ -5,8 +5,23 @@ import { CATALOG_AS_PRODUCTS, getCatalogProduct } from "@/lib/catalog-data"
 import { seededReviews } from "@/lib/seed-reviews"
 import type { Metadata } from "next"
 
-// Force dynamic so pages always render on-demand from Supabase
-export const dynamic = "force-dynamic"
+// ISR: páginas estáticas servidas desde CDN, regeneradas cada 5 min. Escala a
+// miles de peticiones sin golpear Supabase en cada visita (solo en build/revalidación).
+export const revalidate = 300
+export const dynamicParams = true
+
+// Pre-genera en build las páginas de los productos activos.
+export async function generateStaticParams() {
+  try {
+    if (isSupabaseConfigured) {
+      const { data } = await supabase.from("products").select("slug").eq("is_active", true)
+      if (data && data.length) return data.map((p) => ({ slug: p.slug }))
+    }
+  } catch {
+    /* fallback al catálogo local */
+  }
+  return CATALOG_AS_PRODUCTS.map((p) => ({ slug: p.slug }))
+}
 
 interface Props {
   params: Promise<{ slug: string }>
