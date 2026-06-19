@@ -138,10 +138,10 @@ export function EditorialHero() {
 
             {/* Contenedor de texto */}
             <div
-              className={`absolute inset-0 flex flex-col justify-center px-6 ${
+              className={`absolute inset-0 flex flex-col px-6 ${
                 isLeft
-                  ? "items-start text-left md:px-14 lg:px-20"
-                  : "items-center text-center"
+                  ? "items-start justify-start pt-28 text-left md:justify-center md:pt-0 md:px-14 lg:px-20"
+                  : "items-center justify-center text-center"
               }`}
             >
               <div className={isLeft ? "max-w-[90%] sm:max-w-[72%] md:max-w-[46%]" : "max-w-2xl"}>
