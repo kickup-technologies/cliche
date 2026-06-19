@@ -1,13 +1,14 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { Leaf, ShieldCheck, Truck, Sparkles } from "lucide-react"
+import { Leaf, ShieldCheck, Truck, Shirt } from "lucide-react"
 
 /**
- * Guarantees — reversión de riesgo como cinemática horizontal (ref: buckssauce.com).
- * La sección se fija (sticky) y, al hacer scroll vertical, la "rueda" de beneficios
- * avanza lateralmente uno a uno: número gigante, píldora con el beneficio y copy.
- * Al terminar la rueda, el scroll continúa hacia abajo con normalidad.
+ * Guarantees — reversión de riesgo como cinemática horizontal (ref de movimiento:
+ * buckssauce.com, pero con la paleta crema de Cliché). La sección se fija (sticky)
+ * y, al hacer scroll vertical, la "rueda" de beneficios avanza lateralmente: una
+ * tarjeta limpia con ícono + beneficio + copy, y el número de posición debajo.
+ * Al terminar la rueda, el scroll continúa hacia abajo.
  * Fallback estático en móvil y con prefers-reduced-motion.
  */
 const ITEMS = [
@@ -17,7 +18,7 @@ const ITEMS = [
     text: "Sin parabenos ni aceites grasos. Seguro para tus clientes, tus prendas y tus productos.",
   },
   {
-    icon: Sparkles,
+    icon: Shirt,
     title: "No mancha",
     text: "Probado en textiles claros y delicados. Cero residuos, cero manchas.",
   },
@@ -64,13 +65,14 @@ export function Guarantees() {
       panelRefs.current.forEach((el, i) => {
         if (!el) return
         const d = Math.min(1, Math.abs(exact - i))
-        el.style.opacity = String(1 - d * 0.55)
+        el.style.opacity = String(1 - d * 0.5)
         const inner = el.firstElementChild as HTMLElement | null
-        if (inner) inner.style.transform = `scale(${(1 - d * 0.07).toFixed(3)})`
+        if (inner) inner.style.transform = `translateY(${(d * 26).toFixed(1)}px) scale(${(1 - d * 0.05).toFixed(3)})`
       })
       dotRefs.current.forEach((dot, i) => {
-        if (dot) dot.style.width = i === active ? "26px" : "8px"
-        if (dot) dot.style.opacity = i === active ? "1" : "0.4"
+        if (!dot) return
+        dot.style.width = i === active ? "26px" : "8px"
+        dot.style.opacity = i === active ? "1" : "0.35"
       })
       if (counterRef.current) counterRef.current.textContent = String(active + 1).padStart(2, "0")
 
@@ -103,21 +105,18 @@ export function Guarantees() {
       {/* ── Cinemática horizontal (desktop) ── */}
       <section
         ref={sectionRef}
-        className="relative hidden bg-[#2D1A14] md:block"
+        className="relative hidden bg-secondary md:block"
         style={{ height: `${N * 100}vh` }}
         aria-label="Por qué comprar en Cliché"
       >
         <div className="sticky top-0 flex h-screen items-center overflow-hidden">
-          {/* línea guía punteada */}
-          <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-[3.5vw] border-t border-dashed border-[#FAF8F5]/15" />
-
-          {/* eyebrow */}
-          <div className="pointer-events-none absolute left-1/2 top-[12%] z-20 -translate-x-1/2 text-center">
-            <p className="text-[0.66rem] font-semibold uppercase tracking-[0.4em] text-[#A67163]">
+          {/* eyebrow + contador */}
+          <div className="pointer-events-none absolute left-1/2 top-[13%] z-20 -translate-x-1/2 text-center">
+            <p className="text-[0.66rem] font-semibold uppercase tracking-[0.4em] text-primary">
               Antes de comprar
             </p>
-            <p className="mt-2 font-serif text-sm text-[#FAF8F5]/55">
-              <span ref={counterRef}>01</span> — 0{N}
+            <p className="mt-2 font-serif text-sm tracking-[0.2em] text-foreground/45">
+              <span ref={counterRef}>01</span> / 0{N}
             </p>
           </div>
 
@@ -135,22 +134,25 @@ export function Guarantees() {
                   ref={(el) => { panelRefs.current[i] = el }}
                   className="flex h-full w-screen flex-shrink-0 items-center justify-center px-6"
                 >
-                  <div className="relative flex flex-col items-center text-center transition-transform duration-200">
-                    <span
-                      aria-hidden
-                      className="guarantee-num font-serif font-medium leading-none"
-                    >
+                  <div className="flex flex-col items-center transition-[transform,opacity] duration-200">
+                    {/* Tarjeta limpia */}
+                    <div className="flex w-[min(86vw,400px)] flex-col items-center rounded-[2rem] border border-border/70 bg-background px-10 py-11 text-center shadow-[0_34px_80px_-44px_rgba(45,26,20,0.5)]">
+                      <span className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
+                        <Icon className="h-7 w-7" strokeWidth={1.75} />
+                      </span>
+                      <h3 className="mt-6 font-serif text-2xl font-medium text-foreground">
+                        {item.title}
+                      </h3>
+                      <div className="my-4 h-px w-10 bg-border" />
+                      <p className="max-w-[18rem] text-sm leading-relaxed text-muted-foreground">
+                        {item.text}
+                      </p>
+                    </div>
+
+                    {/* Número de posición — debajo de la tarjeta */}
+                    <span aria-hidden className="guarantee-num mt-7 font-serif font-medium leading-none">
                       {String(i + 1).padStart(2, "0")}
                     </span>
-                    <div className="-mt-[7vw] flex items-center gap-3 rounded-2xl bg-[#FAF8F5] px-8 py-4 shadow-2xl">
-                      <Icon className="h-5 w-5 text-[#2D1A14]" strokeWidth={2} />
-                      <span className="text-sm font-bold uppercase tracking-[0.22em] text-[#2D1A14]">
-                        {item.title}
-                      </span>
-                    </div>
-                    <p className="mt-9 max-w-xl font-serif text-2xl font-medium leading-snug text-[#FAF8F5] lg:text-3xl">
-                      {item.text}
-                    </p>
                   </div>
                 </div>
               )
@@ -158,13 +160,13 @@ export function Guarantees() {
           </div>
 
           {/* dots de progreso */}
-          <div className="absolute bottom-[10%] left-1/2 flex -translate-x-1/2 items-center gap-2">
+          <div className="absolute bottom-[9%] left-1/2 flex -translate-x-1/2 items-center gap-2">
             {ITEMS.map((_, i) => (
               <span
                 key={i}
                 ref={(el) => { dotRefs.current[i] = el }}
-                className="h-[3px] rounded-full bg-[#A67163] transition-all duration-300"
-                style={{ width: i === 0 ? "26px" : "8px", opacity: i === 0 ? 1 : 0.4 }}
+                className="h-[3px] rounded-full bg-primary transition-all duration-300"
+                style={{ width: i === 0 ? "26px" : "8px", opacity: i === 0 ? 1 : 0.35 }}
               />
             ))}
           </div>
@@ -172,22 +174,28 @@ export function Guarantees() {
       </section>
 
       {/* ── Fallback estático (móvil / reduced-motion) ── */}
-      <section className="bg-[#2D1A14] py-16 md:hidden">
-        <p className="mb-10 text-center text-[0.66rem] font-semibold uppercase tracking-[0.4em] text-[#A67163]">
+      <section className="bg-secondary py-16 md:hidden">
+        <p className="mb-10 text-center text-[0.66rem] font-semibold uppercase tracking-[0.4em] text-primary">
           Antes de comprar
         </p>
-        <div className="container mx-auto grid grid-cols-2 gap-x-6 gap-y-10 px-4">
-          {ITEMS.map((item) => {
+        <div className="container mx-auto grid grid-cols-2 gap-5 px-4">
+          {ITEMS.map((item, i) => {
             const Icon = item.icon
             return (
-              <div key={item.title} className="text-center">
-                <span className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-[#FAF8F5]/25 text-[#A67163]">
-                  <Icon className="h-5 w-5" />
+              <div
+                key={item.title}
+                className="relative flex flex-col items-center rounded-2xl border border-border/70 bg-background px-5 py-7 text-center"
+              >
+                <span className="absolute right-3 top-2 font-serif text-2xl font-medium text-primary/25">
+                  0{i + 1}
                 </span>
-                <h3 className="mt-4 text-[0.72rem] font-semibold uppercase tracking-[0.2em] text-[#FAF8F5]">
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                  <Icon className="h-5 w-5" strokeWidth={1.75} />
+                </span>
+                <h3 className="mt-4 text-[0.72rem] font-semibold uppercase tracking-[0.2em] text-foreground">
                   {item.title}
                 </h3>
-                <p className="mx-auto mt-2 max-w-[210px] text-xs leading-relaxed text-[#FAF8F5]/60">
+                <p className="mx-auto mt-2 max-w-[200px] text-xs leading-relaxed text-muted-foreground">
                   {item.text}
                 </p>
               </div>
@@ -198,9 +206,9 @@ export function Guarantees() {
 
       <style jsx>{`
         .guarantee-num {
-          font-size: 26vw;
+          font-size: clamp(4rem, 9vw, 8rem);
           color: transparent;
-          -webkit-text-stroke: 1.5px rgba(250, 248, 245, 0.28);
+          -webkit-text-stroke: 1.5px rgba(166, 113, 99, 0.45);
         }
       `}</style>
     </>
