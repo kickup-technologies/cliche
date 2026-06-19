@@ -75,6 +75,9 @@ export function EditorialHero() {
       {SLIDES.map((slide, i) => {
         const isActive = i === active
         const isLeft = slide.align === "left"
+        // Slides con imagen + versión móvil → layout "split" en celular:
+        // imagen arriba, texto en un panel café debajo (no tapa el producto).
+        const splitMobile = slide.media.type === "image" && !!slide.media.mobileSrc
 
         return (
           <div
@@ -98,7 +101,7 @@ export function EditorialHero() {
               />
             ) : (
               <>
-                {/* PC: imagen horizontal. Si hay versión móvil, se oculta aquí. */}
+                {/* PC: imagen horizontal a sangre completa. Si hay versión móvil, se oculta aquí. */}
                 <Image
                   src={slide.media.src}
                   alt={slide.title.replace(/\n/g, " ")}
@@ -108,26 +111,32 @@ export function EditorialHero() {
                   className={`object-cover ${slide.media.mobileSrc ? "hidden md:block" : ""}`}
                   style={{ objectPosition: slide.media.objectPosition ?? "center" }}
                 />
-                {/* Celular: imagen vertical (art-direction) */}
+                {/* Celular (split): imagen en la mitad superior, degradada hacia el
+                    fondo café; el texto vive debajo y NO tapa el producto. */}
                 {slide.media.mobileSrc && (
-                  <Image
-                    src={slide.media.mobileSrc}
-                    alt={slide.title.replace(/\n/g, " ")}
-                    fill
-                    priority={i === 0}
-                    sizes="100vw"
-                    className="object-cover md:hidden"
-                    style={{ objectPosition: slide.media.mobileObjectPosition ?? "center" }}
-                  />
+                  <div className="absolute inset-x-0 top-0 h-[52%] overflow-hidden md:hidden">
+                    <Image
+                      src={slide.media.mobileSrc}
+                      alt={slide.title.replace(/\n/g, " ")}
+                      fill
+                      priority={i === 0}
+                      sizes="100vw"
+                      className="object-cover"
+                      style={{ objectPosition: slide.media.mobileObjectPosition ?? "center" }}
+                    />
+                    <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#2D1A14] via-[#2D1A14]/70 to-transparent" />
+                  </div>
                 )}
               </>
             )}
 
-            {/* Gradiente direccional según alineación del texto */}
+            {/* Gradiente direccional según alineación del texto.
+                En slides "split" estos overlays son solo de PC (en móvil la
+                imagen va limpia arriba y el texto en el panel café de abajo). */}
             {isLeft ? (
               <>
-                <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/25 sm:via-black/40 sm:to-transparent" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/15 sm:from-black/35" />
+                <div className={`absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/25 sm:via-black/40 sm:to-transparent ${splitMobile ? "hidden md:block" : ""}`} />
+                <div className={`absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/15 sm:from-black/35 ${splitMobile ? "hidden md:block" : ""}`} />
               </>
             ) : (
               <>
@@ -138,10 +147,12 @@ export function EditorialHero() {
 
             {/* Contenedor de texto */}
             <div
-              className={`absolute inset-0 flex flex-col px-6 ${
-                isLeft
-                  ? "items-start justify-start pt-28 text-left md:justify-center md:pt-0 md:px-14 lg:px-20"
-                  : "items-center justify-center text-center"
+              className={`absolute flex flex-col px-6 ${
+                splitMobile
+                  ? "inset-x-0 bottom-0 top-[50%] items-start justify-center pb-12 text-left md:inset-0 md:top-0 md:justify-center md:pb-0 md:px-14 lg:px-20"
+                  : isLeft
+                    ? "inset-0 items-start justify-center text-left md:px-14 lg:px-20"
+                    : "inset-0 items-center justify-center text-center"
               }`}
             >
               <div className={isLeft ? "max-w-[90%] sm:max-w-[72%] md:max-w-[46%]" : "max-w-2xl"}>
