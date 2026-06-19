@@ -7,7 +7,6 @@ import { WhatsAppButton } from "@/components/whatsapp-button"
 import { IntroOverlay } from "@/components/editorial/intro-overlay"
 import { EditorialHero } from "@/components/editorial/editorial-hero"
 import { Marquee } from "@/components/editorial/marquee"
-import { ProductCollection } from "@/components/editorial/product-collection"
 import { EditorialStory } from "@/components/editorial/editorial-story"
 import { ImageTextOverlay } from "@/components/editorial/image-text-overlay"
 import { ValuesColumns } from "@/components/editorial/values-columns"
@@ -90,18 +89,6 @@ export default function Home() {
 
       {/* 9. OFERTA — incentivo concreto con CTA único */}
       <OfferBand />
-
-      {/* 10. DESEO 2 — segunda ola de producto, sin repetir */}
-      <ScrollReveal>
-        <ProductCollection
-          eyebrow="Recién llegados"
-          title="Nuevos en la colección"
-          limit={4}
-          offset={8}
-          ctaLabel="Explorar colección"
-          ctaHref="/catalogo"
-        />
-      </ScrollReveal>
 
       {/* 11. REVERSIÓN DE RIESGO — garantías concretas */}
       <Guarantees />
