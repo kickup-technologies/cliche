@@ -20,7 +20,7 @@ interface Slide {
 
 const SLIDES: Slide[] = [
   {
-    media: { type: "image", src: "/images/segments/bano.png", mobileSrc: "/images/segments/bano-mobile.png", objectPosition: "60% 50%", mobileObjectPosition: "center 70%" },
+    media: { type: "image", src: "/images/segments/bano.png", mobileSrc: "/images/segments/bano-mobile.png" },
     eyebrow: "Vestidos de baño & playa",
     title: "Tu marca también\nhuele a verano",
     subtitle: "MAHAI impregna tus prendas de baño con frutas exóticas que duran todo el día y no manchan la tela.",
