@@ -1,21 +1,31 @@
 import { NextRequest } from "next/server"
+import { timingSafeEqual } from "crypto"
 
 /**
  * Verifica que la petición venga del panel admin autenticado.
- * El cliente envía la contraseña en el header `x-admin-password`.
+ * El cliente envía la contraseña en el header `x-admin-password`, que se compara
+ * en TIEMPO CONSTANTE contra ADMIN_PASSWORD (evita timing attacks).
  *
- * Falla cerrado: si ADMIN_PASSWORD no está configurada, NADIE pasa.
+ * Falla cerrado: en producción, sin ADMIN_PASSWORD configurada NADIE pasa.
+ * En local (no producción) se permite para desarrollo — localhost no está expuesto.
  */
-export function isAdmin(_req: NextRequest): boolean {
-  // ⚠️ ACCESO ABIERTO ACTIVADO (a petición del dueño).
-  // El panel /admin-cliche-secret NO exige contraseña: cualquiera con la URL
-  // puede entrar. Para volver a protegerlo, borra el `return true` de abajo,
-  // define ADMIN_PASSWORD en Vercel y haz Redeploy.
-  return true
+function safeEqual(a: string, b: string): boolean {
+  const ba = Buffer.from(a)
+  const bb = Buffer.from(b)
+  if (ba.length !== bb.length) return false
+  try {
+    return timingSafeEqual(ba, bb)
+  } catch {
+    return false
+  }
+}
 
-  // --- Lógica segura original (desactivada) ---
-  // if (process.env.NODE_ENV !== "production") return true
-  // const expected = process.env.ADMIN_PASSWORD
-  // if (!expected) return false
-  // return _req.headers.get("x-admin-password") === expected
+export function isAdmin(req: NextRequest): boolean {
+  const expected = process.env.ADMIN_PASSWORD
+  if (!expected) {
+    // Sin contraseña configurada: solo desarrollo local; en producción, denegar.
+    return process.env.NODE_ENV !== "production"
+  }
+  const provided = req.headers.get("x-admin-password")
+  return !!provided && safeEqual(provided, expected)
 }
