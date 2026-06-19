@@ -93,7 +93,7 @@ export function EditorialHero() {
 
   return (
     <section
-      className="relative h-[82vh] min-h-[560px] w-full overflow-hidden bg-[#2D1A14]"
+      className="relative h-[90vh] min-h-[660px] w-full overflow-hidden bg-[#2D1A14] md:h-[82vh] md:min-h-[560px]"
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
@@ -139,7 +139,7 @@ export function EditorialHero() {
                 {/* Celular (split): imagen en la mitad superior, degradada hacia el
                     fondo café; el texto vive debajo y NO tapa el producto. */}
                 {slide.media.mobileSrc && (
-                  <div className="absolute inset-x-0 top-0 h-[58%] overflow-hidden md:hidden">
+                  <div className="absolute inset-x-0 top-0 h-[57%] overflow-hidden md:hidden">
                     <Image
                       src={slide.media.mobileSrc}
                       alt={slide.title.replace(/\n/g, " ")}
@@ -149,7 +149,8 @@ export function EditorialHero() {
                       className="object-cover"
                       style={{ objectPosition: slide.media.mobileObjectPosition ?? "center" }}
                     />
-                    <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#2D1A14] via-[#2D1A14]/70 to-transparent" />
+                    {/* Fade fino solo en el borde inferior: no oscurece el label */}
+                    <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#2D1A14] to-transparent" />
                   </div>
                 )}
               </>
@@ -174,7 +175,7 @@ export function EditorialHero() {
             <div
               className={`absolute flex flex-col px-6 ${
                 splitMobile
-                  ? "inset-x-0 bottom-0 top-[57%] items-start justify-start pt-5 text-left md:inset-0 md:top-0 md:justify-center md:pt-0 md:px-14 lg:px-20"
+                  ? "inset-x-0 bottom-0 top-[56%] items-start justify-start pt-4 text-left md:inset-0 md:top-0 md:justify-center md:pt-0 md:px-14 lg:px-20"
                   : isLeft
                     ? "inset-0 items-start justify-center text-left md:px-14 lg:px-20"
                     : "inset-0 items-center justify-center text-center"
@@ -184,7 +185,7 @@ export function EditorialHero() {
 
                 {slide.eyebrow && (
                   <p
-                    className="mb-4 text-[0.65rem] font-semibold uppercase tracking-[0.38em] text-white/75 transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                    className="mb-2 text-[0.65rem] font-semibold uppercase tracking-[0.38em] text-white/75 transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] md:mb-4"
                     style={{
                       opacity: isActive ? 1 : 0,
                       transform: isActive ? "translateY(0px)" : "translateY(14px)",
@@ -209,7 +210,7 @@ export function EditorialHero() {
                 </h1>
 
                 <div
-                  className="my-5 h-[1px] bg-white/25 transition-all duration-700 ease-out"
+                  className="my-3 h-[1px] bg-white/25 transition-all duration-700 ease-out md:my-5"
                   style={{
                     width: isActive ? (isLeft ? "56px" : "40px") : "0px",
                     transitionDelay: isActive ? "480ms" : "0ms",
@@ -218,7 +219,7 @@ export function EditorialHero() {
 
                 {slide.subtitle && (
                   <p
-                    className={`text-[0.95rem] font-light leading-relaxed text-white/85 transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                    className={`line-clamp-2 text-[0.9rem] font-light leading-relaxed text-white/85 transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] sm:text-[0.95rem] md:line-clamp-none ${
                       isLeft ? "max-w-sm" : "mx-auto max-w-md"
                     }`}
                     style={{
@@ -242,7 +243,7 @@ export function EditorialHero() {
                   >
                     <Link
                       href={slide.cta.href}
-                      className="group/cta mt-8 inline-flex items-center gap-3 rounded-full bg-[#FAF8F5] py-2 pl-7 pr-2 text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-[#2D1A14] shadow-[0_12px_34px_rgba(0,0,0,0.28)] transition-all duration-300 hover:bg-[#A67163] hover:text-white active:scale-[0.98]"
+                      className="group/cta mt-6 inline-flex items-center gap-3 rounded-full bg-[#FAF8F5] py-2 pl-7 pr-2 text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-[#2D1A14] shadow-[0_12px_34px_rgba(0,0,0,0.28)] transition-all duration-300 hover:bg-[#A67163] hover:text-white active:scale-[0.98] md:mt-8"
                     >
                       {slide.cta.label}
                       <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#2D1A14] text-[#FAF8F5] transition-all duration-300 group-hover/cta:translate-x-0.5 group-hover/cta:bg-white group-hover/cta:text-[#2D1A14]">
