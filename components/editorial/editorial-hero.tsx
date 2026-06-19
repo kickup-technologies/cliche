@@ -4,9 +4,16 @@ import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 
-type SlideMedia =
-  | { type: "video"; src: string; poster?: string }
-  | { type: "image"; src: string; mobileSrc?: string; objectPosition?: string; mobileObjectPosition?: string }
+// mobileSrc (imagen vertical) activa el layout "split" en celular para cualquier
+// tipo de media: en PC se muestra el video/imagen de fondo; en móvil, esa imagen.
+type SlideMedia = {
+  type: "video" | "image"
+  src: string
+  poster?: string
+  mobileSrc?: string
+  objectPosition?: string
+  mobileObjectPosition?: string
+}
 
 interface Slide {
   media: SlideMedia
@@ -29,21 +36,22 @@ const SLIDES: Slide[] = [
     align: "left",
   },
   {
+    // PC: video de identidad de marca (el que ya teníamos). Móvil: imagen "aire" (hogar).
+    media: { type: "video", src: "/videos/hero-2.mp4", mobileSrc: "/images/segments/aire-mobile.png" },
+    eyebrow: "Hecho en Colombia",
+    title: "La identidad olfativa\nde tu marca",
+    subtitle: "Hoteles, tiendas, spas y marcas de moda ya tienen su aroma. Diseñamos el tuyo.",
+    cta: { label: "Ver colección", href: "/catalogo" },
+    microcopy: "100% artesanal · Hecho en Colombia",
+    align: "left",
+  },
+  {
     media: { type: "image", src: "/images/segments/gym.png", mobileSrc: "/images/segments/gym-mobile.png" },
     eyebrow: "Gimnasios & deporte",
     title: "El aroma que\naguanta tu ritmo",
     subtitle: "Lycra de Verano mantiene tu ropa deportiva fresca entrenamiento tras entrenamiento. La frescura que tu marca lleva puesta.",
     cta: { label: "Comprar Lycra de Verano", href: "/productos/aroma-lycra-de-verano" },
     microcopy: "Frescura duradera · No mancha · Ideal para activewear",
-    align: "left",
-  },
-  {
-    media: { type: "video", src: "/videos/hero-2.mp4" },
-    eyebrow: "Hecho en Colombia",
-    title: "La identidad olfativa\nde tu marca",
-    subtitle: "Hoteles, tiendas, spas y marcas de moda ya tienen su aroma. Diseñamos el tuyo.",
-    cta: { label: "Ver colección", href: "/catalogo" },
-    microcopy: "100% artesanal · Hecho en Colombia",
     align: "left",
   },
 ]
@@ -102,7 +110,7 @@ export function EditorialHero() {
         const isLeft = slide.align === "left"
         // Slides con imagen + versión móvil → layout "split" en celular:
         // imagen arriba, texto en un panel café debajo (no tapa el producto).
-        const splitMobile = slide.media.type === "image" && !!slide.media.mobileSrc
+        const splitMobile = !!slide.media.mobileSrc
 
         return (
           <div
@@ -111,7 +119,8 @@ export function EditorialHero() {
               isActive ? "opacity-100" : "opacity-0 pointer-events-none"
             }`}
           >
-            {/* Media de fondo: video o imagen */}
+            {/* Media de fondo PC: video o imagen. Si hay versión móvil, se oculta
+                en celular (md:block) y abajo se monta el split. */}
             {slide.media.type === "video" ? (
               <video
                 ref={(el) => { videoRefs.current[i] = el }}
@@ -122,38 +131,37 @@ export function EditorialHero() {
                 playsInline
                 autoPlay={i === 0}
                 preload={i === 0 ? "auto" : "metadata"}
-                className="absolute inset-0 h-full w-full object-cover"
+                className={`absolute inset-0 h-full w-full object-cover ${slide.media.mobileSrc ? "hidden md:block" : ""}`}
               />
             ) : (
-              <>
-                {/* PC: imagen horizontal a sangre completa. Si hay versión móvil, se oculta aquí. */}
+              <Image
+                src={slide.media.src}
+                alt={slide.title.replace(/\n/g, " ")}
+                fill
+                priority={i === 0}
+                sizes="100vw"
+                className={`object-cover ${slide.media.mobileSrc ? "hidden md:block" : ""}`}
+                style={{ objectPosition: slide.media.objectPosition ?? "center" }}
+              />
+            )}
+
+            {/* Celular (split): imagen vertical en la mitad superior, degradada
+                hacia el fondo café; el texto vive debajo y NO tapa el producto.
+                Aplica a cualquier slide con mobileSrc (imagen o video en PC). */}
+            {slide.media.mobileSrc && (
+              <div className="absolute inset-x-0 top-0 h-[57%] overflow-hidden md:hidden">
                 <Image
-                  src={slide.media.src}
+                  src={slide.media.mobileSrc}
                   alt={slide.title.replace(/\n/g, " ")}
                   fill
                   priority={i === 0}
                   sizes="100vw"
-                  className={`object-cover ${slide.media.mobileSrc ? "hidden md:block" : ""}`}
-                  style={{ objectPosition: slide.media.objectPosition ?? "center" }}
+                  className="object-cover"
+                  style={{ objectPosition: slide.media.mobileObjectPosition ?? "center" }}
                 />
-                {/* Celular (split): imagen en la mitad superior, degradada hacia el
-                    fondo café; el texto vive debajo y NO tapa el producto. */}
-                {slide.media.mobileSrc && (
-                  <div className="absolute inset-x-0 top-0 h-[57%] overflow-hidden md:hidden">
-                    <Image
-                      src={slide.media.mobileSrc}
-                      alt={slide.title.replace(/\n/g, " ")}
-                      fill
-                      priority={i === 0}
-                      sizes="100vw"
-                      className="object-cover"
-                      style={{ objectPosition: slide.media.mobileObjectPosition ?? "center" }}
-                    />
-                    {/* Fade fino solo en el borde inferior: no oscurece el label */}
-                    <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#2D1A14] to-transparent" />
-                  </div>
-                )}
-              </>
+                {/* Fade fino solo en el borde inferior: no oscurece el label */}
+                <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#2D1A14] to-transparent" />
+              </div>
             )}
 
             {/* Gradiente direccional según alineación del texto.
