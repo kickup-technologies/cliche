@@ -11,9 +11,9 @@ import { usePathname, useRouter } from "next/navigation"
  * Intercepta los clics globalmente (funciona en catálogo, segmentos, vitrina…)
  * y respeta clic-medio / cmd-clic / reduced-motion.
  */
-const COVER_MS = 620
-const HOLD_MS = 240
-const EXIT_MS = 640
+const COVER_MS = 460
+const HOLD_MS = 120
+const EXIT_MS = 480
 
 export function PageTransition() {
   const router = useRouter()

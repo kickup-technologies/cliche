@@ -77,7 +77,23 @@ const SHOWCASE: ShowItem[] = [
 export function ProductShowcase3D() {
   const [active, setActive] = useState(0)
   const [phase, setPhase] = useState<"in" | "out">("in")
+  const [mount3D, setMount3D] = useState(false)
+  const sectionRef = useRef<HTMLElement>(null)
   const timers = useRef<number[]>([])
+
+  // Rendimiento de navegación: no cargar three.js al entrar a la página.
+  // El visor 3D (y su bundle) se monta solo cuando la sección se acerca al
+  // viewport, así la navegación al landing es fluida.
+  useEffect(() => {
+    const el = sectionRef.current
+    if (!el) return
+    const io = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) { setMount3D(true); io.disconnect() } },
+      { rootMargin: "400px" },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
@@ -112,12 +128,18 @@ export function ProductShowcase3D() {
     : { opacity: 1, transform: "scale(1)", transition: "opacity 1150ms cubic-bezier(0.22,1,0.36,1), transform 1300ms cubic-bezier(0.22,1,0.36,1)" }
 
   return (
-    <section className="overflow-hidden bg-secondary">
+    <section ref={sectionRef} className="overflow-hidden bg-secondary">
       <div className="container mx-auto grid grid-cols-1 items-center gap-10 px-4 py-20 md:grid-cols-2 md:py-28">
         {/* Render 3D real, girando — se desvanece y entra el siguiente */}
         <div className="relative mx-auto aspect-square w-full max-w-[460px]">
           <div className="absolute inset-0" style={renderStyle}>
-            <MeshyViewer url={item.model} />
+            {mount3D ? (
+              <MeshyViewer url={item.model} />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center">
+                <div className="h-14 w-14 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+              </div>
+            )}
           </div>
           <p className="pointer-events-none absolute inset-x-0 bottom-1 text-center text-[0.6rem] font-medium uppercase tracking-[0.28em] text-muted-foreground/70">
             Arrastra para girar

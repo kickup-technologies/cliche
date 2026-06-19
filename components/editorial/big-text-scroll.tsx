@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { AromaShader } from "@/components/editorial/aroma-shader"
 
 interface BigTextScrollProps {
@@ -21,6 +21,20 @@ export function BigTextScroll({
 }: BigTextScrollProps) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const textRef = useRef<HTMLDivElement>(null)
+  const [showShader, setShowShader] = useState(false)
+
+  // No crear el contexto WebGL al entrar a la página: el shader se monta solo
+  // cuando la banda se acerca al viewport → navegación al landing más fluida.
+  useEffect(() => {
+    const el = wrapRef.current
+    if (!el) return
+    const io = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) { setShowShader(true); io.disconnect() } },
+      { rootMargin: "400px" },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
 
   useEffect(() => {
     const wrap = wrapRef.current
@@ -71,8 +85,8 @@ export function BigTextScroll({
       aria-hidden
       className="relative overflow-hidden bg-background py-14 sm:py-20 md:py-28"
     >
-      {/* humo aromático líquido — shader WebGL detrás del titular */}
-      <AromaShader className="absolute inset-0 h-full w-full" />
+      {/* humo aromático líquido — shader WebGL detrás del titular (diferido) */}
+      {showShader && <AromaShader className="absolute inset-0 h-full w-full" />}
 
       <div
         ref={textRef}

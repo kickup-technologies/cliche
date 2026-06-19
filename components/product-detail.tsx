@@ -232,9 +232,15 @@ export function ProductDetail({ product, related }: Props) {
     return () => clearInterval(id)
   }, [spMin, spMax])
 
-  // Fall-from-sky entrance — fires only once the GLB model is fully loaded
+  // Entrada inmediata: la página NO espera al 3D (antes solo entraba cuando el
+  // GLB terminaba de cargar → se sentía trabada al abrir un producto). Ahora
+  // entra de una y el visor 3D carga en segundo plano y aparece cuando está listo.
   const [fell, setFell] = useState(false)
-  const handleModelReady = () => requestAnimationFrame(() => setFell(true))
+  const handleModelReady = () => setFell(true)
+  useEffect(() => {
+    const t = setTimeout(() => setFell(true), 60)
+    return () => clearTimeout(t)
+  }, [])
 
   const { track } = useCAPI()
 
