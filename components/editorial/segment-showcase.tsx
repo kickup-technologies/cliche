@@ -191,6 +191,7 @@ function Category({ seg, i, pool }: { seg: Segment; i: number; pool: Product[] }
 export function SegmentShowcase() {
   const [pool, setPool] = useState<Product[]>([])
   const [showAll, setShowAll] = useState(false)
+  const pendingScroll = useRef<number | null>(null)
 
   useEffect(() => {
     fetch("/api/products")
@@ -198,6 +199,30 @@ export function SegmentShowcase() {
       .then((d: Product[]) => { if (Array.isArray(d)) setPool(d) })
       .catch(() => {})
   }, [])
+
+  // Al expandir, conservar la posición de scroll: las nuevas categorías se
+  // despliegan DEBAJO y el usuario sigue bajando con naturalidad (no salta).
+  useEffect(() => {
+    if (showAll && pendingScroll.current != null) {
+      const y = pendingScroll.current
+      pendingScroll.current = null
+      requestAnimationFrame(() => {
+        const lenis = (window as unknown as { __lenis?: { scrollTo: (t: number, o?: object) => void } }).__lenis
+        if (lenis?.scrollTo) lenis.scrollTo(y, { immediate: true })
+        else window.scrollTo(0, y)
+      })
+    }
+  }, [showAll])
+
+  const toggleShowAll = () => {
+    if (!showAll) {
+      const lenis = (window as unknown as { __lenis?: { scroll: number } }).__lenis
+      pendingScroll.current = lenis?.scroll ?? window.scrollY
+      setShowAll(true)
+    } else {
+      setShowAll(false)
+    }
+  }
 
   if (pool.length === 0) return null
 
@@ -219,7 +244,7 @@ export function SegmentShowcase() {
           </p>
         </div>
 
-        <div className="mt-20 space-y-28 md:mt-28 md:space-y-40">
+        <div className="mt-20 space-y-28 md:mt-28 md:space-y-40" style={{ overflowAnchor: "none" }}>
           {shown.map((seg, i) => (
             <Category key={seg.key} seg={seg} i={i} pool={pool} />
           ))}
@@ -228,7 +253,7 @@ export function SegmentShowcase() {
         {segs.length > INITIAL && (
           <div className="mt-20 text-center md:mt-28">
             <button
-              onClick={() => setShowAll((v) => !v)}
+              onClick={toggleShowAll}
               className="inline-flex items-center gap-2 border border-foreground/20 px-10 py-4 text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-foreground transition-colors hover:bg-foreground hover:text-background"
             >
               {showAll ? "Ver menos" : `Ver todas las categorías (${segs.length})`}
