@@ -70,7 +70,7 @@ function SegmentPanel({
   const img = SEGMENT_IMAGES[seg.key]
 
   return (
-    <div ref={panelRef} className="relative flex h-full w-screen flex-shrink-0 items-center">
+    <div ref={panelRef} className="relative flex h-screen w-full flex-shrink-0 items-center">
       {/* número colosal de fondo */}
       <span
         data-giant
@@ -194,7 +194,7 @@ export function SegmentShowcase() {
       const p = Math.min(1, Math.max(0, -rect.top / dist))
       const exact = p * (N - 1)
 
-      track.style.transform = `translate3d(${(-exact * 100).toFixed(3)}vw, 0, 0)`
+      track.style.transform = `translate3d(0, ${(-exact * 100).toFixed(3)}vh, 0)`
 
       const active = Math.round(exact)
       panelRefs.current.forEach((el, i) => {
@@ -204,8 +204,8 @@ export function SegmentShowcase() {
         el.style.opacity = String(1 - d * 0.5)
         const num = el.querySelector<HTMLElement>("[data-giant]")
         const content = el.querySelector<HTMLElement>("[data-content]")
-        if (num) num.style.transform = `translate3d(${(rel * -30).toFixed(1)}px, -50%, 0)`
-        if (content) content.style.transform = `translate3d(${(rel * 14).toFixed(1)}px, 0, 0)`
+        if (num) num.style.transform = `translateY(calc(-50% + ${(rel * -22).toFixed(1)}px))`
+        if (content) content.style.transform = `translate3d(0, ${(rel * 12).toFixed(1)}px, 0)`
       })
 
       if (counterRef.current) counterRef.current.textContent = String(active + 1).padStart(2, "0")
@@ -257,7 +257,7 @@ export function SegmentShowcase() {
           </div>
 
           {/* track */}
-          <div ref={trackRef} className="flex h-full will-change-transform" style={{ width: `${N * 100}vw` }}>
+          <div ref={trackRef} className="flex w-full flex-col will-change-transform" style={{ height: `${N * 100}vh` }}>
             {shown.map((seg, i) => (
               <SegmentPanel
                 key={seg.key}
