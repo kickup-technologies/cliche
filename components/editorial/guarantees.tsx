@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
+import { Leaf, Shirt, Truck, ShieldCheck } from "lucide-react"
 
 /**
  * Guarantees — reversión de riesgo como CINEMÁTICA EDITORIAL de lujo.
@@ -11,10 +12,10 @@ import { useEffect, useRef } from "react"
  * el scroll continúa. Fallback editorial apilado en móvil / reduced-motion.
  */
 const ITEMS = [
-  { n: "01", kicker: "Fórmula", line1: "100%", line2: "Natural", text: "Sin parabenos ni aceites grasos. Una fórmula segura para tus clientes, tus prendas y tus productos." },
-  { n: "02", kicker: "Textiles", line1: "No", line2: "mancha", text: "Probada en textiles claros y delicados. Cero residuos, cero manchas, cero preocupaciones." },
-  { n: "03", kicker: "Logística", line1: "Envío", line2: "nacional", text: "Despachamos a toda Colombia. Envío de cortesía en compras desde $300.000." },
-  { n: "04", kicker: "Seguridad", line1: "Pago", line2: "protegido", text: "Checkout cifrado y pasarela certificada. Compra con total tranquilidad." },
+  { n: "01", kicker: "Fórmula", line1: "100%", line2: "Natural", icon: Leaf, title: "100% Natural", text: "Sin parabenos ni aceites grasos. Una fórmula segura para tus clientes, tus prendas y tus productos." },
+  { n: "02", kicker: "Textiles", line1: "No", line2: "mancha", icon: Shirt, title: "No mancha", text: "Probada en textiles claros y delicados. Cero residuos, cero manchas, cero preocupaciones." },
+  { n: "03", kicker: "Logística", line1: "Envío", line2: "nacional", icon: Truck, title: "Envío nacional", text: "Despachamos a toda Colombia. Envío de cortesía en compras desde $300.000." },
+  { n: "04", kicker: "Seguridad", line1: "Pago", line2: "protegido", icon: ShieldCheck, title: "Pago protegido", text: "Checkout cifrado y pasarela certificada. Compra con total tranquilidad." },
 ]
 
 const N = ITEMS.length
@@ -167,33 +168,25 @@ export function Guarantees() {
         </div>
       </section>
 
-      {/* ───────────── Fallback editorial apilado (móvil / reduced-motion) ───────────── */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-[#FAF8F5] to-[#ECE0D4] py-16 md:hidden">
-        <div className="px-7">
-          <div className="flex items-center justify-between">
-            <span className="text-[0.6rem] font-semibold uppercase tracking-[0.4em] text-[#2D1A14]/55">Antes de comprar</span>
-            <span className="font-serif text-xs tracking-[0.2em] text-[#2D1A14]/40">0{N}</span>
-          </div>
-          <div className="mt-3 h-px bg-[#2D1A14]/12" />
-
-          {ITEMS.map((item) => (
-            <article key={item.n} className="relative border-b border-[#2D1A14]/10 py-12">
-              <span aria-hidden className="pointer-events-none absolute -right-2 top-4 select-none font-serif font-medium leading-none text-[#2D1A14]/[0.06]" style={{ fontSize: "34vw" }}>
-                {item.n}
-              </span>
-              <div className="relative z-10">
-                <div className="mb-4 flex items-center gap-3">
-                  <span className="h-px w-9 bg-[#A67163]" />
-                  <span className="text-[0.58rem] font-semibold uppercase tracking-[0.3em] text-[#A67163]">Fig. {item.n} — {item.kicker}</span>
-                </div>
-                <h2 className="font-serif text-5xl font-medium leading-[0.95] text-[#2D1A14]">
-                  <span className="block">{item.line1}</span>
-                  <span className="block italic text-[#2D1A14]/85">{item.line2}</span>
-                </h2>
-                <p className="mt-5 max-w-xs text-sm font-light leading-relaxed text-[#2D1A14]/65">{item.text}</p>
+      {/* ───────────── Móvil: versión original (grid de 4 íconos) ───────────── */}
+      <section className="border-y border-border bg-background py-14 md:hidden">
+        <div className="container mx-auto grid grid-cols-2 gap-x-6 gap-y-10 px-4">
+          {ITEMS.map((item) => {
+            const Icon = item.icon
+            return (
+              <div key={item.title} className="text-center">
+                <span className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-border text-primary">
+                  <Icon className="h-5 w-5" />
+                </span>
+                <h3 className="mt-4 text-[0.72rem] font-semibold uppercase tracking-[0.2em] text-foreground">
+                  {item.title}
+                </h3>
+                <p className="mx-auto mt-2 max-w-[200px] text-xs leading-relaxed text-muted-foreground">
+                  {item.text}
+                </p>
               </div>
-            </article>
-          ))}
+            )
+          })}
         </div>
       </section>
 

@@ -54,8 +54,10 @@ function useInView<T extends HTMLElement>() {
     const el = ref.current
     if (!el) return
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { setInView(true); return }
+    // No se desconecta: la animación se ejecuta SIEMPRE al entrar y se revierte
+    // al salir (al subir de nuevo vuelve a animar, en sentido inverso).
     const io = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setInView(true); io.disconnect() } },
+      ([e]) => setInView(e.isIntersecting),
       { threshold: 0.15, rootMargin: "0px 0px -12% 0px" },
     )
     io.observe(el)
@@ -86,8 +88,8 @@ function Category({ seg, i, pool }: { seg: Segment; i: number; pool: Product[] }
     <div
       style={{ ...(img ? {} : { background: panel.bg }), color: view.fg, ...reveal(0) }}
       className={`relative flex flex-col overflow-hidden rounded-2xl p-8 lg:min-h-full lg:p-10 ${
-        img ? "min-h-[440px] justify-end" : "min-h-[240px] justify-center"
-      }`}
+        bannerRight ? "lg:order-2" : "lg:order-1"
+      } ${img ? "min-h-[440px] justify-end" : "min-h-[240px] justify-center"}`}
     >
       {img && (
         <>
@@ -128,7 +130,7 @@ function Category({ seg, i, pool }: { seg: Segment; i: number; pool: Product[] }
   const count = products.length
   const colClass = count === 1 ? "grid-cols-1" : count <= 4 ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-3"
   const grid = (
-    <div className={`grid ${colClass} gap-x-5 gap-y-8`}>
+    <div className={`grid ${colClass} gap-x-5 gap-y-8 ${bannerRight ? "lg:order-1" : "lg:order-2"}`}>
       {products.map((p, idx) => {
         const delay = 180 + idx * 110
         return (
@@ -183,7 +185,9 @@ function Category({ seg, i, pool }: { seg: Segment; i: number; pool: Product[] }
         bannerRight ? "lg:grid-cols-[1fr_minmax(0,340px)]" : "lg:grid-cols-[minmax(0,340px)_1fr]"
       }`}
     >
-      {bannerRight ? (<>{grid}{banner}</>) : (<>{banner}{grid}</>)}
+      {/* DOM siempre banner → grid (móvil); en desktop el orden lo da lg:order-* */}
+      {banner}
+      {grid}
     </div>
   )
 }
