@@ -133,16 +133,19 @@ export function PackBuilder({
   if (!open) return null
 
   return (
+    // data-lenis-prevent: Lenis ignora la rueda dentro del modal → el scroll
+    // ocurre EN el popup (lista de aromas), no en el fondo.
     <div
       className="fixed inset-0 z-[9999] flex items-end justify-center sm:items-center"
       role="dialog"
       aria-modal="true"
       aria-label="Arma tu kit personalizado"
+      data-lenis-prevent
     >
       <div className="absolute inset-0 bg-black/55 backdrop-blur-sm" onClick={onClose} />
 
       <div
-        className="relative flex h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-t-3xl shadow-2xl sm:h-[86vh] sm:rounded-3xl"
+        className="relative flex h-[100dvh] max-h-[100dvh] w-full flex-col overflow-hidden shadow-2xl sm:h-[88vh] sm:max-h-[88vh] sm:max-w-3xl sm:rounded-3xl"
         style={{ backgroundColor: CREMA }}
       >
         {/* Header */}
@@ -193,8 +196,8 @@ export function PackBuilder({
           })}
         </div>
 
-        {/* Lista de aromas */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 sm:px-8">
+        {/* Lista de aromas (scroll nativo aislado del fondo) */}
+        <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 sm:px-8" data-lenis-prevent>
           {loading ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {Array.from({ length: 6 }).map((_, i) => (
@@ -272,8 +275,11 @@ export function PackBuilder({
           )}
         </div>
 
-        {/* Footer fijo: progreso + precio + CTA */}
-        <div className="border-t px-5 py-4 sm:px-8" style={{ borderColor: `${CAFE}14`, backgroundColor: CREMA }}>
+        {/* Footer fijo: progreso + precio + CTA (respeta safe-area en móvil) */}
+        <div
+          className="border-t px-5 py-4 sm:px-8"
+          style={{ borderColor: `${CAFE}14`, backgroundColor: CREMA, paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)" }}
+        >
           {/* Progreso */}
           <div className="mb-3 flex items-center gap-1.5">
             {Array.from({ length: tier.units }).map((_, i) => (
@@ -285,12 +291,12 @@ export function PackBuilder({
             ))}
           </div>
 
-          <div className="flex items-center justify-between gap-4">
-            <div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div className="min-w-0">
               <p className="text-xs" style={{ color: `${CAFE}99` }}>
                 {complete ? "¡Kit completo!" : `${count} de ${tier.units} frascos elegidos`}
               </p>
-              <div className="flex items-baseline gap-2">
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                 <span className="font-serif text-2xl" style={{ color: CAFE }}>{fmt(tier.price)}</span>
                 <span className="text-xs line-through" style={{ color: `${CAFE}66` }}>{fmt(tier.units * UNIT_PRICE)}</span>
                 <span className="text-[11px] font-semibold" style={{ color: TERRA }}>
@@ -302,7 +308,7 @@ export function PackBuilder({
             <button
               onClick={handleAdd}
               disabled={!complete || added}
-              className="flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-30"
+              className="flex w-full flex-shrink-0 items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-30 sm:w-auto sm:py-3"
               style={{ backgroundColor: added ? "#3b7a4e" : CAFE, color: CREMA }}
             >
               {added ? (<><Check className="h-4 w-4" /> Añadido</>) : "Añadir al carrito"}

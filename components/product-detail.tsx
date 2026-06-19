@@ -854,18 +854,21 @@ export function ProductDetail({ product, related }: Props) {
       {/* Constructor de kit personalizado (se abre desde "¿Prefieres mezclar aromas?") */}
       <PackBuilder open={packOpen} onClose={() => setPackOpen(false)} seedProductId={product.id} />
 
-      {/* Sticky CTA bar — barra FLOTANTE (no pegada al borde) para que no quede
-          "enterrada" bajo la barra del sistema/navegador. Respeta el safe-area. */}
+      {/* Sticky CTA bar — barra de ancho COMPLETO (punta a punta) anclada abajo.
+          Respeta el safe-area para no quedar bajo la barra del sistema. */}
       <div
-        className="fixed inset-x-0 bottom-0 z-40 px-3 pt-2 transition-all duration-300 pointer-events-none lg:px-6"
+        className="fixed inset-x-0 bottom-0 z-40 transition-all duration-300"
         style={{
-          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.85rem)',
           transform: showSticky ? 'translateY(0)' : 'translateY(120%)',
           opacity: showSticky ? 1 : 0,
         }}
       >
-        <div className="pointer-events-auto mx-auto flex max-w-3xl items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 lg:px-6"
-          style={{ boxShadow: '0 12px 40px rgba(0,0,0,0.18)' }}
+        <div
+          className="flex w-full items-center gap-3 border-t border-border bg-card px-4 py-3 lg:px-10"
+          style={{
+            paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)',
+            boxShadow: '0 -8px 32px rgba(0,0,0,0.12)',
+          }}
         >
           <div className="hidden lg:block h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl bg-muted/30">
             <img src={product.image_url || "/placeholder-product.jpg"} alt="" className="h-full w-full object-cover" />
