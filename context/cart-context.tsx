@@ -3,15 +3,34 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
 import type { Product } from "@/lib/supabase"
 import { useCAPI } from "@/lib/use-capi"
+import type { PriceTier } from "@/lib/pricing"
+
+/** Componente de un kit personalizado: un aroma concreto y cuántos frascos. */
+export interface PackComponent {
+  product_id: string
+  name: string
+  quantity: number
+  image_url: string
+}
+
+/** Metadatos del kit personalizado adjuntos a una línea de carrito. */
+export interface PackMeta {
+  tier: string // id del tier (x3/x4/x6)
+  units: number
+  components: PackComponent[]
+}
 
 interface CartItem {
   product: Product
   quantity: number
+  // Presente solo en líneas de "kit personalizado" (varios aromas, precio fijo del tier).
+  pack?: PackMeta
 }
 
 interface CartContextType {
   items: CartItem[]
   addItem: (product: Product, quantity?: number) => void
+  addPack: (tier: PriceTier, components: PackComponent[]) => void
   removeItem: (productId: string) => void
   updateQuantity: (productId: string, quantity: number) => void
   clearCart: () => void
@@ -70,6 +89,46 @@ export function CartProvider({ children }: { children: ReactNode }) {
     })
   }, [track])
 
+  // Añade un "kit personalizado": una línea con precio fijo del tier y la lista
+  // de aromas elegidos. Cada pack es único (no se fusiona con otros) para poder
+  // armar varios distintos. La imagen es la del primer aroma elegido.
+  const addPack = useCallback((tier: PriceTier, components: PackComponent[]) => {
+    const id = `pack::${tier.id}::${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
+    const aromaNames = components.flatMap((c) => Array(c.quantity).fill(c.name))
+    const synthetic: Product = {
+      id,
+      name: `Kit personalizado x${tier.units}`,
+      slug: "kit-personalizado",
+      price: tier.price,
+      original_price: tier.units * 78000,
+      description: aromaNames.join(" · "),
+      image_url: components[0]?.image_url || "/images/placeholder.jpg",
+      image_urls: [],
+      badge: "Personalizado",
+      badge_color: null,
+      stock: 9999,
+      rating: 0,
+      reviews: 0,
+      is_active: true,
+      created_at: new Date().toISOString(),
+    }
+    setItems((prev) => [
+      ...prev,
+      { product: synthetic, quantity: 1, pack: { tier: tier.id, units: tier.units, components } },
+    ])
+    track({
+      event_name: "AddToCart",
+      custom_data: {
+        currency: "COP",
+        value: tier.price,
+        content_ids: components.map((c) => c.product_id),
+        content_name: synthetic.name,
+        content_type: "product_group",
+        num_items: tier.units,
+      },
+    })
+  }, [track])
+
   const removeItem = useCallback((productId: string) => {
     setItems((prev) => prev.filter((i) => i.product.id !== productId))
   }, [])
@@ -108,7 +167,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   return (
     <CartContext.Provider
-      value={{ items, addItem, removeItem, updateQuantity, clearCart, total, itemCount, checkout, isCheckingOut, isDrawerOpen, openDrawer, closeDrawer }}
+      value={{ items, addItem, addPack, removeItem, updateQuantity, clearCart, total, itemCount, checkout, isCheckingOut, isDrawerOpen, openDrawer, closeDrawer }}
     >
       {children}
     </CartContext.Provider>

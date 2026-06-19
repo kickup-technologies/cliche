@@ -2,12 +2,19 @@ import { NextRequest, NextResponse } from "next/server"
 import crypto from "crypto"
 import { supabase, createServerClient } from "@/lib/supabase"
 import { rateLimit } from "@/lib/rate-limit"
-import { parseVariantId } from "@/lib/pricing"
+import { parseVariantId, TIER_BY_ID } from "@/lib/pricing"
 
 const FREE_SHIPPING = 300_000
 const SHIPPING_COST = 20_500
 
 type IncomingItem = { product_id: string; quantity: number; name?: string }
+type IncomingPack = {
+  type: "pack"
+  tier: string
+  quantity: number
+  name?: string
+  components: Array<{ product_id: string; quantity: number }>
+}
 
 export async function POST(req: NextRequest) {
   // Anti-spam: máx. 10 intentos de checkout por IP por minuto
@@ -32,26 +39,47 @@ export async function POST(req: NextRequest) {
 
     const db = createServerClient()
 
-    // ── Normalizar items del cliente (solo product_id + quantity son de fiar) ──
-    const requested = (items as IncomingItem[])
+    // ── Separar líneas normales de "kits personalizados" (type:"pack") ──
+    const rawItems = items as Array<IncomingItem | IncomingPack>
+    const packLines: IncomingPack[] = rawItems
+      .filter((i): i is IncomingPack => (i as IncomingPack)?.type === "pack")
+      .map((p) => ({
+        type: "pack",
+        tier: String(p.tier),
+        quantity: Math.max(1, Math.min(99, Math.floor(Number(p.quantity) || 1))),
+        name: p.name,
+        components: Array.isArray(p.components)
+          ? p.components
+              .map((c) => ({
+                product_id: String(c.product_id),
+                quantity: Math.max(1, Math.min(99, Math.floor(Number(c.quantity) || 1))),
+              }))
+              .filter((c) => c.product_id)
+          : [],
+      }))
+
+    // ── Normalizar items normales (solo product_id + quantity son de fiar) ──
+    const requested = rawItems
+      .filter((i) => (i as IncomingPack)?.type !== "pack")
       .map((i) => ({
-        product_id: String(i.product_id),
-        quantity: Math.max(1, Math.min(99, Math.floor(Number(i.quantity) || 1))),
+        product_id: String((i as IncomingItem).product_id),
+        quantity: Math.max(1, Math.min(99, Math.floor(Number((i as IncomingItem).quantity) || 1))),
       }))
       .filter((i) => i.product_id)
 
-    if (requested.length === 0) {
+    if (requested.length === 0 && packLines.length === 0) {
       return NextResponse.json({ error: "Carrito inválido" }, { status: 400 })
     }
 
     // ── Precios REALES desde la base de datos (nunca confiar en el cliente) ──
     // Los productos son de lectura pública (RLS products_public_read), así que
-    // usamos el cliente ANÓNIMO para validarlos. Antes esto usaba service-role
-    // y si la SUPABASE_SERVICE_ROLE_KEY estaba mal configurada, la validación
-    // fallaba con "No se pudieron validar los productos" aunque la tienda
-    // mostraba los productos sin problema. Con el cliente anónimo la validación
-    // es robusta frente a una service-role rota.
-    const ids = [...new Set(requested.map((i) => parseVariantId(i.product_id).baseId))]
+    // usamos el cliente ANÓNIMO para validarlos.
+    const ids = [
+      ...new Set([
+        ...requested.map((i) => parseVariantId(i.product_id).baseId),
+        ...packLines.flatMap((p) => p.components.map((c) => c.product_id)),
+      ]),
+    ]
     const { data: products, error: prodErr } = await supabase
       .from("products")
       .select("id, name, price, stock, is_active")
@@ -63,31 +91,69 @@ export async function POST(req: NextRequest) {
     }
     const productMap = new Map(products.map((p) => [p.id, p]))
 
-    // ── Construir items autoritativos y subtotal server-side ──
+    // ── Acumular frascos necesarios por producto (normal + packs) para validar
+    //    stock de forma agregada y evitar sobreventa al combinar líneas. ──
+    const needed = new Map<string, number>()
+    const addNeed = (pid: string, qty: number) => needed.set(pid, (needed.get(pid) || 0) + qty)
+
     let subtotal = 0
     const safeItems: Array<{ product_id: string; quantity: number; name: string; price: number }> = []
+
+    // Líneas normales (unidad o kit del mismo aroma)
     for (const it of requested) {
       const { baseId, tier } = parseVariantId(it.product_id)
       const p = productMap.get(baseId)
       if (!p || p.is_active === false) {
-        return NextResponse.json(
-          { error: "Uno de los productos ya no está disponible" },
-          { status: 400 }
-        )
+        return NextResponse.json({ error: "Uno de los productos ya no está disponible" }, { status: 400 })
       }
-      // un kit consume tier.units frascos por cada unidad pedida
-      const unitsNeeded = it.quantity * tier.units
-      if (typeof p.stock === "number" && p.stock < unitsNeeded) {
-        return NextResponse.json(
-          { error: `Stock insuficiente para ${p.name}` },
-          { status: 409 }
-        )
-      }
-      // precio FIJO por tier (kit) o el de la BD para el unitario
+      addNeed(p.id, it.quantity * tier.units)
       const linePrice = tier.id === "unit" ? Number(p.price) : tier.price
       const lineName = tier.units > 1 ? `${p.name} — Kit x${tier.units}` : p.name
       subtotal += linePrice * it.quantity
       safeItems.push({ product_id: p.id, quantity: it.quantity, name: lineName, price: linePrice })
+    }
+
+    // Líneas de kit personalizado (varios aromas, precio FIJO del tier)
+    for (const pack of packLines) {
+      const tier = TIER_BY_ID[pack.tier]
+      if (!tier || tier.units < 2) {
+        return NextResponse.json({ error: "Kit personalizado inválido" }, { status: 400 })
+      }
+      const totalUnits = pack.components.reduce((s, c) => s + c.quantity, 0)
+      // El nº de frascos elegidos DEBE coincidir con el tamaño del kit (anti-manipulación)
+      if (totalUnits !== tier.units) {
+        return NextResponse.json(
+          { error: `El kit personalizado debe tener exactamente ${tier.units} frascos` },
+          { status: 400 }
+        )
+      }
+      const aromaNames: string[] = []
+      for (const c of pack.components) {
+        const p = productMap.get(c.product_id)
+        if (!p || p.is_active === false) {
+          return NextResponse.json({ error: "Uno de los aromas del kit ya no está disponible" }, { status: 400 })
+        }
+        addNeed(p.id, c.quantity * pack.quantity)
+        // Cada aroma del pack se registra como su propio renglón (para fulfillment
+        // y para que el webhook descuente stock del producto real).
+        safeItems.push({
+          product_id: p.id,
+          quantity: c.quantity * pack.quantity,
+          name: `${p.name} (Kit personalizado x${tier.units})`,
+          price: 0,
+        })
+        aromaNames.push(`${c.quantity}× ${p.name}`)
+      }
+      // El precio del pack es FIJO por tier, sin importar los aromas escogidos.
+      subtotal += tier.price * pack.quantity
+    }
+
+    // ── Validación de stock AGREGADA ──
+    for (const [pid, qty] of needed) {
+      const p = productMap.get(pid)
+      if (p && typeof p.stock === "number" && p.stock < qty) {
+        return NextResponse.json({ error: `Stock insuficiente para ${p?.name ?? "un producto"}` }, { status: 409 })
+      }
     }
 
     if (subtotal <= 0) {

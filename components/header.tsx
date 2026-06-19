@@ -33,6 +33,7 @@ const navigation = [
     href: "/catalogo",
     submenu: SEGMENTS.map((s) => ({ name: s.label, href: `/catalogo?segmento=${s.key}` })),
   },
+  { name: "Arma tu kit", href: "/arma-tu-kit", highlight: true },
   { name: "Ofertas", href: "/ofertas", highlight: true },
   { name: "Nosotros", href: "/nosotros" },
 ]

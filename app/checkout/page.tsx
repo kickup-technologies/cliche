@@ -132,7 +132,17 @@ export default function CheckoutPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: selectedItems.map((i) => ({ product_id: i.product.id, quantity: i.quantity, unit_price: i.product.price, name: i.product.name })),
+          items: selectedItems.map((i) =>
+            i.pack
+              ? {
+                  type: "pack",
+                  tier: i.pack.tier,
+                  quantity: i.quantity,
+                  name: i.product.name,
+                  components: i.pack.components.map((c) => ({ product_id: c.product_id, quantity: c.quantity })),
+                }
+              : { product_id: i.product.id, quantity: i.quantity, unit_price: i.product.price, name: i.product.name }
+          ),
           total,
           email: customerEmail,
           discount_code: appliedCode,

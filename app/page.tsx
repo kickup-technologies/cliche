@@ -19,6 +19,7 @@ import { Faq } from "@/components/editorial/faq"
 import { ProductShowcase3D } from "@/components/editorial/product-showcase-3d"
 import { SegmentShowcase } from "@/components/editorial/segment-showcase"
 import { BrandLogos } from "@/components/editorial/brand-logos"
+import { CustomPackCTA } from "@/components/editorial/custom-pack-cta"
 
 /**
  * Landing — arquitectura de embudo de ventas (AIDA + objeciones + riesgo):
@@ -57,6 +58,9 @@ export default function Home() {
 
       {/* 3b. OBJETO DE DESEO — vitrina rotativa de renders 3D reales */}
       <ProductShowcase3D />
+
+      {/* 3c. PERSONALIZACIÓN — arma tu propio kit combinando aromas */}
+      <CustomPackCTA />
 
       {/* 4. CREENCIA — razones para confiar (stagger interno) */}
       <ValuesColumns />

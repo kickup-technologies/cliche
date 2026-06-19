@@ -69,6 +69,7 @@ import type { Product } from "@/lib/supabase"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { WhatsAppButton } from "@/components/whatsapp-button"
+import { PackBuilder } from "@/components/pack-builder"
 import { ReviewsSection } from "@/components/reviews-section"
 import { ProductRecommendations } from "@/components/product-recommendations"
 import { recordView } from "@/lib/recently-viewed"
@@ -154,6 +155,7 @@ export function ProductDetail({ product, related }: Props) {
   const maxQty = Math.max(1, Math.floor(product.stock / tier.units))
   useEffect(() => { setQty((q) => Math.min(q, maxQty)) }, [maxQty])
   const [added, setAdded] = useState(false)
+  const [packOpen, setPackOpen] = useState(false)
   // Acordeón de info — qué sección está abierta (una a la vez; null = todas cerradas por defecto)
   const [openSection, setOpenSection] = useState<string | null>(null)
   // Configuración de Urgencia Inteligente (editable desde el admin → sección Urgencia)
@@ -544,6 +546,24 @@ export function ProductDetail({ product, related }: Props) {
                     )
                   })}
                 </div>
+
+                {/* Entrada al kit personalizado: combina aromas distintos */}
+                <button
+                  type="button"
+                  onClick={() => setPackOpen(true)}
+                  className="group mt-2.5 flex w-full items-center justify-between rounded-xl border border-dashed border-primary/40 bg-primary/[0.04] px-4 py-3 text-left transition-all hover:border-primary hover:bg-primary/[0.07]"
+                >
+                  <span className="flex items-center gap-2.5">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    <span>
+                      <span className="block text-[13px] font-semibold text-foreground">¿Prefieres mezclar aromas?</span>
+                      <span className="block text-[11px] text-muted-foreground">Arma tu kit x3, x4 o x6 con los que quieras</span>
+                    </span>
+                  </span>
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-primary transition-transform group-hover:translate-x-0.5">
+                    Armar →
+                  </span>
+                </button>
               </div>
 
               {/* Urgency timer — oferta por tiempo limitado (configurable en admin → Urgencia) */}
@@ -830,6 +850,9 @@ export function ProductDetail({ product, related }: Props) {
       </main>
       <Footer />
       <WhatsAppButton />
+
+      {/* Constructor de kit personalizado (se abre desde "¿Prefieres mezclar aromas?") */}
+      <PackBuilder open={packOpen} onClose={() => setPackOpen(false)} seedProductId={product.id} />
 
       {/* Sticky CTA bar — aparece en todas las pantallas al perder de vista el CTA */}
       <div
