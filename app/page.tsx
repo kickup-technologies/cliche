@@ -4,7 +4,6 @@ import { Footer } from "@/components/footer"
 import { WhatsAppButton } from "@/components/whatsapp-button"
 
 // ── Capa editorial (estructura estilo renesmehair, marca Cliché) ──
-import { IntroOverlay } from "@/components/editorial/intro-overlay"
 import { EditorialHero } from "@/components/editorial/editorial-hero"
 import { Marquee } from "@/components/editorial/marquee"
 import { EditorialStory } from "@/components/editorial/editorial-story"
@@ -41,7 +40,6 @@ import { SegmentShowcase } from "@/components/editorial/segment-showcase"
 export default function Home() {
   return (
     <main className="min-h-screen">
-      <IntroOverlay />
       <AnnouncementBar />
       <Header />
 
