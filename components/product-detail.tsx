@@ -232,13 +232,13 @@ export function ProductDetail({ product, related }: Props) {
     return () => clearInterval(id)
   }, [spMin, spMax])
 
-  // Entrada inmediata: la página NO espera al 3D (antes solo entraba cuando el
-  // GLB terminaba de cargar → se sentía trabada al abrir un producto). Ahora
-  // entra de una y el visor 3D carga en segundo plano y aparece cuando está listo.
+  // La página entra cuando el render 3D está listo (así nunca se ve el frasco a
+  // medio cargar). Hay un timeout de respaldo por si el modelo tarda/falla, para
+  // no dejar la página oculta indefinidamente.
   const [fell, setFell] = useState(false)
-  const handleModelReady = () => setFell(true)
+  const handleModelReady = () => requestAnimationFrame(() => setFell(true))
   useEffect(() => {
-    const t = setTimeout(() => setFell(true), 60)
+    const t = setTimeout(() => setFell(true), 2500)
     return () => clearTimeout(t)
   }, [])
 
