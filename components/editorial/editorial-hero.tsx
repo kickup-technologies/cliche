@@ -139,7 +139,7 @@ export function EditorialHero() {
                 {/* Celular (split): imagen en la mitad superior, degradada hacia el
                     fondo café; el texto vive debajo y NO tapa el producto. */}
                 {slide.media.mobileSrc && (
-                  <div className="absolute inset-x-0 top-0 h-[52%] overflow-hidden md:hidden">
+                  <div className="absolute inset-x-0 top-0 h-[58%] overflow-hidden md:hidden">
                     <Image
                       src={slide.media.mobileSrc}
                       alt={slide.title.replace(/\n/g, " ")}
@@ -174,7 +174,7 @@ export function EditorialHero() {
             <div
               className={`absolute flex flex-col px-6 ${
                 splitMobile
-                  ? "inset-x-0 bottom-0 top-[50%] items-start justify-center pb-12 text-left md:inset-0 md:top-0 md:justify-center md:pb-0 md:px-14 lg:px-20"
+                  ? "inset-x-0 bottom-0 top-[57%] items-start justify-start pt-5 text-left md:inset-0 md:top-0 md:justify-center md:pt-0 md:px-14 lg:px-20"
                   : isLeft
                     ? "inset-0 items-start justify-center text-left md:px-14 lg:px-20"
                     : "inset-0 items-center justify-center text-center"
@@ -242,17 +242,19 @@ export function EditorialHero() {
                   >
                     <Link
                       href={slide.cta.href}
-                      className="mt-8 inline-flex items-center justify-center gap-2 bg-white px-10 py-4 text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-[#2D1A14] transition-all duration-300 hover:bg-[#A67163] hover:text-white active:scale-[0.98]"
+                      className="group/cta mt-8 inline-flex items-center gap-3 rounded-full bg-[#FAF8F5] py-2 pl-7 pr-2 text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-[#2D1A14] shadow-[0_12px_34px_rgba(0,0,0,0.28)] transition-all duration-300 hover:bg-[#A67163] hover:text-white active:scale-[0.98]"
                     >
                       {slide.cta.label}
-                      <span className="text-base leading-none">→</span>
+                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#2D1A14] text-[#FAF8F5] transition-all duration-300 group-hover/cta:translate-x-0.5 group-hover/cta:bg-white group-hover/cta:text-[#2D1A14]">
+                        <span className="text-sm leading-none">→</span>
+                      </span>
                     </Link>
                   </div>
                 )}
 
                 {slide.microcopy && (
                   <p
-                    className="mt-5 text-[0.6rem] font-medium uppercase tracking-[0.22em] text-white/45 transition-all duration-700 ease-out"
+                    className="mt-5 hidden text-[0.6rem] font-medium uppercase tracking-[0.22em] text-white/45 transition-all duration-700 ease-out md:block"
                     style={{
                       opacity: isActive ? 1 : 0,
                       transitionDelay: isActive ? "800ms" : "0ms",
