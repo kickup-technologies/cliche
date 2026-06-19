@@ -69,8 +69,6 @@ export const PRODUCT_SEGMENTS: Record<string, string[]> = {
   "watermelon":             ["infantiles"],
   "air-fresh":              ["mascotas"],
   // aromas que solo existen en la BD
-  "crema":                  ["femeninas", "infantiles", "hogar"],
-  "fuego":                  ["masculinas", "hoteles", "hogar"],
   "happiness":              ["femeninas", "infantiles", "deportivas"],
   "navidad":                ["hogar", "hoteles"],
 }
