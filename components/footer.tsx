@@ -56,18 +56,13 @@ export function Footer() {
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8 lg:gap-12">
             {/* Brand column */}
             <div className="col-span-2">
-              <Link href="/" className="inline-flex flex-col items-start mb-6">
-                <svg 
-                  viewBox="0 0 60 40" 
-                  className="h-8 w-12 text-primary"
-                  fill="currentColor"
-                >
-                  <path d="M30 5c-8 0-15 6-15 15s7 15 15 15c8 0 15-6 15-15S38 5 30 5zm0 25c-5.5 0-10-4.5-10-10s4.5-10 10-10 10 4.5 10 10-4.5 10-10 10z" />
-                  <circle cx="30" cy="20" r="4" />
-                </svg>
-                <span className="font-serif text-2xl font-semibold tracking-wide text-background mt-1">
-                  Cliché
-                </span>
+              <Link href="/" className="mb-6 inline-flex" aria-label="Cliché — Inicio">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/images/logo-cliche.png"
+                  alt="Cliché — Marketing Olfativo"
+                  className="h-20 w-auto object-contain"
+                />
               </Link>
               <p className="text-background/70 text-sm leading-relaxed mb-6 max-w-xs">
                 Creamos experiencias sensoriales únicas que transforman espacios y evocan emociones. Aromas artesanales con alma colombiana.

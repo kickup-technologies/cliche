@@ -194,21 +194,15 @@ export function Header() {
           </div>
 
           {/* ── Center: logo ── */}
-          <Link href="/" className="flex flex-col items-center leading-none">
-            <span
-              className={`font-serif text-2xl lg:text-[28px] font-bold tracking-wide transition-colors ${
-                useSolid ? "text-foreground" : "text-white"
+          <Link href="/" className="flex items-center justify-center" aria-label="Cliché — Inicio">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/logo-cliche.png"
+              alt="Cliché — Marketing Olfativo"
+              className={`h-12 w-auto object-contain transition-all duration-300 lg:h-14 ${
+                useSolid ? "" : "brightness-0 invert"
               }`}
-            >
-              Cliché
-            </span>
-            <span
-              className={`mt-0.5 text-[8px] tracking-[0.3em] uppercase transition-colors ${
-                useSolid ? "text-foreground/40" : "text-white/50"
-              }`}
-            >
-              Marketing Olfativo
-            </span>
+            />
           </Link>
 
           {/* ── Right: actions ── */}

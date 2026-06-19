@@ -97,10 +97,15 @@ export function PageTransition() {
           transition: `opacity 520ms ease ${msgVisible ? 200 : 0}ms, transform 600ms cubic-bezier(0.22,1,0.36,1) ${msgVisible ? 200 : 0}ms`,
         }}
       >
-        <p className="mb-3 text-[0.58rem] font-semibold uppercase tracking-[0.42em] text-white/65 md:text-[0.62rem]">
+        <p className="mb-5 text-[0.58rem] font-semibold uppercase tracking-[0.42em] text-white/65 md:text-[0.62rem]">
           Marketing Olfativo
         </p>
-        <p className="font-serif text-[3.2rem] font-medium leading-none text-white md:text-7xl">Cliché</p>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/logo-cliche.png"
+          alt="Cliché"
+          className="mx-auto h-24 w-auto object-contain brightness-0 invert md:h-32"
+        />
         <div className="mx-auto my-5 h-px w-10 bg-white/40" />
         <p className="text-[0.62rem] uppercase tracking-[0.34em] text-white/70 md:text-xs">
           Tu aroma, tu marca
