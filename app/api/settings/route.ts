@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase, createServerClient } from '@/lib/supabase'
 import { parseUrgencyConfig, URGENCY_DEFAULTS } from '@/lib/urgency'
+import { isAdmin } from '@/lib/admin-auth'
 
 // Claves públicas que el sitio (hero, barra, footer, whatsapp) puede leer.
 // Texto/toggles que el admin edita en la sección "Tienda".
@@ -103,7 +104,10 @@ export async function GET() {
 }
 
 // PUT /api/settings — updates discount_percentage and/or discount_code
+// SOLO ADMIN: antes era público y cualquiera podía cambiar el descuento/código
+// del sitio (p. ej. ponerlo al 99%). Ahora exige la credencial de admin.
 export async function PUT(req: NextRequest) {
+  if (!isAdmin(req)) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   try {
     const body = await req.json()
     const { discount_percentage, discount_code } = body as {

@@ -9,7 +9,7 @@ import {
 } from "lucide-react"
 import type { Product } from "@/lib/supabase"
 import { Order, PageView } from "./types"
-import { setAdminPw, clearAdminPw, adminFetch } from "@/lib/admin-client"
+import { setAdminPw, clearAdminPw, getAdminPw, adminFetch } from "@/lib/admin-client"
 
 // Sections
 import { OverviewSection } from "./sections/overview"
@@ -72,15 +72,15 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
 
-  // Check session on mount
+  // Restaura sesión SOLO dentro de la misma pestaña: si ya se inició sesión
+  // (flag + credencial en sessionStorage) seguimos autenticados; si no, se
+  // muestra el formulario de login. (Antes entraba directo sin contraseña.)
   useEffect(() => {
-    // ⚠️ ACCESO ABIERTO ACTIVADO (a petición del dueño): entra directo, sin
-    // pedir contraseña, tanto en local como en producción. Para volver a
-    // proteger el panel, restaura la lógica de sesión (token "ok") + define
-    // ADMIN_PASSWORD en Vercel.
-    setAdminPw("open")
-    sessionStorage.setItem("cliche_admin_auth", "ok")
-    setAuthed(true)
+    try {
+      if (sessionStorage.getItem("cliche_admin_auth") === "ok" && getAdminPw()) {
+        setAuthed(true)
+      }
+    } catch {}
   }, [])
 
   async function handleLogin(e: React.FormEvent) {

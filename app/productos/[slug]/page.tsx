@@ -117,7 +117,9 @@ export default async function ProductPage({ params }: Props) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        // Escapamos "<" → "<" para que ningún dato del producto pueda
+        // cerrar el <script> e inyectar HTML/JS (XSS por JSON-LD).
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
       />
       <ProductDetail product={product} related={related || []} />
     </>

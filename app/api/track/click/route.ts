@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
+import { rateLimit } from "@/lib/rate-limit"
 
 /**
  * POST /api/track/click — registra un clic real del visitante.
@@ -12,6 +13,9 @@ import { supabase } from "@/lib/supabase"
  * Cuerpo: { path, label, xr (0..1), yr (0..1), vw, vh }
  */
 export async function POST(req: NextRequest) {
+  // Anti-flood del mapa de calor: tope alto por IP (clics reales caben de sobra)
+  const limited = rateLimit(req, { id: "track-click", limit: 300, windowMs: 60_000 })
+  if (limited) return limited
   try {
     const b = await req.json().catch(() => ({}))
     const clamp01 = (n: unknown) => {

@@ -21,11 +21,18 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 export function isAdmin(req: NextRequest): boolean {
+  return verifyAdminPassword(req.headers.get("x-admin-password"))
+}
+
+/**
+ * Valida una contraseña de admin (venga del header o del body de /verify)
+ * en tiempo constante. Falla cerrado: en producción sin ADMIN_PASSWORD, nadie pasa.
+ */
+export function verifyAdminPassword(provided: string | null | undefined): boolean {
   const expected = process.env.ADMIN_PASSWORD
   if (!expected) {
     // Sin contraseña configurada: solo desarrollo local; en producción, denegar.
     return process.env.NODE_ENV !== "production"
   }
-  const provided = req.headers.get("x-admin-password")
   return !!provided && safeEqual(provided, expected)
 }

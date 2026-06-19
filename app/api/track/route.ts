@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
+import { rateLimit } from "@/lib/rate-limit"
 
 /**
  * POST /api/track — registra una vista de página.
@@ -12,6 +13,9 @@ import { supabase } from "@/lib/supabase"
  * mientras la URL + anon key (públicas) estén bien.
  */
 export async function POST(req: NextRequest) {
+  // Anti-flood de analítica: tope generoso por IP (navegación normal cabe de sobra)
+  const limited = rateLimit(req, { id: "track-view", limit: 120, windowMs: 60_000 })
+  if (limited) return limited
   try {
     const { path } = await req.json()
     const safePath = typeof path === "string" && path ? path.slice(0, 512) : "/"
