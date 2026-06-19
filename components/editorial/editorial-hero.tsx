@@ -6,7 +6,7 @@ import Link from "next/link"
 
 type SlideMedia =
   | { type: "video"; src: string; poster?: string }
-  | { type: "image"; src: string; mobileSrc?: string }
+  | { type: "image"; src: string; mobileSrc?: string; objectPosition?: string; mobileObjectPosition?: string }
 
 interface Slide {
   media: SlideMedia
@@ -20,7 +20,7 @@ interface Slide {
 
 const SLIDES: Slide[] = [
   {
-    media: { type: "image", src: "/images/segments/bano.png", mobileSrc: "/images/segments/bano-mobile.png" },
+    media: { type: "image", src: "/images/segments/bano.png", mobileSrc: "/images/segments/bano-mobile.png", objectPosition: "60% 50%", mobileObjectPosition: "center 70%" },
     eyebrow: "Vestidos de baño & playa",
     title: "Tu marca también\nhuele a verano",
     subtitle: "MAHAI impregna tus prendas de baño con frutas exóticas que duran todo el día y no manchan la tela.",
@@ -35,15 +35,6 @@ const SLIDES: Slide[] = [
     subtitle: "Marketing olfativo artesanal: creamos el aroma que vuelve inolvidable tu marca, tu tienda o tu espacio.",
     cta: { label: "Descubrir aromas", href: "/catalogo" },
     microcopy: "100% natural · No mancha · Envío gratis desde $300.000",
-    align: "left",
-  },
-  {
-    media: { type: "image", src: "/images/hero-main.jpg" },
-    eyebrow: "Experiencia de marca",
-    title: "Un aroma que\ntus clientes recuerdan",
-    subtitle: "El detalle invisible que hace que quieran volver. Encuentra la fragancia de tu marca.",
-    cta: { label: "Explorar aromas", href: "/catalogo" },
-    microcopy: "+500 marcas confían en Cliché",
     align: "left",
   },
   {
@@ -115,6 +106,7 @@ export function EditorialHero() {
                   priority={i === 0}
                   sizes="100vw"
                   className={`object-cover ${slide.media.mobileSrc ? "hidden md:block" : ""}`}
+                  style={{ objectPosition: slide.media.objectPosition ?? "center" }}
                 />
                 {/* Celular: imagen vertical (art-direction) */}
                 {slide.media.mobileSrc && (
@@ -125,6 +117,7 @@ export function EditorialHero() {
                     priority={i === 0}
                     sizes="100vw"
                     className="object-cover md:hidden"
+                    style={{ objectPosition: slide.media.mobileObjectPosition ?? "center" }}
                   />
                 )}
               </>
