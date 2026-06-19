@@ -6,7 +6,7 @@ import Link from "next/link"
 
 type SlideMedia =
   | { type: "video"; src: string; poster?: string }
-  | { type: "image"; src: string }
+  | { type: "image"; src: string; mobileSrc?: string }
 
 interface Slide {
   media: SlideMedia
@@ -19,6 +19,15 @@ interface Slide {
 }
 
 const SLIDES: Slide[] = [
+  {
+    media: { type: "image", src: "/images/segments/bano.png", mobileSrc: "/images/segments/bano-mobile.png" },
+    eyebrow: "Vestidos de baño & playa",
+    title: "Tu marca también\nhuele a verano",
+    subtitle: "MAHAI impregna tus prendas de baño con frutas exóticas que duran todo el día y no manchan la tela.",
+    cta: { label: "Comprar MAHAI", href: "/productos/aroma-mahai" },
+    microcopy: "Frutas exóticas · No mancha · Larga duración",
+    align: "left",
+  },
   {
     media: { type: "video", src: "/videos/hero-1.mp4" },
     eyebrow: "Bienestar by Cliché",
@@ -97,14 +106,28 @@ export function EditorialHero() {
                 className="absolute inset-0 h-full w-full object-cover"
               />
             ) : (
-              <Image
-                src={slide.media.src}
-                alt={slide.title.replace(/\n/g, " ")}
-                fill
-                priority={i === 0}
-                sizes="100vw"
-                className="object-cover"
-              />
+              <>
+                {/* PC: imagen horizontal. Si hay versión móvil, se oculta aquí. */}
+                <Image
+                  src={slide.media.src}
+                  alt={slide.title.replace(/\n/g, " ")}
+                  fill
+                  priority={i === 0}
+                  sizes="100vw"
+                  className={`object-cover ${slide.media.mobileSrc ? "hidden md:block" : ""}`}
+                />
+                {/* Celular: imagen vertical (art-direction) */}
+                {slide.media.mobileSrc && (
+                  <Image
+                    src={slide.media.mobileSrc}
+                    alt={slide.title.replace(/\n/g, " ")}
+                    fill
+                    priority={i === 0}
+                    sizes="100vw"
+                    className="object-cover md:hidden"
+                  />
+                )}
+              </>
             )}
 
             {/* Gradiente direccional según alineación del texto */}
