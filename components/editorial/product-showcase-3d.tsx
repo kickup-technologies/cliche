@@ -1,16 +1,17 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import dynamic from "next/dynamic"
 import { Magnetic } from "@/components/magnetic"
+import { SplitText } from "@/components/editorial/split-text"
 
 /**
  * ProductShowcase3D — vitrina rotativa de frascos renderizados en vivo (GLB real).
- * Cada aroma gira sobre su eje ~una vuelta completa, se desvanece (vanish) y entra
- * el siguiente con su propio copy: textos funcionales, ligados al producto, que
- * nutren e incitan a la compra. Split editorial: render a la izquierda, copy a la
- * derecha. Un solo Canvas (cambiamos el modelo por prop, sin recrear WebGL).
+ * Cada aroma gira ~una vuelta, el contenido SALE (fade + sube) y el siguiente ENTRA
+ * con las letras del título asentándose y los demás elementos escalonados; el render
+ * se desvanece y reaparece con un fade+scale lento. Copy funcional ligado al producto.
+ * Un solo Canvas (cambiamos el modelo por prop, sin recrear WebGL).
  */
 const MeshyViewer = dynamic(
   () => import("@/components/meshy-viewer").then((m) => m.MeshyViewer),
@@ -35,7 +36,8 @@ interface ShowItem {
 
 // El frasco gira a ~0.45 rad/s → una vuelta completa ≈ 14 s
 const CYCLE_MS = 14000
-const FADE_MS = 850
+const EXIT_MS = 700   // salida del contenido + desvanecido del render
+const HOLD_MS = 120   // respiro para que el nuevo modelo empiece a cargar
 
 const SHOWCASE: ShowItem[] = [
   {
@@ -74,40 +76,52 @@ const SHOWCASE: ShowItem[] = [
 
 export function ProductShowcase3D() {
   const [active, setActive] = useState(0)
-  const [shown, setShown] = useState(true)
+  const [phase, setPhase] = useState<"in" | "out">("in")
+  const timers = useRef<number[]>([])
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
-    const id = setInterval(() => {
-      setShown(false) // vanish
-      setTimeout(() => {
-        setActive((i) => (i + 1) % SHOWCASE.length)
-        setShown(true) // appear con el nuevo render + copy
-      }, FADE_MS)
+    const id = window.setInterval(() => {
+      setPhase("out")
+      timers.current.push(
+        window.setTimeout(() => {
+          setActive((i) => (i + 1) % SHOWCASE.length)
+          timers.current.push(window.setTimeout(() => setPhase("in"), HOLD_MS))
+        }, EXIT_MS)
+      )
     }, CYCLE_MS)
-    return () => clearInterval(id)
+    return () => {
+      window.clearInterval(id)
+      timers.current.forEach(clearTimeout)
+      timers.current = []
+    }
   }, [])
 
   const item = SHOWCASE[active]
-  const fade = (delay = 0) => ({
-    opacity: shown ? 1 : 0,
-    transform: shown ? "translateY(0)" : "translateY(10px)",
-    transition: `opacity ${FADE_MS}ms cubic-bezier(0.22,1,0.36,1) ${delay}ms, transform ${FADE_MS}ms cubic-bezier(0.22,1,0.36,1) ${delay}ms`,
-  })
+  const out = phase === "out"
+
+  // Columna de texto: SALE con transición; ENTRA al instante y deja que los
+  // hijos (keyed por active) hagan su animación escalonada.
+  const textColStyle: React.CSSProperties = out
+    ? { opacity: 0, transform: "translateY(-16px)", transition: `opacity ${EXIT_MS}ms cubic-bezier(0.4,0,0.2,1), transform ${EXIT_MS}ms cubic-bezier(0.4,0,0.2,1)` }
+    : { opacity: 1, transform: "none" }
+
+  // Render: se desvanece + encoge al salir; reaparece con fade+scale lento.
+  const renderStyle: React.CSSProperties = out
+    ? { opacity: 0, transform: "scale(0.965)", transition: `opacity ${EXIT_MS}ms ease, transform ${EXIT_MS}ms ease` }
+    : { opacity: 1, transform: "scale(1)", transition: "opacity 1150ms cubic-bezier(0.22,1,0.36,1), transform 1300ms cubic-bezier(0.22,1,0.36,1)" }
 
   return (
     <section className="overflow-hidden bg-secondary">
       <div className="container mx-auto grid grid-cols-1 items-center gap-10 px-4 py-20 md:grid-cols-2 md:py-28">
         {/* Render 3D real, girando — se desvanece y entra el siguiente */}
         <div className="relative mx-auto aspect-square w-full max-w-[460px]">
-          <div className="absolute inset-0" style={{ opacity: shown ? 1 : 0, transition: `opacity ${FADE_MS}ms ease` }}>
+          <div className="absolute inset-0" style={renderStyle}>
             <MeshyViewer url={item.model} />
           </div>
           <p className="pointer-events-none absolute inset-x-0 bottom-1 text-center text-[0.6rem] font-medium uppercase tracking-[0.28em] text-muted-foreground/70">
             Arrastra para girar
           </p>
-
-          {/* indicador de progreso de la vitrina */}
           <div className="absolute -bottom-6 left-1/2 flex -translate-x-1/2 gap-2">
             {SHOWCASE.map((_, i) => (
               <span
@@ -119,52 +133,65 @@ export function ProductShowcase3D() {
         </div>
 
         {/* Copy ligado al producto en vitrina */}
-        <div className="text-center md:text-left">
-          <p className="mb-3 text-[0.7rem] font-semibold uppercase tracking-[0.3em] text-primary" style={fade(60)}>
-            {item.eyebrow}
-          </p>
-          <h2
-            className="font-serif text-3xl font-medium leading-tight text-foreground md:text-5xl"
-            style={fade(120)}
-          >
-            {item.title}
-          </h2>
-          <p
-            className="mx-auto mt-6 max-w-md text-sm font-light leading-relaxed text-muted-foreground md:mx-0 md:text-base"
-            style={fade(180)}
-          >
-            {item.text}
-          </p>
+        <div className="text-center md:text-left" style={textColStyle}>
+          {/* keyed por active: al cambiar, los hijos re-animan su entrada */}
+          <div key={active}>
+            <p className="showcase-enter mb-3 text-[0.7rem] font-semibold uppercase tracking-[0.3em] text-primary" style={{ animationDelay: "40ms" }}>
+              {item.eyebrow}
+            </p>
 
-          {/* Beneficios del aroma en vitrina */}
-          <ul className="mx-auto mt-7 flex max-w-md flex-wrap justify-center gap-x-6 gap-y-2 md:mx-0 md:justify-start" style={fade(240)}>
-            {item.bullets.map((b) => (
-              <li key={b} className="flex items-center gap-2 text-xs tracking-wide text-foreground/75">
-                <span className="h-1 w-1 rounded-full bg-primary" />
-                {b}
-              </li>
-            ))}
-          </ul>
+            <SplitText
+              key={`title-${active}`}
+              text={item.title}
+              as="h2"
+              className="font-serif text-3xl font-medium leading-tight text-foreground md:text-5xl"
+            />
 
-          {/* Llamados a la acción */}
-          <div className="mt-9 flex flex-wrap items-center justify-center gap-4 md:justify-start" style={fade(300)}>
-            <Magnetic>
+            <p className="showcase-enter mx-auto mt-6 max-w-md text-sm font-light leading-relaxed text-muted-foreground md:mx-0 md:text-base" style={{ animationDelay: "260ms" }}>
+              {item.text}
+            </p>
+
+            <ul className="showcase-enter mx-auto mt-7 flex max-w-md flex-wrap justify-center gap-x-6 gap-y-2 md:mx-0 md:justify-start" style={{ animationDelay: "360ms" }}>
+              {item.bullets.map((b) => (
+                <li key={b} className="flex items-center gap-2 text-xs tracking-wide text-foreground/75">
+                  <span className="h-1 w-1 rounded-full bg-primary" />
+                  {b}
+                </li>
+              ))}
+            </ul>
+
+            <div className="showcase-enter mt-9 flex flex-wrap items-center justify-center gap-4 md:justify-start" style={{ animationDelay: "460ms" }}>
+              <Magnetic>
+                <Link
+                  href={`/productos/${item.slug}`}
+                  className="inline-flex items-center justify-center bg-foreground px-9 py-3.5 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-background transition-colors hover:bg-primary"
+                >
+                  Comprar este aroma
+                </Link>
+              </Magnetic>
               <Link
-                href={`/productos/${item.slug}`}
-                className="inline-flex items-center justify-center bg-foreground px-9 py-3.5 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-background transition-colors hover:bg-primary"
+                href="/catalogo"
+                className="inline-flex items-center justify-center border border-foreground/30 px-9 py-3.5 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-foreground transition-colors hover:border-foreground hover:bg-foreground hover:text-background"
               >
-                Comprar este aroma
+                Ver la colección
               </Link>
-            </Magnetic>
-            <Link
-              href="/catalogo"
-              className="inline-flex items-center justify-center border border-foreground/30 px-9 py-3.5 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-foreground transition-colors hover:border-foreground hover:bg-foreground hover:text-background"
-            >
-              Ver la colección
-            </Link>
+            </div>
           </div>
         </div>
       </div>
+
+      <style jsx>{`
+        .showcase-enter {
+          animation: showcase-enter 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        @keyframes showcase-enter {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .showcase-enter { animation: none; }
+        }
+      `}</style>
     </section>
   )
 }
