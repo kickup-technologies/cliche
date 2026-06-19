@@ -19,7 +19,6 @@ import { Guarantees } from "@/components/editorial/guarantees"
 import { Faq } from "@/components/editorial/faq"
 import { ProductShowcase3D } from "@/components/editorial/product-showcase-3d"
 import { SegmentShowcase } from "@/components/editorial/segment-showcase"
-import { StarShowcase } from "@/components/editorial/star-showcase"
 
 /**
  * Landing — arquitectura de embudo de ventas (AIDA + objeciones + riesgo):
@@ -57,10 +56,8 @@ export default function Home() {
       {/* 3. SEGMENTACIÓN B2B — categorías (layout original + "ver más") */}
       <SegmentShowcase />
 
-      {/* 3b. DESEO — favoritos: exposición de aromas estrella (debajo de categorías) */}
-      <ScrollReveal>
-        <StarShowcase />
-      </ScrollReveal>
+      {/* 3b. OBJETO DE DESEO — vitrina rotativa de renders 3D reales */}
+      <ProductShowcase3D />
 
       {/* 4. CREENCIA — razones para confiar (stagger interno) */}
       <ValuesColumns />
@@ -77,9 +74,6 @@ export default function Home() {
 
       {/* 6. Pausa editorial — titular gigante sobre humo WebGL */}
       <BigTextScroll text="Aromas que transforman marcas" />
-
-      {/* 6b. OBJETO DE DESEO — el frasco renderizado en 3D vivo */}
-      <ProductShowcase3D />
 
       {/* 7. SEGMENTACIÓN — cada visitante a su camino (stagger interno) */}
       <EditorialStory />

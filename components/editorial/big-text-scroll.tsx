@@ -69,7 +69,7 @@ export function BigTextScroll({
     <div
       ref={wrapRef}
       aria-hidden
-      className="relative overflow-hidden bg-background py-20 md:py-28"
+      className="relative overflow-hidden bg-background py-14 sm:py-20 md:py-28"
     >
       {/* humo aromático líquido — shader WebGL detrás del titular */}
       <AromaShader className="absolute inset-0 h-full w-full" />
@@ -78,11 +78,11 @@ export function BigTextScroll({
         ref={textRef}
         className="relative z-10 flex w-max items-baseline gap-10 whitespace-nowrap will-change-transform"
       >
-        <span className="font-serif text-[3.4rem] font-medium leading-none text-foreground md:text-[6.5rem]">
+        <span className="font-serif text-[2.3rem] font-medium leading-none text-foreground sm:text-[3.4rem] md:text-[6.5rem]">
           {text}
         </span>
         <span
-          className="font-serif text-[3.4rem] font-medium leading-none text-transparent md:text-[6.5rem]"
+          className="font-serif text-[2.3rem] font-medium leading-none text-transparent sm:text-[3.4rem] md:text-[6.5rem]"
           style={{ WebkitTextStroke: "1px #3d2c22" }}
         >
           {text}
