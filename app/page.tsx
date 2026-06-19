@@ -52,9 +52,6 @@ export default function Home() {
         <Marquee />
       </ScrollReveal>
 
-      {/* 2b. PRUEBA SOCIAL — marcas que ya tienen su aroma propio */}
-      <BrandLogos />
-
       {/* 3. SEGMENTACIÓN B2B — categorías (layout original + "ver más") */}
       <SegmentShowcase />
 
@@ -82,6 +79,9 @@ export default function Home() {
 
       {/* 8. PRUEBA SOCIAL — testimonios en marquee de cards */}
       <Testimonials />
+
+      {/* 8b. PRUEBA SOCIAL — marcas que ya tienen su aroma propio (loop) */}
+      <BrandLogos />
 
       {/* 9. OFERTA — incentivo concreto con CTA único */}
       <OfferBand />

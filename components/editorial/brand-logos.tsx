@@ -1,11 +1,10 @@
 "use client"
 
-import { ScrollReveal } from "@/components/editorial/scroll-reveal"
-
 /**
- * BrandLogos — social proof B2B: marcas que ya trabajan con Cliché y tienen su
- * aroma propio. Tira de logotipos uniformados (grayscale + opacidad, color al
- * hover). Logos oficiales tomados de clichecolombia.com.
+ * BrandLogos — social proof B2B: marcas que ya trabajan con Cliché. Tira de
+ * logotipos que se desplaza horizontalmente en loop infinito, sin fondo (los
+ * logos se funden con la sección vía mix-blend). Logos oficiales de
+ * clichecolombia.com. Respeta prefers-reduced-motion (queda estático centrado).
  */
 const BRANDS = [
   { src: "/images/brands/agua-bendita.webp", alt: "Agua Bendita" },
@@ -17,29 +16,52 @@ const BRANDS = [
   { src: "/images/brands/ancora.png", alt: "Áncora" },
 ]
 
+function Logo({ src, alt }: { src: string; alt: string }) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      className="h-7 w-auto max-w-[140px] shrink-0 object-contain opacity-60 grayscale [mix-blend-mode:multiply] transition-opacity duration-500 hover:opacity-100 md:h-9 md:max-w-[160px]"
+    />
+  )
+}
+
 export function BrandLogos() {
   return (
-    <section className="border-y border-border/60 bg-background py-14 md:py-20">
+    <section className="overflow-hidden border-y border-border/50 bg-background py-12 md:py-16">
       <div className="container mx-auto px-4">
-        <ScrollReveal>
-          <p className="mb-10 text-center text-lg font-semibold tracking-tight text-primary md:mb-14 md:text-2xl">
-            Marcas que ya tienen su aroma propio
-          </p>
-        </ScrollReveal>
-        <div className="flex flex-wrap items-center justify-center gap-x-9 gap-y-8 md:gap-x-14 lg:gap-x-16">
-          {BRANDS.map((b, i) => (
-            <ScrollReveal key={b.src} delay={i * 70}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={b.src}
-                alt={b.alt}
-                loading="lazy"
-                className="h-6 w-auto max-w-[120px] object-contain opacity-55 grayscale transition-all duration-500 hover:opacity-100 hover:grayscale-0 md:h-9 md:max-w-[150px]"
-              />
-            </ScrollReveal>
-          ))}
+        <p className="mb-9 text-center text-base font-semibold tracking-tight text-primary md:mb-12 md:text-xl">
+          Marcas que ya tienen su aroma propio
+        </p>
+      </div>
+
+      {/* Tira en loop: máscara con desvanecido en los bordes */}
+      <div
+        className="relative flex w-full"
+        style={{ maskImage: "linear-gradient(to right, transparent, #000 8%, #000 92%, transparent)", WebkitMaskImage: "linear-gradient(to right, transparent, #000 8%, #000 92%, transparent)" }}
+      >
+        <div className="brand-track flex w-max shrink-0 items-center gap-14 pr-14 md:gap-20 md:pr-20">
+          {BRANDS.map((b) => <Logo key={b.src} {...b} />)}
+        </div>
+        <div aria-hidden className="brand-track flex w-max shrink-0 items-center gap-14 pr-14 md:gap-20 md:pr-20">
+          {BRANDS.map((b) => <Logo key={`dup-${b.src}`} {...b} />)}
         </div>
       </div>
+
+      <style jsx>{`
+        .brand-track {
+          animation: brand-marquee 34s linear infinite;
+        }
+        @keyframes brand-marquee {
+          from { transform: translateX(0); }
+          to { transform: translateX(-100%); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .brand-track { animation: none; }
+        }
+      `}</style>
     </section>
   )
 }

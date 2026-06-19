@@ -50,24 +50,33 @@ function fmt(n: number) {
 function useInView<T extends HTMLElement>() {
   const ref = useRef<T>(null)
   const [inView, setInView] = useState(false)
+  const [dir, setDir] = useState<"down" | "up">("down")
   useEffect(() => {
     const el = ref.current
     if (!el) return
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { setInView(true); return }
     // No se desconecta: la animación se ejecuta SIEMPRE al entrar y se revierte
-    // al salir (al subir de nuevo vuelve a animar, en sentido inverso).
+    // al salir. Detectamos la dirección al entrar: si el elemento aparece por la
+    // mitad baja del viewport => bajando; si aparece desde arriba => subiendo.
     const io = new IntersectionObserver(
-      ([e]) => setInView(e.isIntersecting),
+      ([e]) => {
+        if (e.isIntersecting) {
+          setDir(e.boundingClientRect.top > window.innerHeight * 0.5 ? "down" : "up")
+          setInView(true)
+        } else {
+          setInView(false)
+        }
+      },
       { threshold: 0.15, rootMargin: "0px 0px -12% 0px" },
     )
     io.observe(el)
     return () => io.disconnect()
   }, [])
-  return { ref, inView }
+  return { ref, inView, dir }
 }
 
 function Category({ seg, i, pool }: { seg: Segment; i: number; pool: Product[] }) {
-  const { ref, inView } = useInView<HTMLDivElement>()
+  const { ref, inView, dir } = useInView<HTMLDivElement>()
   const products = productsBySegment(seg.key, pool).slice(0, 6)
   if (!products.length) return null
 
@@ -132,7 +141,10 @@ function Category({ seg, i, pool }: { seg: Segment; i: number; pool: Product[] }
   const grid = (
     <div className={`grid ${colClass} gap-x-5 gap-y-8 ${bannerRight ? "lg:order-1" : "lg:order-2"}`}>
       {products.map((p, idx) => {
-        const delay = 180 + idx * 110
+        // Al subir, el stagger arranca por los productos de abajo (los que se
+        // ven primero); al bajar, por los de arriba.
+        const order = dir === "up" ? count - 1 - idx : idx
+        const delay = 180 + order * 110
         return (
           <Link
             key={p.id}
