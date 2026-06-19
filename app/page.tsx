@@ -18,6 +18,7 @@ import { Guarantees } from "@/components/editorial/guarantees"
 import { Faq } from "@/components/editorial/faq"
 import { ProductShowcase3D } from "@/components/editorial/product-showcase-3d"
 import { SegmentShowcase } from "@/components/editorial/segment-showcase"
+import { BrandLogos } from "@/components/editorial/brand-logos"
 
 /**
  * Landing — arquitectura de embudo de ventas (AIDA + objeciones + riesgo):
@@ -50,6 +51,9 @@ export default function Home() {
       <ScrollReveal>
         <Marquee />
       </ScrollReveal>
+
+      {/* 2b. PRUEBA SOCIAL — marcas que ya tienen su aroma propio */}
+      <BrandLogos />
 
       {/* 3. SEGMENTACIÓN B2B — categorías (layout original + "ver más") */}
       <SegmentShowcase />
