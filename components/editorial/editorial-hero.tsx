@@ -110,8 +110,8 @@ export function EditorialHero() {
             {/* Gradiente direccional según alineación del texto */}
             {isLeft ? (
               <>
-                <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-transparent" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/15" />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/25 sm:via-black/40 sm:to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/15 sm:from-black/35" />
               </>
             ) : (
               <>
@@ -128,7 +128,7 @@ export function EditorialHero() {
                   : "items-center text-center"
               }`}
             >
-              <div className={isLeft ? "max-w-[54%] md:max-w-[46%]" : "max-w-2xl"}>
+              <div className={isLeft ? "max-w-[90%] sm:max-w-[72%] md:max-w-[46%]" : "max-w-2xl"}>
 
                 {slide.eyebrow && (
                   <p
@@ -146,7 +146,7 @@ export function EditorialHero() {
                 <h1
                   className="font-serif font-medium leading-[1.04] text-white whitespace-pre-line transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
                   style={{
-                    fontSize: "clamp(2.4rem, 5vw, 4rem)",
+                    fontSize: "clamp(2rem, 7.5vw, 4rem)",
                     textShadow: "0 2px 24px rgba(0,0,0,0.35)",
                     opacity: isActive ? 1 : 0,
                     transform: isActive ? "translateY(0px)" : "translateY(18px)",
