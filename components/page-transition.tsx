@@ -36,7 +36,10 @@ export function PageTransition() {
       const a = el?.closest?.("a")
       if (!a) return
       const href = a.getAttribute("href")
-      if (!href || !href.startsWith("/productos/") || a.getAttribute("target") === "_blank") return
+      if (!href || a.getAttribute("target") === "_blank") return
+      // Rutas con cortina de transición: páginas de producto y el landing ("/").
+      const animated = href.startsWith("/productos/") || href === "/"
+      if (!animated) return
       if (href === pathRef.current) return
       // Fase capture: interceptamos ANTES de que el <Link> de Next navegue
       e.preventDefault()

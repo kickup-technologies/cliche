@@ -5,16 +5,26 @@
 // bloquea plugins/embeds (object-src), inyección de <base>, exfiltración por
 // formularios a terceros (form-action) y clickjacking (frame-ancestors), y
 // fuerza HTTPS. Endurece sin romper la tienda.
+//
+// ⚠️ NO ROMPER LOS RENDERS 3D AL REFORZAR SEGURIDAD ⚠️
+// Los visores 3D (three.js / react-three-fiber, MeshyViewer/SprayBottle3D)
+// cargan las TEXTURAS WebP embebidas en los .glb haciendo `fetch()` a URLs
+// `blob:` y decodificándolas con `createImageBitmap`. Si la CSP no permite
+// `blob:` (y `data:`) en `connect-src` e `img-src`, las texturas se bloquean
+// ("Failed to fetch") y los frascos salen EN BLANCO (geometría sin textura).
+// REGLA: `connect-src` e `img-src` SIEMPRE deben incluir `blob:` y `data:`,
+// y `worker-src` debe permitir `blob:`. No los quites al endurecer la CSP.
+// (Ya nos pasó una vez: el frasco se veía blanco por esto.)
 const ContentSecurityPolicy = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
   "style-src 'self' 'unsafe-inline' https:",
-  "img-src 'self' data: blob: https:",
+  "img-src 'self' data: blob: https:",                 // blob:/data: → texturas 3D (NO quitar)
   "font-src 'self' data: https:",
-  "connect-src 'self' https: wss: blob: data:",
+  "connect-src 'self' https: wss: blob: data:",        // blob:/data: → texturas 3D (NO quitar)
   "media-src 'self' https: blob:",
   "frame-src 'self' https:",
-  "worker-src 'self' blob:",
+  "worker-src 'self' blob:",                            // blob: → decodificadores 3D (NO quitar)
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
