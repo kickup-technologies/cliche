@@ -1,37 +1,20 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { Leaf, ShieldCheck, Truck, Shirt } from "lucide-react"
 
 /**
- * Guarantees — reversión de riesgo como cinemática horizontal (ref de movimiento:
- * buckssauce.com, pero con la paleta crema de Cliché). La sección se fija (sticky)
- * y, al hacer scroll vertical, la "rueda" de beneficios avanza lateralmente: una
- * tarjeta limpia con ícono + beneficio + copy, y el número de posición debajo.
- * Al terminar la rueda, el scroll continúa hacia abajo.
- * Fallback estático en móvil y con prefers-reduced-motion.
+ * Guarantees — reversión de riesgo como CINEMÁTICA EDITORIAL de lujo.
+ * Sin tarjetas, sin íconos: tipografía gigante como pieza gráfica, número
+ * colosal integrado al fondo, grid asimétrico, detalles de medición y
+ * microtipografía. La sección se fija y, al hacer scroll, la composición
+ * avanza lateralmente por cada garantía con parallax sutil. Al terminar,
+ * el scroll continúa. Fallback editorial apilado en móvil / reduced-motion.
  */
 const ITEMS = [
-  {
-    icon: Leaf,
-    title: "100% Natural",
-    text: "Sin parabenos ni aceites grasos. Seguro para tus clientes, tus prendas y tus productos.",
-  },
-  {
-    icon: Shirt,
-    title: "No mancha",
-    text: "Probado en textiles claros y delicados. Cero residuos, cero manchas.",
-  },
-  {
-    icon: Truck,
-    title: "Envío nacional",
-    text: "Despachamos a toda Colombia. Envío gratis en compras desde $300.000.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Pago protegido",
-    text: "Checkout cifrado y pasarela certificada. Compra con total tranquilidad.",
-  },
+  { n: "01", kicker: "Fórmula", line1: "100%", line2: "Natural", text: "Sin parabenos ni aceites grasos. Una fórmula segura para tus clientes, tus prendas y tus productos." },
+  { n: "02", kicker: "Textiles", line1: "No", line2: "mancha", text: "Probada en textiles claros y delicados. Cero residuos, cero manchas, cero preocupaciones." },
+  { n: "03", kicker: "Logística", line1: "Envío", line2: "nacional", text: "Despachamos a toda Colombia. Envío de cortesía en compras desde $300.000." },
+  { n: "04", kicker: "Seguridad", line1: "Pago", line2: "protegido", text: "Checkout cifrado y pasarela certificada. Compra con total tranquilidad." },
 ]
 
 const N = ITEMS.length
@@ -40,8 +23,8 @@ export function Guarantees() {
   const sectionRef = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
   const panelRefs = useRef<(HTMLDivElement | null)[]>([])
-  const dotRefs = useRef<(HTMLSpanElement | null)[]>([])
   const counterRef = useRef<HTMLSpanElement>(null)
+  const progressRef = useRef<HTMLSpanElement>(null)
 
   useEffect(() => {
     const section = sectionRef.current
@@ -62,153 +45,163 @@ export function Guarantees() {
 
       const exact = p * (N - 1)
       const active = Math.round(exact)
+
       panelRefs.current.forEach((el, i) => {
         if (!el) return
-        const d = Math.min(1, Math.abs(exact - i))
-        el.style.opacity = String(1 - d * 0.5)
-        const inner = el.firstElementChild as HTMLElement | null
-        if (inner) inner.style.transform = `translateY(${(d * 26).toFixed(1)}px) scale(${(1 - d * 0.05).toFixed(3)})`
+        const rel = exact - i            // distancia firmada al centro
+        const d = Math.min(1, Math.abs(rel))
+        el.style.opacity = String(1 - d * 0.55)
+        // Parallax de profundidad (sutil): número de fondo y texto a ritmos distintos
+        const num = el.querySelector<HTMLElement>("[data-giant]")
+        const txt = el.querySelector<HTMLElement>("[data-text]")
+        if (num) num.style.transform = `translate3d(${(rel * -34).toFixed(1)}px, ${(d * 10).toFixed(1)}px, 0)`
+        if (txt) txt.style.transform = `translate3d(${(rel * 12).toFixed(1)}px, 0, 0)`
       })
-      dotRefs.current.forEach((dot, i) => {
-        if (!dot) return
-        dot.style.width = i === active ? "26px" : "8px"
-        dot.style.opacity = i === active ? "1" : "0.35"
-      })
+
       if (counterRef.current) counterRef.current.textContent = String(active + 1).padStart(2, "0")
+      if (progressRef.current) progressRef.current.style.transform = `scaleX(${(p).toFixed(3)})`
 
       if (running) raf = requestAnimationFrame(tick)
     }
 
     const io = new IntersectionObserver(
       ([e]) => {
-        if (e.isIntersecting && !running) {
-          running = true
-          raf = requestAnimationFrame(tick)
-        } else if (!e.isIntersecting && running) {
-          running = false
-          cancelAnimationFrame(raf)
-        }
+        if (e.isIntersecting && !running) { running = true; raf = requestAnimationFrame(tick) }
+        else if (!e.isIntersecting && running) { running = false; cancelAnimationFrame(raf) }
       },
       { rootMargin: "40% 0px 40% 0px" }
     )
     io.observe(section)
-
-    return () => {
-      running = false
-      cancelAnimationFrame(raf)
-      io.disconnect()
-    }
+    return () => { running = false; cancelAnimationFrame(raf); io.disconnect() }
   }, [])
 
   return (
     <>
-      {/* ── Cinemática horizontal (desktop) ── */}
+      {/* ───────────── Cinemática editorial (desktop) ───────────── */}
       <section
         ref={sectionRef}
-        className="relative hidden bg-secondary md:block"
+        className="relative hidden md:block"
         style={{ height: `${N * 100}vh` }}
-        aria-label="Por qué comprar en Cliché"
+        aria-label="Garantías Cliché"
       >
-        <div className="sticky top-0 flex h-screen items-center overflow-hidden">
-          {/* eyebrow + contador */}
-          <div className="pointer-events-none absolute left-1/2 top-[13%] z-20 -translate-x-1/2 text-center">
-            <p className="text-[0.66rem] font-semibold uppercase tracking-[0.4em] text-primary">
+        <div className="sticky top-0 h-screen overflow-hidden bg-gradient-to-br from-[#FAF8F5] via-[#F3EAE1] to-[#ECE0D4]">
+          {/* textura orgánica casi imperceptible */}
+          <div className="pointer-events-none absolute inset-0 opacity-[0.04] mix-blend-multiply" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")" }} />
+
+          {/* masthead fijo */}
+          <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-[7vw] pt-10">
+            <span className="text-[0.62rem] font-semibold uppercase tracking-[0.42em] text-[#2D1A14]/55">
               Antes de comprar
-            </p>
-            <p className="mt-2 font-serif text-sm tracking-[0.2em] text-foreground/45">
-              <span ref={counterRef}>01</span> / 0{N}
-            </p>
+            </span>
+            <span className="font-serif text-sm tracking-[0.25em] text-[#2D1A14]/40">
+              <span ref={counterRef}>01</span> <span className="mx-1 text-[#A67163]">/</span> 0{N}
+            </span>
           </div>
+          <div className="absolute inset-x-[7vw] top-[4.2rem] z-20 h-px bg-[#2D1A14]/12" />
+
+          {/* marcas de medición (regla) — borde izquierdo */}
+          <div className="pointer-events-none absolute left-[7vw] top-1/2 z-10 hidden -translate-y-1/2 flex-col gap-3 lg:flex">
+            {Array.from({ length: 9 }).map((_, i) => (
+              <span key={i} className="block bg-[#2D1A14]/20" style={{ width: i % 2 === 0 ? "18px" : "9px", height: "1px" }} />
+            ))}
+          </div>
+
+          {/* microtipografía vertical — borde derecho */}
+          <span className="pointer-events-none absolute right-[2.4vw] top-1/2 z-10 origin-center -translate-y-1/2 rotate-90 text-[0.58rem] font-medium uppercase tracking-[0.5em] text-[#2D1A14]/30">
+            Bienestar · Cliché
+          </span>
 
           {/* track */}
-          <div
-            ref={trackRef}
-            className="flex h-full will-change-transform"
-            style={{ width: `${N * 100}vw` }}
-          >
-            {ITEMS.map((item, i) => {
-              const Icon = item.icon
-              return (
-                <div
-                  key={item.title}
-                  ref={(el) => { panelRefs.current[i] = el }}
-                  className="flex h-full w-screen flex-shrink-0 items-center justify-center px-6"
+          <div ref={trackRef} className="flex h-full will-change-transform" style={{ width: `${N * 100}vw` }}>
+            {ITEMS.map((item, i) => (
+              <div
+                key={item.n}
+                ref={(el) => { panelRefs.current[i] = el }}
+                className="relative h-full w-screen flex-shrink-0"
+              >
+                {/* Número colosal integrado al fondo (parcialmente cortado) */}
+                <span
+                  data-giant
+                  aria-hidden
+                  className="pointer-events-none absolute -right-[4vw] top-1/2 z-0 -translate-y-1/2 select-none font-serif font-medium leading-none text-[#2D1A14]/[0.06]"
+                  style={{ fontSize: "64vh" }}
                 >
-                  <div className="flex flex-col items-center transition-[transform,opacity] duration-200">
-                    {/* Tarjeta limpia */}
-                    <div className="flex w-[min(86vw,400px)] flex-col items-center rounded-[2rem] border border-border/70 bg-background px-10 py-11 text-center shadow-[0_34px_80px_-44px_rgba(45,26,20,0.5)]">
-                      <span className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
-                        <Icon className="h-7 w-7" strokeWidth={1.75} />
+                  {item.n}
+                </span>
+
+                {/* Composición editorial (grid asimétrico) */}
+                <div className="relative z-10 grid h-full grid-cols-12 items-center px-[7vw]">
+                  <div data-text className="col-span-12 lg:col-span-7">
+                    {/* Fig. + kicker */}
+                    <div className="mb-7 flex items-center gap-4">
+                      <span className="h-px w-14 bg-[#A67163]" />
+                      <span className="text-[0.62rem] font-semibold uppercase tracking-[0.34em] text-[#A67163]">
+                        Fig. {item.n} — {item.kicker}
                       </span>
-                      <h3 className="mt-6 font-serif text-2xl font-medium text-foreground">
-                        {item.title}
-                      </h3>
-                      <div className="my-4 h-px w-10 bg-border" />
-                      <p className="max-w-[18rem] text-sm leading-relaxed text-muted-foreground">
-                        {item.text}
-                      </p>
                     </div>
 
-                    {/* Número de posición — debajo de la tarjeta */}
-                    <span aria-hidden className="guarantee-num mt-7 font-serif font-medium leading-none">
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
+                    {/* Mensaje protagonista */}
+                    <h2 className="guarantee-title font-serif font-medium text-[#2D1A14]">
+                      <span className="block">{item.line1}</span>
+                      <span className="block italic text-[#2D1A14]/85">{item.line2}</span>
+                    </h2>
+
+                    {/* Descripción */}
+                    <p className="mt-9 max-w-md text-base font-light leading-relaxed text-[#2D1A14]/65 md:text-lg">
+                      {item.text}
+                    </p>
                   </div>
                 </div>
-              )
-            })}
+              </div>
+            ))}
           </div>
 
-          {/* dots de progreso */}
-          <div className="absolute bottom-[9%] left-1/2 flex -translate-x-1/2 items-center gap-2">
-            {ITEMS.map((_, i) => (
-              <span
-                key={i}
-                ref={(el) => { dotRefs.current[i] = el }}
-                className="h-[3px] rounded-full bg-primary transition-all duration-300"
-                style={{ width: i === 0 ? "26px" : "8px", opacity: i === 0 ? 1 : 0.35 }}
-              />
-            ))}
+          {/* progreso numérico + línea fina */}
+          <div className="absolute bottom-10 left-[7vw] right-[7vw] z-20 flex items-center gap-5">
+            <span className="font-serif text-xs tracking-[0.2em] text-[#2D1A14]/45">01</span>
+            <span className="relative h-px flex-1 overflow-hidden bg-[#2D1A14]/12">
+              <span ref={progressRef} className="absolute inset-0 origin-left bg-[#A67163]" style={{ transform: "scaleX(0)" }} />
+            </span>
+            <span className="font-serif text-xs tracking-[0.2em] text-[#2D1A14]/45">0{N}</span>
           </div>
         </div>
       </section>
 
-      {/* ── Fallback estático (móvil / reduced-motion) ── */}
-      <section className="bg-secondary py-16 md:hidden">
-        <p className="mb-10 text-center text-[0.66rem] font-semibold uppercase tracking-[0.4em] text-primary">
-          Antes de comprar
-        </p>
-        <div className="container mx-auto grid grid-cols-2 gap-5 px-4">
-          {ITEMS.map((item, i) => {
-            const Icon = item.icon
-            return (
-              <div
-                key={item.title}
-                className="relative flex flex-col items-center rounded-2xl border border-border/70 bg-background px-5 py-7 text-center"
-              >
-                <span className="absolute right-3 top-2 font-serif text-2xl font-medium text-primary/25">
-                  0{i + 1}
-                </span>
-                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                  <Icon className="h-5 w-5" strokeWidth={1.75} />
-                </span>
-                <h3 className="mt-4 text-[0.72rem] font-semibold uppercase tracking-[0.2em] text-foreground">
-                  {item.title}
-                </h3>
-                <p className="mx-auto mt-2 max-w-[200px] text-xs leading-relaxed text-muted-foreground">
-                  {item.text}
-                </p>
+      {/* ───────────── Fallback editorial apilado (móvil / reduced-motion) ───────────── */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-[#FAF8F5] to-[#ECE0D4] py-16 md:hidden">
+        <div className="px-7">
+          <div className="flex items-center justify-between">
+            <span className="text-[0.6rem] font-semibold uppercase tracking-[0.4em] text-[#2D1A14]/55">Antes de comprar</span>
+            <span className="font-serif text-xs tracking-[0.2em] text-[#2D1A14]/40">0{N}</span>
+          </div>
+          <div className="mt-3 h-px bg-[#2D1A14]/12" />
+
+          {ITEMS.map((item) => (
+            <article key={item.n} className="relative border-b border-[#2D1A14]/10 py-12">
+              <span aria-hidden className="pointer-events-none absolute -right-2 top-4 select-none font-serif font-medium leading-none text-[#2D1A14]/[0.06]" style={{ fontSize: "34vw" }}>
+                {item.n}
+              </span>
+              <div className="relative z-10">
+                <div className="mb-4 flex items-center gap-3">
+                  <span className="h-px w-9 bg-[#A67163]" />
+                  <span className="text-[0.58rem] font-semibold uppercase tracking-[0.3em] text-[#A67163]">Fig. {item.n} — {item.kicker}</span>
+                </div>
+                <h2 className="font-serif text-5xl font-medium leading-[0.95] text-[#2D1A14]">
+                  <span className="block">{item.line1}</span>
+                  <span className="block italic text-[#2D1A14]/85">{item.line2}</span>
+                </h2>
+                <p className="mt-5 max-w-xs text-sm font-light leading-relaxed text-[#2D1A14]/65">{item.text}</p>
               </div>
-            )
-          })}
+            </article>
+          ))}
         </div>
       </section>
 
       <style jsx>{`
-        .guarantee-num {
-          font-size: clamp(4rem, 9vw, 8rem);
-          color: transparent;
-          -webkit-text-stroke: 1.5px rgba(166, 113, 99, 0.45);
+        .guarantee-title {
+          font-size: clamp(3.4rem, 8.5vw, 8.5rem);
+          line-height: 0.92;
+          letter-spacing: -0.015em;
         }
       `}</style>
     </>
