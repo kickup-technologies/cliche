@@ -11,7 +11,7 @@ export function FilmGrain() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none fixed inset-0 z-[80] opacity-[0.045] mix-blend-multiply"
+      className="pointer-events-none fixed inset-0 z-[80] opacity-[0.035]"
       style={{ backgroundImage: `url("${NOISE_SVG}")`, backgroundSize: "160px 160px" }}
     />
   )

@@ -167,6 +167,8 @@ function Category({ seg, i, pool }: { seg: Segment; i: number; pool: Product[] }
                 <img
                   src={p.image_url || "/placeholder-product.jpg"}
                   alt={p.name}
+                  loading="lazy"
+                  decoding="async"
                   className="h-full w-full object-contain p-3 transition-transform duration-700 ease-out group-hover:scale-105"
                 />
               </div>
