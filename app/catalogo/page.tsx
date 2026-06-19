@@ -274,7 +274,7 @@ function CatalogoInner() {
         </header>
 
         {/* ── Filtros (sin barra de búsqueda) ── */}
-        <div className="sticky top-14 z-30 border-y border-border/70 bg-background/90 backdrop-blur-md md:top-20">
+        <div className="sticky top-[63px] z-30 border-y border-border/70 bg-background/95 backdrop-blur-md lg:top-[71px]">
           <div className="container mx-auto flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:py-3.5">
             {/* Categorías */}
             <nav className="flex items-center gap-x-6 gap-y-1 overflow-x-auto">
