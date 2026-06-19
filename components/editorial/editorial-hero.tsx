@@ -29,12 +29,12 @@ const SLIDES: Slide[] = [
     align: "left",
   },
   {
-    media: { type: "video", src: "/videos/hero-1.mp4" },
-    eyebrow: "Bienestar by Cliché",
-    title: "¿A qué huele\ntu marca?",
-    subtitle: "Marketing olfativo artesanal: creamos el aroma que vuelve inolvidable tu marca, tu tienda o tu espacio.",
-    cta: { label: "Descubrir aromas", href: "/catalogo" },
-    microcopy: "100% natural · No mancha · Envío gratis desde $300.000",
+    media: { type: "image", src: "/images/segments/gym.png", mobileSrc: "/images/segments/gym-mobile.png" },
+    eyebrow: "Gimnasios & deporte",
+    title: "El aroma que\naguanta tu ritmo",
+    subtitle: "Lycra de Verano mantiene tu ropa deportiva fresca entrenamiento tras entrenamiento. La frescura que tu marca lleva puesta.",
+    cta: { label: "Comprar Lycra de Verano", href: "/productos/aroma-lycra-de-verano" },
+    microcopy: "Frescura duradera · No mancha · Ideal para activewear",
     align: "left",
   },
   {
