@@ -51,11 +51,32 @@ const SLIDES: Slide[] = [
 export function EditorialHero() {
   const [active, setActive] = useState(0)
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([])
+  const touch = useRef<{ x: number; y: number } | null>(null)
 
   useEffect(() => {
     const t = setInterval(() => setActive((i) => (i + 1) % SLIDES.length), 7000)
     return () => clearInterval(t)
   }, [])
+
+  const go = (dir: 1 | -1) =>
+    setActive((i) => (i + dir + SLIDES.length) % SLIDES.length)
+
+  // Swipe táctil (celular): deslizar a izquierda/derecha cambia de slide.
+  const onTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0]
+    touch.current = { x: t.clientX, y: t.clientY }
+  }
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (!touch.current) return
+    const t = e.changedTouches[0]
+    const dx = t.clientX - touch.current.x
+    const dy = t.clientY - touch.current.y
+    touch.current = null
+    // Solo si el gesto es claramente horizontal (no un scroll vertical)
+    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+      go(dx < 0 ? 1 : -1)
+    }
+  }
 
   // Reproduce solo el video del slide activo; pausa los demás (rendimiento)
   useEffect(() => {
@@ -71,7 +92,11 @@ export function EditorialHero() {
   }, [active])
 
   return (
-    <section className="relative h-[82vh] min-h-[560px] w-full overflow-hidden bg-[#2D1A14]">
+    <section
+      className="relative h-[82vh] min-h-[560px] w-full overflow-hidden bg-[#2D1A14]"
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+    >
       {SLIDES.map((slide, i) => {
         const isActive = i === active
         const isLeft = slide.align === "left"
