@@ -31,12 +31,39 @@ const SEGMENT_IMAGES: Record<string, string> = {
   infantiles: "/images/segments/infantiles.jpg",
   deportivas: "/images/segments/deportivas.jpg",
   accesorios: "/images/segments/accesorios.jpg",
-  bano: "/images/segments/bano.jpg",
+  bano: "/images/segments/bano.png",
   hoteles: "/images/segments/hoteles.jpg",
   spa: "/images/segments/spa.jpg",
   hogar: "/images/segments/hogar.jpg",
   mascotas: "/images/segments/mascotas.jpg",
   luxury: "/images/segments/luxury.jpg",
+}
+
+/**
+ * Segmentos DESTACADOS: en vez del banner-columna estándar, se renderizan como
+ * un HERO a todo lo ancho con art-direction (imagen horizontal en PC, vertical
+ * en celular), copy enfocado a la venta y CTA al producto protagonista.
+ */
+type SegmentFeature = {
+  desktopImg: string
+  mobileImg: string
+  eyebrow: string
+  headline: string
+  subtext: string
+  cta: { label: string; href: string }
+  secondary?: { label: string; href: string }
+}
+const SEGMENT_FEATURE: Record<string, SegmentFeature> = {
+  bano: {
+    desktopImg: "/images/segments/bano.png",
+    mobileImg: "/images/segments/bano-mobile.png",
+    eyebrow: "Vestidos de baño & playa",
+    headline: "Tu marca también huele a verano",
+    subtext:
+      "MAHAI impregna tus prendas de baño con frutas exóticas que duran todo el día y no manchan la tela. El recuerdo que tus clientas se llevan puesto.",
+    cta: { label: "Comprar MAHAI", href: "/productos/aroma-mahai" },
+    secondary: { label: "Ver aromas de playa", href: "/catalogo?segmento=bano" },
+  },
 }
 
 const KIT_LINE = PRICE_TIERS.filter((t) => t.units > 1)
@@ -192,6 +219,58 @@ function Category({ seg, i, pool }: { seg: Segment; i: number; pool: Product[] }
     </div>
   )
 
+  // ── Segmento DESTACADO: hero a todo lo ancho + grilla debajo ──
+  const feature = SEGMENT_FEATURE[seg.key]
+  if (feature) {
+    return (
+      <div ref={ref} className="space-y-12">
+        <div style={reveal(0)} className="relative w-full overflow-hidden rounded-3xl">
+          {/* PC: imagen horizontal */}
+          <div className="relative hidden h-[440px] w-full md:block">
+            <Image src={feature.desktopImg} alt={seg.label} fill sizes="100vw" className="object-cover" />
+          </div>
+          {/* Celular: imagen vertical */}
+          <div className="relative block h-[80vh] max-h-[620px] min-h-[460px] w-full md:hidden">
+            <Image src={feature.mobileImg} alt={seg.label} fill sizes="100vw" className="object-cover" />
+          </div>
+          {/* Degradado para legibilidad (base en móvil, izquierda en PC) */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent md:bg-gradient-to-r md:from-black/80 md:via-black/35 md:to-transparent" />
+          {/* Copy + CTA */}
+          <div className="absolute inset-0 flex items-end md:items-center">
+            <div className="w-full max-w-xl p-7 sm:p-10 md:p-14" style={{ color: "#FAF8F5" }}>
+              <p className="text-[0.62rem] font-semibold uppercase tracking-[0.35em]" style={{ color: "rgba(255,255,255,0.82)", ...reveal(120) }}>
+                {feature.eyebrow}
+              </p>
+              <h3 className="mt-4 font-serif text-4xl font-medium leading-[1.04] sm:text-5xl md:text-6xl" style={reveal(220)}>
+                {feature.headline}
+              </h3>
+              <p className="mt-5 max-w-md text-sm leading-relaxed sm:text-base" style={{ color: "rgba(255,255,255,0.88)", ...reveal(340) }}>
+                {feature.subtext}
+              </p>
+              <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3" style={reveal(460)}>
+                <Link
+                  href={feature.cta.href}
+                  className="inline-flex items-center gap-2 rounded-full bg-[#FAF8F5] px-7 py-3.5 text-sm font-semibold text-[#2D1A14] transition-transform hover:scale-[1.03]"
+                >
+                  {feature.cta.label} <span aria-hidden>→</span>
+                </Link>
+                {feature.secondary && (
+                  <Link
+                    href={feature.secondary.href}
+                    className="text-[0.72rem] font-semibold uppercase tracking-[0.2em] text-white/85 underline-offset-4 hover:underline"
+                  >
+                    {feature.secondary.label}
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+        {grid}
+      </div>
+    )
+  }
+
   return (
     <div
       ref={ref}
@@ -244,7 +323,11 @@ export function SegmentShowcase() {
 
   if (pool.length === 0) return null
 
-  const segs = activeSegments(pool)
+  // Los segmentos DESTACADOS (con hero propio) van primero para que se vean en
+  // el bloque inicial, sin esperar a "ver más". El resto conserva su orden.
+  const segs = [...activeSegments(pool)].sort(
+    (a, b) => (SEGMENT_FEATURE[b.key] ? 1 : 0) - (SEGMENT_FEATURE[a.key] ? 1 : 0),
+  )
   const shown = showAll ? segs : segs.slice(0, INITIAL)
 
   return (
