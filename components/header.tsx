@@ -4,8 +4,8 @@ import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { ShoppingBag, ChevronDown, ChevronRight, Heart, Instagram, User, Package, LogOut, LogIn, Crown } from "lucide-react"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { ShoppingBag, ChevronDown, ChevronRight, Heart, Instagram, User, Package, LogOut, LogIn, Crown, Leaf, SprayCan, Gift, Tag, Users, MapPin, X } from "lucide-react"
+import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,9 +43,23 @@ const navigation = [
   { name: "Nosotros", href: "/nosotros" },
 ]
 
+// Menú móvil — listas planas, editoriales (sin acordeones ni tarjetas).
+const MOBILE_EXPLORE = [
+  { name: "Aromas", href: "/catalogo", icon: Leaf },
+  { name: "Marcas", href: "/catalogo?vista=marcas", icon: SprayCan },
+  { name: "Arma tu kit", href: "/arma-tu-kit", icon: Gift, dot: true },
+  { name: "Ofertas", href: "/ofertas", icon: Tag, dot: true },
+  { name: "Nosotros", href: "/nosotros", icon: Users },
+]
+const MOBILE_ACCOUNT = [
+  { name: "Mis pedidos", href: "/cuenta?seccion=pedidos", icon: Package },
+  { name: "Mis datos", href: "/cuenta?seccion=datos", icon: User },
+  { name: "Direcciones", href: "/cuenta?seccion=direcciones", icon: MapPin },
+  { name: "Lista de deseos", href: "/favoritos", icon: Heart },
+]
+
 export function Header() {
   const [isOpen, setIsOpen] = useState(false)
-  const [openSection, setOpenSection] = useState<string | null>(null)
   const [isScrolled, setIsScrolled] = useState(false)
   // Cursor deslizante (hover) para el nav de escritorio.
   const [deskPos, setDeskPos] = useState({ left: 0, width: 0, opacity: 0 })
@@ -124,106 +138,92 @@ export function Header() {
                     </span>
                   </button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-[85vw] max-w-sm p-0 border-0 bg-[#2D1A14]">
-                  <div className="flex flex-col h-full">
-                    <div className="flex items-center justify-between px-7 pt-8 pb-6 border-b border-white/10">
+                <SheetContent side="left" className="w-[90vw] max-w-sm border-0 p-0 [&>button]:hidden" style={{ background: "linear-gradient(180deg, #2B1612 0%, #341B15 100%)" }}>
+                  <div className="flex h-full flex-col">
+                    {/* Header */}
+                    <div className="flex h-20 flex-shrink-0 items-center justify-between px-7">
                       <Link href="/" onClick={() => setIsOpen(false)}>
                         <span className="font-serif text-2xl font-bold tracking-wide text-white">Cliché</span>
                       </Link>
-                      <p className="text-[10px] text-white/25 tracking-[0.25em] uppercase">Menú</p>
+                      <SheetClose className="flex items-center gap-2.5 text-white/45 outline-none">
+                        <span className="text-[10px] uppercase tracking-[0.25em]">Menú</span>
+                        <X className="h-5 w-5" />
+                      </SheetClose>
                     </div>
 
-                    <nav className="flex-1 overflow-y-auto px-5 py-6">
-                      {navigation.map((item) =>
-                        item.submenu ? (
-                          <div key={item.name} className="border-b border-white/[0.07]">
-                            <button
-                              type="button"
-                              onClick={() => setOpenSection(openSection === item.name ? null : item.name)}
-                              className="flex w-full items-center justify-between rounded-xl px-3 py-4 text-left transition-colors hover:bg-white/[0.05]"
-                            >
-                              <span className="font-serif text-lg font-light text-white/90">{item.name}</span>
-                              <ChevronDown
-                                className={`h-4 w-4 text-white/40 transition-transform duration-300 ${openSection === item.name ? "rotate-180" : ""}`}
-                              />
-                            </button>
-                            <div
-                              className="overflow-hidden transition-all duration-300 ease-out"
-                              style={{ maxHeight: openSection === item.name ? item.submenu.length * 46 + 12 : 0 }}
-                            >
-                              <div className="pb-3">
-                                {item.submenu.map((sub) => (
-                                  <Link
-                                    key={sub.name}
-                                    href={sub.href}
-                                    onClick={() => setIsOpen(false)}
-                                    className="block rounded-lg py-2.5 pl-6 text-[15px] text-white/55 transition-colors hover:text-white"
-                                  >
-                                    {sub.name}
-                                  </Link>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <Link
-                            key={item.name}
-                            href={item.href}
-                            onClick={() => setIsOpen(false)}
-                            className="flex items-center justify-between border-b border-white/[0.07] rounded-xl px-3 py-4 transition-colors hover:bg-white/[0.05]"
-                          >
-                            <span className={`font-serif text-lg font-light ${item.highlight ? "text-[#C99]" : "text-white/90"}`}>{item.name}</span>
-                            {item.highlight && <span className="h-1.5 w-1.5 rounded-full bg-[#A67163]" />}
+                    <div className="flex-1 overflow-y-auto px-7 pb-6">
+                      {/* EXPLORAR */}
+                      <p className="mb-1 mt-2 text-[10px] uppercase tracking-[0.3em] text-white/40">Explorar</p>
+                      <div>
+                        {MOBILE_EXPLORE.map(({ name, href, icon: Icon, dot }) => (
+                          <Link key={name} href={href} onClick={() => setIsOpen(false)} className="flex h-16 items-center gap-4 border-b border-white/[0.06] transition-colors hover:bg-white/[0.03]">
+                            <Icon className="h-[19px] w-[19px] flex-shrink-0 text-white/65" strokeWidth={1.3} />
+                            <span className="flex-1 font-serif text-lg font-light text-white/90">{name}</span>
+                            {dot ? <span className="h-1.5 w-1.5 rounded-full bg-[#C89282]" /> : <ChevronRight className="h-4 w-4 text-white/30" />}
                           </Link>
-                        ),
-                      )}
-
-                      {/* ── Cuenta ── */}
-                      <div className="mt-7">
-                        <p className="mb-1 px-3 text-[10px] uppercase tracking-[0.25em] text-white/30">Cuenta</p>
-                        {user ? (
-                          <>
-                            <Link href="/cuenta?seccion=pedidos" onClick={() => setIsOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-3 text-[15px] text-white/80 transition-colors hover:bg-white/[0.05] hover:text-white">
-                              <User className="h-[18px] w-[18px]" /> Mi cuenta
-                            </Link>
-                            <button type="button" onClick={() => { signOut(); setIsOpen(false) }} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-[15px] text-red-300/80 transition-colors hover:bg-white/[0.05] hover:text-red-300">
-                              <LogOut className="h-[18px] w-[18px]" /> Cerrar sesión
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <Link href="/cuenta" onClick={() => setIsOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-3 text-[15px] text-white/80 transition-colors hover:bg-white/[0.05] hover:text-white">
-                              <LogIn className="h-[18px] w-[18px]" /> Iniciar sesión
-                            </Link>
-                            <Link href="/cuenta" onClick={() => setIsOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-3 text-[15px] text-white/80 transition-colors hover:bg-white/[0.05] hover:text-white">
-                              <User className="h-[18px] w-[18px]" /> Crear cuenta
-                            </Link>
-                          </>
-                        )}
+                        ))}
                       </div>
-                    </nav>
 
-                    <div className="px-7 pb-10 space-y-4 border-t border-white/10 pt-6">
+                      {/* CUENTA */}
+                      <p className="mb-3 mt-8 text-[10px] uppercase tracking-[0.3em] text-white/40">Cuenta</p>
+                      {user ? (
+                        <>
+                          {/* Fila premium única: nombre + estado */}
+                          <Link href="/cuenta?seccion=datos" onClick={() => setIsOpen(false)} className="flex h-20 items-center gap-3.5 rounded-[20px] px-4 backdrop-blur-sm transition-colors" style={{ backgroundColor: "rgba(255,255,255,0.05)" }}>
+                            <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border border-white/20"><User className="h-5 w-5 text-white/80" strokeWidth={1.4} /></span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate font-serif text-lg leading-tight text-white">{((user?.user_metadata?.full_name as string)?.trim()) || accountName}</span>
+                              <span className="mt-0.5 flex items-center gap-1 text-[12px] font-medium" style={{ color: "#E0B341" }}><Crown className="h-3 w-3" /> Miembro {tier.name}</span>
+                            </span>
+                            <ChevronRight className="h-4 w-4 flex-shrink-0 text-white/30" />
+                          </Link>
+
+                          {/* Opciones de cuenta */}
+                          <div className="mt-2">
+                            {MOBILE_ACCOUNT.map(({ name, href, icon: Icon }) => (
+                              <Link key={name} href={href} onClick={() => setIsOpen(false)} className="flex h-14 items-center gap-4 border-b border-white/[0.06] transition-colors hover:bg-white/[0.03]">
+                                <Icon className="h-[18px] w-[18px] flex-shrink-0 text-white/60" strokeWidth={1.4} />
+                                <span className="flex-1 text-[15px] text-white/85">{name}</span>
+                                <ChevronRight className="h-4 w-4 text-white/25" />
+                              </Link>
+                            ))}
+                            <button type="button" onClick={() => { signOut(); setIsOpen(false) }} className="flex h-14 w-full items-center gap-4 transition-opacity hover:opacity-80" style={{ color: "#D98A7C" }}>
+                              <LogOut className="h-[18px] w-[18px] flex-shrink-0" strokeWidth={1.4} />
+                              <span className="flex-1 text-left text-[15px]">Cerrar sesión</span>
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <div>
+                          <Link href="/cuenta" onClick={() => setIsOpen(false)} className="flex h-14 items-center gap-4 border-b border-white/[0.06] text-[15px] text-white/85">
+                            <LogIn className="h-[18px] w-[18px] text-white/60" strokeWidth={1.4} /> <span className="flex-1">Iniciar sesión</span> <ChevronRight className="h-4 w-4 text-white/25" />
+                          </Link>
+                          <Link href="/cuenta" onClick={() => setIsOpen(false)} className="flex h-14 items-center gap-4 text-[15px] text-white/85">
+                            <User className="h-[18px] w-[18px] text-white/60" strokeWidth={1.4} /> <span className="flex-1">Crear cuenta</span> <ChevronRight className="h-4 w-4 text-white/25" />
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* CTA + footer */}
+                    <div className="flex-shrink-0 px-7 pb-9 pt-3">
                       <Link
                         href="/catalogo"
                         onClick={() => setIsOpen(false)}
-                        className="flex items-center justify-center gap-2 w-full bg-[#A67163] hover:bg-[#8B5E52] text-white font-medium text-sm tracking-wide py-3.5 rounded-full transition-colors"
+                        className="flex h-[60px] w-full items-center justify-center gap-2 rounded-full font-medium tracking-wide text-white transition-opacity hover:opacity-90"
+                        style={{ backgroundColor: "#C89282" }}
                       >
-                        <ShoppingBag className="w-4 h-4" /> Ver colección
+                        <ShoppingBag className="h-[18px] w-[18px]" /> Ver colección
                       </Link>
-                      <div className="flex items-center justify-center gap-4 pt-1">
-                        <a
-                          href="https://instagram.com/clichearomasoficial"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 text-white/30 hover:text-white/60 transition-colors text-xs tracking-wide"
-                        >
-                          <Instagram className="w-3.5 h-3.5" /> Instagram
-                        </a>
-                      </div>
-                      <p className="text-center text-white/15 text-[9px] tracking-[0.25em] uppercase">
-                        Aromas artesanales · Colombia
-                      </p>
+                      <a
+                        href="https://instagram.com/clichearomasoficial"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-5 flex items-center justify-center gap-1.5 text-xs tracking-wide text-white/35 transition-colors hover:text-white/60"
+                      >
+                        <Instagram className="h-3.5 w-3.5" /> Instagram
+                      </a>
+                      <p className="mt-3 text-center text-[9px] uppercase tracking-[0.25em] text-white/15">Aromas artesanales · Colombia</p>
                     </div>
                   </div>
                 </SheetContent>
