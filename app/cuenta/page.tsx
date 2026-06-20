@@ -5,7 +5,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useSearchParams, useRouter } from "next/navigation"
 import {
-  Mail, Lock, LogOut, Package, MapPin, User as UserIcon, Settings, CheckCircle, AlertCircle,
+  Mail, Lock, LogOut, Package, MapPin, User as UserIcon, CheckCircle, AlertCircle,
   Loader2, Plus, Trash2, Heart, Star, Truck, RotateCcw, ShieldCheck,
   Crown, ChevronRight, ArrowRight, PackageOpen, Sparkles, Phone, Calendar, Monitor, Pencil,
   Smartphone, Tablet, type LucideIcon,
@@ -60,7 +60,6 @@ const NAV = [
   { id: "pedidos", label: "Mis pedidos", icon: Package },
   { id: "datos", label: "Mis datos", icon: UserIcon },
   { id: "direcciones", label: "Direcciones", icon: MapPin },
-  { id: "config", label: "Configuración", icon: Settings },
 ] as const
 type SecId = (typeof NAV)[number]["id"]
 // Menú visible: Direcciones se gestiona desde "Mis datos", no como pestaña propia.
@@ -103,7 +102,6 @@ function Dashboard({ email, createdAt, signOut }: { email: string; createdAt?: s
           {seccion === "pedidos" && <SeccionPedidos orders={orders} products={products} />}
           {seccion === "datos" && <SeccionDatos email={email} />}
           {seccion === "direcciones" && <SeccionDirecciones />}
-          {seccion === "config" && <SeccionConfig />}
         </div>
 
         {/* ── MÓVIL: beneficios + ayuda + cerrar sesión al final ── */}
@@ -582,6 +580,11 @@ function SeccionDatos({ email }: { email: string }) {
   const [saving, setSaving] = useState(false)
   const [ok, setOk] = useState(false)
   const [sessions, setSessions] = useState<Sess[] | null>(null)
+  // Cambio de contraseña (inline en Seguridad)
+  const [showPass, setShowPass] = useState(false)
+  const [pass, setPass] = useState(""); const [confirm, setConfirm] = useState("")
+  const [passSaving, setPassSaving] = useState(false)
+  const [passMsg, setPassMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null)
 
   const addresses = (md.addresses as Address[]) || []
   const principal = addresses[0]
@@ -606,6 +609,15 @@ function SeccionDatos({ email }: { email: string }) {
   }
   function cancel() {
     setFirst(initial.first); setLast(initial.last); setPhone(initial.phone); setBirth(initial.birth); setEditing(false)
+  }
+  async function changePass(e: React.FormEvent) {
+    e.preventDefault(); setPassMsg(null)
+    if (pass.length < 6) return setPassMsg({ type: "err", text: "La contraseña debe tener al menos 6 caracteres." })
+    if (pass !== confirm) return setPassMsg({ type: "err", text: "Las contraseñas no coinciden." })
+    setPassSaving(true)
+    const { error } = await getSupabaseBrowser().auth.updateUser({ password: pass }); setPassSaving(false)
+    if (error) setPassMsg({ type: "err", text: "No se pudo cambiar la contraseña." })
+    else { setPassMsg({ type: "ok", text: "Contraseña actualizada." }); setPass(""); setConfirm(""); setShowPass(false) }
   }
 
   return (
@@ -687,17 +699,28 @@ function SeccionDatos({ email }: { email: string }) {
       <LuxCard>
         <LuxHead icon={ShieldCheck} title="Seguridad" desc="Mantén tu cuenta protegida." />
 
-        {/* Cambiar contraseña */}
-        <Link href="/cuenta?seccion=config" className="group flex items-center justify-between gap-3 rounded-2xl border p-5 transition-all hover:shadow-[0_18px_40px_-30px_rgba(45,26,20,0.5)]" style={{ borderColor: `${CAFE}10`, backgroundColor: `${CAFE}03` }}>
-          <div className="flex items-start gap-3">
-            <Lock className="mt-0.5 h-5 w-5 flex-shrink-0" strokeWidth={1.6} style={{ color: TERRA }} />
-            <div>
-              <p className="text-sm font-semibold" style={{ color: CAFE }}>Cambiar contraseña</p>
-              <p className="mt-0.5 text-xs leading-snug" style={{ color: `${CAFE}88` }}>Actualiza tu contraseña periódicamente para mantener tu cuenta segura.</p>
+        {/* Cambiar contraseña (inline) */}
+        <div className="overflow-hidden rounded-2xl border" style={{ borderColor: `${CAFE}10`, backgroundColor: `${CAFE}03` }}>
+          <button onClick={() => { setShowPass((v) => !v); setPassMsg(null) }} className="group flex w-full items-center justify-between gap-3 p-5 text-left">
+            <div className="flex items-start gap-3">
+              <Lock className="mt-0.5 h-5 w-5 flex-shrink-0" strokeWidth={1.6} style={{ color: TERRA }} />
+              <div>
+                <p className="text-sm font-semibold" style={{ color: CAFE }}>Cambiar contraseña</p>
+                <p className="mt-0.5 text-xs leading-snug" style={{ color: `${CAFE}88` }}>Actualiza tu contraseña periódicamente para mantener tu cuenta segura.</p>
+              </div>
             </div>
-          </div>
-          <ChevronRight className="h-4 w-4 flex-shrink-0 transition-transform group-hover:translate-x-0.5" style={{ color: `${CAFE}40` }} />
-        </Link>
+            <ChevronRight className="h-4 w-4 flex-shrink-0 transition-transform" style={{ color: `${CAFE}40`, transform: showPass ? "rotate(90deg)" : "none" }} />
+          </button>
+          {showPass && (
+            <form onSubmit={changePass} className="space-y-3 border-t px-5 pb-5 pt-4" style={{ borderColor: `${CAFE}0d` }}>
+              {passMsg && <div className="rounded-xl px-3 py-2 text-sm" style={{ backgroundColor: passMsg.type === "err" ? "#fef2f2" : "#f0fdf4", color: passMsg.type === "err" ? "#b91c1c" : "#15803d" }}>{passMsg.text}</div>}
+              <input type="password" value={pass} onChange={(e) => setPass(e.target.value)} minLength={6} required placeholder="Nueva contraseña (mín. 6)" className="h-12 w-full rounded-2xl border bg-white px-4 text-sm outline-none focus:border-[#A67163]" style={{ borderColor: `${CAFE}15`, color: CAFE }} />
+              <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required placeholder="Confirmar contraseña" className="h-12 w-full rounded-2xl border bg-white px-4 text-sm outline-none focus:border-[#A67163]" style={{ borderColor: `${CAFE}15`, color: CAFE }} />
+              <button type="submit" disabled={passSaving} className="flex h-12 items-center rounded-2xl px-6 text-sm font-bold disabled:opacity-60" style={{ backgroundColor: CAFE, color: CREMA }}>{passSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Actualizar contraseña"}</button>
+            </form>
+          )}
+        </div>
+        {passMsg?.type === "ok" && !showPass && <p className="mt-3 flex items-center gap-1.5 text-sm text-green-600"><CheckCircle className="h-4 w-4" /> {passMsg.text}</p>}
 
         {/* Sesiones activas — dispositivos reales conectados */}
         <div className="mt-6">
@@ -807,32 +830,6 @@ function SeccionDirecciones() {
   )
 }
 
-function SeccionConfig() {
-  const [pass, setPass] = useState(""); const [confirm, setConfirm] = useState("")
-  const [saving, setSaving] = useState(false)
-  const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null)
-  async function changePass(e: React.FormEvent) {
-    e.preventDefault(); setMsg(null)
-    if (pass.length < 6) return setMsg({ type: "err", text: "La contraseña debe tener al menos 6 caracteres." })
-    if (pass !== confirm) return setMsg({ type: "err", text: "Las contraseñas no coinciden." })
-    setSaving(true)
-    const { error } = await getSupabaseBrowser().auth.updateUser({ password: pass }); setSaving(false)
-    if (error) setMsg({ type: "err", text: "No se pudo cambiar la contraseña." })
-    else { setMsg({ type: "ok", text: "Contraseña actualizada." }); setPass(""); setConfirm("") }
-  }
-  const cls = "h-12 w-full rounded-2xl border bg-white px-4 text-sm outline-none focus:border-[#A67163]"
-  return (
-    <Panel title="Configuración" desc="Seguridad de tu cuenta.">
-      {msg && <div className="mb-4 rounded-2xl px-4 py-3 text-sm" style={{ backgroundColor: msg.type === "err" ? "#fef2f2" : "#f0fdf4", color: msg.type === "err" ? "#b91c1c" : "#15803d" }}>{msg.text}</div>}
-      <form onSubmit={changePass} className="max-w-sm space-y-3">
-        <Labeled label="Nueva contraseña"><input type="password" value={pass} onChange={(e) => setPass(e.target.value)} minLength={6} required placeholder="Mín. 6 caracteres" className={cls} style={{ borderColor: `${CAFE}15`, color: CAFE }} /></Labeled>
-        <Labeled label="Confirmar contraseña"><input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required placeholder="Repite la contraseña" className={cls} style={{ borderColor: `${CAFE}15`, color: CAFE }} /></Labeled>
-        <button type="submit" disabled={saving} className="flex h-12 items-center rounded-2xl px-6 text-sm font-bold disabled:opacity-60" style={{ backgroundColor: CAFE, color: CREMA }}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Actualizar contraseña"}</button>
-      </form>
-    </Panel>
-  )
-}
-
 /* ─────────────────────────── LOGIN / SIGNUP ─────────────────────────── */
 function AuthForm() {
   const params = useSearchParams()
@@ -880,8 +877,4 @@ function AuthForm() {
       </div>
     </div>
   )
-}
-
-function Labeled({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide" style={{ color: `${CAFE}70` }}>{label}</label>{children}</div>
 }
