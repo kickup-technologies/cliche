@@ -94,6 +94,19 @@ export function LeadPopup() {
     }
   }, [blocked, open])
 
+  // Bloquear el scroll del fondo mientras el popup está abierto (incluye Lenis).
+  useEffect(() => {
+    if (!isOpen) return
+    const lenis = (window as unknown as { __lenis?: { stop: () => void; start: () => void } }).__lenis
+    lenis?.stop()
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      lenis?.start()
+      document.body.style.overflow = prevOverflow
+    }
+  }, [isOpen])
+
   const close = () => setIsOpen(false)
 
   const submit = async (e: React.FormEvent) => {
@@ -126,7 +139,7 @@ export function LeadPopup() {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4" data-lenis-prevent>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={close} />
 
       {/* Tarjeta VERTICAL: foto de fondo + texto encima de la zona crema */}
@@ -154,7 +167,7 @@ export function LeadPopup() {
         </button>
 
         {/* Contenido (define la altura de la tarjeta) */}
-        <div className="relative flex max-h-[90vh] flex-col overflow-y-auto px-6 py-7 sm:px-8 sm:py-9">
+        <div className="relative flex max-h-[90vh] flex-col overflow-y-auto overscroll-contain px-6 py-7 sm:px-8 sm:py-9">
           {!submitted ? (
             <div className="max-w-[72%] sm:max-w-[70%]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
