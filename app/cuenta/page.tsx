@@ -8,7 +8,7 @@ import {
   Mail, Lock, LogOut, Package, MapPin, User as UserIcon, Settings, CheckCircle, AlertCircle,
   Loader2, Plus, Trash2, CreditCard, Heart, Star, Bell, Truck, RotateCcw, ShieldCheck,
   Crown, ChevronRight, ArrowRight, PackageOpen, Sparkles, Phone, Calendar, Monitor, Pencil,
-  type LucideIcon,
+  Smartphone, Tablet, type LucideIcon,
 } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -67,6 +67,8 @@ const NAV = [
   { id: "config", label: "Configuración", icon: Settings },
 ] as const
 type SecId = (typeof NAV)[number]["id"]
+// Menú visible: Direcciones se gestiona desde "Mis datos", no como pestaña propia.
+const MENU = NAV.filter((n) => n.id !== "direcciones")
 
 function Dashboard({ email, createdAt, signOut }: { email: string; createdAt?: string; signOut: () => Promise<void> }) {
   const params = useSearchParams()
@@ -143,7 +145,7 @@ function AccountTabs({ seccion }: { seccion: SecId }) {
 
   const measure = () => {
     const bar = barRef.current; if (!bar) return
-    geo.current.itemW = (bar.clientWidth - geo.current.pad * 2) / NAV.length
+    geo.current.itemW = (bar.clientWidth - geo.current.pad * 2) / MENU.length
   }
   // Posiciona el resaltado con transform (sin reflow) — GPU, fluido.
   const applyLeft = (left: number, animate: boolean) => {
@@ -155,7 +157,7 @@ function AccountTabs({ seccion }: { seccion: SecId }) {
   }
   const restToActive = (animate = true) => {
     measure()
-    const idx = Math.max(0, NAV.findIndex((n) => n.id === seccion))
+    const idx = Math.max(0, MENU.findIndex((n) => n.id === seccion))
     idxRef.current = idx
     applyLeft(geo.current.pad + idx * geo.current.itemW, animate)
   }
@@ -171,9 +173,9 @@ function AccountTabs({ seccion }: { seccion: SecId }) {
     raf.current = null
     const { pad, itemW, barLeft } = geo.current
     const x = lastX.current - barLeft
-    const left = Math.max(pad, Math.min(x - itemW / 2, pad + itemW * (NAV.length - 1)))
+    const left = Math.max(pad, Math.min(x - itemW / 2, pad + itemW * (MENU.length - 1)))
     applyLeft(left, false)
-    idxRef.current = Math.max(0, Math.min(NAV.length - 1, Math.floor((x - pad) / itemW)))
+    idxRef.current = Math.max(0, Math.min(MENU.length - 1, Math.floor((x - pad) / itemW)))
   }
   const onStart = (e: React.TouchEvent) => {
     const bar = barRef.current; if (!bar) return
@@ -191,7 +193,7 @@ function AccountTabs({ seccion }: { seccion: SecId }) {
   const onEnd = () => {
     if (raf.current != null) { cancelAnimationFrame(raf.current); raf.current = null }
     setDragging(false)
-    const target = NAV[idxRef.current]
+    const target = MENU[idxRef.current]
     if (target && target.id !== seccion) router.push(`/cuenta?seccion=${target.id}`)
     else restToActive(true)
   }
@@ -209,7 +211,7 @@ function AccountTabs({ seccion }: { seccion: SecId }) {
         {/* Resaltado: transform translateX siguiendo al dedo; descansa en la activa. */}
         <span ref={indRef} aria-hidden className="pointer-events-none absolute bottom-1.5 left-0 top-0 z-0 rounded-full"
           style={{ height: "auto", opacity: 0, willChange: "transform", backgroundColor: `${TERRA}24`, top: 6, bottom: 6 }} />
-        {NAV.map(({ id, label, icon: Icon }) => {
+        {MENU.map(({ id, label, icon: Icon }) => {
           const active = seccion === id
           return (
             <Link key={id} href={`/cuenta?seccion=${id}`} data-tab={id} data-active={active} aria-label={label}
@@ -249,7 +251,7 @@ function AccountNav({ seccion, signOut }: { seccion: SecId; signOut: () => Promi
         {/* Indicador deslizante (detrás del texto) */}
         <span aria-hidden className="pointer-events-none absolute left-0 right-0 z-0 rounded-2xl"
           style={{ top: ind.top, height: ind.height, opacity: ind.opacity, backgroundColor: "#fff", boxShadow: "0 12px 30px -20px rgba(45,26,20,0.45)", transition: "top 0.32s cubic-bezier(0.22,1,0.36,1), height 0.32s cubic-bezier(0.22,1,0.36,1), opacity 0.2s ease" }} />
-        {NAV.map(({ id, label, icon: Icon }) => {
+        {MENU.map(({ id, label, icon: Icon }) => {
           const active = seccion === id
           return (
             <Link key={id} href={`/cuenta?seccion=${id}`} data-active={active}
@@ -274,7 +276,10 @@ function AccountNav({ seccion, signOut }: { seccion: SecId; signOut: () => Promi
 
 /* Tarjeta de membresía — foto Romeo y Julieta + overlay */
 function ProfileCard({ email, createdAt, orders }: { email: string; createdAt?: string; orders: Order[] | null }) {
-  const name = email.split("@")[0]
+  const { user } = useAuth()
+  const md = (user?.user_metadata ?? {}) as Record<string, unknown>
+  // Nombre real del cliente (lo que guardó en "Mis datos"); si no, el correo.
+  const name = ((md.first_name as string) || (md.full_name as string) || "").trim() || email.split("@")[0]
   const spent = (orders || []).filter(o => ["confirmed", "shipped", "delivered", "paid"].includes(o.status)).reduce((s, o) => s + (o.total || 0), 0)
   const { tier, next } = tierOf(spent)
   const progress = next ? Math.min(100, Math.round((spent - tier.min) / (next.min - tier.min) * 100)) : 100
@@ -489,6 +494,25 @@ function Panel({ title, desc, children }: { title: string; desc?: string; childr
   )
 }
 
+/* Sesión real (auth.sessions) + utilidades de presentación de dispositivo */
+type Sess = { id: string; user_agent: string | null; ip: string | null; created_at: string; updated_at: string; refreshed_at: string | null }
+function deviceInfo(ua: string | null): { label: string; icon: LucideIcon } {
+  const s = ua || ""
+  let os = "Dispositivo", icon: LucideIcon = Monitor
+  if (/iPhone/i.test(s)) { os = "iPhone"; icon = Smartphone }
+  else if (/iPad/i.test(s)) { os = "iPad"; icon = Tablet }
+  else if (/Android/i.test(s)) { os = /Mobile/i.test(s) ? "Android" : "Tablet Android"; icon = /Mobile/i.test(s) ? Smartphone : Tablet }
+  else if (/Windows/i.test(s)) { os = "Windows PC"; icon = Monitor }
+  else if (/Macintosh|Mac OS/i.test(s)) { os = "Mac"; icon = Monitor }
+  else if (/Linux/i.test(s)) { os = "Linux"; icon = Monitor }
+  const browser = /Edg/i.test(s) ? "Edge" : /OPR|Opera/i.test(s) ? "Opera" : /Chrome/i.test(s) ? "Chrome" : /Firefox/i.test(s) ? "Firefox" : /Safari/i.test(s) ? "Safari" : ""
+  return { label: browser ? `${os} · ${browser}` : os, icon }
+}
+function sessAgo(s: Sess) {
+  const d = new Date(s.refreshed_at || s.updated_at || s.created_at)
+  return d.toLocaleString("es-CO", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
+}
+
 /* Tarjeta premium reutilizable (Mis datos) */
 function LuxCard({ children }: { children: React.ReactNode }) {
   return (
@@ -554,10 +578,22 @@ function SeccionDatos({ email }: { email: string }) {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [ok, setOk] = useState(false)
-  const [sessMsg, setSessMsg] = useState("")
+  const [sessions, setSessions] = useState<Sess[] | null>(null)
 
   const addresses = (md.addresses as Address[]) || []
   const principal = addresses[0]
+
+  // Sesiones reales del usuario (auth.sessions vía RPC, aisladas por auth.uid()).
+  async function loadSessions() {
+    const { data } = await getSupabaseBrowser().rpc("get_my_sessions")
+    setSessions((data as Sess[]) ?? [])
+  }
+  useEffect(() => { loadSessions() }, [])
+  async function revokeSession(id: string) {
+    if (!window.confirm("¿Cerrar la sesión en este dispositivo?")) return
+    await getSupabaseBrowser().rpc("revoke_session", { sid: id })
+    loadSessions()
+  }
 
   async function save() {
     setSaving(true); setOk(false)
@@ -567,12 +603,6 @@ function SeccionDatos({ email }: { email: string }) {
   }
   function cancel() {
     setFirst(initial.first); setLast(initial.last); setPhone(initial.phone); setBirth(initial.birth); setEditing(false)
-  }
-  async function closeOtherSessions() {
-    if (!window.confirm("¿Cerrar sesión en todos los demás dispositivos?")) return
-    await getSupabaseBrowser().auth.signOut({ scope: "others" })
-    setSessMsg("Se cerraron las sesiones en otros dispositivos.")
-    setTimeout(() => setSessMsg(""), 3500)
   }
 
   return (
@@ -653,58 +683,101 @@ function SeccionDatos({ email }: { email: string }) {
       {/* ── Seguridad ── */}
       <LuxCard>
         <LuxHead icon={ShieldCheck} title="Seguridad" desc="Mantén tu cuenta protegida." />
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Link href="/cuenta?seccion=config" className="group flex items-center justify-between gap-3 rounded-2xl border p-5 transition-all hover:shadow-[0_18px_40px_-30px_rgba(45,26,20,0.5)]" style={{ borderColor: `${CAFE}10`, backgroundColor: `${CAFE}03` }}>
-            <div className="flex items-start gap-3">
-              <Lock className="mt-0.5 h-5 w-5 flex-shrink-0" strokeWidth={1.6} style={{ color: TERRA }} />
-              <div>
-                <p className="text-sm font-semibold" style={{ color: CAFE }}>Cambiar contraseña</p>
-                <p className="mt-0.5 text-xs leading-snug" style={{ color: `${CAFE}88` }}>Actualiza tu contraseña periódicamente para mantener tu cuenta segura.</p>
-              </div>
+
+        {/* Cambiar contraseña */}
+        <Link href="/cuenta?seccion=config" className="group flex items-center justify-between gap-3 rounded-2xl border p-5 transition-all hover:shadow-[0_18px_40px_-30px_rgba(45,26,20,0.5)]" style={{ borderColor: `${CAFE}10`, backgroundColor: `${CAFE}03` }}>
+          <div className="flex items-start gap-3">
+            <Lock className="mt-0.5 h-5 w-5 flex-shrink-0" strokeWidth={1.6} style={{ color: TERRA }} />
+            <div>
+              <p className="text-sm font-semibold" style={{ color: CAFE }}>Cambiar contraseña</p>
+              <p className="mt-0.5 text-xs leading-snug" style={{ color: `${CAFE}88` }}>Actualiza tu contraseña periódicamente para mantener tu cuenta segura.</p>
             </div>
-            <ChevronRight className="h-4 w-4 flex-shrink-0 transition-transform group-hover:translate-x-0.5" style={{ color: `${CAFE}40` }} />
-          </Link>
-          <button onClick={closeOtherSessions} className="group flex items-center justify-between gap-3 rounded-2xl border p-5 text-left transition-all hover:shadow-[0_18px_40px_-30px_rgba(45,26,20,0.5)]" style={{ borderColor: `${CAFE}10`, backgroundColor: `${CAFE}03` }}>
-            <div className="flex items-start gap-3">
-              <Monitor className="mt-0.5 h-5 w-5 flex-shrink-0" strokeWidth={1.6} style={{ color: TERRA }} />
-              <div>
-                <p className="text-sm font-semibold" style={{ color: CAFE }}>Sesiones activas</p>
-                <p className="mt-0.5 text-xs leading-snug" style={{ color: `${CAFE}88` }}>Cierra el acceso en otros dispositivos conectados a tu cuenta.</p>
-              </div>
-            </div>
-            <ChevronRight className="h-4 w-4 flex-shrink-0 transition-transform group-hover:translate-x-0.5" style={{ color: `${CAFE}40` }} />
-          </button>
+          </div>
+          <ChevronRight className="h-4 w-4 flex-shrink-0 transition-transform group-hover:translate-x-0.5" style={{ color: `${CAFE}40` }} />
+        </Link>
+
+        {/* Sesiones activas — dispositivos reales conectados */}
+        <div className="mt-6">
+          <div className="mb-3 flex items-center gap-2">
+            <Monitor className="h-4 w-4" strokeWidth={1.6} style={{ color: TERRA }} />
+            <p className="text-sm font-semibold" style={{ color: CAFE }}>Sesiones activas</p>
+          </div>
+          {sessions === null ? (
+            <div className="flex py-4"><Loader2 className="h-5 w-5 animate-spin" style={{ color: TERRA }} /></div>
+          ) : sessions.length === 0 ? (
+            <p className="text-sm" style={{ color: `${CAFE}88` }}>No hay sesiones activas registradas.</p>
+          ) : (
+            <ul className="space-y-2">
+              {sessions.map((s) => {
+                const { label, icon: DIcon } = deviceInfo(s.user_agent)
+                const isCurrent = typeof navigator !== "undefined" && s.user_agent === navigator.userAgent
+                return (
+                  <li key={s.id} className="flex items-center justify-between gap-3 rounded-2xl border p-4" style={{ borderColor: `${CAFE}10`, backgroundColor: `${CAFE}03` }}>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: `${TERRA}12` }}>
+                        <DIcon className="h-[18px] w-[18px]" strokeWidth={1.6} style={{ color: TERRA }} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="flex items-center gap-2 text-sm font-medium" style={{ color: CAFE }}>
+                          {label}
+                          {isCurrent && <span className="rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide" style={{ backgroundColor: `${TERRA}1a`, color: TERRA }}>Este dispositivo</span>}
+                        </p>
+                        <p className="truncate text-xs" style={{ color: `${CAFE}80` }}>{s.ip ? `IP ${s.ip} · ` : ""}Última actividad {sessAgo(s)}</p>
+                      </div>
+                    </div>
+                    {!isCurrent && (
+                      <button onClick={() => revokeSession(s.id)} className="flex-shrink-0 rounded-full border px-3.5 py-1.5 text-[11px] font-semibold transition-colors hover:bg-red-50/60" style={{ borderColor: `${CAFE}15`, color: "#dc2626" }}>
+                        Cerrar
+                      </button>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          )}
         </div>
-        {sessMsg && <p className="mt-4 flex items-center gap-1.5 text-sm text-green-600"><CheckCircle className="h-4 w-4" /> {sessMsg}</p>}
       </LuxCard>
     </div>
   )
 }
 
-type Address = { label: string; recipient: string; line: string; city: string; department: string; phone: string }
+type Address = { label: string; recipient: string; line: string; city: string; department: string; phone: string; postal?: string; country?: string }
+const EMPTY_ADDR: Address = { label: "", recipient: "", line: "", city: "", department: "", phone: "", postal: "", country: "Colombia" }
 function SeccionDirecciones() {
   const { user } = useAuth()
   const [list, setList] = useState<Address[]>((user?.user_metadata?.addresses as Address[]) || [])
   const [adding, setAdding] = useState(false)
-  const [form, setForm] = useState<Address>({ label: "", recipient: "", line: "", city: "", department: "", phone: "" })
+  const [form, setForm] = useState<Address>(EMPTY_ADDR)
   const [saving, setSaving] = useState(false)
   async function persist(next: Address[]) { setSaving(true); await getSupabaseBrowser().auth.updateUser({ data: { addresses: next } }); setList(next); setSaving(false) }
-  async function add(e: React.FormEvent) { e.preventDefault(); if (!form.line || !form.city) return; await persist([...list, form]); setForm({ label: "", recipient: "", line: "", city: "", department: "", phone: "" }); setAdding(false) }
+  async function add(e: React.FormEvent) { e.preventDefault(); if (!form.line || !form.city) return; await persist([...list, form]); setForm(EMPTY_ADDR); setAdding(false) }
+  // La primera dirección de la lista es la principal; reordenar la cambia.
+  const makePrincipal = (i: number) => persist([list[i], ...list.filter((_, idx) => idx !== i)])
   const cls = "h-12 w-full rounded-2xl border bg-white px-4 text-sm outline-none focus:border-[#A67163]"
   return (
-    <Panel title="Direcciones" desc="Tus direcciones de envío guardadas.">
+    <Panel title="Direcciones" desc="Administra tus direcciones de envío y facturación. La primera es tu dirección principal.">
       {list.length === 0 && !adding && <div className="rounded-2xl border border-dashed py-10 text-center text-sm" style={{ borderColor: `${CAFE}20`, color: `${CAFE}99` }}>Aún no tienes direcciones guardadas.</div>}
       {list.length > 0 && (
-        <ul className="space-y-2">
+        <ul className="space-y-3">
           {list.map((a, i) => (
-            <li key={i} className="flex items-start justify-between rounded-2xl bg-white px-4 py-3 shadow-[0_10px_30px_-26px_rgba(45,26,20,0.5)]">
-              <div className="text-sm" style={{ color: CAFE }}>
-                {a.label && <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: TERRA }}>{a.label}</p>}
-                {a.recipient && <p className="font-medium">{a.recipient}</p>}
-                <p style={{ color: `${CAFE}99` }}>{a.line}, {a.city}{a.department ? `, ${a.department}` : ""}</p>
-                {a.phone && <p style={{ color: `${CAFE}80` }}>{a.phone}</p>}
+            <li key={i} className="rounded-2xl bg-white p-5 shadow-[0_12px_36px_-30px_rgba(45,26,20,0.5)]" style={{ border: "1px solid rgba(0,0,0,0.05)" }}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 text-sm" style={{ color: CAFE }}>
+                  <div className="mb-1 flex flex-wrap items-center gap-2">
+                    {a.label && <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: TERRA }}>{a.label}</span>}
+                    <span className="rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide" style={{ backgroundColor: i === 0 ? `${TERRA}1a` : `${CAFE}0d`, color: i === 0 ? TERRA : `${CAFE}88` }}>{i === 0 ? "Principal" : "Secundaria"}</span>
+                  </div>
+                  {a.recipient && <p className="font-medium">{a.recipient}</p>}
+                  <p style={{ color: `${CAFE}99` }}>{a.line}, {a.city}{a.department ? `, ${a.department}` : ""}{a.postal ? ` · ${a.postal}` : ""}</p>
+                  <p style={{ color: `${CAFE}80` }}>{a.country || "Colombia"}{a.phone ? ` · ${a.phone}` : ""}</p>
+                </div>
+                <button onClick={() => persist(list.filter((_, idx) => idx !== i))} className="flex-shrink-0 rounded-full p-2 text-[#2D1A14]/30 transition-colors hover:text-red-500" aria-label="Eliminar"><Trash2 className="h-4 w-4" /></button>
               </div>
-              <button onClick={() => persist(list.filter((_, idx) => idx !== i))} className="rounded-full p-2 text-[#2D1A14]/30 transition-colors hover:text-red-500" aria-label="Eliminar"><Trash2 className="h-4 w-4" /></button>
+              {i !== 0 && (
+                <button onClick={() => makePrincipal(i)} disabled={saving} className="mt-3 inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[11px] font-semibold transition-colors hover:bg-black/[0.03] disabled:opacity-60" style={{ borderColor: `${CAFE}15`, color: TERRA }}>
+                  <CheckCircle className="h-3.5 w-3.5" /> Hacer principal
+                </button>
+              )}
             </li>
           ))}
         </ul>
@@ -716,10 +789,12 @@ function SeccionDirecciones() {
           <input value={form.line} onChange={(e) => setForm({ ...form, line: e.target.value })} placeholder="Dirección" required className={`${cls} sm:col-span-2`} style={{ borderColor: `${CAFE}15`, color: CAFE }} />
           <input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="Ciudad" required className={cls} style={{ borderColor: `${CAFE}15`, color: CAFE }} />
           <input value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} placeholder="Departamento" className={cls} style={{ borderColor: `${CAFE}15`, color: CAFE }} />
+          <input value={form.postal} onChange={(e) => setForm({ ...form, postal: e.target.value })} placeholder="Código postal" className={cls} style={{ borderColor: `${CAFE}15`, color: CAFE }} />
+          <input value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} placeholder="País" className={cls} style={{ borderColor: `${CAFE}15`, color: CAFE }} />
           <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Teléfono" inputMode="tel" className={`${cls} sm:col-span-2`} style={{ borderColor: `${CAFE}15`, color: CAFE }} />
           <div className="flex gap-2 sm:col-span-2">
             <button type="submit" disabled={saving} className="flex h-12 items-center rounded-2xl px-6 text-sm font-bold disabled:opacity-60" style={{ backgroundColor: CAFE, color: CREMA }}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Guardar dirección"}</button>
-            <button type="button" onClick={() => setAdding(false)} className="h-12 rounded-2xl px-5 text-sm font-medium" style={{ color: `${CAFE}99` }}>Cancelar</button>
+            <button type="button" onClick={() => { setAdding(false); setForm(EMPTY_ADDR) }} className="h-12 rounded-2xl px-5 text-sm font-medium" style={{ color: `${CAFE}99` }}>Cancelar</button>
           </div>
         </form>
       ) : (
