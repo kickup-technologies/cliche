@@ -7,7 +7,7 @@ import { useSearchParams } from "next/navigation"
 import {
   Mail, Lock, LogOut, Package, MapPin, User as UserIcon, Settings, CheckCircle, AlertCircle,
   Loader2, Plus, Trash2, CreditCard, Heart, Star, Bell, Truck, RotateCcw, ShieldCheck,
-  Crown, ChevronRight, ArrowRight,
+  Crown, ChevronRight, ArrowRight, PackageOpen, Sparkles,
 } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -247,13 +247,13 @@ function SeccionPedidos({ orders, products }: { orders: Order[] | null; products
   const entregados = orders?.filter(o => o.status === "delivered").length ?? 0
   const devoluciones = orders?.filter(o => o.status === "cancelled").length ?? 0
   const kpis = [
-    { n: realizados, label: "Pedidos realizados", icon: Package },
-    { n: enCamino, label: "Envíos en camino", icon: Truck },
-    { n: entregados, label: "Entregados", icon: CheckCircle },
-    { n: devoluciones, label: "Devoluciones", icon: RotateCcw },
+    { n: realizados, label: "Pedidos realizados", icon: Package, cta: "Ver historial" },
+    { n: enCamino, label: "Envíos en camino", icon: Truck, cta: "Rastrear envíos" },
+    { n: entregados, label: "Pedidos entregados", icon: CheckCircle, cta: "Ver completados" },
+    { n: devoluciones, label: "Devoluciones", icon: RotateCcw, cta: "Ver devoluciones" },
   ]
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       {/* Hero único: imagen full-bleed de fondo + overlay + texto encima */}
       <div className="relative h-[220px] w-full overflow-hidden rounded-[24px] sm:h-[240px]">
         <Image src={HERO_IMG} alt="" fill priority className="object-cover object-center" sizes="(max-width: 1024px) 100vw, 760px" />
@@ -264,29 +264,47 @@ function SeccionPedidos({ orders, products }: { orders: Order[] | null; products
         </div>
       </div>
 
-      {/* KPIs flotando sobre el fondo (sin bordes pesados) */}
-      <div className="grid grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-4">
+      {/* KPIs como tarjetas: icono en cuadro + número + etiqueta + enlace de acción */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
         {kpis.map((k) => (
-          <div key={k.label}>
-            <k.icon className="h-5 w-5" strokeWidth={1.4} style={{ color: TERRA }} />
-            <p className="mt-2 font-serif text-3xl" style={{ color: CAFE }}>{k.n}</p>
-            <p className="text-xs" style={{ color: `${CAFE}88` }}>{k.label}</p>
+          <div key={k.label} className="rounded-[20px] bg-white p-4 shadow-[0_14px_40px_-30px_rgba(45,26,20,0.55)]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: `${TERRA}14` }}>
+              <k.icon className="h-5 w-5" strokeWidth={1.5} style={{ color: TERRA }} />
+            </div>
+            <p className="mt-3 font-serif text-3xl leading-none" style={{ color: CAFE }}>{k.n}</p>
+            <p className="mt-1.5 text-xs" style={{ color: `${CAFE}88` }}>{k.label}</p>
+            <Link href="/cuenta?seccion=pedidos" className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold transition-transform hover:translate-x-0.5" style={{ color: TERRA }}>
+              {k.cta} <ArrowRight className="h-3 w-3" />
+            </Link>
           </div>
         ))}
       </div>
 
-      {/* Última actividad */}
-      <div>
-        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.24em]" style={{ color: `${CAFE}55` }}>Última actividad</p>
-        {orders === null ? (
-          <div className="flex py-6"><Loader2 className="h-5 w-5 animate-spin" style={{ color: TERRA }} /></div>
-        ) : orders.length === 0 ? (
-          <div className="flex items-center gap-4 rounded-[20px] px-5 py-4" style={{ backgroundColor: `${TERRA}0D` }}>
-            <Package className="h-7 w-7 flex-shrink-0" strokeWidth={1.3} style={{ color: TERRA }} />
-            <p className="flex-1 text-sm" style={{ color: `${CAFE}99` }}>Aún no tienes pedidos. Descubre tu próximo aroma.</p>
-            <Link href="/catalogo" className="flex-shrink-0 rounded-full px-5 py-2.5 text-xs font-bold" style={{ backgroundColor: TERRA, color: CREMA }}>Explorar</Link>
+      {/* Estado: cargando / empty state centrado / lista de pedidos */}
+      {orders === null ? (
+        <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin" style={{ color: TERRA }} /></div>
+      ) : orders.length === 0 ? (
+        <div className="flex min-h-[320px] w-full flex-col items-center justify-center rounded-[24px] bg-white px-8 py-16 text-center" style={{ border: "1px solid rgba(0,0,0,0.04)" }}>
+          {/* Icono caja abierta con partículas decorativas */}
+          <div className="relative mb-6 flex h-[120px] w-[120px] items-center justify-center">
+            <div aria-hidden className="absolute inset-0 rounded-full" style={{ backgroundColor: `${TERRA}0D` }} />
+            <PackageOpen className="relative h-20 w-20" strokeWidth={1.2} style={{ color: "#C49A7A" }} />
+            <Sparkles aria-hidden className="absolute right-2 top-2 h-4 w-4" style={{ color: `${GOLD}` }} />
+            <Sparkles aria-hidden className="absolute bottom-3 left-1 h-3 w-3" style={{ color: `${TERRA}99` }} />
+            <span aria-hidden className="absolute left-3 top-6 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: `${TERRA}66` }} />
+            <span aria-hidden className="absolute right-4 bottom-7 h-1 w-1 rounded-full" style={{ backgroundColor: `${GOLD}aa` }} />
           </div>
-        ) : (
+          <h2 className="font-serif text-3xl font-semibold sm:text-4xl" style={{ color: CAFE }}>Aún no tienes pedidos</h2>
+          <p className="mt-3 max-w-[420px] text-sm leading-relaxed" style={{ color: `${CAFE}99` }}>
+            Parece que todavía no has realizado ninguna compra. Explora nuestras fragancias y encuentra tu próximo favorito.
+          </p>
+          <Link href="/catalogo" className="mt-7 inline-flex h-12 items-center rounded-full px-7 text-sm font-bold transition-opacity hover:opacity-90" style={{ backgroundColor: TERRA, color: CREMA }}>
+            Explorar aromas
+          </Link>
+        </div>
+      ) : (
+        <div>
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.24em]" style={{ color: `${CAFE}55` }}>Última actividad</p>
           <ul className="divide-y" style={{ borderColor: `${CAFE}10` }}>
             {orders.map((o) => (
               <li key={o.id} className="flex items-center justify-between py-3">
@@ -298,8 +316,8 @@ function SeccionPedidos({ orders, products }: { orders: Order[] | null; products
               </li>
             ))}
           </ul>
-        )}
-      </div>
+        </div>
+      )}
 
       <RecomendadosEditorial products={products} />
     </div>
