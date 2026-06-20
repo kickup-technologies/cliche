@@ -45,6 +45,12 @@ export function Header() {
   const [isOpen, setIsOpen] = useState(false)
   const [openSection, setOpenSection] = useState<string | null>(null)
   const [isScrolled, setIsScrolled] = useState(false)
+  // Cursor deslizante (hover) para el nav de escritorio y el menú móvil.
+  const [deskPos, setDeskPos] = useState({ left: 0, width: 0, opacity: 0 })
+  const [mobPos, setMobPos] = useState({ top: 0, height: 0, opacity: 0 })
+  const SLIDE = "left 0.3s cubic-bezier(0.22,1,0.36,1), top 0.3s cubic-bezier(0.22,1,0.36,1), width 0.3s cubic-bezier(0.22,1,0.36,1), height 0.3s cubic-bezier(0.22,1,0.36,1), opacity 0.2s ease"
+  const moveDesk = (el: HTMLElement) => setDeskPos({ left: el.offsetLeft - 14, width: el.offsetWidth + 28, opacity: 1 })
+  const moveMob = (el: HTMLElement) => setMobPos({ top: el.offsetTop, height: el.offsetHeight, opacity: 1 })
   const { items, openDrawer } = useCart()
   const { count: favCount } = useFavorites()
   const { user, signOut } = useAuth()
@@ -110,14 +116,22 @@ export function Header() {
                       <p className="text-[10px] text-white/25 tracking-[0.25em] uppercase">Menú</p>
                     </div>
 
-                    <nav className="flex-1 px-7 py-6 overflow-y-auto">
+                    <nav className="relative flex-1 px-7 py-6 overflow-y-auto" onMouseLeave={() => setMobPos((p) => ({ ...p, opacity: 0 }))}>
+                      {/* Indicador deslizante (detrás de las filas) */}
+                      <span
+                        aria-hidden
+                        className="pointer-events-none absolute left-3 right-3 z-0 rounded-2xl"
+                        style={{ top: mobPos.top, height: mobPos.height, opacity: mobPos.opacity, backgroundColor: "rgba(255,255,255,0.08)", transition: SLIDE }}
+                      />
                       {navigation.map((item) =>
                         item.submenu ? (
-                          <div key={item.name} className="border-b border-white/[0.07]">
+                          <div key={item.name} className="relative z-10 border-b border-white/[0.07]">
                             <button
                               type="button"
+                              onMouseEnter={(e) => moveMob(e.currentTarget)}
+                              onTouchStart={(e) => moveMob(e.currentTarget)}
                               onClick={() => setOpenSection(openSection === item.name ? null : item.name)}
-                              className="flex w-full items-center justify-between py-4 text-left"
+                              className="flex w-full items-center justify-between px-2 py-4 text-left"
                             >
                               <span className="font-serif text-lg font-light text-white/90">{item.name}</span>
                               <ChevronDown
@@ -134,7 +148,7 @@ export function Header() {
                                     key={sub.name}
                                     href={sub.href}
                                     onClick={() => setIsOpen(false)}
-                                    className="block py-2.5 pl-3 text-[15px] text-white/55 transition-colors hover:text-white"
+                                    className="block py-2.5 pl-5 text-[15px] text-white/55 transition-colors hover:text-white"
                                   >
                                     {sub.name}
                                   </Link>
@@ -147,7 +161,9 @@ export function Header() {
                             key={item.name}
                             href={item.href}
                             onClick={() => setIsOpen(false)}
-                            className="flex items-center justify-between border-b border-white/[0.07] py-4"
+                            onMouseEnter={(e) => moveMob(e.currentTarget)}
+                            onTouchStart={(e) => moveMob(e.currentTarget)}
+                            className="relative z-10 flex items-center justify-between border-b border-white/[0.07] px-2 py-4"
                           >
                             <span className={`font-serif text-lg font-light ${item.highlight ? "text-[#C99]" : "text-white/90"}`}>{item.name}</span>
                             {item.highlight && <span className="h-1.5 w-1.5 rounded-full bg-[#A67163]" />}
@@ -156,23 +172,23 @@ export function Header() {
                       )}
 
                       {/* ── Cuenta ── */}
-                      <div className="mt-7">
-                        <p className="mb-1 text-[10px] uppercase tracking-[0.25em] text-white/30">Cuenta</p>
+                      <div className="relative z-10 mt-7">
+                        <p className="mb-1 px-2 text-[10px] uppercase tracking-[0.25em] text-white/30">Cuenta</p>
                         {user ? (
                           <>
-                            <Link href="/cuenta?seccion=pedidos" onClick={() => setIsOpen(false)} className="flex items-center gap-3 py-3 text-[15px] text-white/80 transition-colors hover:text-white">
+                            <Link href="/cuenta?seccion=pedidos" onClick={() => setIsOpen(false)} onMouseEnter={(e) => moveMob(e.currentTarget)} onTouchStart={(e) => moveMob(e.currentTarget)} className="flex items-center gap-3 px-2 py-3 text-[15px] text-white/80 transition-colors hover:text-white">
                               <User className="h-[18px] w-[18px]" /> Mi cuenta
                             </Link>
-                            <button type="button" onClick={() => { signOut(); setIsOpen(false) }} className="flex w-full items-center gap-3 py-3 text-[15px] text-red-300/80 transition-colors hover:text-red-300">
+                            <button type="button" onClick={() => { signOut(); setIsOpen(false) }} onMouseEnter={(e) => moveMob(e.currentTarget)} onTouchStart={(e) => moveMob(e.currentTarget)} className="flex w-full items-center gap-3 px-2 py-3 text-[15px] text-red-300/80 transition-colors hover:text-red-300">
                               <LogOut className="h-[18px] w-[18px]" /> Cerrar sesión
                             </button>
                           </>
                         ) : (
                           <>
-                            <Link href="/cuenta" onClick={() => setIsOpen(false)} className="flex items-center gap-3 py-3 text-[15px] text-white/80 transition-colors hover:text-white">
+                            <Link href="/cuenta" onClick={() => setIsOpen(false)} onMouseEnter={(e) => moveMob(e.currentTarget)} onTouchStart={(e) => moveMob(e.currentTarget)} className="flex items-center gap-3 px-2 py-3 text-[15px] text-white/80 transition-colors hover:text-white">
                               <LogIn className="h-[18px] w-[18px]" /> Iniciar sesión
                             </Link>
-                            <Link href="/cuenta" onClick={() => setIsOpen(false)} className="flex items-center gap-3 py-3 text-[15px] text-white/80 transition-colors hover:text-white">
+                            <Link href="/cuenta" onClick={() => setIsOpen(false)} onMouseEnter={(e) => moveMob(e.currentTarget)} onTouchStart={(e) => moveMob(e.currentTarget)} className="flex items-center gap-3 px-2 py-3 text-[15px] text-white/80 transition-colors hover:text-white">
                               <User className="h-[18px] w-[18px]" /> Crear cuenta
                             </Link>
                           </>
@@ -207,12 +223,18 @@ export function Header() {
               </Sheet>
             </div>
 
-            {/* Desktop nav */}
-            <div className="hidden lg:flex items-center gap-7">
+            {/* Desktop nav — con cursor deslizante en hover */}
+            <div className="relative hidden lg:flex items-center gap-7" onMouseLeave={() => setDeskPos((p) => ({ ...p, opacity: 0 }))}>
+              {/* Indicador deslizante (detrás de los enlaces) */}
+              <span
+                aria-hidden
+                className="pointer-events-none absolute top-1/2 z-0 -translate-y-1/2 rounded-full"
+                style={{ left: deskPos.left, width: deskPos.width, height: 38, opacity: deskPos.opacity, backgroundColor: useSolid ? "rgba(45,26,20,0.06)" : "rgba(255,255,255,0.15)", transition: SLIDE }}
+              />
               {navigation.map((item) =>
                 item.submenu ? (
                   <DropdownMenu key={item.name}>
-                    <DropdownMenuTrigger className={navLink("flex items-center gap-1 outline-none")}>
+                    <DropdownMenuTrigger onMouseEnter={(e) => moveDesk(e.currentTarget)} className={navLink("relative z-10 flex items-center gap-1 outline-none")}>
                       {item.name}
                       <ChevronDown className="h-3 w-3" />
                     </DropdownMenuTrigger>
@@ -225,7 +247,7 @@ export function Header() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 ) : (
-                  <Link key={item.name} href={item.href} className={navLink("flex items-center gap-1.5")}>
+                  <Link key={item.name} href={item.href} onMouseEnter={(e) => moveDesk(e.currentTarget)} className={navLink("relative z-10 flex items-center gap-1.5")}>
                     {item.name}
                     {item.highlight && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
                   </Link>
