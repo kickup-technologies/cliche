@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter, Playfair_Display } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { AuthProvider } from '@/context/auth-context'
 import { CartProvider } from '@/context/cart-context'
 import { FavoritesProvider } from '@/context/favorites-context'
 import { CartDrawer } from '@/components/cart-drawer'
@@ -109,6 +110,7 @@ export default function RootLayout({
         <SmoothScroll />
         <ScrollRestoration />
         <PageTracker />
+        <AuthProvider>
         <CartProvider>
           <FavoritesProvider>
             {children}
@@ -116,6 +118,7 @@ export default function RootLayout({
             <LeadPopup />
           </FavoritesProvider>
         </CartProvider>
+        </AuthProvider>
         <FilmGrain />
         <PageTransition />
         <EditOverlay />

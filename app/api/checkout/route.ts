@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import crypto from "crypto"
 import { supabase, createServerClient } from "@/lib/supabase"
+import { getSupabaseServer } from "@/lib/supabase/server"
 import { rateLimit } from "@/lib/rate-limit"
 import { parseVariantId, TIER_BY_ID } from "@/lib/pricing"
 
@@ -38,6 +39,15 @@ export async function POST(req: NextRequest) {
     }
 
     const db = createServerClient()
+
+    // Si hay sesión iniciada (cookies), vinculamos el pedido a la cuenta para
+    // su historial. Se obtiene del servidor (seguro), no se confía en el cliente.
+    let userId: string | null = null
+    try {
+      const sb = await getSupabaseServer()
+      const { data: auth } = await sb.auth.getUser()
+      userId = auth.user?.id ?? null
+    } catch { /* invitado */ }
 
     // ── Separar líneas normales de "kits personalizados" (type:"pack") ──
     const rawItems = items as Array<IncomingItem | IncomingPack>
@@ -227,6 +237,7 @@ export async function POST(req: NextRequest) {
     try {
       const { error: orderErr } = await db.from("orders").insert({
         stripe_session_id: reference,
+        user_id: userId,
         total: Math.round(total),
         status: "pending",
         items: safeItems.map((i) =>

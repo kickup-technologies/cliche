@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ShoppingBag, ChevronDown, Heart, Instagram, ArrowRight } from "lucide-react"
+import { ShoppingBag, ChevronDown, Heart, Instagram, ArrowRight, User } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import {
   DropdownMenu,
@@ -218,6 +218,9 @@ export function Header() {
                   {favCount}
                 </span>
               )}
+            </Link>
+            <Link href="/cuenta" className={iconBtn} aria-label="Mi cuenta">
+              <User className="h-[18px] w-[18px]" />
             </Link>
             <button onClick={openDrawer} className={iconBtn} aria-label="Carrito">
               <ShoppingBag className="h-[18px] w-[18px]" />
