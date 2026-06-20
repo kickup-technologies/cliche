@@ -85,7 +85,7 @@ function ProductCard({ product, onQuickView }: { product: Product; onQuickView: 
           alt={product.name}
           fill
           sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"
-          className={`object-cover object-top transition-all duration-700 ${secondImg ? "group-hover:opacity-0" : "group-hover:scale-[1.04]"}`}
+          className={`object-cover transition-all duration-700 ${secondImg ? "group-hover:opacity-0" : "group-hover:scale-[1.04]"}`}
         />
         {secondImg && (
           <Image
@@ -93,7 +93,7 @@ function ProductCard({ product, onQuickView }: { product: Product; onQuickView: 
             alt={product.name}
             fill
             sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"
-            className="object-cover object-top opacity-0 transition-opacity duration-700 group-hover:opacity-100"
+            className="object-cover opacity-0 transition-opacity duration-700 group-hover:opacity-100"
           />
         )}
 

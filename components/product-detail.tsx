@@ -370,7 +370,7 @@ export function ProductDetail({ product, related }: Props) {
                         src={selectedImage}
                         alt={product.name}
                         fill
-                        className="object-cover object-top"
+                        className="object-cover"
                         sizes="(max-width: 1024px) 100vw, 50vw"
                       />
                       {product.badge && (
