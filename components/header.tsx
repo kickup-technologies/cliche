@@ -292,11 +292,11 @@ export function Header() {
               <DropdownMenuTrigger onMouseEnter={openAccount} onMouseLeave={closeAccountSoon} className={`${iconBtn} outline-none`} aria-label="Mi cuenta">
                 <User className="h-[18px] w-[18px]" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" sideOffset={12} onMouseEnter={openAccount} onMouseLeave={closeAccountSoon} className="w-80 origin-top-right overflow-hidden rounded-[24px] border-foreground/10 p-0 shadow-[0_24px_70px_-12px_rgba(45,26,20,0.28)] duration-200 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-top-1">
+              <DropdownMenuContent align="end" sideOffset={12} onMouseEnter={openAccount} onMouseLeave={closeAccountSoon} className="w-72 origin-top-right overflow-hidden rounded-[20px] border-foreground/10 p-0 shadow-[0_16px_40px_rgba(0,0,0,0.12)] duration-200 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-top-1 sm:w-80 sm:rounded-[24px] sm:shadow-[0_24px_70px_-12px_rgba(45,26,20,0.28)]">
                 {user ? (
                   <>
-                    {/* HERO oscuro con Club integrado */}
-                    <div className="relative flex min-h-[150px] flex-col justify-between p-5">
+                    {/* HERO con Club — solo escritorio/tablet */}
+                    <div className="relative hidden min-h-[150px] flex-col justify-between p-5 sm:flex">
                       <Image src="/images/cuenta/pedidos-banner.jpg" alt="" fill className="object-cover" sizes="320px" />
                       <div aria-hidden className="absolute inset-0" style={{ background: "linear-gradient(120deg, rgba(20,12,8,0.86) 0%, rgba(20,12,8,0.62) 50%, rgba(20,12,8,0.40) 100%)" }} />
                       <div className="relative flex items-center gap-3">
@@ -309,7 +309,6 @@ export function Header() {
                           <p className="mt-1 truncate font-serif text-xl leading-tight text-white">{accountName}</p>
                         </div>
                       </div>
-                      {/* Club integrado dentro del hero */}
                       <div className="relative mt-4">
                         <div className="flex items-center justify-between">
                           <span className="flex items-center gap-1.5 text-[12px] font-semibold text-white"><Crown className="h-3.5 w-3.5" style={{ color: "#E0B341" }} /> Cliché Club</span>
@@ -320,16 +319,28 @@ export function Header() {
                       </div>
                     </div>
 
-                    {/* Filas premium */}
+                    {/* HEADER compacto — solo móvil (sin hero, club ni progreso) */}
+                    <div className="flex items-center gap-3 border-b px-4 py-3 sm:hidden" style={{ borderColor: "#2D1A1410" }}>
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full font-serif text-base font-bold" style={{ backgroundColor: "#2D1A14", color: "#FAF8F5" }}>{accountName.charAt(0).toUpperCase()}</div>
+                      <div className="min-w-0">
+                        <p className="truncate font-serif text-[15px] leading-tight" style={{ color: "#2D1A14" }}>{((user?.user_metadata?.full_name as string)?.trim()) || accountName}</p>
+                        <p className="mt-0.5 flex items-center gap-1 text-[11px] font-semibold" style={{ color: "#A07A1F" }}><Crown className="h-3 w-3" /> Miembro {tier.name}</p>
+                      </div>
+                    </div>
+
+                    {/* Filas — compactas en móvil */}
                     <div className="p-2">
                       <DropdownMenuItem asChild>
-                        <Link href="/cuenta?seccion=pedidos" className="flex h-14 cursor-pointer items-center gap-3 rounded-[14px] px-[18px] text-[15px] text-[#2D1A14] focus:bg-[#F8F2EE] focus:text-[#A67163]"><Package className="h-[18px] w-[18px]" /> <span className="flex-1">Mis pedidos</span> <ChevronRight className="h-4 w-4 opacity-30" /></Link>
+                        <Link href="/cuenta?seccion=pedidos" className="flex h-12 cursor-pointer items-center gap-3 rounded-[14px] px-4 text-[15px] text-[#2D1A14] focus:bg-[#F8F2EE] focus:text-[#A67163] sm:h-14 sm:px-[18px]"><Package className="h-[18px] w-[18px]" /> <span className="flex-1">Mis pedidos</span> <ChevronRight className="h-4 w-4 opacity-30" /></Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <Link href="/cuenta?seccion=datos" className="flex h-14 cursor-pointer items-center gap-3 rounded-[14px] px-[18px] text-[15px] text-[#2D1A14] focus:bg-[#F8F2EE] focus:text-[#A67163]"><User className="h-[18px] w-[18px]" /> <span className="flex-1">Mis datos</span> <ChevronRight className="h-4 w-4 opacity-30" /></Link>
+                        <Link href="/cuenta?seccion=datos" className="flex h-12 cursor-pointer items-center gap-3 rounded-[14px] px-4 text-[15px] text-[#2D1A14] focus:bg-[#F8F2EE] focus:text-[#A67163] sm:h-14 sm:px-[18px]"><User className="h-[18px] w-[18px]" /> <span className="flex-1">Mis datos</span> <ChevronRight className="h-4 w-4 opacity-30" /></Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/cuenta?seccion=direcciones" className="flex h-12 cursor-pointer items-center gap-3 rounded-[14px] px-4 text-[15px] text-[#2D1A14] focus:bg-[#F8F2EE] focus:text-[#A67163] sm:h-14 sm:px-[18px]"><MapPin className="h-[18px] w-[18px]" /> <span className="flex-1">Direcciones</span> <ChevronRight className="h-4 w-4 opacity-30" /></Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator className="my-1.5" />
-                      <DropdownMenuItem onClick={() => signOut()} className="flex h-12 cursor-pointer items-center gap-3 rounded-[14px] px-[18px] text-[15px] text-red-500/90 focus:bg-red-50 focus:text-red-600">
+                      <DropdownMenuItem onClick={() => signOut()} className="flex h-12 cursor-pointer items-center gap-3 rounded-[14px] px-4 text-[15px] text-red-500/90 focus:bg-red-50 focus:text-red-600 sm:px-[18px]">
                         <LogOut className="h-[18px] w-[18px]" /> <span className="flex-1">Cerrar sesión</span>
                       </DropdownMenuItem>
                     </div>
