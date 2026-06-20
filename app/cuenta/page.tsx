@@ -505,6 +505,15 @@ function sessAgo(s: Sess) {
   return d.toLocaleString("es-CO", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
 }
 
+/* Máscara de fecha: solo dígitos, inserta "/" como DD/MM/AAAA de forma natural */
+function formatBirth(raw: string) {
+  const d = raw.replace(/\D/g, "").slice(0, 8)
+  let out = d.slice(0, 2)
+  if (d.length > 2) out += "/" + d.slice(2, 4)
+  if (d.length > 4) out += "/" + d.slice(4, 8)
+  return out
+}
+
 /* Tarjeta premium reutilizable (Mis datos) */
 function LuxCard({ children }: { children: React.ReactNode }) {
   return (
@@ -530,8 +539,8 @@ function LuxHead({ icon: Icon, title, desc, action }: { icon: LucideIcon; title:
   )
 }
 /* Campo: muestra valor (lectura) o input (edición), con icono e altura 56px */
-function DataField({ icon: Icon, label, value, onChange, editable, type = "text", placeholder, disabled }: {
-  icon: LucideIcon; label: string; value: string; onChange?: (v: string) => void; editable: boolean; type?: string; placeholder?: string; disabled?: boolean
+function DataField({ icon: Icon, label, value, onChange, editable, type = "text", placeholder, disabled, inputMode, maxLength }: {
+  icon: LucideIcon; label: string; value: string; onChange?: (v: string) => void; editable: boolean; type?: string; placeholder?: string; disabled?: boolean; inputMode?: "text" | "numeric" | "tel" | "email"; maxLength?: number
 }) {
   const active = editable && !disabled
   return (
@@ -544,6 +553,8 @@ function DataField({ icon: Icon, label, value, onChange, editable, type = "text"
           onChange={(e) => onChange?.(e.target.value)}
           disabled={!active}
           type={type}
+          inputMode={inputMode}
+          maxLength={maxLength}
           placeholder={placeholder}
           className="h-14 flex-1 bg-transparent text-sm outline-none disabled:cursor-default"
           style={{ color: disabled ? `${CAFE}80` : CAFE }}
@@ -636,7 +647,7 @@ function SeccionDatos({ email }: { email: string }) {
           <DataField icon={UserIcon} label="Nombre" value={first} onChange={setFirst} editable={editing} placeholder="Tu nombre" />
           <DataField icon={UserIcon} label="Apellido" value={last} onChange={setLast} editable={editing} placeholder="Tu apellido" />
           <DataField icon={Mail} label="Correo electrónico" value={email} editable={editing} disabled />
-          <DataField icon={Calendar} label="Fecha de nacimiento" value={birth} onChange={setBirth} editable={editing} placeholder="DD / MM / AAAA" />
+          <DataField icon={Calendar} label="Fecha de nacimiento" value={birth} onChange={(v) => setBirth(formatBirth(v))} editable={editing} placeholder="DD/MM/AAAA" inputMode="numeric" maxLength={10} />
           <DataField icon={Phone} label="Teléfono" value={phone} onChange={setPhone} editable={editing} placeholder="+57 300 000 0000" type="tel" />
         </div>
         {ok && <p className="mt-4 flex items-center gap-1.5 text-sm text-green-600"><CheckCircle className="h-4 w-4" /> Cambios guardados</p>}
