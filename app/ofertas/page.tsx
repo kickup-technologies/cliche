@@ -103,11 +103,10 @@ function OfferRow({ product, index }: { product: Product; index: number }) {
           </div>
         )}
 
-        {/* Stock warning */}
-        {product.stock > 0 && product.stock <= 5 && (
-          <div className="absolute bottom-6 left-6 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full text-xs font-semibold text-orange-600 flex items-center gap-1.5 shadow">
-            <Zap className="w-3.5 h-3.5 fill-orange-500" />
-            Solo {product.stock} unidades disponibles
+        {/* El stock real es privado: solo se indica "Agotado" cuando no hay. */}
+        {product.stock === 0 && (
+          <div className="absolute bottom-6 left-6 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full text-xs font-semibold text-[#2D1A14]/60 flex items-center gap-1.5 shadow">
+            Agotado
           </div>
         )}
       </div>
