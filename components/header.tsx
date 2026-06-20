@@ -18,7 +18,6 @@ import { useFavorites } from "@/context/favorites-context"
 import { useAuth } from "@/context/auth-context"
 import { getSupabaseBrowser } from "@/lib/supabase/client"
 import { tierOf, SPENT_STATUSES, formatCOP } from "@/lib/loyalty"
-import { SEGMENTS } from "@/lib/segments"
 
 // Navegación depurada: cada enlace tiene un destino DISTINTO (sin redundancias).
 const navigation = [
@@ -31,12 +30,6 @@ const navigation = [
       { name: "Kits de Regalo", href: "/catalogo?categoria=kit" },
       { name: "Ver todo el catálogo", href: "/catalogo" },
     ],
-  },
-  {
-    // Quick-access de categorías B2B — "¿A qué huele tu marca?"
-    name: "Marcas",
-    href: "/catalogo",
-    submenu: SEGMENTS.map((s) => ({ name: s.label, href: `/catalogo?segmento=${s.key}` })),
   },
   { name: "Arma tu kit", href: "/arma-tu-kit", highlight: true },
   { name: "Ofertas", href: "/ofertas", highlight: true },
