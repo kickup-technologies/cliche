@@ -128,68 +128,71 @@ function Dashboard({ email, createdAt, signOut }: { email: string; createdAt?: s
    se desliza por la barra y el resaltado lo sigue en tiempo real (mismo efecto
    que el hover en escritorio); al soltar, selecciona. La pill crece al tocar.
    Iconos (cada sección ya muestra su título en el contenido). */
-const TAB_EASE = "left 0.3s cubic-bezier(0.22,1,0.36,1), width 0.3s cubic-bezier(0.22,1,0.36,1), opacity 0.2s ease"
+const TAB_EASE = "transform 0.3s cubic-bezier(0.22,1,0.36,1), opacity 0.2s ease"
 function AccountTabs({ seccion }: { seccion: SecId }) {
   const router = useRouter()
   const barRef = useRef<HTMLDivElement>(null)
   const indRef = useRef<HTMLSpanElement>(null)
-  const [ind, setInd] = useState({ left: 0, width: 0, opacity: 0 })
   const [dragging, setDragging] = useState(false)
-  // Geometría e índice objetivo se guardan en refs para NO re-renderizar al arrastrar.
-  const drag = useRef<{ pad: number; itemW: number; idx: number } | null>(null)
+  // Geometría cacheada + índice objetivo en refs: cero re-render durante el arrastre.
+  const geo = useRef({ pad: 6, itemW: 0, barLeft: 0 })
+  const raf = useRef<number | null>(null)
+  const lastX = useRef(0)
+  const idxRef = useRef(0)
 
-  const activeRect = () => {
-    const el = barRef.current?.querySelector<HTMLElement>('[data-active="true"]')
-    return el ? { left: el.offsetLeft, width: el.offsetWidth } : null
+  const measure = () => {
+    const bar = barRef.current; if (!bar) return
+    geo.current.itemW = (bar.clientWidth - geo.current.pad * 2) / NAV.length
   }
-  const setToActive = () => { const r = activeRect(); if (r) setInd({ ...r, opacity: 1 }) }
-  useEffect(() => { setToActive() }, [seccion])
+  // Posiciona el resaltado con transform (sin reflow) — GPU, fluido.
+  const applyLeft = (left: number, animate: boolean) => {
+    const span = indRef.current; if (!span) return
+    span.style.transition = animate ? TAB_EASE : "none"
+    span.style.width = `${geo.current.itemW}px`
+    span.style.transform = `translate3d(${left}px,0,0)`
+    span.style.opacity = "1"
+  }
+  const restToActive = (animate = true) => {
+    measure()
+    const idx = Math.max(0, NAV.findIndex((n) => n.id === seccion))
+    idxRef.current = idx
+    applyLeft(geo.current.pad + idx * geo.current.itemW, animate)
+  }
+  useEffect(() => { restToActive(true) }, [seccion])
   useEffect(() => {
-    const onResize = () => setToActive()
+    const onResize = () => restToActive(false)
     window.addEventListener("resize", onResize)
     return () => window.removeEventListener("resize", onResize)
   }, [])
 
-  // Coloca el resaltado EXACTAMENTE bajo la X del dedo (continuo, con clamp) —
-  // escribe directo al DOM, sin estado de React, para que sea 1:1 sin lag.
-  const place = (clientX: number) => {
-    const bar = barRef.current, span = indRef.current, d = drag.current
-    if (!bar || !span || !d) return
-    const x = clientX - bar.getBoundingClientRect().left
-    const maxLeft = d.pad + d.itemW * (NAV.length - 1)
-    const left = Math.max(d.pad, Math.min(x - d.itemW / 2, maxLeft))
-    span.style.left = `${left}px`
-    span.style.width = `${d.itemW}px`
-    d.idx = Math.max(0, Math.min(NAV.length - 1, Math.floor((x - d.pad) / d.itemW)))
+  // Un solo cálculo/escritura por frame (coalesce de los muchos touchmove).
+  const tick = () => {
+    raf.current = null
+    const { pad, itemW, barLeft } = geo.current
+    const x = lastX.current - barLeft
+    const left = Math.max(pad, Math.min(x - itemW / 2, pad + itemW * (NAV.length - 1)))
+    applyLeft(left, false)
+    idxRef.current = Math.max(0, Math.min(NAV.length - 1, Math.floor((x - pad) / itemW)))
   }
   const onStart = (e: React.TouchEvent) => {
     const bar = barRef.current; if (!bar) return
-    const pad = 6 // p-1.5
-    const itemW = (bar.clientWidth - pad * 2) / NAV.length
-    drag.current = { pad, itemW, idx: NAV.findIndex((n) => n.id === seccion) }
-    if (indRef.current) { indRef.current.style.transition = "none"; indRef.current.style.opacity = "1" }
+    measure()
+    geo.current.barLeft = bar.getBoundingClientRect().left // se cachea UNA vez
     setDragging(true)
-    place(e.touches[0].clientX)
+    lastX.current = e.touches[0].clientX
+    tick()
   }
   const onMove = (e: React.TouchEvent) => {
-    if (!drag.current) return
     e.preventDefault()
-    place(e.touches[0].clientX)
+    lastX.current = e.touches[0].clientX
+    if (raf.current == null) raf.current = requestAnimationFrame(tick)
   }
   const onEnd = () => {
-    const idx = drag.current?.idx ?? -1
-    drag.current = null
+    if (raf.current != null) { cancelAnimationFrame(raf.current); raf.current = null }
     setDragging(false)
-    if (indRef.current) indRef.current.style.transition = TAB_EASE // restaurar para el "snap"
-    const target = NAV[idx]
-    if (target && target.id !== seccion) {
-      router.push(`/cuenta?seccion=${target.id}`)
-    } else {
-      // Misma sección: animar de vuelta al activo aunque el estado no cambie.
-      const r = activeRect()
-      if (r && indRef.current) { indRef.current.style.left = `${r.left}px`; indRef.current.style.width = `${r.width}px` }
-      setToActive()
-    }
+    const target = NAV[idxRef.current]
+    if (target && target.id !== seccion) router.push(`/cuenta?seccion=${target.id}`)
+    else restToActive(true)
   }
 
   return (
@@ -202,9 +205,9 @@ function AccountTabs({ seccion }: { seccion: SecId }) {
         className="relative mx-auto flex w-full touch-none select-none items-center justify-between rounded-full bg-white p-1.5 shadow-[0_16px_44px_-26px_rgba(45,26,20,0.65)] transition-transform duration-200 ease-out"
         style={{ transform: dragging ? "scale(1.045)" : "scale(1)" }}
       >
-        {/* Resaltado: sigue la X del dedo al arrastrar; descansa en la sección activa. */}
-        <span ref={indRef} aria-hidden className="pointer-events-none absolute bottom-1.5 top-1.5 z-0 rounded-full"
-          style={{ left: ind.left, width: ind.width, opacity: ind.opacity, backgroundColor: `${TERRA}24`, transition: TAB_EASE }} />
+        {/* Resaltado: transform translateX siguiendo al dedo; descansa en la activa. */}
+        <span ref={indRef} aria-hidden className="pointer-events-none absolute bottom-1.5 left-0 top-0 z-0 rounded-full"
+          style={{ height: "auto", opacity: 0, willChange: "transform", backgroundColor: `${TERRA}24`, top: 6, bottom: 6 }} />
         {NAV.map(({ id, label, icon: Icon }) => {
           const active = seccion === id
           return (
