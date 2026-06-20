@@ -47,12 +47,10 @@ export function Header() {
   const [isOpen, setIsOpen] = useState(false)
   const [openSection, setOpenSection] = useState<string | null>(null)
   const [isScrolled, setIsScrolled] = useState(false)
-  // Cursor deslizante (hover) para el nav de escritorio y el menú móvil.
+  // Cursor deslizante (hover) para el nav de escritorio.
   const [deskPos, setDeskPos] = useState({ left: 0, width: 0, opacity: 0 })
-  const [mobPos, setMobPos] = useState({ top: 0, height: 0, opacity: 0 })
-  const SLIDE = "left 0.3s cubic-bezier(0.22,1,0.36,1), top 0.3s cubic-bezier(0.22,1,0.36,1), width 0.3s cubic-bezier(0.22,1,0.36,1), height 0.3s cubic-bezier(0.22,1,0.36,1), opacity 0.2s ease"
+  const SLIDE = "left 0.3s cubic-bezier(0.22,1,0.36,1), width 0.3s cubic-bezier(0.22,1,0.36,1), opacity 0.2s ease"
   const moveDesk = (el: HTMLElement) => setDeskPos({ left: el.offsetLeft - 14, width: el.offsetWidth + 28, opacity: 1 })
-  const moveMob = (el: HTMLElement) => setMobPos({ top: el.offsetTop, height: el.offsetHeight, opacity: 1 })
   const { items, openDrawer } = useCart()
   const { count: favCount } = useFavorites()
   const { user, signOut } = useAuth()
@@ -135,22 +133,14 @@ export function Header() {
                       <p className="text-[10px] text-white/25 tracking-[0.25em] uppercase">Menú</p>
                     </div>
 
-                    <nav className="relative flex-1 px-7 py-6 overflow-y-auto" onMouseLeave={() => setMobPos((p) => ({ ...p, opacity: 0 }))}>
-                      {/* Indicador deslizante (detrás de las filas) */}
-                      <span
-                        aria-hidden
-                        className="pointer-events-none absolute left-3 right-3 z-0 rounded-2xl"
-                        style={{ top: mobPos.top, height: mobPos.height, opacity: mobPos.opacity, backgroundColor: "rgba(255,255,255,0.08)", transition: SLIDE }}
-                      />
+                    <nav className="flex-1 overflow-y-auto px-5 py-6">
                       {navigation.map((item) =>
                         item.submenu ? (
-                          <div key={item.name} className="relative z-10 border-b border-white/[0.07]">
+                          <div key={item.name} className="border-b border-white/[0.07]">
                             <button
                               type="button"
-                              onMouseEnter={(e) => moveMob(e.currentTarget)}
-                              onTouchStart={(e) => moveMob(e.currentTarget)}
                               onClick={() => setOpenSection(openSection === item.name ? null : item.name)}
-                              className="flex w-full items-center justify-between px-2 py-4 text-left"
+                              className="flex w-full items-center justify-between rounded-xl px-3 py-4 text-left transition-colors hover:bg-white/[0.05]"
                             >
                               <span className="font-serif text-lg font-light text-white/90">{item.name}</span>
                               <ChevronDown
@@ -167,7 +157,7 @@ export function Header() {
                                     key={sub.name}
                                     href={sub.href}
                                     onClick={() => setIsOpen(false)}
-                                    className="block py-2.5 pl-5 text-[15px] text-white/55 transition-colors hover:text-white"
+                                    className="block rounded-lg py-2.5 pl-6 text-[15px] text-white/55 transition-colors hover:text-white"
                                   >
                                     {sub.name}
                                   </Link>
@@ -180,9 +170,7 @@ export function Header() {
                             key={item.name}
                             href={item.href}
                             onClick={() => setIsOpen(false)}
-                            onMouseEnter={(e) => moveMob(e.currentTarget)}
-                            onTouchStart={(e) => moveMob(e.currentTarget)}
-                            className="relative z-10 flex items-center justify-between border-b border-white/[0.07] px-2 py-4"
+                            className="flex items-center justify-between border-b border-white/[0.07] rounded-xl px-3 py-4 transition-colors hover:bg-white/[0.05]"
                           >
                             <span className={`font-serif text-lg font-light ${item.highlight ? "text-[#C99]" : "text-white/90"}`}>{item.name}</span>
                             {item.highlight && <span className="h-1.5 w-1.5 rounded-full bg-[#A67163]" />}
@@ -191,23 +179,23 @@ export function Header() {
                       )}
 
                       {/* ── Cuenta ── */}
-                      <div className="relative z-10 mt-7">
-                        <p className="mb-1 px-2 text-[10px] uppercase tracking-[0.25em] text-white/30">Cuenta</p>
+                      <div className="mt-7">
+                        <p className="mb-1 px-3 text-[10px] uppercase tracking-[0.25em] text-white/30">Cuenta</p>
                         {user ? (
                           <>
-                            <Link href="/cuenta?seccion=pedidos" onClick={() => setIsOpen(false)} onMouseEnter={(e) => moveMob(e.currentTarget)} onTouchStart={(e) => moveMob(e.currentTarget)} className="flex items-center gap-3 px-2 py-3 text-[15px] text-white/80 transition-colors hover:text-white">
+                            <Link href="/cuenta?seccion=pedidos" onClick={() => setIsOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-3 text-[15px] text-white/80 transition-colors hover:bg-white/[0.05] hover:text-white">
                               <User className="h-[18px] w-[18px]" /> Mi cuenta
                             </Link>
-                            <button type="button" onClick={() => { signOut(); setIsOpen(false) }} onMouseEnter={(e) => moveMob(e.currentTarget)} onTouchStart={(e) => moveMob(e.currentTarget)} className="flex w-full items-center gap-3 px-2 py-3 text-[15px] text-red-300/80 transition-colors hover:text-red-300">
+                            <button type="button" onClick={() => { signOut(); setIsOpen(false) }} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-[15px] text-red-300/80 transition-colors hover:bg-white/[0.05] hover:text-red-300">
                               <LogOut className="h-[18px] w-[18px]" /> Cerrar sesión
                             </button>
                           </>
                         ) : (
                           <>
-                            <Link href="/cuenta" onClick={() => setIsOpen(false)} onMouseEnter={(e) => moveMob(e.currentTarget)} onTouchStart={(e) => moveMob(e.currentTarget)} className="flex items-center gap-3 px-2 py-3 text-[15px] text-white/80 transition-colors hover:text-white">
+                            <Link href="/cuenta" onClick={() => setIsOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-3 text-[15px] text-white/80 transition-colors hover:bg-white/[0.05] hover:text-white">
                               <LogIn className="h-[18px] w-[18px]" /> Iniciar sesión
                             </Link>
-                            <Link href="/cuenta" onClick={() => setIsOpen(false)} onMouseEnter={(e) => moveMob(e.currentTarget)} onTouchStart={(e) => moveMob(e.currentTarget)} className="flex items-center gap-3 px-2 py-3 text-[15px] text-white/80 transition-colors hover:text-white">
+                            <Link href="/cuenta" onClick={() => setIsOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-3 text-[15px] text-white/80 transition-colors hover:bg-white/[0.05] hover:text-white">
                               <User className="h-[18px] w-[18px]" /> Crear cuenta
                             </Link>
                           </>
@@ -304,52 +292,47 @@ export function Header() {
               <DropdownMenuTrigger onMouseEnter={openAccount} onMouseLeave={closeAccountSoon} className={`${iconBtn} outline-none`} aria-label="Mi cuenta">
                 <User className="h-[18px] w-[18px]" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" sideOffset={10} onMouseEnter={openAccount} onMouseLeave={closeAccountSoon} className="w-80 overflow-hidden rounded-2xl border-foreground/10 p-0">
+              <DropdownMenuContent align="end" sideOffset={12} onMouseEnter={openAccount} onMouseLeave={closeAccountSoon} className="w-80 origin-top-right overflow-hidden rounded-[24px] border-foreground/10 p-0 shadow-[0_24px_70px_-12px_rgba(45,26,20,0.28)] duration-200 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-top-1">
                 {user ? (
                   <>
-                    {/* Cabecera con banner de Mis pedidos */}
-                    <div className="relative px-4 py-4">
-                      <Image src="/images/cuenta/pedidos-banner.jpg" alt="" fill className="object-cover object-right" sizes="320px" />
-                      <div aria-hidden className="absolute inset-0" style={{ background: "linear-gradient(90deg, #FAF8F5 0%, #FAF8F5 40%, rgba(250,248,245,0.65) 68%, rgba(250,248,245,0.1) 100%)" }} />
+                    {/* HERO oscuro con Club integrado */}
+                    <div className="relative flex min-h-[150px] flex-col justify-between p-5">
+                      <Image src="/images/cuenta/pedidos-banner.jpg" alt="" fill className="object-cover" sizes="320px" />
+                      <div aria-hidden className="absolute inset-0" style={{ background: "linear-gradient(120deg, rgba(20,12,8,0.86) 0%, rgba(20,12,8,0.62) 50%, rgba(20,12,8,0.40) 100%)" }} />
                       <div className="relative flex items-center gap-3">
                         <div className="relative flex-shrink-0">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-full font-serif text-lg font-bold" style={{ backgroundColor: "#2D1A14", color: "#FAF8F5" }}>{accountName.charAt(0).toUpperCase()}</div>
-                          <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full ring-2" style={{ backgroundColor: "#E0B341", color: "#2D1A14", borderColor: "#FAF8F5" }}><Crown className="h-3 w-3" /></span>
+                          <div className="flex h-[52px] w-[52px] items-center justify-center rounded-full font-serif text-xl font-bold shadow-lg" style={{ backgroundColor: "#FAF8F5", color: "#2D1A14" }}>{accountName.charAt(0).toUpperCase()}</div>
+                          <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full ring-2 ring-[#2D1A14]" style={{ backgroundColor: "#E0B341", color: "#2D1A14" }}><Crown className="h-3 w-3" /></span>
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[11px] leading-none" style={{ color: "#2D1A1499" }}>Hola,</p>
-                          <p className="mt-0.5 truncate font-serif text-lg leading-tight" style={{ color: "#2D1A14" }}>{accountName}</p>
-                          <p className="mt-0.5 flex items-center gap-1 text-[11px] font-semibold" style={{ color: "#A07A1F" }}><Crown className="h-3 w-3" /> Miembro {tier.name}</p>
+                          <p className="text-[11px] leading-none text-white/60">Hola,</p>
+                          <p className="mt-1 truncate font-serif text-xl leading-tight text-white">{accountName}</p>
                         </div>
+                      </div>
+                      {/* Club integrado dentro del hero */}
+                      <div className="relative mt-4">
+                        <div className="flex items-center justify-between">
+                          <span className="flex items-center gap-1.5 text-[12px] font-semibold text-white"><Crown className="h-3.5 w-3.5" style={{ color: "#E0B341" }} /> Cliché Club</span>
+                          <span className="rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider" style={{ backgroundColor: "#E0B341", color: "#2D1A14" }}>{tier.name}</span>
+                        </div>
+                        <span className="mt-2 block h-1.5 overflow-hidden rounded-full" style={{ backgroundColor: "rgba(255,255,255,0.22)" }}><span className="block h-full rounded-full" style={{ width: `${clubProgress}%`, backgroundColor: "#E0B341" }} /></span>
+                        <p className="mt-1.5 text-[11px] text-white/75">{next ? <>Faltan <b className="text-white">{formatCOP(next.min - spent)}</b> para nivel {next.name}</> : "Nivel máximo alcanzado ✨"}</p>
                       </div>
                     </div>
 
-                    {/* Opciones */}
+                    {/* Filas premium */}
                     <div className="p-2">
                       <DropdownMenuItem asChild>
-                        <Link href="/cuenta?seccion=pedidos" className="cursor-pointer gap-3 rounded-xl py-2.5"><Package className="h-[18px] w-[18px]" /> <span className="flex-1">Mis pedidos</span> <ChevronRight className="h-4 w-4 opacity-30" /></Link>
+                        <Link href="/cuenta?seccion=pedidos" className="flex h-14 cursor-pointer items-center gap-3 rounded-[14px] px-[18px] text-[15px] text-[#2D1A14] focus:bg-[#F8F2EE] focus:text-[#A67163]"><Package className="h-[18px] w-[18px]" /> <span className="flex-1">Mis pedidos</span> <ChevronRight className="h-4 w-4 opacity-30" /></Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <Link href="/cuenta?seccion=datos" className="cursor-pointer gap-3 rounded-xl py-2.5"><User className="h-[18px] w-[18px]" /> <span className="flex-1">Mis datos</span> <ChevronRight className="h-4 w-4 opacity-30" /></Link>
+                        <Link href="/cuenta?seccion=datos" className="flex h-14 cursor-pointer items-center gap-3 rounded-[14px] px-[18px] text-[15px] text-[#2D1A14] focus:bg-[#F8F2EE] focus:text-[#A67163]"><User className="h-[18px] w-[18px]" /> <span className="flex-1">Mis datos</span> <ChevronRight className="h-4 w-4 opacity-30" /></Link>
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer gap-3 rounded-xl py-2.5 text-red-600 focus:text-red-600">
+                      <DropdownMenuSeparator className="my-1.5" />
+                      <DropdownMenuItem onClick={() => signOut()} className="flex h-12 cursor-pointer items-center gap-3 rounded-[14px] px-[18px] text-[15px] text-red-500/90 focus:bg-red-50 focus:text-red-600">
                         <LogOut className="h-[18px] w-[18px]" /> <span className="flex-1">Cerrar sesión</span>
                       </DropdownMenuItem>
                     </div>
-
-                    {/* Cliché Club */}
-                    <DropdownMenuItem asChild>
-                      <Link href="/cuenta?seccion=pedidos" className="mx-2 mb-2 cursor-pointer gap-3 rounded-xl p-3" style={{ backgroundColor: "#A671631a" }}>
-                        <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: "#E0B34133" }}><Crown className="h-4 w-4" style={{ color: "#A07A1F" }} /></span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-sm font-semibold" style={{ color: "#2D1A14" }}>Cliché Club {tier.name}</span>
-                          <span className="block text-[11px]" style={{ color: "#2D1A1499" }}>{next ? `Faltan ${formatCOP(next.min - spent)} para nivel ${next.name}` : "Nivel máximo alcanzado ✨"}</span>
-                          <span className="mt-1.5 block h-1 overflow-hidden rounded-full" style={{ backgroundColor: "#2D1A1418" }}><span className="block h-full rounded-full" style={{ width: `${clubProgress}%`, backgroundColor: "#E0B341" }} /></span>
-                        </span>
-                        <ChevronRight className="h-4 w-4 flex-shrink-0 opacity-30" />
-                      </Link>
-                    </DropdownMenuItem>
                   </>
                 ) : (
                   <div className="p-2">
