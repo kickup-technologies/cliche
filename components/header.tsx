@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { ShoppingBag, ChevronDown, ChevronRight, Heart, Instagram, User, Package, LogOut, LogIn, Crown, Leaf, SprayCan, Gift, Tag, Users, MapPin, X } from "lucide-react"
+import { ShoppingBag, ChevronDown, ChevronRight, Heart, Instagram, User, Package, LogOut, LogIn, Crown, Leaf, Gift, Tag, Users, MapPin, X } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet"
 import {
   DropdownMenu,
@@ -46,7 +46,6 @@ const navigation = [
 // Menú móvil — listas planas, editoriales (sin acordeones ni tarjetas).
 const MOBILE_EXPLORE = [
   { name: "Aromas", href: "/catalogo", icon: Leaf },
-  { name: "Marcas", href: "/catalogo?vista=marcas", icon: SprayCan },
   { name: "Arma tu kit", href: "/arma-tu-kit", icon: Gift, dot: true },
   { name: "Ofertas", href: "/ofertas", icon: Tag, dot: true },
   { name: "Nosotros", href: "/nosotros", icon: Users },
@@ -205,25 +204,27 @@ export function Header() {
                       )}
                     </div>
 
-                    {/* CTA + footer */}
-                    <div className="flex-shrink-0 px-7 pb-9 pt-3">
+                    {/* CTA + footer (compacto) */}
+                    <div className="flex-shrink-0 px-7 pb-6 pt-2">
                       <Link
                         href="/catalogo"
                         onClick={() => setIsOpen(false)}
-                        className="flex h-[60px] w-full items-center justify-center gap-2 rounded-full font-medium tracking-wide text-white transition-opacity hover:opacity-90"
+                        className="flex h-12 w-full items-center justify-center gap-2 rounded-full text-sm font-medium tracking-wide text-white transition-opacity hover:opacity-90"
                         style={{ backgroundColor: "#C89282" }}
                       >
-                        <ShoppingBag className="h-[18px] w-[18px]" /> Ver colección
+                        <ShoppingBag className="h-4 w-4" /> Ver colección
                       </Link>
-                      <a
-                        href="https://instagram.com/clichearomasoficial"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-5 flex items-center justify-center gap-1.5 text-xs tracking-wide text-white/35 transition-colors hover:text-white/60"
-                      >
-                        <Instagram className="h-3.5 w-3.5" /> Instagram
-                      </a>
-                      <p className="mt-3 text-center text-[9px] uppercase tracking-[0.25em] text-white/15">Aromas artesanales · Colombia</p>
+                      <div className="mt-3 flex items-center justify-center gap-4">
+                        <a
+                          href="https://instagram.com/clichearomasoficial"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 text-[11px] tracking-wide text-white/35 transition-colors hover:text-white/60"
+                        >
+                          <Instagram className="h-3.5 w-3.5" /> Instagram
+                        </a>
+                        <span className="text-[9px] uppercase tracking-[0.2em] text-white/15">Aromas artesanales · Colombia</span>
+                      </div>
                     </div>
                   </div>
                 </SheetContent>
