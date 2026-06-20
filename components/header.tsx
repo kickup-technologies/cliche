@@ -3,16 +3,19 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ShoppingBag, ChevronDown, Heart, Instagram, ArrowRight, User } from "lucide-react"
+import { ShoppingBag, ChevronDown, Heart, Instagram, ArrowRight, User, Package, MapPin, Settings, LogOut, LogIn } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { useCart } from "@/context/cart-context"
 import { useFavorites } from "@/context/favorites-context"
+import { useAuth } from "@/context/auth-context"
 import { SEGMENTS } from "@/lib/segments"
 
 // Navegación depurada: cada enlace tiene un destino DISTINTO (sin redundancias).
@@ -43,6 +46,7 @@ export function Header() {
   const [isScrolled, setIsScrolled] = useState(false)
   const { items, openDrawer } = useCart()
   const { count: favCount } = useFavorites()
+  const { user, signOut } = useAuth()
   const pathname = usePathname()
   const cartCount = items.reduce((acc, i) => acc + i.quantity, 0)
   const useSolid =
@@ -219,9 +223,47 @@ export function Header() {
                 </span>
               )}
             </Link>
-            <Link href="/cuenta" className={iconBtn} aria-label="Mi cuenta">
-              <User className="h-[18px] w-[18px]" />
-            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger className={`${iconBtn} outline-none`} aria-label="Mi cuenta">
+                <User className="h-[18px] w-[18px]" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                {user ? (
+                  <>
+                    <DropdownMenuLabel className="font-normal">
+                      <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Mi cuenta</p>
+                      <p className="truncate text-sm font-medium text-foreground">{user.email}</p>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/cuenta?seccion=pedidos" className="cursor-pointer gap-2"><Package className="h-4 w-4" /> Mis pedidos</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/cuenta?seccion=datos" className="cursor-pointer gap-2"><User className="h-4 w-4" /> Mis datos</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/cuenta?seccion=direcciones" className="cursor-pointer gap-2"><MapPin className="h-4 w-4" /> Direcciones</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/cuenta?seccion=config" className="cursor-pointer gap-2"><Settings className="h-4 w-4" /> Configuración</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer gap-2 text-red-600 focus:text-red-600">
+                      <LogOut className="h-4 w-4" /> Cerrar sesión
+                    </DropdownMenuItem>
+                  </>
+                ) : (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link href="/cuenta" className="cursor-pointer gap-2"><LogIn className="h-4 w-4" /> Iniciar sesión</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/cuenta" className="cursor-pointer gap-2"><User className="h-4 w-4" /> Crear cuenta</Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <button onClick={openDrawer} className={iconBtn} aria-label="Carrito">
               <ShoppingBag className="h-[18px] w-[18px]" />
               {cartCount > 0 && (
