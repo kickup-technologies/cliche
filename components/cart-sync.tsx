@@ -6,15 +6,22 @@ import { useCart, type CartItem } from "@/context/cart-context"
 import { getSupabaseBrowser } from "@/lib/supabase/client"
 
 /**
- * Sincroniza el carrito con la cuenta del usuario (tabla user_carts, aislada por
- * RLS → cada quien solo ve/escribe el SUYO).
- *  - Al iniciar sesión: carga el carrito guardado y lo fusiona con el de invitado.
- *  - Mientras hay sesión: guarda los cambios (debounce).
- *  - Al cerrar sesión: el carrito local queda como carrito de invitado.
+ * Sincroniza el carrito con la cuenta (tabla user_carts, aislada por RLS).
+ *
+ * Reglas para EVITAR cruce de datos entre usuarios en el mismo navegador:
+ *  - Se guarda el "dueño" del carrito local (`cliche-cart-owner`): "guest" o el id.
+ *  - Al iniciar sesión:
+ *      · si el carrito local era de INVITADO → se FUSIONA con el guardado (traer
+ *        lo que el invitado agregó antes de loguearse).
+ *      · si era de OTRO usuario (o del mismo) → se REEMPLAZA por el del servidor
+ *        (sin contaminar y sin duplicar cantidades).
+ *  - Al cerrar sesión → se LIMPIA el carrito local (no queda para el siguiente).
  */
-function mergeCarts(a: CartItem[], b: CartItem[]): CartItem[] {
+const OWNER_KEY = "cliche-cart-owner"
+
+function mergeCarts(server: CartItem[], local: CartItem[]): CartItem[] {
   const map = new Map<string, CartItem>()
-  for (const it of [...a, ...b]) {
+  for (const it of [...server, ...local]) {
     const existing = map.get(it.product.id)
     if (existing) existing.quantity += it.quantity
     else map.set(it.product.id, { ...it, quantity: it.quantity })
@@ -24,27 +31,46 @@ function mergeCarts(a: CartItem[], b: CartItem[]): CartItem[] {
 
 export function CartSync() {
   const { user } = useAuth()
-  const { items, replaceCart } = useCart()
+  const { items, replaceCart, clearCart } = useCart()
+  const itemsRef = useRef(items)
+  itemsRef.current = items
   const loadedFor = useRef<string | null>(null)
+  const prevUser = useRef<string | null>(null)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Al iniciar sesión: cargar + fusionar el carrito guardado.
   useEffect(() => {
-    if (!user) { loadedFor.current = null; return }
-    if (loadedFor.current === user.id) return
-    loadedFor.current = user.id
-    const supabase = getSupabaseBrowser()
-    supabase
+    const uid = user?.id ?? null
+
+    // ── Cierre de sesión: limpiar el carrito local para no heredarlo a otro ──
+    if (!uid) {
+      if (prevUser.current) {
+        clearCart()
+        try { localStorage.setItem(OWNER_KEY, "guest") } catch {}
+      }
+      prevUser.current = null
+      loadedFor.current = null
+      return
+    }
+
+    prevUser.current = uid
+    if (loadedFor.current === uid) return
+    loadedFor.current = uid
+
+    getSupabaseBrowser()
       .from("user_carts")
       .select("items")
-      .eq("user_id", user.id)
+      .eq("user_id", uid)
       .maybeSingle()
       .then(({ data }: { data: { items: CartItem[] } | null }) => {
-        const saved = Array.isArray(data?.items) ? (data!.items as CartItem[]) : []
-        const merged = mergeCarts(saved, items)
-        replaceCart(merged)
+        const server = Array.isArray(data?.items) ? (data!.items as CartItem[]) : []
+        let owner: string | null = null
+        try { owner = localStorage.getItem(OWNER_KEY) } catch {}
+        // Solo fusionamos si el carrito local pertenecía a un INVITADO.
+        const next = owner === "guest" || owner === null ? mergeCarts(server, itemsRef.current) : server
+        replaceCart(next)
+        try { localStorage.setItem(OWNER_KEY, uid) } catch {}
       })
-  }, [user, items, replaceCart])
+  }, [user, replaceCart, clearCart])
 
   // Guardar cambios del carrito en la cuenta (debounce).
   useEffect(() => {
