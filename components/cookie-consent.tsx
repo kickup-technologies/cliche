@@ -14,9 +14,11 @@ import { ShieldCheck } from "lucide-react"
  *  - México: LFPDPPP · Brasil: LGPD · Argentina: Ley 25.326
  *
  * Diseño: banner minimalista, premium y poco invasivo. Solo dos acciones
- * (Aceptar / Solo esenciales) + un enlace a /cookies donde el usuario puede
- * personalizar cada categoría. El consentimiento se guarda en localStorage
- * bajo "cliche_cookie_consent" y se expone en window.__cookieConsent.
+ * (Aceptar / Rechazar) + un enlace "Saber más" a /cookies, donde (y solo ahí)
+ * el usuario puede personalizar cada categoría de forma granular. El
+ * consentimiento se guarda en localStorage bajo "cliche_cookie_consent" y se
+ * expone en window.__cookieConsent. Venta en Colombia (Ley 1581/Decreto 1377):
+ * categorías activadas por defecto en el panel; el banner prioriza "Aceptar".
  *
  * Nota: este banner NO se muestra en el panel de administración
  * (rutas /admin*), solo en la tienda de cara al cliente.
@@ -113,7 +115,7 @@ export function CookieConsent() {
                 href="/cookies"
                 className="text-[#A67163] underline underline-offset-2 hover:text-[#8f5e51] font-medium"
               >
-                Gestionar preferencias
+                Saber más
               </Link>
             </p>
           </div>
@@ -122,15 +124,15 @@ export function CookieConsent() {
         <div className="flex items-center gap-2 mt-4">
           <button
             onClick={() => decide(false)}
-            className="px-4 py-2 rounded-full text-[12px] font-medium text-[#9e8a84] hover:text-[#2D1A14] transition-colors"
+            className="px-5 py-2.5 rounded-full text-[12px] font-medium text-[#9e8a84] hover:text-[#2D1A14] transition-colors"
           >
-            Solo esenciales
+            Rechazar
           </button>
           <button
             onClick={() => decide(true)}
             className="flex-1 py-2.5 rounded-full text-[13px] font-semibold bg-[#A67163] text-white shadow-sm hover:bg-[#8f5e51] transition-colors"
           >
-            Aceptar y continuar
+            Aceptar
           </button>
         </div>
       </div>
