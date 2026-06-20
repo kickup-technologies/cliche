@@ -7,7 +7,8 @@ import { useSearchParams, useRouter } from "next/navigation"
 import {
   Mail, Lock, LogOut, Package, MapPin, User as UserIcon, Settings, CheckCircle, AlertCircle,
   Loader2, Plus, Trash2, CreditCard, Heart, Star, Bell, Truck, RotateCcw, ShieldCheck,
-  Crown, ChevronRight, ArrowRight, PackageOpen, Sparkles,
+  Crown, ChevronRight, ArrowRight, PackageOpen, Sparkles, Phone, Calendar, Monitor, Pencil,
+  type LucideIcon,
 } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -488,29 +489,195 @@ function Panel({ title, desc, children }: { title: string; desc?: string; childr
   )
 }
 
+/* Tarjeta premium reutilizable (Mis datos) */
+function LuxCard({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-[24px] bg-white p-6 sm:p-8" style={{ border: "1px solid rgba(0,0,0,0.05)", boxShadow: "0 22px 60px -46px rgba(45,26,20,0.5)" }}>
+      {children}
+    </div>
+  )
+}
+function LuxHead({ icon: Icon, title, desc, action }: { icon: LucideIcon; title: string; desc: string; action?: React.ReactNode }) {
+  return (
+    <div className="mb-7 flex items-start justify-between gap-4">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: `${TERRA}14` }}>
+          <Icon className="h-5 w-5" strokeWidth={1.6} style={{ color: TERRA }} />
+        </div>
+        <div>
+          <h2 className="font-serif text-xl" style={{ color: CAFE }}>{title}</h2>
+          <p className="mt-0.5 text-sm leading-snug" style={{ color: `${CAFE}88` }}>{desc}</p>
+        </div>
+      </div>
+      {action}
+    </div>
+  )
+}
+/* Campo: muestra valor (lectura) o input (edición), con icono e altura 56px */
+function DataField({ icon: Icon, label, value, onChange, editable, type = "text", placeholder, disabled }: {
+  icon: LucideIcon; label: string; value: string; onChange?: (v: string) => void; editable: boolean; type?: string; placeholder?: string; disabled?: boolean
+}) {
+  const active = editable && !disabled
+  return (
+    <div>
+      <label className="mb-2 block text-xs font-medium" style={{ color: `${CAFE}80` }}>{label}</label>
+      <div className="flex items-center gap-3 rounded-2xl border px-4 transition-colors" style={{ minHeight: 56, borderColor: active ? TERRA : `${CAFE}12`, backgroundColor: active ? "#fff" : `${CAFE}04` }}>
+        <Icon className="h-[18px] w-[18px] flex-shrink-0" strokeWidth={1.6} style={{ color: active ? TERRA : `${CAFE}55` }} />
+        <input
+          value={value}
+          onChange={(e) => onChange?.(e.target.value)}
+          disabled={!active}
+          type={type}
+          placeholder={placeholder}
+          className="h-14 flex-1 bg-transparent text-sm outline-none disabled:cursor-default"
+          style={{ color: disabled ? `${CAFE}80` : CAFE }}
+        />
+      </div>
+    </div>
+  )
+}
+
 function SeccionDatos({ email }: { email: string }) {
   const { user } = useAuth()
-  const [name, setName] = useState((user?.user_metadata?.full_name as string) || "")
-  const [phone, setPhone] = useState((user?.user_metadata?.phone as string) || "")
-  const [saving, setSaving] = useState(false); const [ok, setOk] = useState(false)
-  async function save(e: React.FormEvent) {
-    e.preventDefault(); setSaving(true); setOk(false)
-    await getSupabaseBrowser().auth.updateUser({ data: { full_name: name.trim(), phone: phone.trim() } })
-    setSaving(false); setOk(true); setTimeout(() => setOk(false), 2500)
+  const md = (user?.user_metadata ?? {}) as Record<string, unknown>
+  const fullName = (md.full_name as string) || ""
+  const initial = {
+    first: (md.first_name as string) || fullName.split(" ")[0] || "",
+    last: (md.last_name as string) || fullName.split(" ").slice(1).join(" ") || "",
+    phone: (md.phone as string) || "",
+    birth: (md.birthdate as string) || "",
   }
-  const cls = "h-12 w-full rounded-2xl border bg-white px-4 text-sm outline-none focus:border-[#A67163]"
+  const [first, setFirst] = useState(initial.first)
+  const [last, setLast] = useState(initial.last)
+  const [phone, setPhone] = useState(initial.phone)
+  const [birth, setBirth] = useState(initial.birth)
+  const [editing, setEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [ok, setOk] = useState(false)
+  const [sessMsg, setSessMsg] = useState("")
+
+  const addresses = (md.addresses as Address[]) || []
+  const principal = addresses[0]
+
+  async function save() {
+    setSaving(true); setOk(false)
+    const full_name = [first.trim(), last.trim()].filter(Boolean).join(" ")
+    await getSupabaseBrowser().auth.updateUser({ data: { first_name: first.trim(), last_name: last.trim(), full_name, phone: phone.trim(), birthdate: birth.trim() } })
+    setSaving(false); setEditing(false); setOk(true); setTimeout(() => setOk(false), 2800)
+  }
+  function cancel() {
+    setFirst(initial.first); setLast(initial.last); setPhone(initial.phone); setBirth(initial.birth); setEditing(false)
+  }
+  async function closeOtherSessions() {
+    if (!window.confirm("¿Cerrar sesión en todos los demás dispositivos?")) return
+    await getSupabaseBrowser().auth.signOut({ scope: "others" })
+    setSessMsg("Se cerraron las sesiones en otros dispositivos.")
+    setTimeout(() => setSessMsg(""), 3500)
+  }
+
   return (
-    <Panel title="Mis datos" desc="Actualiza tu información personal.">
-      <form onSubmit={save} className="max-w-lg space-y-4">
-        <Labeled label="Nombre completo"><input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tu nombre" className={cls} style={{ borderColor: `${CAFE}15`, color: CAFE }} /></Labeled>
-        <Labeled label="Teléfono"><input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" placeholder="Tu teléfono" className={cls} style={{ borderColor: `${CAFE}15`, color: CAFE }} /></Labeled>
-        <Labeled label="Correo electrónico"><input value={email} disabled className="h-12 w-full rounded-2xl border bg-black/[0.03] px-4 text-sm outline-none" style={{ borderColor: `${CAFE}12`, color: `${CAFE}80` }} /></Labeled>
-        <div className="flex items-center gap-3 pt-1">
-          <button type="submit" disabled={saving} className="flex h-12 items-center justify-center rounded-2xl px-7 text-sm font-bold disabled:opacity-60" style={{ backgroundColor: CAFE, color: CREMA }}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Guardar cambios"}</button>
-          {ok && <span className="flex items-center gap-1 text-sm text-green-600"><CheckCircle className="h-4 w-4" /> Guardado</span>}
+    <div className="space-y-6">
+      {/* Cabecera + tarjeta de seguridad */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="font-serif text-3xl font-medium sm:text-4xl" style={{ color: CAFE }}>Mis datos</h1>
+          <p className="mt-2 max-w-md text-sm leading-relaxed" style={{ color: `${CAFE}99` }}>Actualiza tu información personal y administra la configuración de tu cuenta.</p>
         </div>
-      </form>
-    </Panel>
+        <div className="flex max-w-xs items-start gap-3 rounded-2xl px-4 py-3" style={{ backgroundColor: `${TERRA}10` }}>
+          <ShieldCheck className="mt-0.5 h-5 w-5 flex-shrink-0" strokeWidth={1.6} style={{ color: TERRA }} />
+          <div>
+            <p className="text-[13px] font-semibold" style={{ color: CAFE }}>Tu información está segura</p>
+            <p className="mt-0.5 text-xs leading-snug" style={{ color: `${CAFE}88` }}>Protegida mediante cifrado y acceso seguro.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Información personal ── */}
+      <LuxCard>
+        <LuxHead icon={UserIcon} title="Información personal" desc="Gestiona la información básica asociada a tu cuenta."
+          action={
+            editing ? (
+              <div className="flex items-center gap-2">
+                <button onClick={cancel} className="rounded-full px-3 py-2 text-xs font-semibold" style={{ color: `${CAFE}99` }}>Cancelar</button>
+                <button onClick={save} disabled={saving} className="flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold disabled:opacity-60" style={{ backgroundColor: TERRA, color: CREMA }}>
+                  {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5" />} Guardar
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => setEditing(true)} className="flex flex-shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-semibold transition-colors hover:bg-black/[0.03]" style={{ borderColor: `${CAFE}15`, color: TERRA }}>
+                <Pencil className="h-3.5 w-3.5" /> Editar
+              </button>
+            )
+          }
+        />
+        <div className="grid gap-5 sm:grid-cols-2">
+          <DataField icon={UserIcon} label="Nombre" value={first} onChange={setFirst} editable={editing} placeholder="Tu nombre" />
+          <DataField icon={UserIcon} label="Apellido" value={last} onChange={setLast} editable={editing} placeholder="Tu apellido" />
+          <DataField icon={Mail} label="Correo electrónico" value={email} editable={editing} disabled />
+          <DataField icon={Calendar} label="Fecha de nacimiento" value={birth} onChange={setBirth} editable={editing} placeholder="DD / MM / AAAA" />
+          <DataField icon={Phone} label="Teléfono" value={phone} onChange={setPhone} editable={editing} placeholder="+57 300 000 0000" type="tel" />
+        </div>
+        {ok && <p className="mt-4 flex items-center gap-1.5 text-sm text-green-600"><CheckCircle className="h-4 w-4" /> Cambios guardados</p>}
+      </LuxCard>
+
+      {/* ── Direcciones ── */}
+      <LuxCard>
+        <LuxHead icon={MapPin} title="Direcciones" desc="Administra tus direcciones de envío y facturación."
+          action={
+            <Link href="/cuenta?seccion=direcciones" className="flex flex-shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-semibold transition-colors hover:bg-black/[0.03]" style={{ borderColor: `${CAFE}15`, color: TERRA }}>
+              Gestionar <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          }
+        />
+        {principal ? (
+          <div className="rounded-2xl border p-5" style={{ borderColor: `${CAFE}10`, backgroundColor: `${CAFE}04` }}>
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-sm font-semibold" style={{ color: CAFE }}>{principal.label || "Dirección principal"}</span>
+              <span className="rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide" style={{ backgroundColor: `${TERRA}1a`, color: TERRA }}>Principal</span>
+            </div>
+            <div className="grid gap-x-8 gap-y-1.5 text-sm sm:grid-cols-2" style={{ color: `${CAFE}99` }}>
+              <p><span style={{ color: `${CAFE}66` }}>Dirección: </span>{principal.line}</p>
+              <p><span style={{ color: `${CAFE}66` }}>Ciudad: </span>{principal.city}</p>
+              <p><span style={{ color: `${CAFE}66` }}>Departamento: </span>{principal.department || "—"}</p>
+              <p><span style={{ color: `${CAFE}66` }}>Recibe: </span>{principal.recipient || "—"}</p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between rounded-2xl border border-dashed p-5" style={{ borderColor: `${CAFE}20` }}>
+            <p className="text-sm" style={{ color: `${CAFE}99` }}>Aún no tienes direcciones guardadas.</p>
+            <Link href="/cuenta?seccion=direcciones" className="flex-shrink-0 rounded-full px-4 py-2 text-xs font-bold" style={{ backgroundColor: TERRA, color: CREMA }}>Añadir</Link>
+          </div>
+        )}
+      </LuxCard>
+
+      {/* ── Seguridad ── */}
+      <LuxCard>
+        <LuxHead icon={ShieldCheck} title="Seguridad" desc="Mantén tu cuenta protegida." />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Link href="/cuenta?seccion=config" className="group flex items-center justify-between gap-3 rounded-2xl border p-5 transition-all hover:shadow-[0_18px_40px_-30px_rgba(45,26,20,0.5)]" style={{ borderColor: `${CAFE}10`, backgroundColor: `${CAFE}03` }}>
+            <div className="flex items-start gap-3">
+              <Lock className="mt-0.5 h-5 w-5 flex-shrink-0" strokeWidth={1.6} style={{ color: TERRA }} />
+              <div>
+                <p className="text-sm font-semibold" style={{ color: CAFE }}>Cambiar contraseña</p>
+                <p className="mt-0.5 text-xs leading-snug" style={{ color: `${CAFE}88` }}>Actualiza tu contraseña periódicamente para mantener tu cuenta segura.</p>
+              </div>
+            </div>
+            <ChevronRight className="h-4 w-4 flex-shrink-0 transition-transform group-hover:translate-x-0.5" style={{ color: `${CAFE}40` }} />
+          </Link>
+          <button onClick={closeOtherSessions} className="group flex items-center justify-between gap-3 rounded-2xl border p-5 text-left transition-all hover:shadow-[0_18px_40px_-30px_rgba(45,26,20,0.5)]" style={{ borderColor: `${CAFE}10`, backgroundColor: `${CAFE}03` }}>
+            <div className="flex items-start gap-3">
+              <Monitor className="mt-0.5 h-5 w-5 flex-shrink-0" strokeWidth={1.6} style={{ color: TERRA }} />
+              <div>
+                <p className="text-sm font-semibold" style={{ color: CAFE }}>Sesiones activas</p>
+                <p className="mt-0.5 text-xs leading-snug" style={{ color: `${CAFE}88` }}>Cierra el acceso en otros dispositivos conectados a tu cuenta.</p>
+              </div>
+            </div>
+            <ChevronRight className="h-4 w-4 flex-shrink-0 transition-transform group-hover:translate-x-0.5" style={{ color: `${CAFE}40` }} />
+          </button>
+        </div>
+        {sessMsg && <p className="mt-4 flex items-center gap-1.5 text-sm text-green-600"><CheckCircle className="h-4 w-4" /> {sessMsg}</p>}
+      </LuxCard>
+    </div>
   )
 }
 
