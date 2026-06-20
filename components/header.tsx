@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ShoppingBag, ChevronDown, Heart, Instagram, ArrowRight, User, Package, MapPin, Settings, LogOut, LogIn } from "lucide-react"
+import { ShoppingBag, ChevronDown, Heart, Instagram, User, Package, MapPin, Settings, LogOut, LogIn } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import {
   DropdownMenu,
@@ -43,6 +43,7 @@ const navigation = [
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false)
+  const [openSection, setOpenSection] = useState<string | null>(null)
   const [isScrolled, setIsScrolled] = useState(false)
   const { items, openDrawer } = useCart()
   const { count: favCount } = useFavorites()
@@ -109,40 +110,74 @@ export function Header() {
                       <p className="text-[10px] text-white/25 tracking-[0.25em] uppercase">Menú</p>
                     </div>
 
-                    <nav className="flex-1 px-7 py-8 space-y-1 overflow-y-auto">
-                      {navigation.map((item) => (
-                        <div key={item.name}>
-                          {item.submenu ? (
-                            <div className="mb-3">
-                              <p className="text-[10px] text-white/30 tracking-[0.25em] uppercase mb-3">{item.name}</p>
-                              <div className="space-y-1">
+                    <nav className="flex-1 px-7 py-6 overflow-y-auto">
+                      {navigation.map((item) =>
+                        item.submenu ? (
+                          <div key={item.name} className="border-b border-white/[0.07]">
+                            <button
+                              type="button"
+                              onClick={() => setOpenSection(openSection === item.name ? null : item.name)}
+                              className="flex w-full items-center justify-between py-4 text-left"
+                            >
+                              <span className="font-serif text-lg font-light text-white/90">{item.name}</span>
+                              <ChevronDown
+                                className={`h-4 w-4 text-white/40 transition-transform duration-300 ${openSection === item.name ? "rotate-180" : ""}`}
+                              />
+                            </button>
+                            <div
+                              className="overflow-hidden transition-all duration-300 ease-out"
+                              style={{ maxHeight: openSection === item.name ? item.submenu.length * 46 + 12 : 0 }}
+                            >
+                              <div className="pb-3">
                                 {item.submenu.map((sub) => (
                                   <Link
                                     key={sub.name}
                                     href={sub.href}
                                     onClick={() => setIsOpen(false)}
-                                    className="flex items-center justify-between py-2.5 px-4 rounded-xl text-white/70 hover:text-white hover:bg-white/[0.06] transition-all group"
+                                    className="block py-2.5 pl-3 text-[15px] text-white/55 transition-colors hover:text-white"
                                   >
-                                    <span className="font-serif text-base">{sub.name}</span>
-                                    <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    {sub.name}
                                   </Link>
                                 ))}
                               </div>
                             </div>
-                          ) : (
-                            <Link
-                              href={item.href}
-                              onClick={() => setIsOpen(false)}
-                              className={`flex items-center justify-between py-3 px-4 rounded-xl transition-all group ${
-                                item.highlight ? "text-[#C99] hover:bg-white/[0.06]" : "text-white/80 hover:text-white hover:bg-white/[0.06]"
-                              }`}
-                            >
-                              <span className="font-serif text-lg font-light">{item.name}</span>
-                              <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-60 transition-opacity" />
+                          </div>
+                        ) : (
+                          <Link
+                            key={item.name}
+                            href={item.href}
+                            onClick={() => setIsOpen(false)}
+                            className="flex items-center justify-between border-b border-white/[0.07] py-4"
+                          >
+                            <span className={`font-serif text-lg font-light ${item.highlight ? "text-[#C99]" : "text-white/90"}`}>{item.name}</span>
+                            {item.highlight && <span className="h-1.5 w-1.5 rounded-full bg-[#A67163]" />}
+                          </Link>
+                        ),
+                      )}
+
+                      {/* ── Cuenta ── */}
+                      <div className="mt-7">
+                        <p className="mb-1 text-[10px] uppercase tracking-[0.25em] text-white/30">Cuenta</p>
+                        {user ? (
+                          <>
+                            <Link href="/cuenta?seccion=pedidos" onClick={() => setIsOpen(false)} className="flex items-center gap-3 py-3 text-[15px] text-white/80 transition-colors hover:text-white">
+                              <User className="h-[18px] w-[18px]" /> Mi cuenta
                             </Link>
-                          )}
-                        </div>
-                      ))}
+                            <button type="button" onClick={() => { signOut(); setIsOpen(false) }} className="flex w-full items-center gap-3 py-3 text-[15px] text-red-300/80 transition-colors hover:text-red-300">
+                              <LogOut className="h-[18px] w-[18px]" /> Cerrar sesión
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <Link href="/cuenta" onClick={() => setIsOpen(false)} className="flex items-center gap-3 py-3 text-[15px] text-white/80 transition-colors hover:text-white">
+                              <LogIn className="h-[18px] w-[18px]" /> Iniciar sesión
+                            </Link>
+                            <Link href="/cuenta" onClick={() => setIsOpen(false)} className="flex items-center gap-3 py-3 text-[15px] text-white/80 transition-colors hover:text-white">
+                              <User className="h-[18px] w-[18px]" /> Crear cuenta
+                            </Link>
+                          </>
+                        )}
+                      </div>
                     </nav>
 
                     <div className="px-7 pb-10 space-y-4 border-t border-white/10 pt-6">
