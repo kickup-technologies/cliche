@@ -81,7 +81,7 @@ export function VentasSection({ orders, products }: { orders: Order[]; products:
   const productStats: Record<string, { id: string; name: string; units: number; revenue: number; price: number }> = {}
   for (const o of curr) {
     for (const item of o.items || []) {
-      const k = item.product_id
+      const k = item.product_id || item.name || "otros"
       if (!productStats[k]) productStats[k] = { id: k, name: item.name || k, units: 0, revenue: 0, price: item.price || 0 }
       productStats[k].units += item.quantity
       productStats[k].revenue += (item.price || 0) * item.quantity

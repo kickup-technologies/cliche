@@ -251,12 +251,25 @@ export function PedidosSection({
                 <p className="text-xs font-bold uppercase tracking-widest text-[#2D1A14]/40 mb-3">Productos</p>
                 <div className="space-y-2">
                   {(selectedOrder.items || []).map((item, i) => (
-                    <div key={i} className="flex items-center justify-between bg-[#FAF8F5] rounded-xl px-4 py-3">
-                      <div>
-                        <p className="text-sm font-medium text-[#2D1A14]">{item.name || item.product_id}</p>
-                        <p className="text-xs text-[#2D1A14]/40">x {item.quantity}</p>
+                    <div key={i} className="bg-[#FAF8F5] rounded-xl px-4 py-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-[#2D1A14]">{item.name || item.product_id}</p>
+                          <p className="text-xs text-[#2D1A14]/40">x {item.quantity}</p>
+                        </div>
+                        {item.price ? <p className="text-sm font-semibold text-[#2D1A14]">{fmt(item.price * item.quantity)}</p> : null}
                       </div>
-                      {item.price && <p className="text-sm font-semibold text-[#2D1A14]">{fmt(item.price * item.quantity)}</p>}
+                      {/* Kit personalizado: frascos elegidos por el cliente */}
+                      {item.kind === "pack" && item.components && item.components.length > 0 && (
+                        <ul className="mt-2 space-y-1 border-t border-[#2D1A14]/10 pt-2">
+                          {item.components.map((c, ci) => (
+                            <li key={ci} className="flex items-center justify-between text-xs text-[#2D1A14]/70">
+                              <span>• {c.name}</span>
+                              <span className="text-[#2D1A14]/40">x {c.quantity}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                   ))}
                   {selectedOrder.discount_code && (

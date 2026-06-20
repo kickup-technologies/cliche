@@ -9,7 +9,15 @@ export interface Order {
   total: number
   status: string
   created_at: string
-  items: Array<{ name?: string; product_id: string; quantity: number; price?: number }>
+  items: Array<{
+    name?: string
+    product_id?: string
+    quantity: number
+    price?: number
+    kind?: "unit" | "pack"
+    tier?: string
+    components?: Array<{ product_id: string; name: string; quantity: number }>
+  }>
   shipping_address: { address?: string; city?: string; department?: string; notes?: string } | null
   discount_code: string | null
   discount_amount: number

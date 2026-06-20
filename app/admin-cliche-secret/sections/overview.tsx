@@ -52,7 +52,7 @@ export function OverviewSection({ orders, pageViews, products }: { orders: Order
   const productSales: Record<string, { name: string; units: number; revenue: number }> = {}
   for (const o of curr) {
     for (const item of o.items || []) {
-      const k = item.product_id
+      const k = item.product_id || item.name || "otros"
       if (!productSales[k]) productSales[k] = { name: item.name || k, units: 0, revenue: 0 }
       productSales[k].units += item.quantity
       productSales[k].revenue += (item.price || 0) * item.quantity

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { X, Plus, Minus, ShoppingBag, Trash2, ArrowRight, Truck, Check } from "lucide-react"
+import { X, Plus, Minus, ShoppingBag, Trash2, ArrowRight, Truck, Check, ChevronDown } from "lucide-react"
 import { useCart } from "@/context/cart-context"
 import type { Product } from "@/lib/supabase"
 
@@ -21,6 +21,7 @@ const FREE_SHIPPING = 300000
 export function CartDrawer() {
   const { items, removeItem, updateQuantity, total, itemCount, checkout, isCheckingOut, isDrawerOpen, closeDrawer, addItem } = useCart()
   const [recommendations, setRecommendations] = useState<Product[]>([])
+  const [openPacks, setOpenPacks] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     if (!isDrawerOpen) return
@@ -115,7 +116,7 @@ export function CartDrawer() {
             </div>
           ) : (
             <div className="px-7 py-5">
-              {items.map(({ product, quantity }, idx) => (
+              {items.map(({ product, quantity, pack }, idx) => (
                 <div
                   key={product.id}
                   className="flex gap-4 py-5 border-b last:border-0 animate-in fade-in slide-in-from-right-2 duration-300"
@@ -133,6 +134,31 @@ export function CartDrawer() {
                   <div className="flex-1 min-w-0">
                     <p className="font-serif text-[15px] leading-snug" style={{ color: BROWN }}>{product.name}</p>
                     <p className="text-sm font-medium mt-1" style={{ color: TERRA }}>{formatPrice(product.price)}</p>
+
+                    {/* Kit personalizado: desplegar los frascos elegidos */}
+                    {pack && pack.components.length > 0 && (
+                      <div className="mt-2">
+                        <button
+                          onClick={() => setOpenPacks((p) => ({ ...p, [product.id]: !p[product.id] }))}
+                          className="flex items-center gap-1 text-[11px] font-medium transition-colors hover:opacity-70"
+                          style={{ color: TERRA }}
+                        >
+                          {openPacks[product.id] ? "Ocultar" : "Ver"} los {pack.units} frascos
+                          <ChevronDown className={`h-3 w-3 transition-transform ${openPacks[product.id] ? "rotate-180" : ""}`} />
+                        </button>
+                        {openPacks[product.id] && (
+                          <ul className="mt-1.5 space-y-1 border-l pl-3" style={{ borderColor: `${BROWN}15` }}>
+                            {pack.components.map((c, ci) => (
+                              <li key={ci} className="flex items-center justify-between text-[11px]" style={{ color: `${BROWN}99` }}>
+                                <span className="truncate pr-2">{c.name}</span>
+                                <span style={{ color: `${BROWN}55` }}>x{c.quantity}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    )}
+
                     <div className="flex items-center gap-2 mt-3">
                       <div className="flex items-center border" style={{ borderColor: `${BROWN}15` }}>
                         <button

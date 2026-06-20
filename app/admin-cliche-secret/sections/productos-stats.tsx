@@ -65,7 +65,7 @@ export function ProductosStatsSection({ orders, products, pageViews }: { orders:
     const stats: Record<string, { name: string; units: number; revenue: number }> = {}
     for (const o of orderSet) {
       for (const item of o.items || []) {
-        const k = item.product_id
+        const k = item.product_id || item.name || "otros"
         if (!stats[k]) stats[k] = { name: item.name || k, units: 0, revenue: 0 }
         stats[k].units += item.quantity
         stats[k].revenue += (item.price || 0) * item.quantity

@@ -97,7 +97,11 @@ export async function POST(req: NextRequest) {
     const addNeed = (pid: string, qty: number) => needed.set(pid, (needed.get(pid) || 0) + qty)
 
     let subtotal = 0
-    const safeItems: Array<{ product_id: string; quantity: number; name: string; price: number }> = []
+    type PackComp = { product_id: string; name: string; quantity: number }
+    type SafeItem =
+      | { kind: "unit"; product_id: string; quantity: number; name: string; price: number }
+      | { kind: "pack"; tier: string; quantity: number; name: string; price: number; components: PackComp[] }
+    const safeItems: SafeItem[] = []
 
     // Líneas normales (unidad o kit del mismo aroma)
     for (const it of requested) {
@@ -110,10 +114,12 @@ export async function POST(req: NextRequest) {
       const linePrice = tier.id === "unit" ? Number(p.price) : tier.price
       const lineName = tier.units > 1 ? `${p.name} — Kit x${tier.units}` : p.name
       subtotal += linePrice * it.quantity
-      safeItems.push({ product_id: p.id, quantity: it.quantity, name: lineName, price: linePrice })
+      safeItems.push({ kind: "unit", product_id: p.id, quantity: it.quantity, name: lineName, price: linePrice })
     }
 
-    // Líneas de kit personalizado (varios aromas, precio FIJO del tier)
+    // Líneas de kit personalizado (varios aromas, precio FIJO del tier).
+    // Se guarda AGRUPADO (con sus componentes) para que el admin vea los frascos
+    // elegidos; el webhook descuenta stock recorriendo los componentes.
     for (const pack of packLines) {
       const tier = TIER_BY_ID[pack.tier]
       if (!tier || tier.units < 2) {
@@ -127,23 +133,23 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         )
       }
-      const aromaNames: string[] = []
+      const components: PackComp[] = []
       for (const c of pack.components) {
         const p = productMap.get(c.product_id)
         if (!p || p.is_active === false) {
           return NextResponse.json({ error: "Uno de los aromas del kit ya no está disponible" }, { status: 400 })
         }
         addNeed(p.id, c.quantity * pack.quantity)
-        // Cada aroma del pack se registra como su propio renglón (para fulfillment
-        // y para que el webhook descuente stock del producto real).
-        safeItems.push({
-          product_id: p.id,
-          quantity: c.quantity * pack.quantity,
-          name: `${p.name} (Kit personalizado x${tier.units})`,
-          price: 0,
-        })
-        aromaNames.push(`${c.quantity}× ${p.name}`)
+        components.push({ product_id: p.id, name: p.name, quantity: c.quantity })
       }
+      safeItems.push({
+        kind: "pack",
+        tier: tier.id,
+        quantity: pack.quantity,
+        name: `Kit personalizado x${tier.units}`,
+        price: tier.price,
+        components,
+      })
       // El precio del pack es FIJO por tier, sin importar los aromas escogidos.
       subtotal += tier.price * pack.quantity
     }
@@ -223,11 +229,11 @@ export async function POST(req: NextRequest) {
         stripe_session_id: reference,
         total: Math.round(total),
         status: "pending",
-        items: safeItems.map((i) => ({
-          product_id: i.product_id,
-          quantity: i.quantity,
-          name: i.name,
-        })),
+        items: safeItems.map((i) =>
+          i.kind === "pack"
+            ? { kind: "pack", product_id: `pack-${i.tier}`, name: i.name, tier: i.tier, quantity: i.quantity, price: i.price, components: i.components }
+            : { product_id: i.product_id, quantity: i.quantity, name: i.name, price: i.price }
+        ),
         customer_email: email || null,
         customer_name: customer_name || null,
         customer_phone: customer_phone || null,

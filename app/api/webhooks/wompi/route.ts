@@ -75,11 +75,23 @@ export async function POST(req: NextRequest) {
           .eq("stripe_session_id", reference)
 
         // ── 2. Descontar stock ────────────────────────────────────────
+        // Los kits personalizados se guardan agrupados (kind:"pack"): se
+        // descuenta cada frasco que los compone. El resto, su product_id directo.
         for (const item of order.items || []) {
-          await supabase.rpc("decrement_stock", {
-            p_product_id: item.product_id,
-            p_quantity: item.quantity,
-          })
+          if (item?.kind === "pack" && Array.isArray(item.components)) {
+            const packQty = Number(item.quantity) || 1
+            for (const c of item.components) {
+              await supabase.rpc("decrement_stock", {
+                p_product_id: c.product_id,
+                p_quantity: (Number(c.quantity) || 0) * packQty,
+              })
+            }
+          } else if (item?.product_id) {
+            await supabase.rpc("decrement_stock", {
+              p_product_id: item.product_id,
+              p_quantity: item.quantity,
+            })
+          }
         }
 
         // ── 3. Registrar uso del código de descuento ──────────────────
