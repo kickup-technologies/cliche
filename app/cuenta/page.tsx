@@ -457,7 +457,7 @@ function RecomendadosEditorial({ products }: { products: Product[] }) {
           return (
             <div key={p.id} onMouseEnter={(e) => moveTo(e.currentTarget)} className="relative z-10 w-[210px] flex-shrink-0 snap-start">
               <Link href={`/productos/${p.slug}`} className="group relative block aspect-[3/4] overflow-hidden rounded-[20px]" style={{ backgroundColor: `${TERRA}0D` }}>
-                <Image src={p.image_url || "/images/placeholder.jpg"} alt={p.name} fill sizes="210px" className="object-contain p-3 transition-transform duration-700 group-hover:scale-[1.04]" />
+                <Image src={p.image_url || "/images/placeholder.jpg"} alt={p.name} fill sizes="210px" className="object-cover transition-transform duration-700 group-hover:scale-[1.04]" />
                 <button onClick={(e) => { e.preventDefault(); toggleFavorite(p) }} className="absolute right-3 top-3 rounded-full bg-white/85 p-2 backdrop-blur" aria-label="Favorito">
                   <Heart className={`h-4 w-4 ${isFavorite(p.id) ? "fill-red-500 text-red-500" : ""}`} style={{ color: isFavorite(p.id) ? undefined : `${CAFE}80` }} />
                 </button>
