@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 import {
   Mail, Lock, LogOut, Package, MapPin, User as UserIcon, Settings, CheckCircle, AlertCircle,
   Loader2, Plus, Trash2, CreditCard, Heart, Star, Bell, Truck, RotateCcw, ShieldCheck,
@@ -124,25 +124,63 @@ function Dashboard({ email, createdAt, signOut }: { email: string; createdAt?: s
   )
 }
 
-/* Navegación MÓVIL — tabs horizontales deslizables, fijadas bajo el header.
-   Evita que el menú vertical ocupe toda la pantalla antes del contenido. */
+/* Navegación MÓVIL — pill unificada fijada al tope, estilo Instagram: el dedo
+   se desliza por la barra y el resaltado lo sigue en tiempo real (mismo efecto
+   que el hover en escritorio); al soltar, selecciona. La pill crece al tocar.
+   Iconos (cada sección ya muestra su título en el contenido). */
 function AccountTabs({ seccion }: { seccion: SecId }) {
-  const scrollerRef = useRef<HTMLDivElement>(null)
-  // Centrar la pestaña activa al cargar para que se vea cuál está seleccionada.
+  const router = useRouter()
+  const barRef = useRef<HTMLDivElement>(null)
+  const [ind, setInd] = useState({ left: 0, width: 0, opacity: 0 })
+  const [dragging, setDragging] = useState(false)
+  const dragId = useRef<SecId | null>(null)
+
+  const setToEl = (el: HTMLElement | null) => { if (el) setInd({ left: el.offsetLeft, width: el.offsetWidth, opacity: 1 }) }
+  const setToActive = () => setToEl(barRef.current?.querySelector<HTMLElement>('[data-active="true"]') ?? null)
+  useEffect(() => { setToActive() }, [seccion])
   useEffect(() => {
-    const el = scrollerRef.current?.querySelector<HTMLElement>('[data-active="true"]')
-    el?.scrollIntoView({ inline: "center", block: "nearest" })
-  }, [seccion])
+    const onResize = () => setToActive()
+    window.addEventListener("resize", onResize)
+    return () => window.removeEventListener("resize", onResize)
+  }, [])
+
+  const tabFromTouch = (t: React.Touch) =>
+    (document.elementFromPoint(t.clientX, t.clientY) as HTMLElement | null)?.closest<HTMLElement>("[data-tab]") ?? null
+  const onStart = (e: React.TouchEvent) => {
+    const el = tabFromTouch(e.touches[0]); if (!el) return
+    setDragging(true); dragId.current = (el.dataset.tab as SecId) ?? null; setToEl(el)
+  }
+  const onMove = (e: React.TouchEvent) => {
+    if (!dragging) return
+    const el = tabFromTouch(e.touches[0])
+    if (el) { e.preventDefault(); dragId.current = (el.dataset.tab as SecId) ?? null; setToEl(el) }
+  }
+  const onEnd = () => {
+    setDragging(false)
+    if (dragId.current && dragId.current !== seccion) router.push(`/cuenta?seccion=${dragId.current}`)
+    else setToActive()
+  }
+
   return (
-    <div className="sticky top-16 z-30 -mx-4 mt-5 border-b px-4 py-2.5 backdrop-blur" style={{ backgroundColor: `${CREMA}f2`, borderColor: `${CAFE}0f` }}>
-      <div ref={scrollerRef} className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div className="sticky top-16 z-30 mt-5">
+      <div
+        ref={barRef}
+        onTouchStart={onStart}
+        onTouchMove={onMove}
+        onTouchEnd={onEnd}
+        className="relative mx-auto flex w-full select-none items-center justify-between rounded-full bg-white p-1.5 shadow-[0_16px_44px_-26px_rgba(45,26,20,0.65)] transition-transform duration-200 ease-out"
+        style={{ transform: dragging ? "scale(1.045)" : "scale(1)" }}
+      >
+        {/* Resaltado que sigue al dedo (y descansa en la sección activa) */}
+        <span aria-hidden className="pointer-events-none absolute bottom-1.5 top-1.5 z-0 rounded-full"
+          style={{ left: ind.left, width: ind.width, opacity: ind.opacity, backgroundColor: `${TERRA}24`, transition: dragging ? "left 0.12s linear, width 0.12s linear" : "left 0.32s cubic-bezier(0.22,1,0.36,1), width 0.32s cubic-bezier(0.22,1,0.36,1), opacity 0.2s ease" }} />
         {NAV.map(({ id, label, icon: Icon }) => {
           const active = seccion === id
           return (
-            <Link key={id} href={`/cuenta?seccion=${id}`} data-active={active}
-              className="flex flex-shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-colors"
-              style={{ backgroundColor: active ? TERRA : "#fff", color: active ? CREMA : CAFE, boxShadow: active ? "none" : "0 8px 22px -18px rgba(45,26,20,0.5)" }}>
-              <Icon className="h-[15px] w-[15px]" strokeWidth={1.7} /> {label}
+            <Link key={id} href={`/cuenta?seccion=${id}`} data-tab={id} data-active={active} aria-label={label}
+              className="relative z-10 flex h-11 flex-1 items-center justify-center rounded-full transition-colors"
+              style={{ color: active ? TERRA : `${CAFE}80` }}>
+              <Icon className="h-[19px] w-[19px]" strokeWidth={active ? 2 : 1.6} />
             </Link>
           )
         })}
