@@ -20,7 +20,7 @@ export interface PackMeta {
   components: PackComponent[]
 }
 
-interface CartItem {
+export interface CartItem {
   product: Product
   quantity: number
   // Presente solo en líneas de "kit personalizado" (varios aromas, precio fijo del tier).
@@ -34,6 +34,7 @@ interface CartContextType {
   removeItem: (productId: string) => void
   updateQuantity: (productId: string, quantity: number) => void
   clearCart: () => void
+  replaceCart: (items: CartItem[]) => void
   total: number
   itemCount: number
   checkout: () => void
@@ -144,6 +145,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [removeItem])
 
   const clearCart = useCallback(() => setItems([]), [])
+  // Reemplaza el carrito completo (lo usa la sincronización con la cuenta).
+  const replaceCart = useCallback((next: CartItem[]) => setItems(next), [])
 
   const total = items.reduce((sum, i) => sum + i.product.price * i.quantity, 0)
   const itemCount = items.reduce((sum, i) => sum + i.quantity, 0)
@@ -167,7 +170,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   return (
     <CartContext.Provider
-      value={{ items, addItem, addPack, removeItem, updateQuantity, clearCart, total, itemCount, checkout, isCheckingOut, isDrawerOpen, openDrawer, closeDrawer }}
+      value={{ items, addItem, addPack, removeItem, updateQuantity, clearCart, replaceCart, total, itemCount, checkout, isCheckingOut, isDrawerOpen, openDrawer, closeDrawer }}
     >
       {children}
     </CartContext.Provider>

@@ -13,6 +13,7 @@ import { PixelManager } from '@/components/pixel-manager'
 import { SmoothScroll } from '@/components/smooth-scroll'
 import { PageTransition } from '@/components/page-transition'
 import { LeadPopup } from '@/components/lead-popup'
+import { CartSync } from '@/components/cart-sync'
 import { FilmGrain } from '@/components/editorial/film-grain'
 import Script from 'next/script'
 import './globals.css'
@@ -116,6 +117,7 @@ export default function RootLayout({
             {children}
             <CartDrawer />
             <LeadPopup />
+            <CartSync />
           </FavoritesProvider>
         </CartProvider>
         </AuthProvider>
