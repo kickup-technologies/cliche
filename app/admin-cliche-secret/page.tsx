@@ -17,15 +17,12 @@ import { VentasSection } from "./sections/ventas"
 import { TraficoSection } from "./sections/trafico"
 import { ProductosStatsSection } from "./sections/productos-stats"
 import { PedidosSection } from "./sections/pedidos"
-import { UrgenciaSection } from "./sections/urgencia"
 import { InventarioSection } from "./sections/inventario"
-import { TiendaSection } from "./sections/tienda"
-import { PersonalizarSection } from "./sections/personalizar"
 import { HeatmapsSection } from "./sections/heatmaps"
 import { DescuentosSection } from "./sections/descuentos"
 import { AsistenteSection } from "./sections/asistente"
 
-type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "heatmaps" | "pedidos" | "urgencia" | "descuentos" | "inventario" | "tienda" | "personalizar" | "asistente"
+type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "heatmaps" | "pedidos" | "descuentos" | "inventario" | "asistente"
 
 interface Setting { key: string; value: string }
 
@@ -41,18 +38,13 @@ const SIDEBAR = [
   ]},
   { section: "OPERACIONES", items: [
     { id: "pedidos",   label: "Pedidos",              icon: ShoppingBag },
-    { id: "urgencia",  label: "Urgencia Inteligente", icon: Zap },
     { id: "descuentos", label: "Códigos de descuento", icon: Ticket },
   ]},
   { section: "ASISTENTE", items: [
     { id: "asistente", label: "Asistente WhatsApp", icon: MessageCircle },
   ]},
-  { section: "CONTENIDO", items: [
-    { id: "personalizar", label: "Editor Visual", icon: Paintbrush },
-  ]},
   { section: "CONFIGURACIÓN", items: [
     { id: "inventario", label: "Inventario", icon: Package },
-    { id: "tienda",     label: "Tienda",     icon: Settings },
   ]},
 ] as const
 
@@ -351,20 +343,11 @@ export default function AdminPage() {
           {activeSection === "pedidos" && (
             <PedidosSection orders={orders} onOrdersUpdate={handleOrderUpdate} />
           )}
-          {activeSection === "urgencia" && (
-            <UrgenciaSection orders={orders} products={products} />
-          )}
           {activeSection === "descuentos" && (
             <DescuentosSection />
           )}
           {activeSection === "inventario" && (
             <InventarioSection products={products} onRefresh={loadAll} />
-          )}
-          {activeSection === "personalizar" && (
-            <PersonalizarSection settings={settings} onSettingsUpdate={setSettings} />
-          )}
-          {activeSection === "tienda" && (
-            <TiendaSection settings={settings} onSettingsUpdate={setSettings} />
           )}
           {activeSection === "asistente" && (
             <AsistenteSection />
