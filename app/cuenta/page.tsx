@@ -71,7 +71,10 @@ function AuthForm() {
           if (/confirm/i.test(error.message)) throw new Error("Verifica tu correo antes de iniciar sesión.")
           throw new Error("Correo o contraseña incorrectos.")
         }
-        // onAuthStateChange (contexto) actualiza la vista automáticamente.
+        // Al iniciar sesión, volver al LANDING para navegar con normalidad
+        // (la sesión queda activa; la cuenta se consulta desde el ícono de cuenta).
+        window.location.assign("/")
+        return
       }
     } catch (err) {
       setMsg({ type: "err", text: err instanceof Error ? err.message : "Ocurrió un error. Intenta de nuevo." })
