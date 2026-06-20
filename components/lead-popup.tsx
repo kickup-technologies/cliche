@@ -75,30 +75,20 @@ export function LeadPopup() {
     }
     if (blocked || seenThisSession() || isSubscribed()) return
 
-    const isDesktop = window.matchMedia("(min-width: 768px)").matches
-
+    // Disparador UNIVERSAL y fiable: aparece a los 7s en cualquier dispositivo.
+    const timer = setTimeout(open, 7000)
+    // Extra PC: intención de salir (mouse fuera por arriba).
     const onMouseOut = (e: MouseEvent) => { if (e.clientY <= 0) open() }
-    let armDesktop: ReturnType<typeof setTimeout> | undefined
-    let desktopFallback: ReturnType<typeof setTimeout> | undefined
-    if (isDesktop) {
-      armDesktop = setTimeout(() => document.addEventListener("mouseout", onMouseOut), 12000)
-      desktopFallback = setTimeout(open, 40000) // respaldo por tiempo en PC
-    }
-
-    let mobileTimer: ReturnType<typeof setTimeout> | undefined
+    document.addEventListener("mouseout", onMouseOut)
+    // Extra: al pasar el 45% de la página.
     const onScroll = () => {
       const max = document.documentElement.scrollHeight - window.innerHeight
-      if (max > 0 && window.scrollY / max > 0.5) open()
+      if (max > 0 && window.scrollY / max > 0.45) open()
     }
-    if (!isDesktop) {
-      mobileTimer = setTimeout(open, 20000) // 20s en móvil
-      window.addEventListener("scroll", onScroll, { passive: true })
-    }
+    window.addEventListener("scroll", onScroll, { passive: true })
 
     return () => {
-      if (armDesktop) clearTimeout(armDesktop)
-      if (desktopFallback) clearTimeout(desktopFallback)
-      if (mobileTimer) clearTimeout(mobileTimer)
+      clearTimeout(timer)
       document.removeEventListener("mouseout", onMouseOut)
       window.removeEventListener("scroll", onScroll)
     }
