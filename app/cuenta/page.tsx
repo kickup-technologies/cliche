@@ -324,20 +324,30 @@ function SeccionPedidos({ orders, products }: { orders: Order[] | null; products
   )
 }
 
-/* Recomendados editoriales — foto grande + notas */
+/* Recomendados editoriales — foto grande + notas, con "cursor" deslizante que
+   sigue a la tarjeta bajo el puntero (mismo patrón que la navegación). */
 function RecomendadosEditorial({ products }: { products: Product[] }) {
   const { toggleFavorite, isFavorite } = useFavorites()
+  const trackRef = useRef<HTMLDivElement>(null)
+  const [ind, setInd] = useState({ left: 0, top: 0, width: 0, height: 0, opacity: 0 })
   const list = products.slice(0, 6)
   if (!list.length) return null
+
+  const moveTo = (el: HTMLElement) => setInd({ left: el.offsetLeft - 8, top: el.offsetTop - 8, width: el.offsetWidth + 16, height: el.offsetHeight + 16, opacity: 1 })
+  const hide = () => setInd((p) => ({ ...p, opacity: 0 }))
+
   return (
     <div>
       <p className="text-[11px] font-semibold uppercase tracking-[0.24em]" style={{ color: `${CAFE}55` }}>Para ti</p>
       <h2 className="mt-1 font-serif text-2xl" style={{ color: CAFE }}>Aromas que podrían enamorarte</h2>
-      <div className="-mx-4 mt-5 flex snap-x gap-5 overflow-x-auto px-4 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div ref={trackRef} onMouseLeave={hide} className="relative -mx-4 mt-5 flex snap-x gap-5 overflow-x-auto px-4 pb-3 pt-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {/* Indicador deslizante (detrás de las tarjetas) */}
+        <span aria-hidden className="pointer-events-none absolute z-0 rounded-[24px]"
+          style={{ left: ind.left, top: ind.top, width: ind.width, height: ind.height, opacity: ind.opacity, backgroundColor: "#fff", boxShadow: "0 22px 50px -28px rgba(45,26,20,0.55)", transition: "left 0.34s cubic-bezier(0.22,1,0.36,1), top 0.34s cubic-bezier(0.22,1,0.36,1), width 0.34s cubic-bezier(0.22,1,0.36,1), height 0.34s cubic-bezier(0.22,1,0.36,1), opacity 0.2s ease" }} />
         {list.map((p) => {
           const notes = NOTES_MAP[p.slug] || []
           return (
-            <div key={p.id} className="w-[210px] flex-shrink-0 snap-start">
+            <div key={p.id} onMouseEnter={(e) => moveTo(e.currentTarget)} className="relative z-10 w-[210px] flex-shrink-0 snap-start">
               <Link href={`/productos/${p.slug}`} className="group relative block aspect-[3/4] overflow-hidden rounded-[20px]" style={{ backgroundColor: `${TERRA}0D` }}>
                 <Image src={p.image_url || "/images/placeholder.jpg"} alt={p.name} fill sizes="210px" className="object-contain p-3 transition-transform duration-700 group-hover:scale-[1.04]" />
                 <button onClick={(e) => { e.preventDefault(); toggleFavorite(p) }} className="absolute right-3 top-3 rounded-full bg-white/85 p-2 backdrop-blur" aria-label="Favorito">
