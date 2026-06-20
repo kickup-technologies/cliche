@@ -77,7 +77,7 @@ export interface Order {
   customer_email: string
   customer_name: string
   total: number
-  status: "pending" | "paid" | "shipped" | "cancelled"
+  status: "pending" | "confirmed" | "preparing" | "paid" | "shipped" | "delivered" | "cancelled"
   items: CartItem[]
   discount_code: string | null
   created_at: string
