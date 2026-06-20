@@ -84,19 +84,23 @@ function Dashboard({ email, createdAt, signOut }: { email: string; createdAt?: s
 
   return (
     <section className="mx-auto max-w-6xl px-4 pb-24 pt-24 sm:px-6 sm:pt-28">
-      <div className="grid gap-x-12 gap-y-8 lg:grid-cols-[330px_1fr]">
-        {/* ── IDENTIDAD + NAVEGACIÓN (no es un segundo dashboard) ── */}
-        <div>
+      <div className="lg:grid lg:grid-cols-[330px_1fr] lg:gap-x-12">
+        {/* ── SIDEBAR (solo escritorio): identidad + navegación vertical ── */}
+        <div className="hidden lg:block">
           <ProfileCard email={email} createdAt={createdAt} orders={orders} />
-
           <AccountNav seccion={seccion} signOut={signOut} />
-
           <ClubBenefits orders={orders} />
           <HelpCard />
         </div>
 
+        {/* ── MÓVIL: membresía + tabs horizontales fijadas al tope ── */}
+        <div className="lg:hidden">
+          <ProfileCard email={email} createdAt={createdAt} orders={orders} />
+          <AccountTabs seccion={seccion} />
+        </div>
+
         {/* ── CONTENIDO ── */}
-        <div className="min-w-0">
+        <div className="mt-6 min-w-0 lg:mt-0">
           {seccion === "pedidos" && <SeccionPedidos orders={orders} products={products} />}
           {seccion === "datos" && <SeccionDatos email={email} />}
           {seccion === "direcciones" && <SeccionDirecciones />}
@@ -106,8 +110,44 @@ function Dashboard({ email, createdAt, signOut }: { email: string; createdAt?: s
           {seccion === "notificaciones" && <SeccionNotificaciones />}
           {seccion === "config" && <SeccionConfig />}
         </div>
+
+        {/* ── MÓVIL: beneficios + ayuda + cerrar sesión al final ── */}
+        <div className="mt-10 lg:hidden">
+          <ClubBenefits orders={orders} />
+          <HelpCard />
+          <button onClick={() => signOut()} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-semibold text-red-600/90 transition-colors hover:bg-red-50/60">
+            <LogOut className="h-[18px] w-[18px]" strokeWidth={1.5} /> Cerrar sesión
+          </button>
+        </div>
       </div>
     </section>
+  )
+}
+
+/* Navegación MÓVIL — tabs horizontales deslizables, fijadas bajo el header.
+   Evita que el menú vertical ocupe toda la pantalla antes del contenido. */
+function AccountTabs({ seccion }: { seccion: SecId }) {
+  const scrollerRef = useRef<HTMLDivElement>(null)
+  // Centrar la pestaña activa al cargar para que se vea cuál está seleccionada.
+  useEffect(() => {
+    const el = scrollerRef.current?.querySelector<HTMLElement>('[data-active="true"]')
+    el?.scrollIntoView({ inline: "center", block: "nearest" })
+  }, [seccion])
+  return (
+    <div className="sticky top-16 z-30 -mx-4 mt-5 border-b px-4 py-2.5 backdrop-blur" style={{ backgroundColor: `${CREMA}f2`, borderColor: `${CAFE}0f` }}>
+      <div ref={scrollerRef} className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {NAV.map(({ id, label, icon: Icon }) => {
+          const active = seccion === id
+          return (
+            <Link key={id} href={`/cuenta?seccion=${id}`} data-active={active}
+              className="flex flex-shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-colors"
+              style={{ backgroundColor: active ? TERRA : "#fff", color: active ? CREMA : CAFE, boxShadow: active ? "none" : "0 8px 22px -18px rgba(45,26,20,0.5)" }}>
+              <Icon className="h-[15px] w-[15px]" strokeWidth={1.7} /> {label}
+            </Link>
+          )
+        })}
+      </div>
+    </div>
   )
 }
 
