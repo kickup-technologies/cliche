@@ -24,7 +24,7 @@ const GOLD = "#E0B341"
 const fmt = (n: number) => `$${(n || 0).toLocaleString("es-CO")}`
 
 const PROFILE_BG = "/images/cuenta/membership.jpg" // Romeo y Julieta
-const HELP_IMG = "/images/products/tao.png"
+const HELP_IMG = "/images/cuenta/help.jpg" // foto editorial bienestar (decorativa)
 const HERO_IMG = "/images/cuenta/pedidos-banner.jpg" // banner panorámico (3 frascos)
 
 type Order = { id: string; created_at: string; status: string; total: number }
@@ -224,13 +224,18 @@ function ClubBenefits({ orders }: { orders: Order[] | null }) {
 
 function HelpCard() {
   return (
-    <div className="relative mt-6 overflow-hidden rounded-[24px] p-5 pr-24" style={{ backgroundColor: `${TERRA}12` }}>
-      <Image src={HELP_IMG} alt="" width={110} height={110} className="pointer-events-none absolute -bottom-2 -right-3 h-28 w-28 object-contain" />
-      <p className="font-serif text-lg" style={{ color: CAFE }}>¿Necesitas ayuda?</p>
-      <p className="mt-1 text-xs" style={{ color: `${CAFE}99` }}>Habla con un asesor</p>
-      <Link href="/contacto" className="mt-3 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90" style={{ backgroundColor: TERRA }}>
-        Contáctanos <ArrowRight className="h-3.5 w-3.5" />
-      </Link>
+    <div className="relative mt-6 min-h-[150px] overflow-hidden rounded-[24px] p-5" style={{ backgroundColor: `${TERRA}12` }}>
+      {/* Foto editorial decorativa en la esquina inferior derecha (no es fondo) */}
+      <div aria-hidden className="pointer-events-none absolute bottom-0 right-0 top-0 w-[48%]">
+        <Image src={HELP_IMG} alt="" fill sizes="170px" className="object-cover" style={{ WebkitMaskImage: "linear-gradient(90deg, transparent 0%, #000 58%)", maskImage: "linear-gradient(90deg, transparent 0%, #000 58%)" }} />
+      </div>
+      <div className="relative w-[58%]">
+        <p className="font-serif text-lg" style={{ color: CAFE }}>¿Necesitas ayuda?</p>
+        <p className="mt-1 text-xs" style={{ color: `${CAFE}99` }}>Habla con un asesor</p>
+        <Link href="/contacto" className="mt-3 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90" style={{ backgroundColor: TERRA }}>
+          Contáctanos <ArrowRight className="h-3.5 w-3.5" />
+        </Link>
+      </div>
     </div>
   )
 }
