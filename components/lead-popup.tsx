@@ -3,40 +3,36 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
-import { X, Sparkles, CheckCircle, Copy, Leaf, Heart, Rabbit, User } from "lucide-react"
+import { X, CheckCircle, Copy, Leaf, Heart, Rabbit, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useCart } from "@/context/cart-context"
 import { useCAPI } from "@/lib/use-capi"
 
 /**
- * LeadPopup — captura de correo a cambio de un código de descuento real.
+ * LeadPopup — captura de correo a cambio de un código real (BIENVENIDA20).
  *
- * Filosofía "no cansón":
- *  - Aparece UNA vez y se recuerda en localStorage 30 días (no por sesión).
- *  - PC: exit-intent (mouse sale por arriba) tras 15s. Móvil: 30s o 55% scroll.
- *  - No se muestra en checkout/gracias/admin ni a quien ya lo cerró/se suscribió.
- *  - Entrega BIENVENIDA20 (existe en la BD y funciona en el checkout).
- *  - Diseño split (foto MAHAI + copy de valor), colores de marca.
+ * Diseño: tarjeta VERTICAL con la foto de MAHAI de fondo a sangre completa y el
+ * texto superpuesto sobre la zona crema (izquierda). Optimizado para móvil
+ * (la mayoría del tráfico).
+ *
+ * Frecuencia: aparece UNA vez por SESIÓN nueva, a todo el que NO se haya
+ * suscrito (no por 30 días). Quien ya se suscribió no lo vuelve a ver.
+ * No aparece en checkout/gracias/admin.
  */
-const STORAGE_KEY = "cliche_lead_popup"
-const COOLDOWN_MS = 30 * 24 * 60 * 60 * 1000 // 30 días
+const SESSION_KEY = "cliche_lead_seen"   // por sesión
+const SUB_KEY = "cliche_subscribed"      // persistente (no volver a mostrar)
 const FALLBACK_CODE = "BIENVENIDA20"
 
 const CREMA = "#FAF8F5"
 const CAFE = "#2D1A14"
 const TERRA = "#A67163"
 
-function recentlyHandled(): boolean {
-  try {
-    const t = Number(localStorage.getItem(STORAGE_KEY))
-    return !!t && Date.now() - t < COOLDOWN_MS
-  } catch {
-    return false
-  }
+function seenThisSession(): boolean {
+  try { return sessionStorage.getItem(SESSION_KEY) === "1" } catch { return false }
 }
-function markHandled() {
-  try { localStorage.setItem(STORAGE_KEY, String(Date.now())) } catch {}
+function isSubscribed(): boolean {
+  try { return localStorage.getItem(SUB_KEY) === "1" } catch { return false }
 }
 
 const TRUST = [
@@ -64,41 +60,44 @@ export function LeadPopup() {
   )
 
   const open = useCallback(() => {
-    if (armed.current || recentlyHandled()) return
+    if (armed.current || seenThisSession() || isSubscribed()) return
     armed.current = true
     setIsOpen(true)
-    markHandled()
+    try { sessionStorage.setItem(SESSION_KEY, "1") } catch {}
     track({ event_name: "ViewContent", custom_data: { content_name: "lead_popup" } })
   }, [track])
 
   useEffect(() => {
-    // Forzar apertura para previsualizar: añade ?popup=1 a la URL.
+    // Previsualizar a demanda: ?popup=1
     if (new URLSearchParams(window.location.search).get("popup") === "1") {
       setIsOpen(true)
       return
     }
-    if (blocked || recentlyHandled()) return
+    if (blocked || seenThisSession() || isSubscribed()) return
 
     const isDesktop = window.matchMedia("(min-width: 768px)").matches
 
     const onMouseOut = (e: MouseEvent) => { if (e.clientY <= 0) open() }
     let armDesktop: ReturnType<typeof setTimeout> | undefined
+    let desktopFallback: ReturnType<typeof setTimeout> | undefined
     if (isDesktop) {
-      armDesktop = setTimeout(() => document.addEventListener("mouseout", onMouseOut), 15000)
+      armDesktop = setTimeout(() => document.addEventListener("mouseout", onMouseOut), 12000)
+      desktopFallback = setTimeout(open, 40000) // respaldo por tiempo en PC
     }
 
     let mobileTimer: ReturnType<typeof setTimeout> | undefined
     const onScroll = () => {
       const max = document.documentElement.scrollHeight - window.innerHeight
-      if (max > 0 && window.scrollY / max > 0.55) open()
+      if (max > 0 && window.scrollY / max > 0.5) open()
     }
     if (!isDesktop) {
-      mobileTimer = setTimeout(open, 30000)
+      mobileTimer = setTimeout(open, 20000) // 20s en móvil
       window.addEventListener("scroll", onScroll, { passive: true })
     }
 
     return () => {
       if (armDesktop) clearTimeout(armDesktop)
+      if (desktopFallback) clearTimeout(desktopFallback)
       if (mobileTimer) clearTimeout(mobileTimer)
       document.removeEventListener("mouseout", onMouseOut)
       window.removeEventListener("scroll", onScroll)
@@ -120,9 +119,11 @@ export function LeadPopup() {
       const data = await res.json().catch(() => ({}))
       if (data?.discount_code) setCode(data.discount_code)
       setSubmitted(true)
+      try { localStorage.setItem(SUB_KEY, "1") } catch {}
       track({ event_name: "Lead", custom_data: { content_name: "lead_popup" }, user_data: { raw_email: email } })
     } catch {
       setSubmitted(true)
+      try { localStorage.setItem(SUB_KEY, "1") } catch {}
     } finally {
       setLoading(false)
     }
@@ -135,39 +136,50 @@ export function LeadPopup() {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-end justify-center sm:items-center sm:p-4">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={close} />
 
-      <div
-        className="relative flex w-full max-h-[94vh] flex-col overflow-hidden rounded-t-3xl shadow-2xl sm:max-h-[88vh] sm:max-w-4xl sm:flex-row sm:rounded-3xl"
-        style={{ backgroundColor: CREMA }}
-      >
-        {/* Cerrar */}
+      {/* Tarjeta VERTICAL: foto de fondo + texto encima de la zona crema */}
+      <div className="relative w-full max-w-[400px] overflow-hidden rounded-3xl shadow-2xl">
+        {/* Foto de fondo */}
+        <Image
+          src="/images/popup-mahai.png"
+          alt="Aroma MAHAI de Cliché"
+          fill
+          sizes="400px"
+          className="object-cover"
+          style={{ objectPosition: "center" }}
+          priority
+        />
+        {/* Velo crema a la izquierda para legibilidad del texto */}
+        <div className="absolute inset-0" style={{ background: "linear-gradient(100deg, rgba(250,248,245,0.97) 0%, rgba(250,248,245,0.92) 42%, rgba(250,248,245,0.45) 64%, rgba(250,248,245,0) 82%)" }} />
+
         <button
           onClick={close}
           aria-label="Cerrar"
-          className="absolute right-3 top-3 z-20 rounded-full bg-black/10 p-2 text-[#2D1A14] backdrop-blur-sm transition-colors hover:bg-black/20 sm:bg-transparent sm:text-[#2D1A14]/60 sm:hover:bg-black/5"
+          className="absolute right-3 top-3 z-20 rounded-full p-2 transition-colors hover:bg-black/10"
+          style={{ color: CAFE }}
         >
           <X className="h-5 w-5" />
         </button>
 
-        {/* ── Lado contenido ── */}
-        <div className="order-2 flex flex-col justify-center overflow-y-auto px-6 py-7 sm:order-1 sm:w-[56%] sm:px-10 sm:py-12">
+        {/* Contenido (define la altura de la tarjeta) */}
+        <div className="relative flex max-h-[90vh] flex-col overflow-y-auto px-6 py-7 sm:px-8 sm:py-9">
           {!submitted ? (
-            <>
+            <div className="max-w-[72%] sm:max-w-[70%]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/images/logo-cliche.png" alt="Cliché" className="mb-5 h-9 w-auto object-contain" />
+              <img src="/images/logo-cliche.png" alt="Cliché" className="mb-4 h-8 w-auto object-contain" />
 
-              <h3 className="font-serif text-3xl font-medium leading-[1.08] sm:text-[2.6rem]" style={{ color: CAFE }}>
+              <h3 className="font-serif font-medium leading-[1.08]" style={{ color: CAFE, fontSize: "clamp(1.75rem, 7vw, 2.4rem)" }}>
                 {items.length > 0 ? "No dejes tu aroma a medias." : "Descubre el ritual que tu hogar merece."}
               </h3>
 
-              <p className="mt-4 text-sm leading-relaxed sm:text-[0.95rem]" style={{ color: `${CAFE}B0` }}>
+              <p className="mt-3 text-[13px] leading-relaxed sm:text-sm" style={{ color: `${CAFE}B0` }}>
                 Suscríbete y recibe un <span className="font-bold" style={{ color: TERRA }}>20% OFF</span> en tu primera
-                compra, además de acceso anticipado a lanzamientos y tips para un hogar con su propio aroma.
+                compra, además de acceso a lanzamientos exclusivos y consejos para un hogar más consciente.
               </p>
 
-              <form onSubmit={submit} className="mt-6 space-y-3">
+              <form onSubmit={submit} className="mt-5 space-y-2.5">
                 <Input
                   type="email"
                   inputMode="email"
@@ -175,12 +187,12 @@ export function LeadPopup() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="h-12 rounded-xl text-sm"
+                  className="h-11 rounded-xl bg-white/90 text-sm"
                 />
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="h-12 w-full rounded-xl text-sm font-bold tracking-wide"
+                  className="h-11 w-full rounded-xl text-sm font-bold tracking-wide"
                   style={{ backgroundColor: TERRA, color: CREMA }}
                 >
                   {loading ? "Enviando…" : "Quiero mi 20% OFF"}
@@ -188,74 +200,53 @@ export function LeadPopup() {
               </form>
 
               {/* Sellos de confianza */}
-              <div className="mt-6 flex items-start justify-between gap-2 sm:justify-start sm:gap-7">
+              <div className="mt-5 flex items-start gap-4">
                 {TRUST.map(({ Icon, label }) => (
-                  <div key={label} className="flex max-w-[31%] flex-col items-center gap-1.5 text-center sm:max-w-[88px]">
+                  <div key={label} className="flex w-[64px] flex-col items-center gap-1 text-center">
                     <Icon className="h-5 w-5" strokeWidth={1.5} style={{ color: CAFE }} />
-                    <span className="text-[10.5px] leading-tight" style={{ color: `${CAFE}99` }}>{label}</span>
+                    <span className="text-[10px] leading-tight" style={{ color: `${CAFE}99` }}>{label}</span>
                   </div>
                 ))}
               </div>
 
               {/* Prueba social */}
-              <div className="mt-6 flex items-center gap-3">
+              <div className="mt-5 flex items-center gap-2.5">
                 <div className="flex -space-x-2">
                   {[0, 1, 2, 3].map((n) => (
-                    <span
-                      key={n}
-                      className="flex h-7 w-7 items-center justify-center rounded-full border-2"
-                      style={{ borderColor: CREMA, backgroundColor: n % 2 ? `${TERRA}33` : `${CAFE}1A` }}
-                    >
-                      <User className="h-3.5 w-3.5" style={{ color: `${CAFE}99` }} />
+                    <span key={n} className="flex h-6 w-6 items-center justify-center rounded-full border-2" style={{ borderColor: CREMA, backgroundColor: n % 2 ? `${TERRA}33` : `${CAFE}1A` }}>
+                      <User className="h-3 w-3" style={{ color: `${CAFE}99` }} />
                     </span>
                   ))}
                 </div>
-                <p className="text-[11px] leading-tight" style={{ color: `${CAFE}99` }}>
-                  Únete a <span className="font-semibold" style={{ color: CAFE }}>+5.000 personas</span> que eligen
-                  consciencia y bienestar.
+                <p className="text-[10.5px] leading-tight" style={{ color: `${CAFE}99` }}>
+                  Únete a más de <span className="font-semibold" style={{ color: CAFE }}>5.000 personas</span> que eligen consciencia y bienestar.
                 </p>
               </div>
 
-              <button onClick={close} className="mt-4 self-start text-[11px] transition-colors" style={{ color: `${CAFE}66` }}>
+              <button onClick={close} className="mt-4 self-start text-[11px]" style={{ color: `${CAFE}66` }}>
                 No, gracias
               </button>
-            </>
+            </div>
           ) : (
-            <div className="py-4 text-center sm:text-left">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-100 sm:mx-0">
+            <div className="max-w-[78%] py-2">
+              <div className="mb-4 flex h-13 w-13 items-center justify-center rounded-full bg-green-100" style={{ height: 52, width: 52 }}>
                 <CheckCircle className="h-7 w-7 text-green-600" />
               </div>
-              <h3 className="font-serif text-3xl font-medium" style={{ color: CAFE }}>¡Listo! Te llegó por correo</h3>
+              <h3 className="font-serif text-3xl font-medium leading-tight" style={{ color: CAFE }}>¡Listo! Te llegó por correo</h3>
               <p className="mt-2 text-sm" style={{ color: `${CAFE}99` }}>Usa este código en tu primera compra:</p>
               <button
                 onClick={copy}
-                className="mt-5 flex w-full items-center justify-center gap-3 rounded-xl border px-6 py-4 transition-colors"
-                style={{ borderColor: `${TERRA}55`, backgroundColor: `${TERRA}12` }}
+                className="mt-4 flex items-center gap-3 rounded-xl border px-5 py-3.5 transition-colors"
+                style={{ borderColor: `${TERRA}55`, backgroundColor: `${TERRA}14` }}
               >
                 <span className="font-mono text-2xl font-bold tracking-widest" style={{ color: TERRA }}>{code}</span>
                 {copied ? <CheckCircle className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" style={{ color: `${TERRA}AA` }} />}
               </button>
-              <Button onClick={close} className="mt-5 h-12 w-full rounded-xl font-bold" style={{ backgroundColor: CAFE, color: CREMA }}>
+              <Button onClick={close} className="mt-4 h-11 rounded-xl px-6 font-bold" style={{ backgroundColor: CAFE, color: CREMA }}>
                 Empezar a comprar
               </Button>
             </div>
           )}
-        </div>
-
-        {/* ── Lado imagen (MAHAI) ── */}
-        <div className="relative order-1 h-44 w-full flex-shrink-0 sm:order-2 sm:h-auto sm:w-[44%]">
-          <Image
-            src="/images/popup-mahai.png"
-            alt="Aroma MAHAI de Cliché"
-            fill
-            sizes="(max-width: 640px) 100vw, 440px"
-            className="object-cover"
-            style={{ objectPosition: "center" }}
-            priority
-          />
-          {/* Fundido sutil hacia el contenido para integrar la unión */}
-          <div className="absolute inset-0 hidden bg-gradient-to-r from-[#FAF8F5] via-transparent to-transparent sm:block" />
-          <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[#FAF8F5] to-transparent sm:hidden" />
         </div>
       </div>
     </div>
