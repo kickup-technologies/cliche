@@ -337,9 +337,6 @@ export function Header() {
                       <DropdownMenuItem asChild>
                         <Link href="/cuenta?seccion=datos" className="flex h-12 cursor-pointer items-center gap-3 rounded-[14px] px-4 text-[15px] text-[#2D1A14] focus:bg-[#F8F2EE] focus:text-[#A67163] sm:h-14 sm:px-[18px]"><User className="h-[18px] w-[18px]" /> <span className="flex-1">Mis datos</span> <ChevronRight className="h-4 w-4 opacity-30" /></Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href="/cuenta?seccion=direcciones" className="flex h-12 cursor-pointer items-center gap-3 rounded-[14px] px-4 text-[15px] text-[#2D1A14] focus:bg-[#F8F2EE] focus:text-[#A67163] sm:h-14 sm:px-[18px]"><MapPin className="h-[18px] w-[18px]" /> <span className="flex-1">Direcciones</span> <ChevronRight className="h-4 w-4 opacity-30" /></Link>
-                      </DropdownMenuItem>
                       <DropdownMenuSeparator className="my-1.5" />
                       <DropdownMenuItem onClick={() => signOut()} className="flex h-12 cursor-pointer items-center gap-3 rounded-[14px] px-4 text-[15px] text-red-500/90 focus:bg-red-50 focus:text-red-600 sm:px-[18px]">
                         <LogOut className="h-[18px] w-[18px]" /> <span className="flex-1">Cerrar sesión</span>
