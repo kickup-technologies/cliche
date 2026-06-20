@@ -218,14 +218,13 @@ function SeccionPedidos({ orders, products }: { orders: Order[] | null; products
   ]
   return (
     <div className="space-y-10">
-      {/* Encabezado compuesto con foto grande (sin contenedor) */}
-      <div className="flex items-center gap-6">
-        <div className="flex-1">
-          <h1 className="font-serif text-3xl font-medium sm:text-4xl" style={{ color: CAFE }}>Mis pedidos</h1>
-          <p className="mt-2 max-w-md text-sm leading-relaxed" style={{ color: `${CAFE}99` }}>Consulta el estado de tus pedidos, rastrea envíos y revisa el historial completo de tus compras.</p>
-        </div>
-        <div className="relative hidden h-[150px] w-[360px] max-w-[44%] flex-shrink-0 overflow-hidden rounded-[20px] sm:block">
-          <Image src={HERO_IMG} alt="" fill className="object-cover" sizes="380px" />
+      {/* Hero único: imagen full-bleed de fondo + overlay + texto encima */}
+      <div className="relative h-[220px] w-full overflow-hidden rounded-[24px] sm:h-[240px]">
+        <Image src={HERO_IMG} alt="" fill priority className="object-cover object-center" sizes="(max-width: 1024px) 100vw, 760px" />
+        <div aria-hidden className="absolute inset-0" style={{ background: "linear-gradient(90deg, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.38) 38%, rgba(0,0,0,0.05) 100%)" }} />
+        <div className="relative flex h-full flex-col justify-center px-7 sm:px-10">
+          <h1 className="font-serif text-3xl font-medium text-white sm:text-4xl">Mis pedidos</h1>
+          <p className="mt-2 max-w-sm text-sm leading-relaxed text-white/85">Consulta el estado de tus pedidos, rastrea envíos y revisa el historial completo de tus compras.</p>
         </div>
       </div>
 
