@@ -2,20 +2,22 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { ShoppingBag, ChevronDown, Heart, Instagram, User, Package, MapPin, Settings, LogOut, LogIn } from "lucide-react"
+import { ShoppingBag, ChevronDown, ChevronRight, Heart, Instagram, User, Package, LogOut, LogIn, Crown } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { useCart } from "@/context/cart-context"
 import { useFavorites } from "@/context/favorites-context"
 import { useAuth } from "@/context/auth-context"
+import { getSupabaseBrowser } from "@/lib/supabase/client"
+import { tierOf, SPENT_STATUSES, formatCOP } from "@/lib/loyalty"
 import { SEGMENTS } from "@/lib/segments"
 
 // Navegación depurada: cada enlace tiene un destino DISTINTO (sin redundancias).
@@ -69,6 +71,18 @@ export function Header() {
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
+
+  // Datos del cliente para el menú de cuenta (nombre real + nivel Cliché Club).
+  const [orders, setOrders] = useState<{ status: string; total: number }[]>([])
+  useEffect(() => {
+    if (!user) { setOrders([]); return }
+    getSupabaseBrowser().from("orders").select("status, total")
+      .then(({ data }: { data: { status: string; total: number }[] | null }) => setOrders(data ?? []))
+  }, [user])
+  const accountName = (((user?.user_metadata?.first_name as string) || (user?.user_metadata?.full_name as string) || user?.email?.split("@")[0] || "").trim()) || "Cuenta"
+  const spent = orders.filter((o) => SPENT_STATUSES.includes(o.status)).reduce((s, o) => s + (o.total || 0), 0)
+  const { tier, next } = tierOf(spent)
+  const clubProgress = next ? Math.min(100, Math.round(((spent - tier.min) / (next.min - tier.min)) * 100)) : 100
 
   const navLink = (extra = "") =>
     `text-[11px] font-medium uppercase tracking-[0.18em] transition-colors ${
@@ -285,40 +299,62 @@ export function Header() {
               <DropdownMenuTrigger className={`${iconBtn} outline-none`} aria-label="Mi cuenta">
                 <User className="h-[18px] w-[18px]" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" sideOffset={10} className="w-80 overflow-hidden rounded-2xl border-foreground/10 p-0">
                 {user ? (
                   <>
-                    <DropdownMenuLabel className="font-normal">
-                      <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Mi cuenta</p>
-                      <p className="truncate text-sm font-medium text-foreground">{user.email}</p>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
+                    {/* Cabecera con banner de Mis pedidos */}
+                    <div className="relative px-4 py-4">
+                      <Image src="/images/cuenta/pedidos-banner.jpg" alt="" fill className="object-cover object-right" sizes="320px" />
+                      <div aria-hidden className="absolute inset-0" style={{ background: "linear-gradient(90deg, #FAF8F5 0%, #FAF8F5 40%, rgba(250,248,245,0.65) 68%, rgba(250,248,245,0.1) 100%)" }} />
+                      <div className="relative flex items-center gap-3">
+                        <div className="relative flex-shrink-0">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full font-serif text-lg font-bold" style={{ backgroundColor: "#2D1A14", color: "#FAF8F5" }}>{accountName.charAt(0).toUpperCase()}</div>
+                          <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full ring-2" style={{ backgroundColor: "#E0B341", color: "#2D1A14", borderColor: "#FAF8F5" }}><Crown className="h-3 w-3" /></span>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[11px] leading-none" style={{ color: "#2D1A1499" }}>Hola,</p>
+                          <p className="mt-0.5 truncate font-serif text-lg leading-tight" style={{ color: "#2D1A14" }}>{accountName}</p>
+                          <p className="mt-0.5 flex items-center gap-1 text-[11px] font-semibold" style={{ color: "#A07A1F" }}><Crown className="h-3 w-3" /> Miembro {tier.name}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Opciones */}
+                    <div className="p-2">
+                      <DropdownMenuItem asChild>
+                        <Link href="/cuenta?seccion=pedidos" className="cursor-pointer gap-3 rounded-xl py-2.5"><Package className="h-[18px] w-[18px]" /> <span className="flex-1">Mis pedidos</span> <ChevronRight className="h-4 w-4 opacity-30" /></Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/cuenta?seccion=datos" className="cursor-pointer gap-3 rounded-xl py-2.5"><User className="h-[18px] w-[18px]" /> <span className="flex-1">Mis datos</span> <ChevronRight className="h-4 w-4 opacity-30" /></Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer gap-3 rounded-xl py-2.5 text-red-600 focus:text-red-600">
+                        <LogOut className="h-[18px] w-[18px]" /> <span className="flex-1">Cerrar sesión</span>
+                      </DropdownMenuItem>
+                    </div>
+
+                    {/* Cliché Club */}
                     <DropdownMenuItem asChild>
-                      <Link href="/cuenta?seccion=pedidos" className="cursor-pointer gap-2"><Package className="h-4 w-4" /> Mis pedidos</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/cuenta?seccion=datos" className="cursor-pointer gap-2"><User className="h-4 w-4" /> Mis datos</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/cuenta?seccion=direcciones" className="cursor-pointer gap-2"><MapPin className="h-4 w-4" /> Direcciones</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/cuenta?seccion=config" className="cursor-pointer gap-2"><Settings className="h-4 w-4" /> Configuración</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer gap-2 text-red-600 focus:text-red-600">
-                      <LogOut className="h-4 w-4" /> Cerrar sesión
+                      <Link href="/cuenta?seccion=pedidos" className="mx-2 mb-2 cursor-pointer gap-3 rounded-xl p-3" style={{ backgroundColor: "#A671631a" }}>
+                        <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: "#E0B34133" }}><Crown className="h-4 w-4" style={{ color: "#A07A1F" }} /></span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-semibold" style={{ color: "#2D1A14" }}>Cliché Club {tier.name}</span>
+                          <span className="block text-[11px]" style={{ color: "#2D1A1499" }}>{next ? `Faltan ${formatCOP(next.min - spent)} para nivel ${next.name}` : "Nivel máximo alcanzado ✨"}</span>
+                          <span className="mt-1.5 block h-1 overflow-hidden rounded-full" style={{ backgroundColor: "#2D1A1418" }}><span className="block h-full rounded-full" style={{ width: `${clubProgress}%`, backgroundColor: "#E0B341" }} /></span>
+                        </span>
+                        <ChevronRight className="h-4 w-4 flex-shrink-0 opacity-30" />
+                      </Link>
                     </DropdownMenuItem>
                   </>
                 ) : (
-                  <>
+                  <div className="p-2">
                     <DropdownMenuItem asChild>
                       <Link href="/cuenta" className="cursor-pointer gap-2"><LogIn className="h-4 w-4" /> Iniciar sesión</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href="/cuenta" className="cursor-pointer gap-2"><User className="h-4 w-4" /> Crear cuenta</Link>
                     </DropdownMenuItem>
-                  </>
+                  </div>
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
