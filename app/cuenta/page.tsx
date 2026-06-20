@@ -70,7 +70,6 @@ type SecId = (typeof NAV)[number]["id"]
 function Dashboard({ email, createdAt, signOut }: { email: string; createdAt?: string; signOut: () => Promise<void> }) {
   const params = useSearchParams()
   const seccion = (params.get("seccion") || "pedidos") as SecId
-  const { count: favCount } = useFavorites()
   const [orders, setOrders] = useState<Order[] | null>(null)
   const [products, setProducts] = useState<Product[]>([])
 
@@ -86,11 +85,9 @@ function Dashboard({ email, createdAt, signOut }: { email: string; createdAt?: s
   return (
     <section className="mx-auto max-w-6xl px-4 pb-24 pt-24 sm:px-6 sm:pt-28">
       <div className="grid gap-x-12 gap-y-8 lg:grid-cols-[330px_1fr]">
-        {/* ── EXPERIENCIA (no menú): perfil → stats → aroma → navegación ── */}
+        {/* ── IDENTIDAD + NAVEGACIÓN (no es un segundo dashboard) ── */}
         <div>
           <ProfileCard email={email} createdAt={createdAt} orders={orders} />
-          <QuickStats orders={orders} favCount={favCount} />
-          <AromaWow product={products[0]} />
 
           <p className="mb-2 mt-8 px-1 text-[11px] font-semibold uppercase tracking-[0.28em]" style={{ color: `${CAFE}55` }}>Tu cuenta</p>
           <nav className="flex flex-col">
@@ -111,6 +108,7 @@ function Dashboard({ email, createdAt, signOut }: { email: string; createdAt?: s
             </button>
           </nav>
 
+          <ClubBenefits orders={orders} />
           <HelpCard />
         </div>
 
@@ -169,42 +167,27 @@ function ProfileCard({ email, createdAt, orders }: { email: string; createdAt?: 
   )
 }
 
-/* Stats rápidos — sin cajas, flotando sobre el fondo */
-function QuickStats({ orders, favCount }: { orders: Order[] | null; favCount: number }) {
-  const pedidos = orders?.length ?? 0
-  const devoluciones = orders?.filter(o => o.status === "cancelled").length ?? 0
-  const items = [{ n: pedidos, l: "Pedidos" }, { n: favCount, l: "Favoritos" }, { n: devoluciones, l: "Devoluciones" }]
+/* Tarjeta Beneficios Club — identidad, no dashboard (sin stats ni productos) */
+function ClubBenefits({ orders }: { orders: Order[] | null }) {
+  const spent = (orders || []).filter(o => ["confirmed", "shipped", "delivered", "paid"].includes(o.status)).reduce((s, o) => s + (o.total || 0), 0)
+  const { tier } = tierOf(spent)
+  const benefits = [
+    { icon: Truck, text: "Envío gratis en todos tus pedidos" },
+    { icon: Star, text: "Acceso anticipado a ofertas y lanzamientos" },
+    { icon: Crown, text: `Beneficios nivel ${tier.name}` },
+  ]
   return (
-    <div className="mt-5 flex items-center justify-between px-2">
-      {items.map((it, i) => (
-        <div key={it.l} className="flex flex-1 flex-col items-center" style={{ borderLeft: i ? `1px solid ${CAFE}14` : "none" }}>
-          <span className="font-serif text-2xl" style={{ color: CAFE }}>{it.n}</span>
-          <span className="text-[11px]" style={{ color: `${CAFE}80` }}>{it.l}</span>
-        </div>
-      ))}
+    <div className="mt-6 rounded-[24px] p-5" style={{ backgroundColor: "#fff", boxShadow: "0 14px 40px -30px rgba(45,26,20,0.55)" }}>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.24em]" style={{ color: `${CAFE}55` }}>Beneficios Club</p>
+      <ul className="mt-3 space-y-3">
+        {benefits.map((b) => (
+          <li key={b.text} className="flex items-start gap-3">
+            <b.icon className="mt-0.5 h-[18px] w-[18px] flex-shrink-0" strokeWidth={1.5} style={{ color: TERRA }} />
+            <span className="text-[13px] leading-snug" style={{ color: `${CAFE}cc` }}>{b.text}</span>
+          </li>
+        ))}
+      </ul>
     </div>
-  )
-}
-
-/* Elemento "wow" — aroma recomendado con foto grande */
-function AromaWow({ product }: { product?: Product }) {
-  if (!product) return null
-  const notes = NOTES_MAP[product.slug] || []
-  return (
-    <Link href={`/productos/${product.slug}`} className="group mt-6 block overflow-hidden rounded-[24px] bg-white shadow-[0_18px_50px_-32px_rgba(45,26,20,0.5)]">
-      <div className="relative aspect-[4/3] w-full overflow-hidden" style={{ backgroundColor: `${TERRA}0D` }}>
-        <Image src={product.image_url || "/images/placeholder.jpg"} alt={product.name} fill sizes="330px" className="object-contain p-4 transition-transform duration-700 group-hover:scale-105" />
-        <span className="absolute left-3 top-3 rounded-full bg-white/85 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide backdrop-blur" style={{ color: TERRA }}>Tu aroma recomendado</span>
-      </div>
-      <div className="p-4">
-        <p className="font-serif text-lg leading-tight" style={{ color: CAFE }}>{product.name}</p>
-        {notes.length > 0 && <p className="mt-0.5 text-xs" style={{ color: `${CAFE}80` }}>{notes.slice(0, 3).join(" · ")}</p>}
-        <div className="mt-2 flex items-center justify-between">
-          <span className="text-sm font-semibold" style={{ color: TERRA }}>{fmt(product.price)}</span>
-          <span className="flex items-center gap-1 text-xs font-semibold transition-transform group-hover:translate-x-0.5" style={{ color: CAFE }}>Descubrir <ArrowRight className="h-3.5 w-3.5" /></span>
-        </div>
-      </div>
-    </Link>
   )
 }
 
