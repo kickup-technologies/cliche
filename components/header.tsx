@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
@@ -79,6 +79,11 @@ export function Header() {
     getSupabaseBrowser().from("orders").select("status, total")
       .then(({ data }: { data: { status: string; total: number }[] | null }) => setOrders(data ?? []))
   }, [user])
+  // Menú de cuenta: se abre al pasar el cursor (con retardo al salir para alcanzar el menú).
+  const [accountOpen, setAccountOpen] = useState(false)
+  const accountTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const openAccount = () => { if (accountTimer.current) clearTimeout(accountTimer.current); setAccountOpen(true) }
+  const closeAccountSoon = () => { if (accountTimer.current) clearTimeout(accountTimer.current); accountTimer.current = setTimeout(() => setAccountOpen(false), 160) }
   const accountName = (((user?.user_metadata?.first_name as string) || (user?.user_metadata?.full_name as string) || user?.email?.split("@")[0] || "").trim()) || "Cuenta"
   const spent = orders.filter((o) => SPENT_STATUSES.includes(o.status)).reduce((s, o) => s + (o.total || 0), 0)
   const { tier, next } = tierOf(spent)
@@ -295,11 +300,11 @@ export function Header() {
                 </span>
               )}
             </Link>
-            <DropdownMenu>
-              <DropdownMenuTrigger className={`${iconBtn} outline-none`} aria-label="Mi cuenta">
+            <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen} modal={false}>
+              <DropdownMenuTrigger onMouseEnter={openAccount} onMouseLeave={closeAccountSoon} className={`${iconBtn} outline-none`} aria-label="Mi cuenta">
                 <User className="h-[18px] w-[18px]" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" sideOffset={10} className="w-80 overflow-hidden rounded-2xl border-foreground/10 p-0">
+              <DropdownMenuContent align="end" sideOffset={10} onMouseEnter={openAccount} onMouseLeave={closeAccountSoon} className="w-80 overflow-hidden rounded-2xl border-foreground/10 p-0">
                 {user ? (
                   <>
                     {/* Cabecera con banner de Mis pedidos */}
