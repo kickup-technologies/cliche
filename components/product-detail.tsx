@@ -364,13 +364,13 @@ export function ProductDetail({ product, related }: Props) {
                 {/* Main viewer — photo mode or 3D render */}
                 <div className="relative">
                   {selectedImage ? (
-                    /* Photo selected: show in a clean contained box */
-                    <div className="relative aspect-square rounded-3xl overflow-hidden bg-muted/20">
+                    /* Photo selected: la foto llena el marco (4:5, sin huecos) */
+                    <div className="relative aspect-[4/5] rounded-3xl overflow-hidden bg-muted/20">
                       <Image
                         src={selectedImage}
                         alt={product.name}
                         fill
-                        className="object-contain p-6"
+                        className="object-cover"
                         sizes="(max-width: 1024px) 100vw, 50vw"
                       />
                       {product.badge && (
