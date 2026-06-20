@@ -128,15 +128,21 @@ function Dashboard({ email, createdAt, signOut }: { email: string; createdAt?: s
    se desliza por la barra y el resaltado lo sigue en tiempo real (mismo efecto
    que el hover en escritorio); al soltar, selecciona. La pill crece al tocar.
    Iconos (cada sección ya muestra su título en el contenido). */
+const TAB_EASE = "left 0.3s cubic-bezier(0.22,1,0.36,1), width 0.3s cubic-bezier(0.22,1,0.36,1), opacity 0.2s ease"
 function AccountTabs({ seccion }: { seccion: SecId }) {
   const router = useRouter()
   const barRef = useRef<HTMLDivElement>(null)
+  const indRef = useRef<HTMLSpanElement>(null)
   const [ind, setInd] = useState({ left: 0, width: 0, opacity: 0 })
   const [dragging, setDragging] = useState(false)
-  const dragId = useRef<SecId | null>(null)
+  // Geometría e índice objetivo se guardan en refs para NO re-renderizar al arrastrar.
+  const drag = useRef<{ pad: number; itemW: number; idx: number } | null>(null)
 
-  const setToEl = (el: HTMLElement | null) => { if (el) setInd({ left: el.offsetLeft, width: el.offsetWidth, opacity: 1 }) }
-  const setToActive = () => setToEl(barRef.current?.querySelector<HTMLElement>('[data-active="true"]') ?? null)
+  const activeRect = () => {
+    const el = barRef.current?.querySelector<HTMLElement>('[data-active="true"]')
+    return el ? { left: el.offsetLeft, width: el.offsetWidth } : null
+  }
+  const setToActive = () => { const r = activeRect(); if (r) setInd({ ...r, opacity: 1 }) }
   useEffect(() => { setToActive() }, [seccion])
   useEffect(() => {
     const onResize = () => setToActive()
@@ -144,21 +150,46 @@ function AccountTabs({ seccion }: { seccion: SecId }) {
     return () => window.removeEventListener("resize", onResize)
   }, [])
 
-  const tabFromTouch = (t: React.Touch) =>
-    (document.elementFromPoint(t.clientX, t.clientY) as HTMLElement | null)?.closest<HTMLElement>("[data-tab]") ?? null
+  // Coloca el resaltado EXACTAMENTE bajo la X del dedo (continuo, con clamp) —
+  // escribe directo al DOM, sin estado de React, para que sea 1:1 sin lag.
+  const place = (clientX: number) => {
+    const bar = barRef.current, span = indRef.current, d = drag.current
+    if (!bar || !span || !d) return
+    const x = clientX - bar.getBoundingClientRect().left
+    const maxLeft = d.pad + d.itemW * (NAV.length - 1)
+    const left = Math.max(d.pad, Math.min(x - d.itemW / 2, maxLeft))
+    span.style.left = `${left}px`
+    span.style.width = `${d.itemW}px`
+    d.idx = Math.max(0, Math.min(NAV.length - 1, Math.floor((x - d.pad) / d.itemW)))
+  }
   const onStart = (e: React.TouchEvent) => {
-    const el = tabFromTouch(e.touches[0]); if (!el) return
-    setDragging(true); dragId.current = (el.dataset.tab as SecId) ?? null; setToEl(el)
+    const bar = barRef.current; if (!bar) return
+    const pad = 6 // p-1.5
+    const itemW = (bar.clientWidth - pad * 2) / NAV.length
+    drag.current = { pad, itemW, idx: NAV.findIndex((n) => n.id === seccion) }
+    if (indRef.current) { indRef.current.style.transition = "none"; indRef.current.style.opacity = "1" }
+    setDragging(true)
+    place(e.touches[0].clientX)
   }
   const onMove = (e: React.TouchEvent) => {
-    if (!dragging) return
-    const el = tabFromTouch(e.touches[0])
-    if (el) { e.preventDefault(); dragId.current = (el.dataset.tab as SecId) ?? null; setToEl(el) }
+    if (!drag.current) return
+    e.preventDefault()
+    place(e.touches[0].clientX)
   }
   const onEnd = () => {
+    const idx = drag.current?.idx ?? -1
+    drag.current = null
     setDragging(false)
-    if (dragId.current && dragId.current !== seccion) router.push(`/cuenta?seccion=${dragId.current}`)
-    else setToActive()
+    if (indRef.current) indRef.current.style.transition = TAB_EASE // restaurar para el "snap"
+    const target = NAV[idx]
+    if (target && target.id !== seccion) {
+      router.push(`/cuenta?seccion=${target.id}`)
+    } else {
+      // Misma sección: animar de vuelta al activo aunque el estado no cambie.
+      const r = activeRect()
+      if (r && indRef.current) { indRef.current.style.left = `${r.left}px`; indRef.current.style.width = `${r.width}px` }
+      setToActive()
+    }
   }
 
   return (
@@ -168,17 +199,17 @@ function AccountTabs({ seccion }: { seccion: SecId }) {
         onTouchStart={onStart}
         onTouchMove={onMove}
         onTouchEnd={onEnd}
-        className="relative mx-auto flex w-full select-none items-center justify-between rounded-full bg-white p-1.5 shadow-[0_16px_44px_-26px_rgba(45,26,20,0.65)] transition-transform duration-200 ease-out"
+        className="relative mx-auto flex w-full touch-none select-none items-center justify-between rounded-full bg-white p-1.5 shadow-[0_16px_44px_-26px_rgba(45,26,20,0.65)] transition-transform duration-200 ease-out"
         style={{ transform: dragging ? "scale(1.045)" : "scale(1)" }}
       >
-        {/* Resaltado que sigue al dedo (y descansa en la sección activa) */}
-        <span aria-hidden className="pointer-events-none absolute bottom-1.5 top-1.5 z-0 rounded-full"
-          style={{ left: ind.left, width: ind.width, opacity: ind.opacity, backgroundColor: `${TERRA}24`, transition: dragging ? "left 0.12s linear, width 0.12s linear" : "left 0.32s cubic-bezier(0.22,1,0.36,1), width 0.32s cubic-bezier(0.22,1,0.36,1), opacity 0.2s ease" }} />
+        {/* Resaltado: sigue la X del dedo al arrastrar; descansa en la sección activa. */}
+        <span ref={indRef} aria-hidden className="pointer-events-none absolute bottom-1.5 top-1.5 z-0 rounded-full"
+          style={{ left: ind.left, width: ind.width, opacity: ind.opacity, backgroundColor: `${TERRA}24`, transition: TAB_EASE }} />
         {NAV.map(({ id, label, icon: Icon }) => {
           const active = seccion === id
           return (
             <Link key={id} href={`/cuenta?seccion=${id}`} data-tab={id} data-active={active} aria-label={label}
-              className="relative z-10 flex h-11 flex-1 items-center justify-center rounded-full transition-colors"
+              className="relative z-10 flex h-11 flex-1 items-center justify-center rounded-full"
               style={{ color: active ? TERRA : `${CAFE}80` }}>
               <Icon className="h-[19px] w-[19px]" strokeWidth={active ? 2 : 1.6} />
             </Link>
