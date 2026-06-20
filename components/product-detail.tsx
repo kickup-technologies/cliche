@@ -9,6 +9,7 @@ import { useFavorites } from "@/context/favorites-context"
 import { useCAPI } from "@/lib/use-capi"
 import { useSiteSettings } from "@/lib/use-site-settings"
 import { parseUrgencyConfig, fillUrgency } from "@/lib/urgency"
+import { usePersonalizedUrgency } from "@/lib/personalized-urgency"
 import { getCatalogProduct } from "@/lib/catalog-data"
 
 const SprayBottle3D = dynamic(
@@ -161,6 +162,20 @@ export function ProductDetail({ product, related }: Props) {
   // Configuración de Urgencia Inteligente (editable desde el admin → sección Urgencia)
   const settings = useSiteSettings()
   const urgency = parseUrgencyConfig(settings.urgency_config)
+  // Urgencia PERSONALIZADA por sesión (se activa solo si el visitante muestra
+  // interés en ESTE producto). Decoplada del stock real (que es privado).
+  const pUrg = usePersonalizedUrgency(product.slug)
+  const [offerLeft, setOfferLeft] = useState<{ m: number; s: number } | null>(null)
+  useEffect(() => {
+    if (!pUrg?.active) { setOfferLeft(null); return }
+    const tick = () => {
+      const diff = Math.max(0, pUrg.offerEndsAt - Date.now())
+      setOfferLeft({ m: Math.floor(diff / 60000), s: Math.floor((diff % 60000) / 1000) })
+    }
+    tick()
+    const t = setInterval(tick, 1000)
+    return () => clearInterval(t)
+  }, [pUrg])
   // Valor determinista para SSR (evita hydration mismatch). El número real,
   // aleatorio dentro del rango del admin, se siembra tras el montaje (efecto abajo).
   const [viewers, setViewers] = useState(12)
@@ -381,9 +396,10 @@ export function ProductDetail({ product, related }: Props) {
                           </span>
                         </div>
                       )}
-                      {urgency.low_stock.enabled && product.stock <= urgency.low_stock.threshold && product.stock > 0 && (
+                      {/* Escasez PERSONALIZADA (ficción decoplada del stock real) */}
+                      {pUrg?.active && product.stock > 0 && (
                         <div className="absolute top-4 right-4 text-[11px] font-medium tracking-wide text-foreground/80 bg-background/80 backdrop-blur-sm border border-foreground/10 px-3 py-1.5 rounded-full">
-                          {fillUrgency(urgency.low_stock.message, { stock: product.stock })}
+                          ¡Solo quedan {pUrg.units} unidades!
                         </div>
                       )}
                     </>
@@ -566,19 +582,22 @@ export function ProductDetail({ product, related }: Props) {
                 </button>
               </div>
 
-              {/* Urgency timer — oferta por tiempo limitado (configurable en admin → Urgencia) */}
-              {urgency.countdown.enabled && product.original_price && (
+              {/* Oferta PERSONALIZADA por tiempo limitado — solo si el visitante
+                  muestra interés en este producto (enlace directo o vista repetida). */}
+              {pUrg?.active && offerLeft && (
                 <div className="flex items-center gap-3 bg-secondary/60 border border-primary/15 rounded-2xl px-4 py-3">
                   <Timer className="w-4 h-4 text-primary flex-shrink-0" />
                   <div className="flex-1">
-                    <p className="text-[11px] font-semibold text-foreground/80 uppercase tracking-[0.12em]">{urgency.countdown.headline}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{urgency.countdown.message}{" "}
-                      <span className="font-mono font-semibold text-foreground">{pad(timeLeft.h)}:{pad(timeLeft.m)}:{pad(timeLeft.s)}</span>
+                    <p className="text-[11px] font-semibold text-foreground/80 uppercase tracking-[0.12em]">{pUrg.headline}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Termina en{" "}
+                      <span className="font-mono font-semibold text-foreground">{pad(offerLeft.m)}:{pad(offerLeft.s)}</span>
                     </p>
                   </div>
-                  <span className="text-xs font-medium text-foreground/60 bg-foreground/[0.05] border border-foreground/10 px-2.5 py-1 rounded-lg">
-                    -{Math.round((1 - product.price / product.original_price) * 100)}%
-                  </span>
+                  {product.original_price && (
+                    <span className="text-xs font-medium text-foreground/60 bg-foreground/[0.05] border border-foreground/10 px-2.5 py-1 rounded-lg">
+                      -{Math.round((1 - product.price / product.original_price) * 100)}%
+                    </span>
+                  )}
                 </div>
               )}
 
@@ -656,7 +675,7 @@ export function ProductDetail({ product, related }: Props) {
                   <p className="text-sm text-muted-foreground">
                     {tier.units > 1
                       ? `${qty} kit${qty !== 1 ? "s" : ""} · ${qty * tier.units} frascos`
-                      : `${product.stock} en existencia`}
+                      : product.stock > 0 ? "Disponible" : "Agotado"}
                   </p>
                 </div>
 

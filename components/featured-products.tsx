@@ -167,18 +167,7 @@ export function FeaturedProducts() {
                       {product.badge}
                     </span>
                   )}
-                  {product.stock > 0 && product.stock <= 3 && (
-                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-red-600 text-white flex items-center gap-1 animate-pulse">
-                      <Flame className="w-3 h-3" />
-                      ¡{product.stock === 1 ? "Última unidad" : `Solo ${product.stock} quedan`}!
-                    </span>
-                  )}
-                  {product.stock > 3 && product.stock <= 10 && (
-                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-orange-500 text-white flex items-center gap-1">
-                      <Flame className="w-3 h-3" />
-                      Pocas unidades
-                    </span>
-                  )}
+                  {/* El stock real es privado: en las tarjetas solo se indica "Agotado". */}
                   {product.stock === 0 && (
                     <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-400 text-white">
                       Agotado

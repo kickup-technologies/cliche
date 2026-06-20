@@ -68,7 +68,6 @@ function ProductCard({ product, onQuickView }: { product: Product; onQuickView: 
   const [added, setAdded] = useState(false)
   const secondImg = product.image_urls?.[1]
   const soldOut = product.stock === 0
-  const low = product.stock > 0 && product.stock <= 3
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation()
@@ -101,9 +100,6 @@ function ProductCard({ product, onQuickView }: { product: Product; onQuickView: 
         <div className="absolute left-2.5 top-2.5 flex flex-col items-start gap-1.5">
           {product.badge && (
             <span className="rounded-full bg-foreground px-2.5 py-1 text-[0.55rem] font-semibold uppercase tracking-[0.16em] text-background shadow-sm">{product.badge}</span>
-          )}
-          {low && (
-            <span className="rounded-full bg-primary px-2.5 py-1 text-[0.55rem] font-semibold uppercase tracking-[0.16em] text-primary-foreground shadow-sm">Últimas unidades</span>
           )}
           {soldOut && (
             <span className="rounded-full bg-foreground/55 px-2.5 py-1 text-[0.55rem] font-semibold uppercase tracking-[0.16em] text-background">Agotado</span>
