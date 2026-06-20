@@ -35,6 +35,7 @@ interface CartContextType {
   updateQuantity: (productId: string, quantity: number) => void
   clearCart: () => void
   replaceCart: (items: CartItem[]) => void
+  hydrated: boolean
   total: number
   itemCount: number
   checkout: () => void
@@ -50,20 +51,28 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
   const [isCheckingOut, setIsCheckingOut] = useState(false)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  // `hydrated` evita que la persistencia inicial escriba [] (sobreescribiendo el
+  // carrito guardado) y permite que CartSync espere a tener el carrito real.
+  const [hydrated, setHydrated] = useState(false)
   const { track } = useCAPI()
 
   const openDrawer = useCallback(() => setIsDrawerOpen(true), [])
   const closeDrawer = useCallback(() => setIsDrawerOpen(false), [])
 
-  // Persistir carrito en localStorage
+  // Cargar carrito de localStorage (una vez) y marcar hidratado.
   useEffect(() => {
-    const saved = localStorage.getItem("cliche-cart")
-    if (saved) setItems(JSON.parse(saved))
+    try {
+      const saved = localStorage.getItem("cliche-cart")
+      if (saved) setItems(JSON.parse(saved))
+    } catch {}
+    setHydrated(true)
   }, [])
 
+  // Persistir SOLO después de hidratar (no pisar el guardado con el [] inicial).
   useEffect(() => {
+    if (!hydrated) return
     localStorage.setItem("cliche-cart", JSON.stringify(items))
-  }, [items])
+  }, [items, hydrated])
 
   const addItem = useCallback((product: Product, quantity: number = 1) => {
     const qty = Math.max(1, quantity)
@@ -170,7 +179,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   return (
     <CartContext.Provider
-      value={{ items, addItem, addPack, removeItem, updateQuantity, clearCart, replaceCart, total, itemCount, checkout, isCheckingOut, isDrawerOpen, openDrawer, closeDrawer }}
+      value={{ items, addItem, addPack, removeItem, updateQuantity, clearCart, replaceCart, hydrated, total, itemCount, checkout, isCheckingOut, isDrawerOpen, openDrawer, closeDrawer }}
     >
       {children}
     </CartContext.Provider>

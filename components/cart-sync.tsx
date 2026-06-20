@@ -31,7 +31,7 @@ function mergeCarts(server: CartItem[], local: CartItem[]): CartItem[] {
 
 export function CartSync() {
   const { user } = useAuth()
-  const { items, replaceCart, clearCart } = useCart()
+  const { items, replaceCart, clearCart, hydrated } = useCart()
   const itemsRef = useRef(items)
   itemsRef.current = items
   const loadedFor = useRef<string | null>(null)
@@ -39,6 +39,8 @@ export function CartSync() {
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
+    // Esperar a que el carrito local esté hidratado para no fusionar con [] vacío.
+    if (!hydrated) return
     const uid = user?.id ?? null
 
     // ── Cierre de sesión: limpiar el carrito local para no heredarlo a otro ──
@@ -63,14 +65,25 @@ export function CartSync() {
       .maybeSingle()
       .then(({ data }: { data: { items: CartItem[] } | null }) => {
         const server = Array.isArray(data?.items) ? (data!.items as CartItem[]) : []
+        const local = itemsRef.current
         let owner: string | null = null
         try { owner = localStorage.getItem(OWNER_KEY) } catch {}
-        // Solo fusionamos si el carrito local pertenecía a un INVITADO.
-        const next = owner === "guest" || owner === null ? mergeCarts(server, itemsRef.current) : server
+        let next: CartItem[]
+        if (owner === uid) {
+          // Recarga del MISMO usuario: el servidor manda (evita doble conteo);
+          // si el servidor está vacío, conservamos el local (recuperación).
+          next = server.length ? server : local
+        } else if (owner === "guest" || owner === null) {
+          // Invitado → cuenta: traemos lo que el invitado había agregado.
+          next = mergeCarts(server, local)
+        } else {
+          // Carrito que pertenecía a OTRO usuario: usar solo el del servidor (no cruzar).
+          next = server
+        }
         replaceCart(next)
         try { localStorage.setItem(OWNER_KEY, uid) } catch {}
       })
-  }, [user, replaceCart, clearCart])
+  }, [user, hydrated, replaceCart, clearCart])
 
   // Guardar cambios del carrito en la cuenta (debounce).
   useEffect(() => {
