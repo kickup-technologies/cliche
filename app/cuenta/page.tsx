@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useEffect, useState } from "react"
+import { Suspense, useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useSearchParams } from "next/navigation"
@@ -89,24 +89,7 @@ function Dashboard({ email, createdAt, signOut }: { email: string; createdAt?: s
         <div>
           <ProfileCard email={email} createdAt={createdAt} orders={orders} />
 
-          <p className="mb-2 mt-8 px-1 text-[11px] font-semibold uppercase tracking-[0.28em]" style={{ color: `${CAFE}55` }}>Tu cuenta</p>
-          <nav className="flex flex-col">
-            {NAV.map(({ id, label, icon: Icon }) => {
-              const active = seccion === id
-              return (
-                <Link key={id} href={`/cuenta?seccion=${id}`}
-                  className="group flex h-[52px] items-center gap-3 rounded-2xl px-3 text-sm font-medium transition-all"
-                  style={{ backgroundColor: active ? "#fff" : "transparent", color: active ? TERRA : CAFE, boxShadow: active ? "0 12px 30px -20px rgba(45,26,20,0.45)" : "none" }}>
-                  <Icon className="h-[18px] w-[18px]" strokeWidth={1.5} style={{ color: active ? TERRA : `${CAFE}88` }} />
-                  <span className="flex-1">{label}</span>
-                  <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" style={{ color: `${CAFE}30` }} />
-                </Link>
-              )
-            })}
-            <button onClick={() => signOut()} className="flex h-[52px] items-center gap-3 rounded-2xl px-3 text-sm font-medium text-red-600/90 transition-colors hover:bg-red-50/60">
-              <LogOut className="h-[18px] w-[18px]" strokeWidth={1.5} /> <span className="flex-1 text-left">Cerrar sesión</span>
-            </button>
-          </nav>
+          <AccountNav seccion={seccion} signOut={signOut} />
 
           <ClubBenefits orders={orders} />
           <HelpCard />
@@ -125,6 +108,54 @@ function Dashboard({ email, createdAt, signOut }: { email: string; createdAt?: s
         </div>
       </div>
     </section>
+  )
+}
+
+/* Navegación con "cursor" deslizante vertical: el indicador sigue al puntero en
+   hover y descansa sobre la sección activa al soltar (adaptación vertical del
+   patrón de cursor deslizante, con transición CSS en vez de framer-motion). */
+function AccountNav({ seccion, signOut }: { seccion: SecId; signOut: () => Promise<void> }) {
+  const listRef = useRef<HTMLDivElement>(null)
+  const [ind, setInd] = useState({ top: 0, height: 0, opacity: 0 })
+
+  const moveTo = (el: HTMLElement | null) => {
+    if (el) setInd({ top: el.offsetTop, height: el.offsetHeight, opacity: 1 })
+  }
+  const resetToActive = () => {
+    const el = listRef.current?.querySelector<HTMLElement>('[data-active="true"]')
+    if (el) setInd({ top: el.offsetTop, height: el.offsetHeight, opacity: 1 })
+    else setInd((p) => ({ ...p, opacity: 0 }))
+  }
+  // Reposicionar el indicador sobre la sección activa al montar / cambiar de sección.
+  useEffect(() => { resetToActive() }, [seccion])
+
+  return (
+    <>
+      <p className="mb-2 mt-8 px-1 text-[11px] font-semibold uppercase tracking-[0.28em]" style={{ color: `${CAFE}55` }}>Tu cuenta</p>
+      <div ref={listRef} className="relative flex flex-col" onMouseLeave={resetToActive}>
+        {/* Indicador deslizante (detrás del texto) */}
+        <span aria-hidden className="pointer-events-none absolute left-0 right-0 z-0 rounded-2xl"
+          style={{ top: ind.top, height: ind.height, opacity: ind.opacity, backgroundColor: "#fff", boxShadow: "0 12px 30px -20px rgba(45,26,20,0.45)", transition: "top 0.32s cubic-bezier(0.22,1,0.36,1), height 0.32s cubic-bezier(0.22,1,0.36,1), opacity 0.2s ease" }} />
+        {NAV.map(({ id, label, icon: Icon }) => {
+          const active = seccion === id
+          return (
+            <Link key={id} href={`/cuenta?seccion=${id}`} data-active={active}
+              onMouseEnter={(e) => moveTo(e.currentTarget)}
+              className="group relative z-10 flex h-[52px] items-center gap-3 rounded-2xl px-3 text-sm font-medium transition-colors"
+              style={{ color: active ? TERRA : CAFE }}>
+              <Icon className="h-[18px] w-[18px]" strokeWidth={1.5} style={{ color: active ? TERRA : `${CAFE}88` }} />
+              <span className="flex-1">{label}</span>
+              <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" style={{ color: `${CAFE}30` }} />
+            </Link>
+          )
+        })}
+        <button onClick={() => signOut()} data-active={false}
+          onMouseEnter={(e) => moveTo(e.currentTarget)}
+          className="group relative z-10 flex h-[52px] items-center gap-3 rounded-2xl px-3 text-sm font-medium text-red-600/90 transition-colors">
+          <LogOut className="h-[18px] w-[18px]" strokeWidth={1.5} /> <span className="flex-1 text-left">Cerrar sesión</span>
+        </button>
+      </div>
+    </>
   )
 }
 
