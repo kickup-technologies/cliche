@@ -6,7 +6,7 @@ import Image from "next/image"
 import { useSearchParams, useRouter } from "next/navigation"
 import {
   Mail, Lock, LogOut, Package, MapPin, User as UserIcon, Settings, CheckCircle, AlertCircle,
-  Loader2, Plus, Trash2, CreditCard, Heart, Star, Bell, Truck, RotateCcw, ShieldCheck,
+  Loader2, Plus, Trash2, Heart, Star, Truck, RotateCcw, ShieldCheck,
   Crown, ChevronRight, ArrowRight, PackageOpen, Sparkles, Phone, Calendar, Monitor, Pencil,
   Smartphone, Tablet, type LucideIcon,
 } from "lucide-react"
@@ -60,10 +60,6 @@ const NAV = [
   { id: "pedidos", label: "Mis pedidos", icon: Package },
   { id: "datos", label: "Mis datos", icon: UserIcon },
   { id: "direcciones", label: "Direcciones", icon: MapPin },
-  { id: "pagos", label: "Métodos de pago", icon: CreditCard },
-  { id: "deseos", label: "Lista de deseos", icon: Heart },
-  { id: "resenas", label: "Mis reseñas", icon: Star },
-  { id: "notificaciones", label: "Notificaciones", icon: Bell },
   { id: "config", label: "Configuración", icon: Settings },
 ] as const
 type SecId = (typeof NAV)[number]["id"]
@@ -107,10 +103,6 @@ function Dashboard({ email, createdAt, signOut }: { email: string; createdAt?: s
           {seccion === "pedidos" && <SeccionPedidos orders={orders} products={products} />}
           {seccion === "datos" && <SeccionDatos email={email} />}
           {seccion === "direcciones" && <SeccionDirecciones />}
-          {seccion === "pagos" && <SeccionPagos />}
-          {seccion === "deseos" && <SeccionDeseos />}
-          {seccion === "resenas" && <SeccionResenas />}
-          {seccion === "notificaciones" && <SeccionNotificaciones />}
           {seccion === "config" && <SeccionConfig />}
         </div>
 
@@ -800,58 +792,6 @@ function SeccionDirecciones() {
       ) : (
         <button onClick={() => setAdding(true)} className="mt-4 inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-medium transition-colors hover:bg-black/5" style={{ borderColor: TERRA, color: TERRA }}><Plus className="h-4 w-4" /> Añadir dirección</button>
       )}
-    </Panel>
-  )
-}
-
-function SeccionPagos() {
-  return (
-    <Panel title="Métodos de pago" desc="Cómo se procesan tus pagos.">
-      <div className="flex items-start gap-3 rounded-2xl bg-white p-5 shadow-[0_12px_36px_-28px_rgba(45,26,20,0.5)]">
-        <ShieldCheck className="mt-0.5 h-6 w-6 flex-shrink-0" style={{ color: TERRA }} />
-        <div className="text-sm" style={{ color: `${CAFE}99` }}>
-          <p className="font-medium" style={{ color: CAFE }}>Pagos 100% seguros con Wompi</p>
-          <p className="mt-1">Por tu seguridad no guardamos datos de tarjetas. Cada compra se procesa cifrada en la pasarela de Wompi (tarjetas, PSE, Nequi y más).</p>
-        </div>
-      </div>
-    </Panel>
-  )
-}
-
-function SeccionDeseos() {
-  return <Panel title="Lista de deseos" desc="Tus aromas guardados como favoritos."><div className="rounded-2xl border border-dashed py-10 text-center text-sm" style={{ borderColor: `${CAFE}20`, color: `${CAFE}99` }}>Gestiona tus favoritos en <Link href="/favoritos" className="font-semibold" style={{ color: TERRA }}>Lista de deseos →</Link></div></Panel>
-}
-function SeccionResenas() {
-  return <Panel title="Mis reseñas" desc="Las opiniones que has compartido."><div className="rounded-2xl border border-dashed py-10 text-center text-sm" style={{ borderColor: `${CAFE}20`, color: `${CAFE}99` }}>Aún no has escrito reseñas. Cuéntanos qué te parecieron tus aromas desde la ficha de cada producto.</div></Panel>
-}
-
-function SeccionNotificaciones() {
-  const { user } = useAuth()
-  const initial = (user?.user_metadata?.notifs as { ofertas?: boolean; pedidos?: boolean; novedades?: boolean }) || {}
-  const [prefs, setPrefs] = useState({ ofertas: initial.ofertas !== false, pedidos: initial.pedidos !== false, novedades: initial.novedades !== false })
-  const [saved, setSaved] = useState(false)
-  async function toggle(key: keyof typeof prefs) {
-    const next = { ...prefs, [key]: !prefs[key] }; setPrefs(next); setSaved(false)
-    await getSupabaseBrowser().auth.updateUser({ data: { notifs: next } }); setSaved(true); setTimeout(() => setSaved(false), 2000)
-  }
-  const rows: { key: keyof typeof prefs; t: string; s: string }[] = [
-    { key: "ofertas", t: "Ofertas y descuentos", s: "Promos exclusivas y códigos." },
-    { key: "pedidos", t: "Estado de mis pedidos", s: "Avisos de envío y entrega." },
-    { key: "novedades", t: "Novedades y lanzamientos", s: "Nuevos aromas y colecciones." },
-  ]
-  return (
-    <Panel title="Notificaciones" desc="Elige qué quieres recibir.">
-      <div className="space-y-2">
-        {rows.map((r) => (
-          <div key={r.key} className="flex items-center justify-between rounded-2xl bg-white px-4 py-3 shadow-[0_10px_30px_-26px_rgba(45,26,20,0.5)]">
-            <div><p className="text-sm font-medium" style={{ color: CAFE }}>{r.t}</p><p className="text-xs" style={{ color: `${CAFE}80` }}>{r.s}</p></div>
-            <button onClick={() => toggle(r.key)} aria-label={r.t} className="relative h-6 w-11 flex-shrink-0 rounded-full transition-colors" style={{ backgroundColor: prefs[r.key] ? TERRA : `${CAFE}25` }}>
-              <span className="absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all" style={{ left: prefs[r.key] ? "calc(100% - 1.375rem)" : "0.125rem" }} />
-            </button>
-          </div>
-        ))}
-      </div>
-      {saved && <p className="mt-3 flex items-center gap-1 text-sm text-green-600"><CheckCircle className="h-4 w-4" /> Preferencias guardadas</p>}
     </Panel>
   )
 }
