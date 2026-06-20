@@ -21,9 +21,10 @@ const CAFE = "#2D1A14"
 const TERRA = "#A67163"
 const fmt = (n: number) => `$${(n || 0).toLocaleString("es-CO")}`
 
-/* ── Imágenes que el dueño cargará luego (espacio ya reservado con degradado) ── */
-const PROFILE_BG = "" // p. ej. "/images/cuenta/perfil.jpg"
-const HELP_IMG = ""   // p. ej. "/images/cuenta/ayuda.jpg"
+/* ── Imágenes (el dueño puede reemplazarlas luego por las suyas) ── */
+const PROFILE_BG = "/images/popup-mahai.png" // fondo de la tarjeta de membresía
+const HELP_IMG = "/images/products/tao.png"  // imagen de la tarjeta de ayuda
+const HERO_IMG = "/images/popup-mahai.png"   // banner del encabezado "Mis pedidos"
 
 type Order = { id: string; created_at: string; status: string; total: number }
 
@@ -71,25 +72,28 @@ function Dashboard({ email, createdAt, signOut }: { email: string; createdAt?: s
 
   return (
     <section className="mx-auto max-w-6xl px-4 pb-24 pt-24 sm:px-5 sm:pt-28">
-      <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
-        {/* ── Columna izquierda: perfil + nav + ayuda ── */}
+      <div className="grid gap-6 lg:grid-cols-[340px_1fr]">
+        {/* ── Columna izquierda: membresía + nav + beneficios + ayuda ── */}
         <div className="space-y-4">
           <ProfileCard email={email} createdAt={createdAt} orders={orders} />
-          <nav className="rounded-2xl border bg-white p-2.5" style={{ borderColor: `${CAFE}12` }}>
+          <nav className="flex flex-col gap-1">
             {NAV.map(({ id, label, icon: Icon }) => {
               const active = seccion === id
               return (
-                <Link key={id} href={`/cuenta?seccion=${id}`} className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors"
-                  style={{ backgroundColor: active ? `${TERRA}1A` : "transparent", color: active ? TERRA : CAFE }}>
-                  <Icon className="h-[18px] w-[18px]" /> {label}
+                <Link key={id} href={`/cuenta?seccion=${id}`}
+                  className="group flex h-14 items-center gap-3 rounded-2xl px-4 text-sm font-medium transition-all"
+                  style={{ backgroundColor: active ? "#fff" : "transparent", color: active ? TERRA : CAFE, boxShadow: active ? "0 10px 30px -18px rgba(45,26,20,0.5)" : "none" }}>
+                  <Icon className="h-[18px] w-[18px]" strokeWidth={1.6} style={{ color: active ? TERRA : `${CAFE}99` }} />
+                  <span className="flex-1">{label}</span>
+                  <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" style={{ color: `${CAFE}40` }} />
                 </Link>
               )
             })}
-            <div className="my-1 h-px" style={{ background: `${CAFE}10` }} />
-            <button onClick={() => signOut()} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-red-600 transition-colors hover:bg-red-50">
-              <LogOut className="h-[18px] w-[18px]" /> Cerrar sesión
+            <button onClick={() => signOut()} className="mt-1 flex h-14 items-center gap-3 rounded-2xl px-4 text-sm font-medium text-red-600 transition-colors hover:bg-red-50/70">
+              <LogOut className="h-[18px] w-[18px]" strokeWidth={1.6} /> <span className="flex-1 text-left">Cerrar sesión</span>
             </button>
           </nav>
+          <ClubBenefits orders={orders} />
           <HelpCard />
         </div>
 
@@ -126,13 +130,10 @@ function ProfileCard({ email, createdAt, orders }: { email: string; createdAt?: 
   const memberSince = createdAt ? new Date(createdAt).toLocaleDateString("es-CO", { month: "short", year: "numeric" }) : ""
 
   return (
-    <div className="relative overflow-hidden rounded-2xl p-5 text-white" style={{ backgroundColor: CAFE }}>
-      {/* Espacio reservado para imagen de fondo (el dueño la pasará luego) */}
-      {PROFILE_BG ? (
-        <Image src={PROFILE_BG} alt="" fill className="object-cover opacity-30" sizes="300px" />
-      ) : (
-        <div aria-hidden className="absolute inset-0" style={{ background: `radial-gradient(120% 120% at 100% 0%, ${TERRA}66, transparent 60%)` }} />
-      )}
+    <div className="relative min-h-[200px] overflow-hidden rounded-3xl p-5 text-white shadow-[0_18px_50px_-24px_rgba(45,26,20,0.5)]" style={{ backgroundColor: CAFE }}>
+      {/* Fondo fotográfico del perfume + overlay oscuro para legibilidad */}
+      {PROFILE_BG && <Image src={PROFILE_BG} alt="" fill className="object-cover" sizes="320px" />}
+      <div aria-hidden className="absolute inset-0" style={{ background: `linear-gradient(160deg, rgba(45,26,20,0.78) 0%, rgba(45,26,20,0.62) 45%, rgba(45,26,20,0.85) 100%)` }} />
       <div className="relative">
         <div className="flex items-center gap-3">
           <div className="relative flex h-12 w-12 items-center justify-center rounded-full text-lg font-bold" style={{ backgroundColor: `${CREMA}` , color: CAFE }}>
@@ -168,14 +169,39 @@ function ProfileCard({ email, createdAt, orders }: { email: string; createdAt?: 
   )
 }
 
+const CLUB_BENEFITS: Record<string, string[]> = {
+  Plata: ["Envío gratis desde $300.000", "Acceso a ofertas de temporada"],
+  Oro: ["8% de descuento siempre", "Envíos prioritarios", "Acceso anticipado a lanzamientos"],
+  Platino: ["12% de descuento siempre", "Envío gratis sin mínimo", "Regalos exclusivos", "Atención VIP"],
+}
+function ClubBenefits({ orders }: { orders: Order[] | null }) {
+  const spent = (orders || []).filter(o => ["confirmed", "shipped", "delivered", "paid"].includes(o.status)).reduce((s, o) => s + (o.total || 0), 0)
+  let tier: string = TIERS[0].name
+  for (let i = TIERS.length - 1; i >= 0; i--) if (spent >= TIERS[i].min) { tier = TIERS[i].name; break }
+  return (
+    <div className="rounded-3xl border bg-white p-5" style={{ borderColor: `${CAFE}0D`, boxShadow: "0 12px 36px -26px rgba(45,26,20,0.35)" }}>
+      <div className="flex items-center gap-2">
+        <Crown className="h-4 w-4" style={{ color: "#E0B341" }} />
+        <p className="font-serif text-base" style={{ color: CAFE }}>Beneficios Club {tier}</p>
+      </div>
+      <ul className="mt-3 space-y-2">
+        {CLUB_BENEFITS[tier].map((b) => (
+          <li key={b} className="flex items-start gap-2 text-[13px]" style={{ color: `${CAFE}B0` }}>
+            <CheckCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" style={{ color: TERRA }} /> {b}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 function HelpCard() {
   return (
-    <div className="relative overflow-hidden rounded-2xl border bg-white p-5" style={{ borderColor: `${CAFE}12` }}>
-      {/* Espacio reservado para imagen (el dueño la pasará luego) */}
-      {HELP_IMG && <Image src={HELP_IMG} alt="" width={80} height={80} className="absolute bottom-0 right-0 h-20 w-20 object-contain opacity-90" />}
+    <div className="relative overflow-hidden rounded-3xl p-5 pr-24" style={{ backgroundColor: `${TERRA}14` }}>
+      {HELP_IMG && <Image src={HELP_IMG} alt="" width={110} height={110} className="pointer-events-none absolute -bottom-2 -right-3 h-28 w-28 object-contain" />}
       <p className="font-serif text-lg" style={{ color: CAFE }}>¿Necesitas ayuda?</p>
-      <p className="mt-1 text-xs" style={{ color: `${CAFE}99` }}>Estamos para ti</p>
-      <Link href="/contacto" className="mt-3 inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-semibold transition-colors hover:bg-black/5" style={{ borderColor: TERRA, color: TERRA }}>
+      <p className="mt-1 text-xs" style={{ color: `${CAFE}99` }}>Habla con un asesor</p>
+      <Link href="/contacto" className="mt-3 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90" style={{ backgroundColor: TERRA }}>
         Contáctanos <ArrowRight className="h-3.5 w-3.5" />
       </Link>
     </div>
@@ -183,16 +209,21 @@ function HelpCard() {
 }
 
 /* ─────────────────────────── SECCIONES ─────────────────────────── */
-function Panel({ title, desc, children, hero }: { title: string; desc?: string; children: React.ReactNode; hero?: boolean }) {
+function Panel({ title, desc, children, heroImg }: { title: string; desc?: string; children: React.ReactNode; heroImg?: string }) {
   return (
-    <div className="rounded-2xl border bg-white p-6 sm:p-8" style={{ borderColor: `${CAFE}12` }}>
-      <div className={hero ? "flex flex-wrap items-start justify-between gap-4" : ""}>
+    <div className="overflow-hidden rounded-3xl bg-white" style={{ boxShadow: "0 18px 50px -34px rgba(45,26,20,0.4)" }}>
+      <div className="flex items-start justify-between gap-4 p-6 sm:p-8">
         <div>
           <h2 className="font-serif text-2xl font-medium sm:text-3xl" style={{ color: CAFE }}>{title}</h2>
-          {desc && <p className="mt-1 max-w-md text-sm" style={{ color: `${CAFE}99` }}>{desc}</p>}
+          {desc && <p className="mt-1 max-w-md text-sm leading-relaxed" style={{ color: `${CAFE}99` }}>{desc}</p>}
         </div>
+        {heroImg && (
+          <div className="relative hidden h-24 w-36 flex-shrink-0 overflow-hidden rounded-2xl sm:block" style={{ backgroundColor: `${TERRA}10` }}>
+            <Image src={heroImg} alt="" fill className="object-contain p-2" sizes="160px" />
+          </div>
+        )}
       </div>
-      <div className="mt-6">{children}</div>
+      <div className="px-6 pb-6 sm:px-8 sm:pb-8">{children}</div>
     </div>
   )
 }
@@ -211,12 +242,12 @@ function SeccionPedidos({ orders }: { orders: Order[] | null }) {
 
   return (
     <div className="space-y-6">
-      <Panel title="Mis pedidos" desc="Consulta el estado de tus pedidos, rastrea envíos y revisa el historial completo de tus compras." hero>
+      <Panel title="Mis pedidos" desc="Consulta el estado de tus pedidos, rastrea envíos y revisa el historial completo de tus compras." heroImg={HERO_IMG}>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {stats.map((s) => (
-            <div key={s.label} className="rounded-xl border p-4" style={{ borderColor: `${CAFE}12` }}>
-              <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg" style={{ backgroundColor: `${TERRA}12` }}>
-                <s.icon className="h-[18px] w-[18px]" style={{ color: TERRA }} />
+            <div key={s.label} className="rounded-2xl p-4 transition-shadow hover:shadow-[0_12px_30px_-20px_rgba(45,26,20,0.5)]" style={{ backgroundColor: `${TERRA}08` }}>
+              <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-white">
+                <s.icon className="h-[18px] w-[18px]" strokeWidth={1.6} style={{ color: TERRA }} />
               </div>
               <p className="font-serif text-2xl" style={{ color: CAFE }}>{s.n}</p>
               <p className="text-xs" style={{ color: `${CAFE}99` }}>{s.label}</p>
@@ -225,17 +256,19 @@ function SeccionPedidos({ orders }: { orders: Order[] | null }) {
           ))}
         </div>
 
-        <div className="mt-6">
+        <div className="mt-5">
           {orders === null ? (
-            <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin" style={{ color: TERRA }} /></div>
+            <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" style={{ color: TERRA }} /></div>
           ) : orders.length === 0 ? (
-            <div className="flex flex-col items-center rounded-2xl py-12 text-center" style={{ backgroundColor: `${TERRA}08` }}>
-              <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full" style={{ backgroundColor: `${TERRA}14` }}>
-                <Package className="h-9 w-9" style={{ color: TERRA }} />
+            <div className="flex items-center gap-4 rounded-2xl px-5 py-5" style={{ backgroundColor: `${TERRA}08` }}>
+              <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: `${TERRA}14` }}>
+                <Package className="h-7 w-7" strokeWidth={1.4} style={{ color: TERRA }} />
               </div>
-              <p className="font-serif text-xl" style={{ color: CAFE }}>Aún no tienes pedidos</p>
-              <p className="mt-1 max-w-sm text-sm" style={{ color: `${CAFE}99` }}>Parece que todavía no has realizado ninguna compra. Explora nuestras fragancias y encuentra tu próximo favorito.</p>
-              <Link href="/catalogo" className="mt-5 rounded-full px-7 py-3 text-sm font-bold" style={{ backgroundColor: TERRA, color: CREMA }}>Explorar aromas</Link>
+              <div className="min-w-0 flex-1">
+                <p className="font-serif text-lg" style={{ color: CAFE }}>Aún no tienes pedidos</p>
+                <p className="text-xs" style={{ color: `${CAFE}99` }}>Explora nuestras fragancias y encuentra tu próximo favorito.</p>
+              </div>
+              <Link href="/catalogo" className="flex-shrink-0 rounded-full px-5 py-2.5 text-xs font-bold" style={{ backgroundColor: TERRA, color: CREMA }}>Explorar</Link>
             </div>
           ) : (
             <ul className="space-y-2">
@@ -265,23 +298,23 @@ function Recomendados() {
   useEffect(() => {
     fetch("/api/products").then(r => r.json()).then((all: Product[]) => {
       const list = (Array.isArray(all) ? all : []).filter(p => p.is_active !== false && !p.slug?.startsWith("kit-"))
-      setProducts([...list].sort(() => Math.random() - 0.5).slice(0, 4))
+      setProducts([...list].sort(() => Math.random() - 0.5).slice(0, 8))
     }).catch(() => {})
   }, [])
   if (!products.length) return null
   return (
-    <div className="rounded-2xl border bg-white p-6 sm:p-8" style={{ borderColor: `${CAFE}12` }}>
+    <div className="overflow-hidden rounded-3xl bg-white p-6 sm:p-8" style={{ boxShadow: "0 18px 50px -34px rgba(45,26,20,0.4)" }}>
       <p className="text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: TERRA }}>Te puede interesar</p>
-      <p className="mt-1 text-sm" style={{ color: `${CAFE}99` }}>Aromas que podrían gustarte</p>
-      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <p className="mt-1 font-serif text-xl" style={{ color: CAFE }}>Aromas que podrían gustarte</p>
+      <div className="-mx-2 mt-5 flex snap-x gap-3 overflow-x-auto px-2 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {products.map((p) => (
-          <div key={p.id} className="group rounded-xl border p-2.5" style={{ borderColor: `${CAFE}10` }}>
-            <Link href={`/productos/${p.slug}`} className="relative block aspect-square overflow-hidden rounded-lg" style={{ backgroundColor: `${TERRA}0A` }}>
-              <Image src={p.image_url || "/images/placeholder.jpg"} alt={p.name} fill sizes="160px" className="object-contain p-1.5 transition-transform group-hover:scale-105" />
+          <div key={p.id} className="group w-[160px] flex-shrink-0 snap-start">
+            <Link href={`/productos/${p.slug}`} className="relative block aspect-square overflow-hidden rounded-2xl" style={{ backgroundColor: `${TERRA}0A` }}>
+              <Image src={p.image_url || "/images/placeholder.jpg"} alt={p.name} fill sizes="160px" className="object-contain p-2 transition-transform duration-500 group-hover:scale-105" />
+              <button onClick={(e) => { e.preventDefault(); toggleFavorite(p) }} className="absolute right-2 top-2 rounded-full bg-white/85 p-1.5 backdrop-blur transition-colors" aria-label="Favorito">
+                <Heart className={`h-3.5 w-3.5 ${isFavorite(p.id) ? "fill-red-500 text-red-500" : ""}`} style={{ color: isFavorite(p.id) ? undefined : `${CAFE}80` }} />
+              </button>
             </Link>
-            <button onClick={() => toggleFavorite(p)} className="float-right -mt-7 mr-1 rounded-full bg-white/80 p-1.5 backdrop-blur" aria-label="Favorito">
-              <Heart className={`h-3.5 w-3.5 ${isFavorite(p.id) ? "fill-red-500 text-red-500" : ""}`} style={{ color: isFavorite(p.id) ? undefined : `${CAFE}80` }} />
-            </button>
             <Link href={`/productos/${p.slug}`}>
               <p className="mt-2 line-clamp-1 text-[13px] font-medium" style={{ color: CAFE }}>{p.name}</p>
               <p className="text-sm font-semibold" style={{ color: TERRA }}>{fmt(p.price)}</p>

@@ -54,6 +54,7 @@ export function Header() {
     (pathname?.startsWith("/productos/") ?? false) ||
     pathname === "/checkout" ||
     pathname === "/catalogo" ||
+    (pathname?.startsWith("/cuenta") ?? false) ||
     (pathname?.startsWith("/pedido") ?? false)
 
   useEffect(() => {
