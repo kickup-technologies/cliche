@@ -79,13 +79,13 @@ function ProductCard({ product, onQuickView }: { product: Product; onQuickView: 
 
   return (
     <Link href={`/productos/${product.slug}`} className="group flex flex-col">
-      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl border border-border/60 bg-gradient-to-b from-secondary/70 to-background transition-all duration-500 group-hover:-translate-y-1 group-hover:border-border group-hover:shadow-[0_22px_50px_-28px_rgba(45,26,20,0.45)]">
+      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl border border-border/40 bg-secondary/40 transition-all duration-500 group-hover:-translate-y-1 group-hover:border-border group-hover:shadow-[0_22px_50px_-28px_rgba(45,26,20,0.45)]">
         <Image
           src={product.image_url || "/images/placeholder.jpg"}
           alt={product.name}
           fill
           sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"
-          className={`object-contain p-5 transition-all duration-700 sm:p-6 ${secondImg ? "group-hover:opacity-0" : "group-hover:scale-[1.04]"}`}
+          className={`object-cover transition-all duration-700 ${secondImg ? "group-hover:opacity-0" : "group-hover:scale-[1.04]"}`}
         />
         {secondImg && (
           <Image
@@ -93,7 +93,7 @@ function ProductCard({ product, onQuickView }: { product: Product; onQuickView: 
             alt={product.name}
             fill
             sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"
-            className="object-contain p-5 opacity-0 transition-opacity duration-700 group-hover:opacity-100 sm:p-6"
+            className="object-cover opacity-0 transition-opacity duration-700 group-hover:opacity-100"
           />
         )}
 
