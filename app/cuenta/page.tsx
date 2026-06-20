@@ -25,7 +25,7 @@ const fmt = (n: number) => `$${(n || 0).toLocaleString("es-CO")}`
 
 const PROFILE_BG = "/images/cuenta/membership.jpg" // Romeo y Julieta
 const HELP_IMG = "/images/products/tao.png"
-const HERO_IMG = "/images/popup-mahai.png"
+const HERO_IMG = "/images/cuenta/pedidos-banner.jpg" // banner panorámico (3 frascos)
 
 type Order = { id: string; created_at: string; status: string; total: number }
 const TIERS = [{ name: "Plata", min: 0 }, { name: "Oro", min: 300000 }, { name: "Platino", min: 700000 }] as const
@@ -241,8 +241,8 @@ function SeccionPedidos({ orders, products }: { orders: Order[] | null; products
           <h1 className="font-serif text-3xl font-medium sm:text-4xl" style={{ color: CAFE }}>Mis pedidos</h1>
           <p className="mt-2 max-w-md text-sm leading-relaxed" style={{ color: `${CAFE}99` }}>Consulta el estado de tus pedidos, rastrea envíos y revisa el historial completo de tus compras.</p>
         </div>
-        <div className="relative hidden h-36 w-[34%] flex-shrink-0 overflow-hidden rounded-[24px] sm:block">
-          <Image src={HERO_IMG} alt="" fill className="object-cover" sizes="280px" />
+        <div className="relative hidden h-[150px] w-[360px] max-w-[44%] flex-shrink-0 overflow-hidden rounded-[20px] sm:block">
+          <Image src={HERO_IMG} alt="" fill className="object-cover" sizes="380px" />
         </div>
       </div>
 
