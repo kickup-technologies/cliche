@@ -946,10 +946,10 @@ function AuthForm() {
     finally { setLoading(false) }
   }
   return (
-    <div className="grid min-h-screen lg:grid-cols-[2fr_3fr]">
-      {/* ── Columna izquierda: formulario (40%) ── */}
-      <div className="flex items-center justify-center px-6 py-12 sm:px-10" style={{ backgroundColor: CREMA }}>
-        <div className="w-full max-w-sm">
+    <div className="grid h-screen overflow-hidden lg:grid-cols-[2fr_3fr]">
+      {/* ── Columna izquierda: formulario (40%), ÚNICA con scroll ── */}
+      <div className="flex overflow-y-auto px-6 sm:px-10" style={{ backgroundColor: CREMA }}>
+        <div className="m-auto w-full max-w-sm py-12">
           {/* Logo */}
           <div className="mb-9 text-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1056,14 +1056,10 @@ function AuthForm() {
         </div>
       </div>
 
-      {/* ── Columna derecha: imagen hero (60%, solo escritorio) ── */}
-      <div className="relative hidden overflow-hidden lg:block" style={{ backgroundColor: "#d8cfc4" }}>
-        {/* Fondo difuminado para rellenar sin dejar franjas vacías */}
+      {/* ── Columna derecha: imagen hero (60%, fija, cubre todo) ── */}
+      <div className="relative hidden h-screen lg:block">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/images/auth-hero.webp" alt="" aria-hidden="true" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-70 blur-2xl" />
-        {/* Imagen completa: se ve todo el set de frascos, sin recortes */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/images/auth-hero.webp" alt="Aromas Cliché en un paisaje natural" className="absolute inset-0 h-full w-full object-contain" />
+        <img src="/images/auth-hero.webp" alt="Aromas Cliché en un paisaje natural" className="absolute inset-0 h-full w-full object-cover" />
       </div>
     </div>
   )
