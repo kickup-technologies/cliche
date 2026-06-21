@@ -7,7 +7,10 @@ import { createServerClient } from "@/lib/supabase"
  * Reemplaza los datos inventados — evita riesgo de publicidad engañosa (SIC).
  * Si no hay compras reales, devuelve []  → el toast no se muestra.
  */
-export const dynamic = "force-dynamic"
+// Cacheado en el CDN de Vercel: 1 sola consulta a la BD por minuto para TODOS
+// los visitantes (no una por carga). Clave para escalar a miles de usuarios sin
+// saturar Supabase. El toast de social proof no necesita tiempo real.
+const CACHE = "public, s-maxage=60, stale-while-revalidate=300"
 
 function anonymizeName(full: string | null): string {
   if (!full) return "Alguien"
@@ -49,7 +52,7 @@ export async function GET() {
       })
       .filter((x): x is { name: string; city: string; product: string; minAgo: number } => x !== null)
 
-    return NextResponse.json({ purchases })
+    return NextResponse.json({ purchases }, { headers: { "Cache-Control": CACHE } })
   } catch (err) {
     console.error("[recent-purchases]", err)
     return NextResponse.json({ purchases: [] })

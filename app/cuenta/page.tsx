@@ -911,7 +911,7 @@ function AuthForm() {
     const supabase = getSupabaseBrowser()
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
           options: {
@@ -925,7 +925,18 @@ function AuthForm() {
             },
           },
         })
-        if (error) throw error
+        if (error) {
+          // Sin confirmación de correo, Supabase devuelve este error directo.
+          if (/already|registrado|registered|exists/i.test(error.message)) {
+            throw new Error("Este correo ya está registrado. Inicia sesión.")
+          }
+          throw error
+        }
+        // Con confirmación de correo activa, Supabase NO da error por seguridad:
+        // devuelve un usuario con identities vacío cuando el correo ya existe.
+        if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+          throw new Error("Este correo ya está registrado. Inicia sesión.")
+        }
         setMsg({ type: "info", text: "Te enviamos un correo de verificación. Ábrelo para activar tu cuenta." })
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })

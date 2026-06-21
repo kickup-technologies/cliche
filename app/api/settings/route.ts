@@ -96,10 +96,16 @@ export async function GET() {
       cta_subtitle: raw.cta_subtitle ?? DEFAULTS.cta_subtitle,
       newsletter_subtitle: raw.newsletter_subtitle ?? DEFAULTS.newsletter_subtitle,
       urgency_config: parseUrgencyConfig(raw.urgency_config),
+    }, {
+      // Cacheado en el CDN: la config del sitio se lee en cada carga (barra de
+      // anuncio, hero, etc.); con esto la BD recibe ~1 consulta/min en total.
+      headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
     })
   } catch (err) {
     console.error('[settings GET]', err)
-    return NextResponse.json(DEFAULTS)
+    return NextResponse.json(DEFAULTS, {
+      headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120" },
+    })
   }
 }
 
