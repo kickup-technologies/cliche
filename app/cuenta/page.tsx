@@ -898,6 +898,8 @@ function AuthForm() {
   const params = useSearchParams()
   const [mode, setMode] = useState<"login" | "signup">("login")
   const [email, setEmail] = useState(""); const [password, setPassword] = useState("")
+  const [firstName, setFirstName] = useState(""); const [lastName, setLastName] = useState("")
+  const [birth, setBirth] = useState("")
   const [loading, setLoading] = useState(false)
   const [showPwd, setShowPwd] = useState(false)
   const [remember, setRemember] = useState(true)
@@ -908,7 +910,20 @@ function AuthForm() {
     const supabase = getSupabaseBrowser()
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: `${window.location.origin}/auth/callback` } })
+        const { error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            // Se guardan en user_metadata → aparecen automáticamente en "Mis datos".
+            data: {
+              first_name: firstName.trim(),
+              last_name: lastName.trim(),
+              full_name: [firstName.trim(), lastName.trim()].filter(Boolean).join(" "),
+              birthdate: birth.trim(),
+            },
+          },
+        })
         if (error) throw error
         setMsg({ type: "info", text: "Te enviamos un correo de verificación. Ábrelo para activar tu cuenta." })
       } else {
@@ -931,8 +946,8 @@ function AuthForm() {
     finally { setLoading(false) }
   }
   return (
-    <div className="grid min-h-screen lg:grid-cols-2">
-      {/* ── Columna izquierda: formulario ── */}
+    <div className="grid min-h-screen lg:grid-cols-[2fr_3fr]">
+      {/* ── Columna izquierda: formulario (40%) ── */}
       <div className="flex items-center justify-center px-6 py-12 sm:px-10" style={{ backgroundColor: CREMA }}>
         <div className="w-full max-w-sm">
           {/* Logo */}
@@ -952,6 +967,32 @@ function AuthForm() {
           )}
 
           <form onSubmit={submit} className="mt-7 space-y-4">
+            {mode === "signup" && (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1.5 block text-xs font-medium" style={{ color: CAFE }}>Nombre</label>
+                    <div className="flex items-center gap-2 rounded-xl border px-3.5 focus-within:border-[#A67163]" style={{ borderColor: `${CAFE}20` }}>
+                      <UserIcon className="h-4 w-4 flex-shrink-0" style={{ color: `${CAFE}55` }} />
+                      <input type="text" required placeholder="Tu nombre" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="h-12 w-full flex-1 bg-transparent text-sm outline-none" style={{ color: CAFE }} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-xs font-medium" style={{ color: CAFE }}>Apellido</label>
+                    <div className="flex items-center gap-2 rounded-xl border px-3.5 focus-within:border-[#A67163]" style={{ borderColor: `${CAFE}20` }}>
+                      <input type="text" required placeholder="Tu apellido" value={lastName} onChange={(e) => setLastName(e.target.value)} className="h-12 w-full flex-1 bg-transparent text-sm outline-none" style={{ color: CAFE }} />
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium" style={{ color: CAFE }}>Fecha de nacimiento</label>
+                  <div className="flex items-center gap-2 rounded-xl border px-3.5 focus-within:border-[#A67163]" style={{ borderColor: `${CAFE}20` }}>
+                    <Calendar className="h-4 w-4 flex-shrink-0" style={{ color: `${CAFE}55` }} />
+                    <input type="text" inputMode="numeric" maxLength={10} placeholder="DD/MM/AAAA" value={birth} onChange={(e) => setBirth(formatBirth(e.target.value))} className="h-12 flex-1 bg-transparent text-sm outline-none" style={{ color: CAFE }} />
+                  </div>
+                </div>
+              </>
+            )}
             <div>
               <label className="mb-1.5 block text-xs font-medium" style={{ color: CAFE }}>Correo electrónico</label>
               <div className="flex items-center gap-2 rounded-xl border px-3.5 focus-within:border-[#A67163]" style={{ borderColor: `${CAFE}20` }}>
@@ -1015,10 +1056,14 @@ function AuthForm() {
         </div>
       </div>
 
-      {/* ── Columna derecha: imagen hero (solo escritorio) ── */}
-      <div className="relative hidden lg:block">
+      {/* ── Columna derecha: imagen hero (60%, solo escritorio) ── */}
+      <div className="relative hidden overflow-hidden lg:block" style={{ backgroundColor: "#d8cfc4" }}>
+        {/* Fondo difuminado para rellenar sin dejar franjas vacías */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/images/auth-hero.webp" alt="Aromas Cliché en un paisaje natural" className="absolute inset-0 h-full w-full object-cover" />
+        <img src="/images/auth-hero.webp" alt="" aria-hidden="true" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-70 blur-2xl" />
+        {/* Imagen completa: se ve todo el set de frascos, sin recortes */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/images/auth-hero.webp" alt="Aromas Cliché en un paisaje natural" className="absolute inset-0 h-full w-full object-contain" />
       </div>
     </div>
   )
