@@ -957,8 +957,10 @@ function AuthForm() {
             <p className="mt-2 text-[10px] font-medium uppercase tracking-[0.35em]" style={{ color: `${CAFE}80` }}>Home &amp; Lifestyle</p>
           </div>
 
-          <h1 className="text-center font-serif text-3xl font-medium" style={{ color: CAFE }}>{mode === "login" ? "Bienvenido de vuelta" : "Crea tu cuenta"}</h1>
-          <p className="mt-2 text-center text-sm" style={{ color: `${CAFE}99` }}>{mode === "login" ? "Inicia sesión para continuar" : "Regístrate para continuar"}</p>
+          <div key={mode} className="animate-in fade-in-0 duration-300">
+            <h1 className="text-center font-serif text-3xl font-medium" style={{ color: CAFE }}>{mode === "login" ? "Bienvenido de vuelta" : "Crea tu cuenta"}</h1>
+            <p className="mt-2 text-center text-sm" style={{ color: `${CAFE}99` }}>{mode === "login" ? "Inicia sesión para continuar" : "Regístrate para continuar"}</p>
+          </div>
 
           {msg && (
             <div className="mt-6 flex items-start gap-2 rounded-xl px-4 py-3 text-sm" style={{ backgroundColor: msg.type === "err" ? "#fef2f2" : msg.type === "ok" ? "#f0fdf4" : `${TERRA}12`, color: msg.type === "err" ? "#b91c1c" : msg.type === "ok" ? "#15803d" : CAFE }}>
@@ -966,64 +968,75 @@ function AuthForm() {
             </div>
           )}
 
-          <form onSubmit={submit} className="mt-7 space-y-4">
-            {mode === "signup" && (
-              <>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="mb-1.5 block text-xs font-medium" style={{ color: CAFE }}>Nombre</label>
-                    <div className="flex items-center gap-2 rounded-xl border px-3.5 focus-within:border-[#A67163]" style={{ borderColor: `${CAFE}20` }}>
-                      <UserIcon className="h-4 w-4 flex-shrink-0" style={{ color: `${CAFE}55` }} />
-                      <input type="text" required placeholder="Tu nombre" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="h-12 w-full flex-1 bg-transparent text-sm outline-none" style={{ color: CAFE }} />
+          <form onSubmit={submit} className="mt-7">
+            {/* Campos de registro: se despliegan/colapsan suavemente */}
+            <div className={`grid transition-all duration-500 ease-out ${mode === "signup" ? "grid-rows-[1fr] opacity-100 mb-4" : "grid-rows-[0fr] opacity-0"}`}>
+              <div className="overflow-hidden">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="mb-1.5 block text-xs font-medium" style={{ color: CAFE }}>Nombre</label>
+                      <div className="flex items-center gap-2 rounded-xl border px-3.5 focus-within:border-[#A67163]" style={{ borderColor: `${CAFE}20` }}>
+                        <UserIcon className="h-4 w-4 flex-shrink-0" style={{ color: `${CAFE}55` }} />
+                        <input type="text" required={mode === "signup"} placeholder="Tu nombre" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="h-12 w-full flex-1 bg-transparent text-sm outline-none" style={{ color: CAFE }} />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-xs font-medium" style={{ color: CAFE }}>Apellido</label>
+                      <div className="flex items-center gap-2 rounded-xl border px-3.5 focus-within:border-[#A67163]" style={{ borderColor: `${CAFE}20` }}>
+                        <input type="text" required={mode === "signup"} placeholder="Tu apellido" value={lastName} onChange={(e) => setLastName(e.target.value)} className="h-12 w-full flex-1 bg-transparent text-sm outline-none" style={{ color: CAFE }} />
+                      </div>
                     </div>
                   </div>
                   <div>
-                    <label className="mb-1.5 block text-xs font-medium" style={{ color: CAFE }}>Apellido</label>
+                    <label className="mb-1.5 block text-xs font-medium" style={{ color: CAFE }}>Fecha de nacimiento</label>
                     <div className="flex items-center gap-2 rounded-xl border px-3.5 focus-within:border-[#A67163]" style={{ borderColor: `${CAFE}20` }}>
-                      <input type="text" required placeholder="Tu apellido" value={lastName} onChange={(e) => setLastName(e.target.value)} className="h-12 w-full flex-1 bg-transparent text-sm outline-none" style={{ color: CAFE }} />
+                      <Calendar className="h-4 w-4 flex-shrink-0" style={{ color: `${CAFE}55` }} />
+                      <input type="text" inputMode="numeric" maxLength={10} placeholder="DD/MM/AAAA" value={birth} onChange={(e) => setBirth(formatBirth(e.target.value))} className="h-12 flex-1 bg-transparent text-sm outline-none" style={{ color: CAFE }} />
                     </div>
                   </div>
                 </div>
-                <div>
-                  <label className="mb-1.5 block text-xs font-medium" style={{ color: CAFE }}>Fecha de nacimiento</label>
-                  <div className="flex items-center gap-2 rounded-xl border px-3.5 focus-within:border-[#A67163]" style={{ borderColor: `${CAFE}20` }}>
-                    <Calendar className="h-4 w-4 flex-shrink-0" style={{ color: `${CAFE}55` }} />
-                    <input type="text" inputMode="numeric" maxLength={10} placeholder="DD/MM/AAAA" value={birth} onChange={(e) => setBirth(formatBirth(e.target.value))} className="h-12 flex-1 bg-transparent text-sm outline-none" style={{ color: CAFE }} />
-                  </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1.5 block text-xs font-medium" style={{ color: CAFE }}>Correo electrónico</label>
+                <div className="flex items-center gap-2 rounded-xl border px-3.5 focus-within:border-[#A67163]" style={{ borderColor: `${CAFE}20` }}>
+                  <Mail className="h-4 w-4 flex-shrink-0" style={{ color: `${CAFE}55` }} />
+                  <input type="email" inputMode="email" required placeholder="tu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 flex-1 bg-transparent text-sm outline-none" style={{ color: CAFE }} />
                 </div>
-              </>
-            )}
-            <div>
-              <label className="mb-1.5 block text-xs font-medium" style={{ color: CAFE }}>Correo electrónico</label>
-              <div className="flex items-center gap-2 rounded-xl border px-3.5 focus-within:border-[#A67163]" style={{ borderColor: `${CAFE}20` }}>
-                <Mail className="h-4 w-4 flex-shrink-0" style={{ color: `${CAFE}55` }} />
-                <input type="email" inputMode="email" required placeholder="tu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 flex-1 bg-transparent text-sm outline-none" style={{ color: CAFE }} />
               </div>
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-medium" style={{ color: CAFE }}>Contraseña</label>
-              <div className="flex items-center gap-2 rounded-xl border px-3.5 focus-within:border-[#A67163]" style={{ borderColor: `${CAFE}20` }}>
-                <Lock className="h-4 w-4 flex-shrink-0" style={{ color: `${CAFE}55` }} />
-                <input type={showPwd ? "text" : "password"} required minLength={6} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="h-12 flex-1 bg-transparent text-sm outline-none" style={{ color: CAFE }} />
-                <button type="button" onClick={() => setShowPwd((v) => !v)} aria-label={showPwd ? "Ocultar contraseña" : "Mostrar contraseña"} className="flex-shrink-0">
-                  {showPwd ? <EyeOff className="h-4 w-4" style={{ color: `${CAFE}55` }} /> : <Eye className="h-4 w-4" style={{ color: `${CAFE}55` }} />}
-                </button>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium" style={{ color: CAFE }}>Contraseña</label>
+                <div className="flex items-center gap-2 rounded-xl border px-3.5 focus-within:border-[#A67163]" style={{ borderColor: `${CAFE}20` }}>
+                  <Lock className="h-4 w-4 flex-shrink-0" style={{ color: `${CAFE}55` }} />
+                  <input type={showPwd ? "text" : "password"} required minLength={6} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="h-12 flex-1 bg-transparent text-sm outline-none" style={{ color: CAFE }} />
+                  <button type="button" onClick={() => setShowPwd((v) => !v)} aria-label={showPwd ? "Ocultar contraseña" : "Mostrar contraseña"} className="flex-shrink-0">
+                    {showPwd ? <EyeOff className="h-4 w-4" style={{ color: `${CAFE}55` }} /> : <Eye className="h-4 w-4" style={{ color: `${CAFE}55` }} />}
+                  </button>
+                </div>
               </div>
             </div>
 
-            {mode === "login" && (
-              <div className="flex items-center justify-between">
-                <label className="flex cursor-pointer items-center gap-2 text-xs" style={{ color: `${CAFE}99` }}>
-                  <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="h-3.5 w-3.5 rounded accent-[#A67163]" />
-                  Recordarme
-                </label>
-                <button type="button" onClick={forgotPassword} disabled={loading} className="text-xs font-medium underline-offset-2 hover:underline disabled:opacity-60" style={{ color: TERRA }}>
-                  ¿Olvidaste tu contraseña?
-                </button>
+            {/* Fila recordarme / olvidaste (solo login): se colapsa suavemente */}
+            <div className={`grid transition-all duration-500 ease-out ${mode === "login" ? "grid-rows-[1fr] opacity-100 mt-4" : "grid-rows-[0fr] opacity-0"}`}>
+              <div className="overflow-hidden">
+                <div className="flex items-center justify-between">
+                  <label className="flex cursor-pointer items-center gap-2 text-xs" style={{ color: `${CAFE}99` }}>
+                    <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="h-3.5 w-3.5 rounded accent-[#A67163]" />
+                    Recordarme
+                  </label>
+                  <button type="button" onClick={forgotPassword} disabled={loading} className="text-xs font-medium underline-offset-2 hover:underline disabled:opacity-60" style={{ color: TERRA }}>
+                    ¿Olvidaste tu contraseña?
+                  </button>
+                </div>
               </div>
-            )}
+            </div>
 
-            <button type="submit" disabled={loading} className="flex h-12 w-full items-center justify-center rounded-xl text-sm font-bold tracking-wide transition-opacity disabled:opacity-60" style={{ backgroundColor: TERRA, color: CREMA }}>{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : mode === "login" ? "Iniciar sesión" : "Crear cuenta"}</button>
+            <button type="submit" disabled={loading} className="mt-4 flex h-12 w-full items-center justify-center rounded-xl text-sm font-bold tracking-wide transition-opacity disabled:opacity-60" style={{ backgroundColor: TERRA, color: CREMA }}>
+              <span key={mode} className="animate-in fade-in-0 duration-300">{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : mode === "login" ? "Iniciar sesión" : "Crear cuenta"}</span>
+            </button>
           </form>
 
           {/* Divisor */}
