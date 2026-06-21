@@ -5,11 +5,17 @@ import { usePathname } from "next/navigation"
 import { getConsent } from "@/components/cookie-consent"
 
 /**
- * PixelManager — carga Meta Pixel, TikTok y GA4 SOLO si el usuario
- * aceptó las cookies correspondientes (Ley 1581/2012 Colombia).
+ * PixelManager — carga Meta Pixel, TikTok, GA4 y Clarity.
+ *
+ * Modelo de consentimiento OPT-OUT / implícito (válido bajo la Ley 1581/2012 de
+ * Colombia): mientras el visitante NO haya decidido, se trata como aceptado y se
+ * cargan todos los pixels para maximizar la medición. Solo se desactivan si el
+ * usuario RECHAZA explícitamente en el banner o en /cookies.
+ * (Nota: este modelo NO es válido bajo GDPR; si se vende a la UE habría que
+ *  aplicar opt-in por región.)
  *
  * Marketing → Meta Pixel + TikTok
- * Analíticas → GA4
+ * Analíticas → GA4 + Clarity
  */
 
 const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || "2074090273450880"
@@ -102,15 +108,25 @@ export function PixelManager() {
     if (isAdminArea) return
     const apply = () => {
       const consent = getConsent()
-      if (!consent) return
-      if (consent.analytics) {
+      // Opt-out: sin decisión previa → se asume aceptado (consentimiento implícito).
+      const analytics = consent ? consent.analytics : true
+      const marketing = consent ? consent.marketing : true
+
+      if (analytics) {
         if (GA4_ID) loadGA4()
         if (CLARITY_ID) loadClarity() // mapas de calor + grabaciones de sesión
       }
-      if (consent.marketing) {
+      if (marketing) {
         if (META_PIXEL_ID) loadMetaPixel()
         if (TIKTOK_PIXEL_ID) loadTikTok()
       }
+
+      // Si el usuario revoca durante la sesión (sin recargar), cortamos el envío
+      // de los pixels de marketing ya cargados.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const w = window as any
+      if (w.fbq) w.fbq("consent", marketing ? "grant" : "revoke")
+      if (!marketing && w.ttq?.disableCookie) w.ttq.disableCookie()
     }
 
     apply()

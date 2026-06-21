@@ -23,18 +23,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 1,
     },
-    {
-      url: `${baseUrl}/politica-privacidad`,
+    ...["/catalogo", "/ofertas", "/arma-tu-kit", "/nosotros"].map((path) => ({
+      url: `${baseUrl}${path}`,
       lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.3,
-    },
-    {
-      url: `${baseUrl}/terminos-condiciones`,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    })),
+    ...["/privacidad", "/terminos", "/cookies"].map((path) => ({
+      url: `${baseUrl}${path}`,
       lastModified: new Date(),
-      changeFrequency: "monthly",
+      changeFrequency: "monthly" as const,
       priority: 0.3,
-    },
+    })),
     ...productUrls,
   ]
 }

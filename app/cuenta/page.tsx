@@ -8,7 +8,7 @@ import {
   Mail, Lock, LogOut, Package, MapPin, User as UserIcon, CheckCircle, AlertCircle,
   Loader2, Plus, Trash2, Heart, Star, Truck, RotateCcw, ShieldCheck,
   Crown, ChevronRight, ArrowRight, PackageOpen, Sparkles, Phone, Calendar, Monitor, Pencil,
-  Smartphone, Tablet, type LucideIcon,
+  Smartphone, Tablet, Eye, EyeOff, type LucideIcon,
 } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -38,21 +38,25 @@ function tierOf(spent: number) {
 
 export default function CuentaPage() {
   return (
-    <main className="min-h-screen" style={{ backgroundColor: CREMA }}>
-      <Header />
-      <Suspense fallback={<div className="flex justify-center py-40"><Loader2 className="h-6 w-6 animate-spin" style={{ color: TERRA }} /></div>}>
-        <CuentaContent />
-      </Suspense>
-      <Footer />
-    </main>
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: CREMA }}><Loader2 className="h-6 w-6 animate-spin" style={{ color: TERRA }} /></div>}>
+      <CuentaContent />
+    </Suspense>
   )
 }
 
 function CuentaContent() {
   const { user, loading, signOut } = useAuth()
-  if (loading) return <div className="flex justify-center py-40"><Loader2 className="h-6 w-6 animate-spin" style={{ color: TERRA }} /></div>
-  if (!user) return <section className="mx-auto max-w-md px-5 pb-24 pt-28 sm:pt-36"><AuthForm /></section>
-  return <Dashboard email={user.email || ""} createdAt={user.created_at} signOut={signOut} />
+  if (loading) return <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: CREMA }}><Loader2 className="h-6 w-6 animate-spin" style={{ color: TERRA }} /></div>
+  // Pantalla de acceso a pantalla completa (dos columnas), sin header/footer.
+  if (!user) return <AuthForm />
+  // Sesión iniciada: panel de cuenta con header y footer.
+  return (
+    <main className="min-h-screen" style={{ backgroundColor: CREMA }}>
+      <Header />
+      <Dashboard email={user.email || ""} createdAt={user.created_at} signOut={signOut} />
+      <Footer />
+    </main>
+  )
 }
 
 /* ─────────────────────────── DASHBOARD ─────────────────────────── */
@@ -563,7 +567,7 @@ function DataField({ icon: Icon, label, value, onChange, editable, type = "text"
 }
 
 function SeccionDatos({ email }: { email: string }) {
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
   const md = (user?.user_metadata ?? {}) as Record<string, unknown>
   const fullName = (md.full_name as string) || ""
   const initial = {
@@ -585,6 +589,12 @@ function SeccionDatos({ email }: { email: string }) {
   const [pass, setPass] = useState(""); const [confirm, setConfirm] = useState("")
   const [passSaving, setPassSaving] = useState(false)
   const [passMsg, setPassMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null)
+  // Eliminar cuenta (derecho de supresión)
+  const [delText, setDelText] = useState("")
+  const [deleting, setDeleting] = useState(false)
+  const [delErr, setDelErr] = useState<string | null>(null)
+  const CONFIRM_PHRASE = "eliminar cuenta"
+  const canDelete = delText.trim().toLowerCase() === CONFIRM_PHRASE
 
   const addresses = (md.addresses as Address[]) || []
   const principal = addresses[0]
@@ -618,6 +628,21 @@ function SeccionDatos({ email }: { email: string }) {
     const { error } = await getSupabaseBrowser().auth.updateUser({ password: pass }); setPassSaving(false)
     if (error) setPassMsg({ type: "err", text: "No se pudo cambiar la contraseña." })
     else { setPassMsg({ type: "ok", text: "Contraseña actualizada." }); setPass(""); setConfirm(""); setShowPass(false) }
+  }
+  async function deleteAccount() {
+    if (!canDelete || deleting) return
+    setDeleting(true); setDelErr(null)
+    try {
+      // La sesión viaja por cookies (mismo origen): el servidor identifica al
+      // usuario de forma segura. Tras borrar, cerramos sesión y vamos al inicio.
+      const res = await fetch("/api/account/delete", { method: "POST" })
+      if (!res.ok) throw new Error()
+      await signOut()
+      window.location.href = "/"
+    } catch {
+      setDeleting(false)
+      setDelErr("No se pudo eliminar la cuenta. Inténtalo de nuevo o escríbenos.")
+    }
   }
 
   return (
@@ -763,6 +788,44 @@ function SeccionDatos({ email }: { email: string }) {
           )}
         </div>
       </LuxCard>
+
+      {/* ── Eliminar cuenta (zona de peligro) ── */}
+      <div className="rounded-3xl border p-6 sm:p-7" style={{ borderColor: "#fca5a5", backgroundColor: "#fef2f2" }}>
+        <div className="flex items-start gap-3">
+          <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" strokeWidth={1.8} style={{ color: "#dc2626" }} />
+          <div className="flex-1">
+            <p className="text-sm font-semibold" style={{ color: "#991b1b" }}>Eliminar mi cuenta</p>
+            <p className="mt-1 text-xs leading-relaxed" style={{ color: "#b91c1c" }}>
+              Esta acción es permanente. Se borrarán tus datos personales (nombre, correo, teléfono y
+              direcciones) y no podrás volver a iniciar sesión. Tus pedidos ya realizados se conservan
+              por obligación contable, pero quedan desvinculados de tu cuenta.
+            </p>
+
+            <label className="mt-4 block text-xs font-medium" style={{ color: "#991b1b" }}>
+              Para confirmar, escribe <span className="font-bold">«eliminar cuenta»</span> abajo:
+            </label>
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+              <input
+                value={delText}
+                onChange={(e) => setDelText(e.target.value)}
+                placeholder="eliminar cuenta"
+                className="h-11 flex-1 rounded-2xl border bg-white px-4 text-sm outline-none focus:border-red-400"
+                style={{ borderColor: "#fca5a5", color: "#991b1b" }}
+              />
+              <button
+                onClick={deleteAccount}
+                disabled={!canDelete || deleting}
+                className="flex h-11 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-bold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+                style={{ backgroundColor: "#dc2626" }}
+              >
+                {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                Eliminar cuenta
+              </button>
+            </div>
+            {delErr && <p className="mt-2 text-xs font-medium" style={{ color: "#b91c1c" }}>{delErr}</p>}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
@@ -836,6 +899,8 @@ function AuthForm() {
   const [mode, setMode] = useState<"login" | "signup">("login")
   const [email, setEmail] = useState(""); const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
+  const [showPwd, setShowPwd] = useState(false)
+  const [remember, setRemember] = useState(true)
   const [msg, setMsg] = useState<{ type: "ok" | "err" | "info"; text: string } | null>(null)
   useEffect(() => { if (params.get("error")) setMsg({ type: "err", text: "No se pudo verificar el enlace. Intenta de nuevo." }) }, [params])
   async function submit(e: React.FormEvent) {
@@ -853,27 +918,107 @@ function AuthForm() {
       }
     } catch (err) { setMsg({ type: "err", text: err instanceof Error ? err.message : "Ocurrió un error." }) } finally { setLoading(false) }
   }
+  async function forgotPassword() {
+    if (!email.trim()) { setMsg({ type: "err", text: "Escribe tu correo arriba y te enviamos el enlace." }); return }
+    setLoading(true); setMsg(null)
+    try {
+      const { error } = await getSupabaseBrowser().auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/auth/reset`,
+      })
+      if (error) throw error
+      setMsg({ type: "info", text: "Si el correo está registrado, te enviamos un enlace para restablecer tu contraseña. Revisa tu bandeja." })
+    } catch { setMsg({ type: "err", text: "No se pudo enviar el correo. Intenta de nuevo." }) }
+    finally { setLoading(false) }
+  }
   return (
-    <div className="overflow-hidden rounded-3xl border bg-white shadow-[0_20px_60px_-30px_rgba(45,26,20,0.35)]" style={{ borderColor: `${CAFE}12` }}>
-      <div className="h-1.5 w-full bg-gradient-to-r from-[#A67163] via-[#C4958A] to-[#A67163]" />
-      <div className="p-7 sm:p-9">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/images/logo-cliche.png" alt="Cliché" className="mx-auto mb-5 h-9 w-auto object-contain" />
-        <h1 className="text-center font-serif text-3xl font-medium" style={{ color: CAFE }}>{mode === "login" ? "Bienvenida de vuelta" : "Crea tu cuenta"}</h1>
-        <p className="mt-2 text-center text-sm" style={{ color: `${CAFE}99` }}>{mode === "login" ? "Accede a tus pedidos y tu carrito guardado." : "Guarda tu carrito y sigue tus pedidos."}</p>
-        {msg && (
-          <div className="mt-5 flex items-start gap-2 rounded-xl px-4 py-3 text-sm" style={{ backgroundColor: msg.type === "err" ? "#fef2f2" : msg.type === "ok" ? "#f0fdf4" : `${TERRA}12`, color: msg.type === "err" ? "#b91c1c" : msg.type === "ok" ? "#15803d" : CAFE }}>
-            {msg.type === "err" ? <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" /> : <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />}<span>{msg.text}</span>
+    <div className="grid min-h-screen lg:grid-cols-2">
+      {/* ── Columna izquierda: formulario ── */}
+      <div className="flex items-center justify-center px-6 py-12 sm:px-10" style={{ backgroundColor: CREMA }}>
+        <div className="w-full max-w-sm">
+          {/* Logo */}
+          <div className="mb-9 text-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/logo-cliche.png" alt="Cliché" className="mx-auto h-12 w-auto object-contain" />
+            <p className="mt-2 text-[10px] font-medium uppercase tracking-[0.35em]" style={{ color: `${CAFE}80` }}>Home &amp; Lifestyle</p>
           </div>
-        )}
-        <form onSubmit={submit} className="mt-6 space-y-3">
-          <div className="flex items-center gap-2 rounded-xl border px-3 focus-within:border-[#A67163]" style={{ borderColor: `${CAFE}20` }}><Mail className="h-4 w-4" style={{ color: `${CAFE}55` }} /><input type="email" inputMode="email" required placeholder="Tu correo electrónico" value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 flex-1 bg-transparent text-sm outline-none" style={{ color: CAFE }} /></div>
-          <div className="flex items-center gap-2 rounded-xl border px-3 focus-within:border-[#A67163]" style={{ borderColor: `${CAFE}20` }}><Lock className="h-4 w-4" style={{ color: `${CAFE}55` }} /><input type="password" required minLength={6} placeholder="Contraseña (mín. 6)" value={password} onChange={(e) => setPassword(e.target.value)} className="h-12 flex-1 bg-transparent text-sm outline-none" style={{ color: CAFE }} /></div>
-          <button type="submit" disabled={loading} className="flex h-12 w-full items-center justify-center rounded-xl text-sm font-bold tracking-wide transition-opacity disabled:opacity-60" style={{ backgroundColor: TERRA, color: CREMA }}>{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : mode === "login" ? "Iniciar sesión" : "Crear cuenta"}</button>
-        </form>
-        <p className="mt-5 text-center text-xs" style={{ color: `${CAFE}99` }}>{mode === "login" ? "¿No tienes cuenta? " : "¿Ya tienes cuenta? "}
-          <button onClick={() => { setMode(mode === "login" ? "signup" : "login"); setMsg(null) }} className="font-semibold underline-offset-2 hover:underline" style={{ color: TERRA }}>{mode === "login" ? "Créala aquí" : "Inicia sesión"}</button>
-        </p>
+
+          <h1 className="text-center font-serif text-3xl font-medium" style={{ color: CAFE }}>{mode === "login" ? "Bienvenido de vuelta" : "Crea tu cuenta"}</h1>
+          <p className="mt-2 text-center text-sm" style={{ color: `${CAFE}99` }}>{mode === "login" ? "Inicia sesión para continuar" : "Regístrate para continuar"}</p>
+
+          {msg && (
+            <div className="mt-6 flex items-start gap-2 rounded-xl px-4 py-3 text-sm" style={{ backgroundColor: msg.type === "err" ? "#fef2f2" : msg.type === "ok" ? "#f0fdf4" : `${TERRA}12`, color: msg.type === "err" ? "#b91c1c" : msg.type === "ok" ? "#15803d" : CAFE }}>
+              {msg.type === "err" ? <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" /> : <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />}<span>{msg.text}</span>
+            </div>
+          )}
+
+          <form onSubmit={submit} className="mt-7 space-y-4">
+            <div>
+              <label className="mb-1.5 block text-xs font-medium" style={{ color: CAFE }}>Correo electrónico</label>
+              <div className="flex items-center gap-2 rounded-xl border px-3.5 focus-within:border-[#A67163]" style={{ borderColor: `${CAFE}20` }}>
+                <Mail className="h-4 w-4 flex-shrink-0" style={{ color: `${CAFE}55` }} />
+                <input type="email" inputMode="email" required placeholder="tu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 flex-1 bg-transparent text-sm outline-none" style={{ color: CAFE }} />
+              </div>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium" style={{ color: CAFE }}>Contraseña</label>
+              <div className="flex items-center gap-2 rounded-xl border px-3.5 focus-within:border-[#A67163]" style={{ borderColor: `${CAFE}20` }}>
+                <Lock className="h-4 w-4 flex-shrink-0" style={{ color: `${CAFE}55` }} />
+                <input type={showPwd ? "text" : "password"} required minLength={6} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="h-12 flex-1 bg-transparent text-sm outline-none" style={{ color: CAFE }} />
+                <button type="button" onClick={() => setShowPwd((v) => !v)} aria-label={showPwd ? "Ocultar contraseña" : "Mostrar contraseña"} className="flex-shrink-0">
+                  {showPwd ? <EyeOff className="h-4 w-4" style={{ color: `${CAFE}55` }} /> : <Eye className="h-4 w-4" style={{ color: `${CAFE}55` }} />}
+                </button>
+              </div>
+            </div>
+
+            {mode === "login" && (
+              <div className="flex items-center justify-between">
+                <label className="flex cursor-pointer items-center gap-2 text-xs" style={{ color: `${CAFE}99` }}>
+                  <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="h-3.5 w-3.5 rounded accent-[#A67163]" />
+                  Recordarme
+                </label>
+                <button type="button" onClick={forgotPassword} disabled={loading} className="text-xs font-medium underline-offset-2 hover:underline disabled:opacity-60" style={{ color: TERRA }}>
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </div>
+            )}
+
+            <button type="submit" disabled={loading} className="flex h-12 w-full items-center justify-center rounded-xl text-sm font-bold tracking-wide transition-opacity disabled:opacity-60" style={{ backgroundColor: TERRA, color: CREMA }}>{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : mode === "login" ? "Iniciar sesión" : "Crear cuenta"}</button>
+          </form>
+
+          {/* Divisor */}
+          <div className="my-6 flex items-center gap-3">
+            <span className="h-px flex-1" style={{ backgroundColor: `${CAFE}15` }} />
+            <span className="text-xs" style={{ color: `${CAFE}66` }}>o continúa con</span>
+            <span className="h-px flex-1" style={{ backgroundColor: `${CAFE}15` }} />
+          </div>
+
+          {/* Google (inactivo: pendiente de permisos OAuth) */}
+          <button
+            type="button"
+            disabled
+            title="Disponible próximamente"
+            className="flex h-12 w-full cursor-not-allowed items-center justify-center gap-2.5 rounded-xl border bg-white text-sm font-semibold opacity-60"
+            style={{ borderColor: `${CAFE}20`, color: CAFE }}
+          >
+            <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1Z" />
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.65l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z" />
+              <path fill="#FBBC05" d="M5.84 14.11a6.6 6.6 0 0 1 0-4.22V7.05H2.18a11 11 0 0 0 0 9.9l3.66-2.84Z" />
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.05l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38Z" />
+            </svg>
+            Continuar con Google
+          </button>
+
+          <p className="mt-7 text-center text-sm" style={{ color: `${CAFE}99` }}>{mode === "login" ? "¿No tienes cuenta? " : "¿Ya tienes cuenta? "}
+            <button onClick={() => { setMode(mode === "login" ? "signup" : "login"); setMsg(null) }} className="font-semibold underline-offset-2 hover:underline" style={{ color: TERRA }}>{mode === "login" ? "Crear cuenta" : "Inicia sesión"}</button>
+          </p>
+        </div>
+      </div>
+
+      {/* ── Columna derecha: imagen hero (solo escritorio) ── */}
+      <div className="relative hidden lg:block">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/images/auth-hero.webp" alt="Aromas Cliché en un paisaje natural" className="absolute inset-0 h-full w-full object-cover" />
       </div>
     </div>
   )

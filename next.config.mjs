@@ -62,6 +62,14 @@ const nextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }]
   },
+  // Rutas legales antiguas/huérfanas → redirigen (301) a las canónicas que enlaza
+  // el footer. Evita contenido duplicado en Google y enlaces externos rotos.
+  async redirects() {
+    return [
+      { source: "/politica-privacidad", destination: "/privacidad", permanent: true },
+      { source: "/terminos-condiciones", destination: "/terminos", permanent: true },
+    ]
+  },
 }
 
 export default nextConfig

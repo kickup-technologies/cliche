@@ -55,6 +55,10 @@ function GraciasContent() {
             const ordRes = await fetch(`/api/orders/${sessionId}`)
             if (ordRes.ok) {
               const order = await ordRes.json()
+              // Solo contar como conversión si el pago está confirmado: evita
+              // inflar el Purchase de Meta con pedidos pendientes/fallidos.
+              const PAID = ["confirmed", "paid", "preparing", "shipped", "delivered"]
+              if (!PAID.includes(order.status)) return
               const items = (order.items as Array<{ product_id: string; quantity: number }>) || []
               track({
                 event_name: "Purchase",

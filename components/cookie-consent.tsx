@@ -88,6 +88,9 @@ export function CookieConsent() {
       timestamp: new Date().toISOString(),
     })
     setVisible(false)
+    // Al RECHAZAR recargamos para garantizar que ninguna analítica/pixel que ya
+    // se hubiera cargado (modelo opt-out) siga ejecutándose en esta sesión.
+    if (!accepted) window.location.reload()
   }
 
   return (
@@ -109,8 +112,8 @@ export function CookieConsent() {
             </p>
             <p className="text-[12px] text-[#7a6a63] mt-1 leading-relaxed">
               Usamos cookies para recordar tu carrito, mostrarte lo que amas y
-              mejorar cada visita. Acéptalas para disfrutar la mejor versión de
-              Cliché.{" "}
+              mejorar cada visita. Al seguir navegando aceptas su uso; puedes
+              rechazarlas cuando quieras.{" "}
               <Link
                 href="/cookies"
                 className="text-[#A67163] underline underline-offset-2 hover:text-[#8f5e51] font-medium"

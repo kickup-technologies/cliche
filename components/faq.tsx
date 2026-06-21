@@ -15,7 +15,7 @@ const faqs = [
   },
   {
     q: "¿Cómo puedo pagar?",
-    a: "Aceptamos tarjetas de crédito y débito (Visa, Mastercard), PSE y transferencia bancaria. El pago es procesado por Stripe con cifrado SSL de 256 bits — tus datos financieros nunca tocan nuestros servidores.",
+    a: "Aceptamos tarjetas de crédito y débito (Visa, Mastercard), PSE y transferencia bancaria. El pago es procesado por Wompi (Bancolombia) con cifrado SSL — tus datos financieros nunca tocan nuestros servidores.",
   },
   {
     q: "¿Cuánto cuesta el envío y cuánto tarda?",

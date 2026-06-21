@@ -10,9 +10,9 @@
 import crypto from 'crypto'
 
 const PIXEL_ID = '2074090273450880'
-const CAPI_TOKEN =
-  process.env.META_CAPI_TOKEN ||
-  'EAAOeVkcb5FABRilrweb1Fi6WdNtT0hnLb4HqZCWBUMwB5XSxCZCjTsuVaCc2b7BAoTOlHBBMBi2hts1Bav5T9mDzKZAwrUqnwZABl6u6JcGwjSv0aoeUVe483Q5lBmIyLwPvJGzj6TGv1teQTp3r8iSeLfh9Yvg1Vygdq1mmGYJemLFWZA60It0boprID4QYZApgZDZD'
+// SECRETO: solo desde variable de entorno. Nunca hardcodear el token aquí
+// (queda en git y es robable). Si falta, los eventos CAPI se omiten en silencio.
+const CAPI_TOKEN = process.env.META_CAPI_TOKEN
 const API_VERSION = 'v19.0'
 
 /**
@@ -64,6 +64,10 @@ export interface CAPIEvent {
 }
 
 export async function sendCAPIEvents(events: CAPIEvent[]) {
+  if (!CAPI_TOKEN) {
+    // Sin token configurado en el entorno → no se envían eventos server-side.
+    return null
+  }
   try {
     const url = `https://graph.facebook.com/${API_VERSION}/${PIXEL_ID}/events?access_token=${CAPI_TOKEN}`
     const res = await fetch(url, {

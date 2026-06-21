@@ -61,8 +61,10 @@ export async function POST(req: NextRequest) {
 
       // Solo procesar si está pendiente (evitar duplicados)
       if (order && order.status === "pending") {
-        const customerEmail = transaction.customer_email || order.customer_email || null
-        const customerName = transaction.customer_data?.full_name || order.customer_name || null
+        // Preferimos lo que el cliente tecleó en el checkout (es el destinatario
+        // del envío). Solo usamos los datos de Wompi como respaldo si faltan.
+        const customerEmail = order.customer_email || transaction.customer_email || null
+        const customerName = order.customer_name || transaction.customer_data?.full_name || null
 
         // ── 1. Actualizar orden a confirmada ──────────────────────────
         await supabase
