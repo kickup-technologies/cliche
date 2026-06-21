@@ -15,6 +15,12 @@ const COVER_MS = 460
 const HOLD_MS = 120
 const EXIT_MS = 480
 
+/** Dispara la cortina de transición por código y navega a `href`. */
+export function navigateWithCurtain(href: string) {
+  if (typeof window === "undefined") return
+  window.dispatchEvent(new CustomEvent("cliche:nav", { detail: { href } }))
+}
+
 export function PageTransition() {
   const router = useRouter()
   const pathname = usePathname()
@@ -52,13 +58,34 @@ export function PageTransition() {
     return () => document.removeEventListener("click", onClick, true)
   }, [])
 
+  // Permite disparar la MISMA cortina por código (login / logout, etc.)
+  useEffect(() => {
+    const onNav = (e: Event) => {
+      const href = (e as CustomEvent).detail?.href as string | undefined
+      if (!href) return
+      if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        router.push(href)
+        return
+      }
+      if (phaseRef.current !== "idle") return
+      target.current = href
+      setPhase("cover")
+    }
+    window.addEventListener("cliche:nav", onNav as EventListener)
+    return () => window.removeEventListener("cliche:nav", onNav as EventListener)
+  }, [router])
+
   // Tras cubrir la pantalla, navega
   useEffect(() => {
     if (phase !== "cover" || !target.current) return
     const t = window.setTimeout(() => {
       if (target.current) router.push(target.current)
     }, COVER_MS + HOLD_MS)
-    return () => clearTimeout(t)
+    // Fallback: si el pathname destino es el mismo que el actual (p.ej. logout
+    // estando ya en el inicio), el efecto de salida por pathname no dispara;
+    // forzamos la salida para que la cortina no se quede pegada.
+    const fb = window.setTimeout(() => setPhase((p) => (p === "cover" ? "exit" : p)), COVER_MS + HOLD_MS + 900)
+    return () => { clearTimeout(t); clearTimeout(fb) }
   }, [phase, router])
 
   // Cuando llega a la página destino, la cortina sale hacia arriba

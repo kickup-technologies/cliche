@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react"
 import type { User, Session } from "@supabase/supabase-js"
 import { getSupabaseBrowser } from "@/lib/supabase/client"
+import { navigateWithCurtain } from "@/components/page-transition"
 
 interface AuthContextType {
   user: User | null
@@ -32,6 +33,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     await getSupabaseBrowser().auth.signOut()
     setUser(null)
+    // Cortina de transición hacia el inicio (misma animación que abrir un producto)
+    navigateWithCurtain("/")
   }, [])
 
   return <AuthContext.Provider value={{ user, loading, signOut }}>{children}</AuthContext.Provider>

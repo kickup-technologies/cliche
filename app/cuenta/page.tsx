@@ -12,6 +12,7 @@ import {
 } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { navigateWithCurtain } from "@/components/page-transition"
 import { useAuth } from "@/context/auth-context"
 import { useFavorites } from "@/context/favorites-context"
 import { getSupabaseBrowser } from "@/lib/supabase/client"
@@ -929,7 +930,7 @@ function AuthForm() {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
         if (error) throw new Error(/confirm/i.test(error.message) ? "Verifica tu correo antes de iniciar sesión." : "Correo o contraseña incorrectos.")
-        window.location.assign("/"); return
+        navigateWithCurtain("/"); return
       }
     } catch (err) { setMsg({ type: "err", text: err instanceof Error ? err.message : "Ocurrió un error." }) } finally { setLoading(false) }
   }
