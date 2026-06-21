@@ -232,6 +232,7 @@ export function PedidosSection({
                 <p className="text-sm text-[#2D1A14]"><span className="text-[#2D1A14]/50">Nombre:</span> {selectedOrder.customer_name || "—"}</p>
                 <p className="text-sm text-[#2D1A14]"><span className="text-[#2D1A14]/50">Email:</span> {selectedOrder.customer_email || "—"}</p>
                 <p className="text-sm text-[#2D1A14]"><span className="text-[#2D1A14]/50">Tel:</span> {selectedOrder.customer_phone || "—"}</p>
+                <p className="text-sm text-[#2D1A14]"><span className="text-[#2D1A14]/50">Cédula/NIT:</span> {selectedOrder.customer_id_number || "—"}</p>
               </div>
 
               {/* Shipping */}

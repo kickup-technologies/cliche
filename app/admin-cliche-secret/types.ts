@@ -6,6 +6,7 @@ export interface Order {
   customer_email: string | null
   customer_name: string | null
   customer_phone: string | null
+  customer_id_number: string | null
   total: number
   status: string
   created_at: string

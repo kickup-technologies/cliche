@@ -33,6 +33,7 @@ export default function CheckoutPage() {
   // Shipping address
   const [customerName, setCustomerName] = useState("")
   const [customerPhone, setCustomerPhone] = useState("")
+  const [customerIdNumber, setCustomerIdNumber] = useState("")
   const [addressLine, setAddressLine] = useState("")
   const [addressCity, setAddressCity] = useState("")
   const [addressDept, setAddressDept] = useState("")
@@ -149,6 +150,7 @@ export default function CheckoutPage() {
           discount_amount: discountAmount,
           customer_name: customerName.trim(),
           customer_phone: customerPhone.trim(),
+          customer_id_number: customerIdNumber.trim() || null,
           shipping_address: {
             address: addressLine.trim(),
             city: addressCity.trim(),
@@ -313,6 +315,18 @@ export default function CheckoutPage() {
                 value={customerEmail}
                 onChange={(e) => setCustomerEmail(e.target.value)}
                 className="flex-1 px-3 py-3 text-sm bg-transparent text-[#2D1A14] placeholder:text-[#2D1A14]/25 outline-none font-light tracking-wide"
+              />
+            </div>
+
+            {/* Cédula / NIT — opcional, para factura electrónica */}
+            <div className="flex border border-[#2D1A14]/10 hover:border-[#2D1A14]/20 transition-colors duration-200">
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="Cédula o NIT (para tu factura, opcional)"
+                value={customerIdNumber}
+                onChange={(e) => setCustomerIdNumber(e.target.value.replace(/[^0-9.-]/g, ""))}
+                className="flex-1 px-4 py-3 text-sm bg-transparent text-[#2D1A14] placeholder:text-[#2D1A14]/20 outline-none font-light"
               />
             </div>
 

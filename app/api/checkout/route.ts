@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   if (limited) return limited
 
   try {
-    const { items, email, discount_code, customer_name, customer_phone, shipping_address } =
+    const { items, email, discount_code, customer_name, customer_phone, customer_id_number, shipping_address } =
       await req.json()
 
     if (!Array.isArray(items) || items.length === 0) {
@@ -248,6 +248,7 @@ export async function POST(req: NextRequest) {
         customer_email: email || null,
         customer_name: customer_name || null,
         customer_phone: customer_phone || null,
+        customer_id_number: typeof customer_id_number === "string" ? customer_id_number.slice(0, 20) : null,
         shipping_address: shipping_address || null,
         discount_code: validatedCode,
         discount_amount,

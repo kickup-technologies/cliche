@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   const supabase = createServerClient()
   const { data, error } = await supabase
     .from("orders")
-    .select("id, status, total, tracking_number, customer_name, customer_email, customer_phone, shipping_address, discount_code, discount_amount, stripe_session_id, created_at, items")
+    .select("id, status, total, tracking_number, customer_name, customer_email, customer_phone, customer_id_number, shipping_address, discount_code, discount_amount, stripe_session_id, created_at, items")
     .order("created_at", { ascending: false })
     .limit(200)
 
