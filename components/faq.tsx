@@ -27,7 +27,7 @@ const faqs = [
   },
   {
     q: "¿Tienen garantía de devolución?",
-    a: "Sí. Si por cualquier motivo el producto no cumple tus expectativas, tienes 30 días para solicitar cambio o devolución sin preguntas. Escríbenos por WhatsApp o al correo hola@clichecolombia.com y lo resolvemos de inmediato.",
+    a: "Sí. Si por cualquier motivo el producto no cumple tus expectativas, tienes 30 días para solicitar cambio o devolución sin preguntas. Escríbenos por WhatsApp o al correo monica@clichecolombia.com y lo resolvemos de inmediato.",
   },
   {
     q: "¿El código BIENVENIDA20 tiene restricciones?",

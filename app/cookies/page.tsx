@@ -144,10 +144,10 @@ export default function CookiesPage() {
               actualizar, rectificar y solicitar la supresión de tus datos
               personales (Arts. 8 y 16). Para ejercer estos derechos, escríbenos a{" "}
               <a
-                href="mailto:contacto@clichearomas.com"
+                href="mailto:monica@clichecolombia.com"
                 className="text-[#A67163] underline underline-offset-2 hover:text-[#8f5e51]"
               >
-                contacto@clichearomas.com
+                monica@clichecolombia.com
               </a>
               .
             </p>

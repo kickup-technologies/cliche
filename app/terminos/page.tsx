@@ -26,7 +26,7 @@ export default function TerminosPage() {
             <section>
               <h2 className="text-xl font-serif font-bold text-foreground mb-3">1. Aceptación de los términos</h2>
               <p className="text-muted-foreground leading-relaxed">
-                Al ingresar, navegar o realizar una compra en <strong>clichearomas.com</strong> (en adelante "el Sitio"), el usuario declara haber leído, entendido y aceptado la totalidad de estos Términos y Condiciones, así como la Política de Privacidad. Si no está de acuerdo con alguna cláusula, debe abstenerse de usar el Sitio.
+                Al ingresar, navegar o realizar una compra en <strong>clichecolombia.com</strong> (en adelante "el Sitio"), el usuario declara haber leído, entendido y aceptado la totalidad de estos Términos y Condiciones, así como la Política de Privacidad. Si no está de acuerdo con alguna cláusula, debe abstenerse de usar el Sitio.
               </p>
               <p className="text-muted-foreground leading-relaxed mt-3">
                 Cliché Aromas se reserva el derecho de modificar estos términos en cualquier momento. Los cambios entrarán en vigencia al momento de su publicación en el Sitio. Es responsabilidad del usuario revisarlos periódicamente.
@@ -40,7 +40,7 @@ export default function TerminosPage() {
                 <strong>Cliché Aromas</strong> es una marca colombiana dedicada a la fabricación y comercialización de aromatizantes textiles y ambientadores de alta concentración. Operamos desde Colombia y atendemos a todo el territorio nacional.
               </p>
               <ul className="list-disc list-inside text-muted-foreground space-y-1 mt-3">
-                <li>Correo electrónico: <strong>hola@clichearomas.com</strong></li>
+                <li>Correo electrónico: <strong>monica@clichecolombia.com</strong></li>
                 <li>WhatsApp: disponible en el Sitio</li>
                 <li>País de operación: Colombia</li>
               </ul>
@@ -101,7 +101,7 @@ export default function TerminosPage() {
                 <li>El producto no debe haber sido usado en más del 20% de su contenido.</li>
                 <li>Debe presentarse prueba de compra (número de pedido o confirmación por correo).</li>
                 <li>El empaque original debe estar en buen estado.</li>
-                <li>La solicitud debe realizarse a <strong>hola@clichearomas.com</strong> dentro del plazo establecido.</li>
+                <li>La solicitud debe realizarse a <strong>monica@clichecolombia.com</strong> dentro del plazo establecido.</li>
               </ol>
               <p className="text-muted-foreground leading-relaxed mt-3">
                 No aplicarán devoluciones por: preferencia de olor (los aromas están claramente descritos en el Sitio), productos dañados por uso inadecuado, o compras realizadas fuera de nuestros canales oficiales.
@@ -167,7 +167,7 @@ export default function TerminosPage() {
             <section>
               <h2 className="text-xl font-serif font-bold text-foreground mb-3">12. Contacto</h2>
               <p className="text-muted-foreground leading-relaxed">
-                Para cualquier consulta relacionada con estos términos, puedes escribirnos a <strong>hola@clichearomas.com</strong> o a través del WhatsApp disponible en el Sitio. Atendemos de lunes a sábado de 8:00 a.m. a 6:00 p.m. (hora Colombia).
+                Para cualquier consulta relacionada con estos términos, puedes escribirnos a <strong>monica@clichecolombia.com</strong> o a través del WhatsApp disponible en el Sitio. Atendemos de lunes a sábado de 8:00 a.m. a 6:00 p.m. (hora Colombia).
               </p>
             </section>
 

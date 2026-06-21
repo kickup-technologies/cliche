@@ -112,7 +112,7 @@ function GraciasContent() {
   }
 
   const shareText = referral
-    ? `Descubrí Cliché Aromas y huele increíble. Usa mi código ${referral.code} y obtén ${referral.discount_percent}% OFF en tu primera compra → https://clichearomas.com`
+    ? `Descubrí Cliché Aromas y huele increíble. Usa mi código ${referral.code} y obtén ${referral.discount_percent}% OFF en tu primera compra → https://clichecolombia.com`
     : ""
 
   function shareWhatsApp() {

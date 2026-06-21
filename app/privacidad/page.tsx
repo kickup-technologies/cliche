@@ -34,8 +34,8 @@ export default function PrivacidadPage() {
                 El responsable del tratamiento de datos personales es <strong>Cliché Aromas</strong>, marca colombiana operada desde Colombia.
               </p>
               <ul className="list-disc list-inside text-muted-foreground space-y-1 mt-3">
-                <li>Correo de contacto para datos: <strong>hola@clichearomas.com</strong></li>
-                <li>Sitio web: <strong>clichearomas.com</strong></li>
+                <li>Correo de contacto para datos: <strong>monica@clichecolombia.com</strong></li>
+                <li>Sitio web: <strong>clichecolombia.com</strong></li>
               </ul>
             </section>
 
@@ -135,7 +135,7 @@ export default function PrivacidadPage() {
                 ))}
               </div>
               <p className="text-muted-foreground leading-relaxed mt-4">
-                Para ejercer cualquiera de estos derechos, envíe una solicitud a <strong>hola@clichearomas.com</strong> con asunto "Derechos ARCO — Datos Personales" e incluya su nombre completo y correo electrónico registrado. Atenderemos su solicitud en un plazo máximo de <strong>15 días hábiles</strong>.
+                Para ejercer cualquiera de estos derechos, envíe una solicitud a <strong>monica@clichecolombia.com</strong> con asunto "Derechos ARCO — Datos Personales" e incluya su nombre completo y correo electrónico registrado. Atenderemos su solicitud en un plazo máximo de <strong>15 días hábiles</strong>.
               </p>
             </section>
 
@@ -159,7 +159,7 @@ export default function PrivacidadPage() {
             <section>
               <h2 className="text-xl font-serif font-bold text-foreground mb-3">10. Menores de edad</h2>
               <p className="text-muted-foreground leading-relaxed">
-                El Sitio no está dirigido a menores de 18 años. No recopilamos conscientemente datos personales de menores. Si como padre, madre o tutor detecta que un menor nos ha proporcionado información, escríbanos a <strong>hola@clichearomas.com</strong> para proceder a la eliminación inmediata de dichos datos.
+                El Sitio no está dirigido a menores de 18 años. No recopilamos conscientemente datos personales de menores. Si como padre, madre o tutor detecta que un menor nos ha proporcionado información, escríbanos a <strong>monica@clichecolombia.com</strong> para proceder a la eliminación inmediata de dichos datos.
               </p>
             </section>
 
