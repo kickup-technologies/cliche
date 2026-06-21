@@ -25,7 +25,11 @@ export async function GET(req: NextRequest) {
       .eq("is_approved", true)
       .order("created_at", { ascending: false })
     if (error) throw error
-    return NextResponse.json(data ?? [])
+    // Cacheado en el CDN: las reseñas se leen en cada visita a la ficha; con
+    // esto la BD recibe ~1 consulta/min por producto, no una por visitante.
+    return NextResponse.json(data ?? [], {
+      headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
+    })
   } catch (err) {
     console.error("[reviews GET]", err)
     return NextResponse.json([], { status: 500 })

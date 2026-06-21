@@ -6,6 +6,10 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Todas las rutas excepto estáticos e imágenes.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|images|videos|models|.*\\.(?:png|jpg|jpeg|gif|webp|svg|mp4|glb)$).*)"],
+  // Solo refrescamos la sesión server-side donde IMPORTA (zonas con cuenta).
+  // La autenticación de la UI es client-side (auth-context), y el navegador
+  // refresca el token solo. Así el middleware NO corre en las páginas públicas
+  // de alto tráfico (inicio, catálogo, productos…) → menos latencia por request
+  // y cero carga a Supabase Auth en el grueso de las visitas (anónimas).
+  matcher: ["/cuenta/:path*", "/checkout/:path*", "/favoritos/:path*", "/auth/:path*"],
 }
