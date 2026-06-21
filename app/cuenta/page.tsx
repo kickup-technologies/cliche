@@ -948,8 +948,10 @@ function AuthForm() {
   return (
     <div className="grid h-screen overflow-hidden lg:grid-cols-[2fr_3fr]">
       {/* ── Columna izquierda: formulario (40%), ÚNICA con scroll ── */}
-      <div className="flex overflow-y-auto px-6 sm:px-10" style={{ backgroundColor: CREMA }}>
-        <div className="m-auto w-full max-w-sm py-12">
+      {/* overflow-y-auto en un bloque normal → la rueda del mouse scrollea bien.
+          El centrado se hace con flex-col interno (min-h-screen) sin romper el scroll. */}
+      <div className="overflow-y-auto px-6 sm:px-10" style={{ backgroundColor: CREMA }}>
+        <div className="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-center py-12">
           {/* Logo */}
           <div className="mb-9 text-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
