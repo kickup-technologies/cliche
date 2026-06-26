@@ -11,6 +11,7 @@ export function Newsletter() {
   const [email, setEmail] = useState("")
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState(false)
   const [discountCode, setDiscountCode] = useState("BIENVENIDA10")
   const [discountPct, setDiscountPct] = useState(10)
   const DEFAULT_SUBTITLE = "Suscríbete y recibe tu código de descuento al instante, más tips de aromaterapia y lanzamientos exclusivos."
@@ -40,13 +41,20 @@ export function Newsletter() {
     e.preventDefault()
     if (!email) return
     setIsLoading(true)
+    setError(false)
     try {
       const res = await fetch("/api/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, source: "newsletter" }),
       })
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
+      // Solo mostramos éxito si el servidor respondió OK de verdad.
+      if (!res.ok) {
+        console.error("Error subscribing:", data)
+        setError(true)
+        return
+      }
       if (data.discount_code) setDiscountCode(data.discount_code)
       setIsSubmitted(true)
       // ── Meta Pixel + CAPI: Lead (suscripción al newsletter) ──
@@ -57,6 +65,7 @@ export function Newsletter() {
       })
     } catch {
       console.error("Error subscribing")
+      setError(true)
     } finally {
       setIsLoading(false)
     }
@@ -115,6 +124,11 @@ export function Newsletter() {
                         )}
                       </Button>
                     </div>
+                    {error && (
+                      <p className="text-sm text-red-600">
+                        No pudimos completar la suscripción. Intenta de nuevo en un momento.
+                      </p>
+                    )}
                   </form>
                 ) : (
                   <div className="bg-primary/10 rounded-2xl p-6 text-center">
