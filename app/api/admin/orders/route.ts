@@ -9,6 +9,10 @@ export async function GET(req: NextRequest) {
   const { data, error } = await supabase
     .from("orders")
     .select("id, status, total, tracking_number, customer_name, customer_email, customer_phone, customer_id_number, shipping_address, discount_code, discount_amount, stripe_session_id, created_at, items")
+    // Solo pedidos REALMENTE pagados: los "pending" se crean antes de pagar
+    // (carritos que se fueron a Mercado Pago y no completaron). El admin solo
+    // ve los que se confirmaron por el webhook.
+    .neq("status", "pending")
     .order("created_at", { ascending: false })
     .limit(200)
 

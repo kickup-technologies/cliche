@@ -18,12 +18,14 @@ interface ReferralData {
   discount_percent: number
 }
 
-const FAILED_STATUSES = ["DECLINED", "ERROR", "VOIDED"]
+// Estados de fallo (Wompi histórico + Mercado Pago)
+const FAILED_STATUSES = ["DECLINED", "ERROR", "VOIDED", "FAILED", "REJECTED", "FAILURE", "CANCELLED", "CANCELED", "NULL"]
 
 function GraciasContent() {
   const params = useSearchParams()
   const sessionId = params.get("reference") || params.get("session_id")
   const status = params.get("status")
+  const collectionStatus = params.get("collection_status")
   const router = useRouter()
   const { clearCart } = useCart()
   const { track } = useCAPI()
@@ -32,7 +34,15 @@ function GraciasContent() {
   const [refCopied, setRefCopied] = useState(false)
   const [referral, setReferral] = useState<ReferralData | null>(null)
 
-  const isFailed = status && FAILED_STATUSES.includes(status.toUpperCase())
+  // Mercado Pago manda status / collection_status en la URL de retorno.
+  const isFailed = [status, collectionStatus].some((s) => s && FAILED_STATUSES.includes(s.toUpperCase()))
+
+  // Pago exitoso → mostramos gracias 5 segundos y devolvemos al inicio.
+  useEffect(() => {
+    if (isFailed) return
+    const t = setTimeout(() => router.push("/"), 5000)
+    return () => clearTimeout(t)
+  }, [isFailed, router])
 
   useEffect(() => {
     if (!isFailed) {
