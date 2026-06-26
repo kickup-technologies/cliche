@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import crypto from "crypto"
+import { MercadoPagoConfig, Preference } from "mercadopago"
 import { supabase, createServerClient } from "@/lib/supabase"
 import { getSupabaseServer } from "@/lib/supabase/server"
 import { rateLimit } from "@/lib/rate-limit"
@@ -30,11 +30,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Carrito vacío" }, { status: 400 })
     }
 
-    const publicKey = process.env.WOMPI_PUBLIC_KEY
-    const integritySecret = process.env.WOMPI_INTEGRITY_SECRET
+    const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://cliche-nine.vercel.app"
 
-    if (!publicKey || !integritySecret) {
+    if (!accessToken) {
       return NextResponse.json({ error: "Configuración de pago incompleta" }, { status: 500 })
     }
 
@@ -220,14 +219,7 @@ export async function POST(req: NextRequest) {
     const shipping = subtotal >= FREE_SHIPPING ? 0 : SHIPPING_COST
     const total = Math.max(0, subtotal + shipping - discount_amount)
 
-    // Wompi usa centavos (1 COP = 100 centavos)
-    const amountInCents = Math.round(total) * 100
     const reference = `cliche_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
-    const currency = "COP"
-
-    // Firma de integridad SHA256(reference + amount_in_cents + currency + integrity_secret)
-    const integrityString = `${reference}${amountInCents}${currency}${integritySecret}`
-    const signature = crypto.createHash("sha256").update(integrityString).digest("hex")
 
     // Guardar orden pendiente con montos AUTORITATIVOS del servidor.
     // Esto SÍ requiere service-role (RLS orders_service_only). Si la
@@ -261,31 +253,46 @@ export async function POST(req: NextRequest) {
       console.error("[checkout] excepción guardando orden pendiente:", e)
     }
 
-    // URL de checkout Wompi
-    const params = new URLSearchParams({
-      "public-key": publicKey,
-      currency,
-      "amount-in-cents": String(amountInCents),
-      reference,
-      "signature:integrity": signature,
-      "redirect-url": `${appUrl}/gracias?reference=${reference}`,
-    })
-    if (email) params.set("customer-email", email)
-    if (customer_name) params.set("customer-data:full-name", customer_name)
-    if (customer_phone) {
-      params.set("customer-data:phone-number", customer_phone.replace(/\D/g, "").slice(-10))
-      params.set("customer-data:phone-number-prefix", "+57")
+    // ── Crear preferencia de pago en Mercado Pago (Checkout Pro) ──
+    // Cobramos el total AUTORITATIVO del servidor en UNA sola línea, así el
+    // monto cobrado es exactamente el que calculamos (con envío y descuento).
+    try {
+      const client = new MercadoPagoConfig({ accessToken })
+      const pref = await new Preference(client).create({
+        body: {
+          items: [
+            {
+              id: reference,
+              title: `Pedido Cliché (${safeItems.length} producto${safeItems.length > 1 ? "s" : ""})`,
+              quantity: 1,
+              unit_price: Math.round(total),
+              currency_id: "COP",
+            },
+          ],
+          payer: {
+            ...(email ? { email } : {}),
+            ...(customer_name ? { name: customer_name } : {}),
+            ...(customer_phone ? { phone: { number: customer_phone.replace(/\D/g, "") } } : {}),
+          },
+          // external_reference = nuestra referencia → así el webhook encuentra el pedido.
+          external_reference: reference,
+          back_urls: {
+            success: `${appUrl}/gracias?reference=${reference}`,
+            failure: `${appUrl}/gracias?reference=${reference}&status=failed`,
+            pending: `${appUrl}/gracias?reference=${reference}`,
+          },
+          auto_return: "approved",
+          notification_url: `${appUrl}/api/webhooks/mercadopago`,
+          statement_descriptor: "CLICHE",
+        },
+      })
+      const url = pref.init_point
+      if (!url) throw new Error("Mercado Pago no devolvió init_point")
+      return NextResponse.json({ url })
+    } catch (e) {
+      console.error("[checkout] error creando preferencia Mercado Pago:", e)
+      return NextResponse.json({ error: "No se pudo iniciar el pago. Intenta de nuevo." }, { status: 502 })
     }
-    if (shipping_address) {
-      if (shipping_address.address) params.set("shipping-address:address-line-1", shipping_address.address)
-      if (shipping_address.city) params.set("shipping-address:city", shipping_address.city)
-      if (shipping_address.department) params.set("shipping-address:region", shipping_address.department)
-      if (customer_name) params.set("shipping-address:name", customer_name)
-      if (customer_phone) params.set("shipping-address:phone-number", customer_phone.replace(/\D/g, "").slice(-10))
-    }
-
-    const checkoutUrl = `https://checkout.wompi.co/p/?${params.toString()}`
-    return NextResponse.json({ url: checkoutUrl })
   } catch (err) {
     console.error("[checkout] error:", err)
     return NextResponse.json({ error: "Error procesando el pago. Intenta de nuevo." }, { status: 500 })
