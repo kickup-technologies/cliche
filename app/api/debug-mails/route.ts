@@ -20,9 +20,10 @@ export async function GET(req: NextRequest) {
   }
   const type = req.nextUrl.searchParams.get("type") || "confirmacion"
 
+  // IDs reales del catálogo para que las previews muestren las fotos
   const items = [
-    { product_id: "demo-1", name: "Aroma Índigo Profundo", quantity: 1, price: 78000 },
-    { product_id: "demo-2", name: "Aroma Dulce Lana", quantity: 2, price: 78000 },
+    { product_id: "0d90e707-173d-4fa3-b679-c8acddfde79d", name: "Aroma Índigo Profundo", quantity: 1, price: 78000 },
+    { product_id: "f7754e2b-e112-4eaf-b224-36c49ca77199", name: "Aroma Dulce Lana", quantity: 2, price: 78000 },
   ]
 
   try {
@@ -31,7 +32,7 @@ export async function GET(req: NextRequest) {
         await sendOrderConfirmation(TO, { id: "cliche_demo_A1B2C3D4", total: 234000, items })
         break
       case "enviado":
-        await sendOrderShippedEmail(TO, { id: "cliche_demo_A1B2C3D4", customerName: "Andrés Bonilla", trackingNumber: "COORD-123456789" })
+        await sendOrderShippedEmail(TO, { id: "cliche_demo_A1B2C3D4", customerName: "Andrés Bonilla", trackingNumber: "COORD-123456789", items })
         break
       case "carrito":
         await sendAbandonedCartEmail(TO, items.map((i) => ({ name: i.name, price: i.price })))

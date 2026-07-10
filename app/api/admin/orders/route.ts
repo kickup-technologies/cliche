@@ -69,6 +69,7 @@ export async function PATCH(req: NextRequest) {
         id: data.stripe_session_id || data.id,
         customerName: data.customer_name,
         trackingNumber: data.tracking_number,
+        items: data.items || [],
       }).catch((e: unknown) => console.error("[admin/orders] shipped email:", e))
     }
 

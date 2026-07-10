@@ -19,6 +19,38 @@
  */
 
 import nodemailer from "nodemailer"
+import { createServerClient } from "@/lib/supabase"
+
+/**
+ * Imágenes de producto para los correos: busca en la BD la foto de cada
+ * product_id. Falla en silencio (correo sin fotos > correo no enviado).
+ */
+async function imagesByProductId(
+  items: Array<{ product_id?: string }>
+): Promise<Record<string, string>> {
+  try {
+    const ids = [...new Set(items.map((i) => i.product_id).filter(Boolean))] as string[]
+    if (!ids.length) return {}
+    const db = createServerClient()
+    const { data } = await db.from("products").select("id, image_url, image_urls").in("id", ids)
+    const map: Record<string, string> = {}
+    for (const p of data || []) {
+      const img = p.image_url || p.image_urls?.[0]
+      if (img) map[p.id] = img
+    }
+    return map
+  } catch {
+    return {}
+  }
+}
+
+/** Celda con la foto del producto (56px, esquinas suaves) o vacía si no hay. */
+function thumbCell(src: string | undefined, alt: string): string {
+  if (!src) return `<td style="width:0;padding:0;border-bottom:1px solid #EDE5DF;"></td>`
+  return `<td style="width:66px;padding:10px 10px 10px 0;vertical-align:middle;border-bottom:1px solid #EDE5DF;">
+    <img src="${src}" alt="${alt}" width="56" height="56" style="display:block;width:56px;height:56px;object-fit:cover;border-radius:12px;border:1px solid #EDE5DF;"/>
+  </td>`
+}
 
 function createTransport() {
   const { SMTP_HOST, SMTP_USER, SMTP_PASS } = process.env
@@ -225,7 +257,12 @@ export async function sendOrderConfirmation(
 // ═════════════════════════════════════════════════════════════════════════════
 export async function sendOrderShippedEmail(
   to: string,
-  order: { id: string; customerName?: string | null; trackingNumber?: string | null }
+  order: {
+    id: string
+    customerName?: string | null
+    trackingNumber?: string | null
+    items?: Array<{ product_id?: string; name?: string; quantity?: number }>
+  }
 ): Promise<void> {
   const transport = createTransport()
   if (!transport) { console.warn("[mailer] SMTP not configured — skipping shipped email"); return }
@@ -234,17 +271,34 @@ export async function sendOrderShippedEmail(
   const name = (order.customerName || "").trim().split(/\s+/)[0]
   const guide = order.trackingNumber?.trim()
 
+  // Fotos de lo que va en la caja
+  const items = order.items || []
+  const imgs = await imagesByProductId(items)
+  const itemRows = items.slice(0, 4).map((it) => `
+    <tr>
+      ${thumbCell(it.product_id ? imgs[it.product_id] : undefined, it.name || "Producto")}
+      <td style="padding:10px 0;border-bottom:1px solid ${C.line};font-family:Georgia,serif;font-size:14px;color:${C.ink};text-align:left;">${it.name ?? "Producto"}${it.quantity && it.quantity > 1 ? ` <span style="color:${C.faint};font-size:12px;">&times;${it.quantity}</span>` : ""}</td>
+    </tr>`).join("")
+
   const content = `
     <div style="text-align:center;">
       ${kicker("En camino")}
       ${title(`${name ? name + ", tu" : "Tu"} aroma va en camino.`)}
       ${para(`El pedido <span style="font-family:'Courier New',monospace;color:${C.ink};">#${orderId}</span> ya sali&oacute; de nuestro taller. Muy pronto tu espacio va a oler distinto.`, guide ? 26 : 30)}
       ${guide ? `
-      <div style="border:1px solid ${C.line};border-radius:16px;padding:20px;margin-bottom:30px;">
+      <div style="border:1px solid ${C.line};border-radius:16px;padding:20px;margin-bottom:26px;">
         <p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:${C.faint};">N&uacute;mero de gu&iacute;a</p>
         <p style="margin:0;font-family:'Courier New',monospace;font-size:22px;letter-spacing:.08em;color:${C.ink};">${guide}</p>
       </div>` : ""}
-      ${button(`${appUrl()}/pedido/${order.id}`, "Rastrear mi pedido")}
+    </div>
+    ${itemRows ? `
+    <p style="margin:0 0 4px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:${C.faint};text-align:center;">Lo que va en tu caja</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 28px;">${itemRows}</table>` : ""}
+    ${button(`${appUrl()}/pedido/${order.id}`, "Rastrear mi pedido")}
+    ${hr}
+    <div style="text-align:center;">
+      <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;line-height:1.7;color:${C.sub};">Mientras llega, &iquest;ya pensaste qu&eacute; aroma sigue?<br/>Un espacio, un aroma — cada rinc&oacute;n cuenta su historia.</p>
+      <a href="${appUrl()}/catalogo" style="font-family:Georgia,serif;font-size:14px;color:${C.accent};text-decoration:underline;">Descubrir m&aacute;s aromas &rarr;</a>
     </div>`
 
   try {
@@ -262,13 +316,15 @@ export async function sendOrderShippedEmail(
 // ═════════════════════════════════════════════════════════════════════════════
 export async function sendAbandonedCartEmail(
   to: string,
-  items: Array<{ name: string; price: number; image_url?: string }>
+  items: Array<{ name: string; price: number; image_url?: string; product_id?: string }>
 ): Promise<void> {
   const transport = createTransport()
   if (!transport) { console.warn("[mailer] SMTP not configured — skipping abandoned cart email"); return }
 
+  const imgs = await imagesByProductId(items)
   const list = items.slice(0, 4).map((item) => `
     <tr>
+      ${thumbCell(item.image_url || (item.product_id ? imgs[item.product_id] : undefined), item.name)}
       <td style="padding:10px 0;border-bottom:1px solid ${C.line};font-family:Georgia,serif;font-size:14px;color:${C.ink};">${item.name}</td>
       <td align="right" style="padding:10px 0;border-bottom:1px solid ${C.line};font-family:Georgia,serif;font-size:14px;color:${C.sub};">${fmtCOP(item.price)}</td>
     </tr>`).join("")
@@ -351,9 +407,13 @@ export async function sendAdminOrderAlert(order: {
       <td align="right" style="padding:9px 0;border-bottom:1px solid ${C.line};font-family:Georgia,serif;font-size:14px;color:${C.ink};">${value}</td>
     </tr>`
 
-  const itemsRows = order.items.map((it) =>
-    row(`&times;${it.quantity}`, `${it.name ?? it.product_id}${it.price ? ` &nbsp;<span style="color:${C.sub};">${fmtCOP(it.price * it.quantity)}</span>` : ""}`)
-  ).join("")
+  const imgs = await imagesByProductId(order.items)
+  const itemsRows = order.items.map((it) => `
+    <tr>
+      ${thumbCell(imgs[it.product_id], it.name ?? "Producto")}
+      <td style="padding:10px 0;border-bottom:1px solid ${C.line};font-family:Georgia,serif;font-size:14px;color:${C.ink};">${it.name ?? it.product_id}&nbsp;<span style="color:${C.faint};font-size:12px;">&times;${it.quantity}</span></td>
+      <td align="right" style="padding:10px 0;border-bottom:1px solid ${C.line};font-family:Georgia,serif;font-size:14px;color:${C.sub};">${it.price ? fmtCOP(it.price * it.quantity) : "—"}</td>
+    </tr>`).join("")
 
   const content = `
     <div style="text-align:center;">
@@ -368,6 +428,9 @@ export async function sendAdminOrderAlert(order: {
       ${row("Celular", order.customer_phone ?? "—")}
       ${addr ? row("Direcci&oacute;n", `${addr.address}, ${addr.city}, ${addr.department}`) : row("Direcci&oacute;n", "⚠️ Sin direcci&oacute;n registrada")}
       ${addr?.notes ? row("Nota", addr.notes) : ""}
+    </table>
+    <p style="margin:26px 0 2px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:${C.faint};text-align:center;">Productos comprados</p>
+    <table width="100%" cellpadding="0" cellspacing="0">
       ${itemsRows}
     </table>
     <div style="height:30px;"></div>
