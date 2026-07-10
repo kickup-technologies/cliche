@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useRef, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
-import { SEGMENT_LABEL, segmentsForSlug } from "@/lib/segments"
+import { SEGMENT_LABEL, SEGMENTS, segmentsForSlug } from "@/lib/segments"
+import { PRICE_TIERS } from "@/lib/pricing"
 import Image from "next/image"
 import Link from "next/link"
-import { Eye, ArrowUp } from "lucide-react"
+import { Eye, ArrowUp, ChevronDown, LayoutGrid } from "lucide-react"
 import { useCart } from "@/context/cart-context"
 import { Header } from "@/components/header"
 import { AnnouncementBar } from "@/components/announcement-bar"
@@ -21,12 +22,6 @@ function formatPrice(price: number) {
     minimumFractionDigits: 0,
   }).format(price)
 }
-
-const CATEGORIES = [
-  { label: "Todos", value: "all" },
-  { label: "Hogar", value: "hogar" },
-  { label: "Ropa y textiles", value: "ropa" },
-]
 
 const ROPA_SLUGS = new Set([
   "vientos-de-lino", "frescura-de-lino", "calor-de-lana",
@@ -126,10 +121,20 @@ function ProductCard({ product, onQuickView }: { product: Product; onQuickView: 
       <h3 className="mt-3 font-serif text-[0.95rem] font-medium leading-snug text-foreground transition-colors group-hover:text-primary sm:text-[1.05rem]">{product.name}</h3>
       <div className="mt-1 flex items-baseline gap-2">
         <span className="text-sm font-semibold text-foreground">{formatPrice(product.price)}</span>
+        <span className="text-[0.7rem] font-medium text-muted-foreground">/und</span>
         {product.original_price && product.original_price > product.price && (
           <span className="text-xs text-muted-foreground line-through">{formatPrice(product.original_price)}</span>
         )}
       </div>
+      {/* Kits del mismo aroma (precios fijos por tier). El producto de prueba
+          no ofrece kits. */}
+      {product.slug !== "prueba" && (
+        <p className="mt-1 text-[0.68rem] leading-relaxed text-muted-foreground/80">
+          {PRICE_TIERS.filter((t) => t.units > 1)
+            .map((t) => `x${t.units} $${t.price.toLocaleString("es-CO")}`)
+            .join("  ·  ")}
+        </p>
+      )}
     </Link>
   )
 }
@@ -198,13 +203,42 @@ function CatalogoInner() {
 
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
-  const [category, setCategory] = useState(initialCategory)
+  const [category] = useState(initialCategory)
   const [family, setFamily] = useState("all")
-  const [segment] = useState(initialSegment)
+  const [segment, setSegment] = useState(initialSegment)
+  const [catOpen, setCatOpen] = useState(false)
   const [quickView, setQuickView] = useState<Product | null>(null)
   const [showTop, setShowTop] = useState(false)
 
   const progressRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+  const catMenuRef = useRef<HTMLDivElement>(null)
+
+  // Cerrar el menú de categorías al hacer clic fuera.
+  useEffect(() => {
+    if (!catOpen) return
+    const onDown = (e: MouseEvent) => {
+      if (catMenuRef.current && !catMenuRef.current.contains(e.target as Node)) setCatOpen(false)
+    }
+    window.addEventListener("mousedown", onDown)
+    return () => window.removeEventListener("mousedown", onDown)
+  }, [catOpen])
+
+  // Elegir una categoría (segmento): filtra + baja suave al contenido para que
+  // se vea la reorganización animada de los aromas.
+  function pickSegment(key: string) {
+    setSegment(key)
+    setFamily("all")
+    setCatOpen(false)
+    requestAnimationFrame(() => {
+      const el = contentRef.current
+      if (!el) return
+      const y = el.getBoundingClientRect().top + window.scrollY - 130
+      const lenis = (window as unknown as { __lenis?: { scrollTo: (t: number, o?: object) => void } }).__lenis
+      if (lenis?.scrollTo) lenis.scrollTo(y, { duration: 1 })
+      else window.scrollTo({ top: y, behavior: "smooth" })
+    })
+  }
 
   useEffect(() => {
     fetch("/api/products")
@@ -238,8 +272,12 @@ function CatalogoInner() {
   }
 
   const byCategory = category === "all" ? products : products.filter((p) => categorize(p.slug) === category)
+  const bySegment = segment === "all" ? byCategory : byCategory.filter((p) => segmentsForSlug(p.slug).includes(segment))
   const shownFamilies = family === "all" ? FAMILIES : FAMILIES.filter((f) => f.value === family)
-  const total = byCategory.length
+  const total = bySegment.length
+  const segObj = SEGMENTS.find((s) => s.key === segment)
+  // Segmentos que tienen al menos un aroma (para no listar categorías vacías).
+  const availableSegments = SEGMENTS.filter((s) => products.some((p) => segmentsForSlug(p.slug).includes(s.key)))
 
   return (
     <>
@@ -272,20 +310,50 @@ function CatalogoInner() {
         {/* ── Filtros (sin barra de búsqueda) ── */}
         <div className="sticky top-[63px] z-30 border-y border-border/70 bg-background/95 backdrop-blur-md lg:top-[71px]">
           <div className="container mx-auto flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:py-3.5">
-            {/* Categorías */}
-            <nav className="flex items-center gap-x-6 gap-y-1 overflow-x-auto">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat.value}
-                  onClick={() => setCategory(cat.value)}
-                  className={`relative whitespace-nowrap py-1 text-[0.7rem] font-semibold uppercase tracking-[0.16em] transition-colors after:absolute after:inset-x-0 after:bottom-0 after:h-px after:origin-left after:bg-foreground after:transition-transform after:duration-300 hover:text-foreground ${
-                    category === cat.value ? "text-foreground after:scale-x-100" : "text-muted-foreground after:scale-x-0"
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              ))}
-            </nav>
+            {/* Categorías por segmento (dropdown de las 12) */}
+            <div className="relative flex-shrink-0" ref={catMenuRef}>
+              <button
+                onClick={() => setCatOpen((o) => !o)}
+                aria-expanded={catOpen}
+                className="flex w-full items-center justify-between gap-2 rounded-full border border-foreground bg-foreground px-4 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-background transition-opacity hover:opacity-90 sm:w-auto"
+              >
+                <span className="flex items-center gap-2">
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                  {segment === "all" ? "Todas las categorías" : SEGMENT_LABEL[segment]}
+                </span>
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${catOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {catOpen && (
+                <div className="absolute left-0 top-[calc(100%+8px)] z-40 max-h-[70vh] w-[min(20rem,90vw)] overflow-y-auto rounded-2xl border border-border bg-background p-1.5 shadow-[0_24px_60px_-20px_rgba(45,26,20,0.4)] duration-200 animate-in fade-in zoom-in-95 slide-in-from-top-1">
+                  <button
+                    onClick={() => pickSegment("all")}
+                    className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition-colors ${segment === "all" ? "bg-foreground text-background" : "text-foreground hover:bg-secondary"}`}
+                  >
+                    <span className="font-medium">Todas las categorías</span>
+                    <span className={`text-xs ${segment === "all" ? "text-background/70" : "text-muted-foreground"}`}>{products.length}</span>
+                  </button>
+                  <div className="my-1 h-px bg-border/70" />
+                  {availableSegments.map((s) => {
+                    const count = products.filter((p) => segmentsForSlug(p.slug).includes(s.key)).length
+                    const active = segment === s.key
+                    return (
+                      <button
+                        key={s.key}
+                        onClick={() => pickSegment(s.key)}
+                        className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${active ? "bg-foreground text-background" : "text-foreground hover:bg-secondary"}`}
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-medium">{s.label}</span>
+                          <span className={`block truncate text-[0.68rem] ${active ? "text-background/70" : "text-muted-foreground"}`}>{s.tagline}</span>
+                        </span>
+                        <span className={`text-xs ${active ? "text-background/70" : "text-muted-foreground"}`}>{count}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
 
             {/* Familias (pills) */}
             <div className="flex items-center gap-2 overflow-x-auto pb-0.5">
@@ -313,12 +381,13 @@ function CatalogoInner() {
         </div>
 
         {/* ── Contenido ── */}
-        <div className="container mx-auto px-4 pt-10 md:pt-14">
-          {/* Contexto de segmento (si llega desde un segmento B2B) */}
-          {segment !== "all" && SEGMENT_LABEL[segment] && (
-            <div className="mb-10 border-l-2 border-primary pl-5">
-              <p className="text-[0.6rem] font-semibold uppercase tracking-[0.3em] text-primary">Recomendados para</p>
-              <h2 className="mt-1 font-serif text-2xl font-medium text-foreground md:text-3xl">{SEGMENT_LABEL[segment]}</h2>
+        <div ref={contentRef} className="container mx-auto px-4 pt-10 md:pt-14">
+          {/* Contexto de categoría/segmento seleccionada */}
+          {segment !== "all" && segObj && (
+            <div key={segment} className="mb-10 border-l-2 border-primary pl-5 duration-500 animate-in fade-in slide-in-from-left-2">
+              <p className="text-[0.6rem] font-semibold uppercase tracking-[0.3em] text-primary">Aromas para</p>
+              <h2 className="mt-1 font-serif text-2xl font-medium text-foreground md:text-3xl">{segObj.label}</h2>
+              <p className="mt-2 max-w-lg text-sm leading-relaxed text-muted-foreground">{segObj.tagline}</p>
             </div>
           )}
 
@@ -336,14 +405,16 @@ function CatalogoInner() {
             <div className="py-24 text-center">
               <p className="font-serif text-2xl font-medium text-foreground">No hay aromas en esta categoría</p>
               <button
-                onClick={() => { setCategory("all"); setFamily("all") }}
+                onClick={() => { setFamily("all"); setSegment("all") }}
                 className="mt-8 inline-flex items-center justify-center rounded-full border border-foreground px-9 py-3.5 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-foreground transition-colors hover:bg-foreground hover:text-background"
               >
                 Ver todos los aromas
               </button>
             </div>
           ) : (
-            <div className="space-y-20 md:space-y-28">
+            // key por segmento/familia → al cambiar de categoría, las secciones
+            // se remontan y los aromas "reorganizan" con su animación escalonada.
+            <div key={`${family}-${segment}`} className="space-y-20 duration-500 animate-in fade-in md:space-y-28">
               {shownFamilies.map((f, i) => {
                 const fam = byCategory
                   .filter((p) => familyOf(p.slug) === f.value)
