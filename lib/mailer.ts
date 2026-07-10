@@ -120,7 +120,8 @@ const hr = `<div style="height:1px;background:${C.line};margin:30px 0;"></div>`
  */
 function shell(content: string, footNote: string): string {
   return `<!DOCTYPE html>
-<html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/></head>
+<html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="color-scheme" content="light"/><meta name="supported-color-schemes" content="light"/></head>
 <body style="margin:0;padding:0;background:${C.bg};">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:${C.bg};padding:52px 16px;"><tr><td align="center">
 
@@ -187,9 +188,9 @@ export async function sendWelcomeEmail(to: string, discountCode: string): Promis
       ${kicker("Te damos la bienvenida")}
       ${title("Deja que tu historia comience<br/>con nuestro aroma.")}
       ${para("Gracias por unirte a Clich&eacute;. Cada espacio guarda una historia — y la tuya merece un aroma propio. Este es tu regalo de bienvenida, listo para tu primera compra:", 28)}
-      <div style="border:1px solid ${C.accent};border-radius:16px;padding:24px;margin-bottom:10px;">
-        <p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:${C.faint};">Tu c&oacute;digo</p>
-        <p style="margin:0;font-family:'Courier New',monospace;font-size:30px;letter-spacing:.14em;color:${C.ink};">${discountCode}</p>
+      <div style="background:${C.bg};border:1px solid ${C.accent};border-radius:16px;padding:24px;margin-bottom:10px;">
+        <p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:${C.faint};">Tu c&oacute;digo de descuento</p>
+        <p style="margin:0;font-family:'Courier New',monospace;font-size:30px;font-weight:700;letter-spacing:.14em;color:${C.ink};">${discountCode}</p>
       </div>
       <p style="margin:0 0 30px;font-family:Arial,sans-serif;font-size:12px;color:${C.faint};">Se aplica en el carrito, antes de pagar.</p>
       ${button(`${appUrl()}/catalogo`, "Descubrir los aromas")}
@@ -224,9 +225,11 @@ export async function sendOrderConfirmation(
 
   const orderId = order.id.slice(-8).toUpperCase()
   // total viene en pesos (entero), NO en centavos — no dividir por 100
+  const imgs = await imagesByProductId(order.items || [])
   const rows = (order.items || [])
     .map((it) => `
       <tr>
+        ${thumbCell(it.product_id ? imgs[it.product_id] : undefined, it.name ?? "Producto")}
         <td style="padding:11px 0;border-bottom:1px solid ${C.line};font-family:Georgia,serif;font-size:14px;color:${C.ink};">${it.name ?? "Producto"}&nbsp;<span style="color:${C.faint};font-size:12px;">&times;${it.quantity}</span></td>
         <td align="right" style="padding:11px 0;border-bottom:1px solid ${C.line};font-family:Georgia,serif;font-size:14px;color:${C.sub};">${it.price ? fmtCOP(it.price * it.quantity) : ""}</td>
       </tr>`)
