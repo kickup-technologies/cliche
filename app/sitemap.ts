@@ -2,7 +2,7 @@ import { MetadataRoute } from "next"
 import { supabase } from "@/lib/supabase"
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://cliche-nine.vercel.app"
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://clichecolombia.com"
 
   const { data: products } = await supabase
     .from("products")

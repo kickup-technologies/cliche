@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     }
 
     const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://cliche-nine.vercel.app"
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://clichecolombia.com"
 
     if (!accessToken) {
       return NextResponse.json({ error: "Configuración de pago incompleta" }, { status: 500 })

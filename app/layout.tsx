@@ -31,7 +31,7 @@ const playfair = Playfair_Display({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://cliche-nine.vercel.app'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://clichecolombia.com'),
   title: {
     default: 'Bienestar by Cliché — Aromas que Transforman tu Espacio',
     template: '%s | Bienestar by Cliché',

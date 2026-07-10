@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     const whatsapp = settings.whatsapp_number ? `+${settings.whatsapp_number}` : ""
 
     const buffer = await renderToBuffer(
-      CatalogDocument({ products, whatsapp, web: "cliche-nine.vercel.app" }),
+      CatalogDocument({ products, whatsapp, web: "clichecolombia.com" }),
     )
 
     await sb.storage.createBucket(BUCKET, { public: true }).then(undefined, () => {})

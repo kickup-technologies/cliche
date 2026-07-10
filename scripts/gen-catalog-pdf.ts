@@ -4,7 +4,7 @@ import { CATALOG } from "@/lib/catalog-data"
 
 async function main() {
   await renderToFile(
-    CatalogDocument({ products: CATALOG, whatsapp: "+57 319 456 5463", web: "cliche-nine.vercel.app" }),
+    CatalogDocument({ products: CATALOG, whatsapp: "+57 319 456 5463", web: "clichecolombia.com" }),
     "public/catalogo-cliche.pdf",
   )
   console.log("PDF generado en public/catalogo-cliche.pdf")

@@ -284,7 +284,7 @@ export function ProductDetail({ product, related }: Props) {
   const savings = product.original_price ? product.original_price - product.price : 0
 
   async function handleShare() {
-    const url = typeof window !== "undefined" ? window.location.href : `https://cliche-nine.vercel.app/productos/${product.slug}`
+    const url = typeof window !== "undefined" ? window.location.href : `https://clichecolombia.com/productos/${product.slug}`
     const shareData = {
       title: product.name,
       text: `Mira este aroma de Cliché: ${product.name} — ${product.description?.slice(0, 80) ?? ""}`,
