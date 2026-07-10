@@ -740,8 +740,8 @@ function SeccionDatos({ email }: { email: string }) {
           {showPass && (
             <form onSubmit={changePass} className="space-y-3 border-t px-5 pb-5 pt-4" style={{ borderColor: `${CAFE}0d` }}>
               {passMsg && <div className="rounded-xl px-3 py-2 text-sm" style={{ backgroundColor: passMsg.type === "err" ? "#fef2f2" : "#f0fdf4", color: passMsg.type === "err" ? "#b91c1c" : "#15803d" }}>{passMsg.text}</div>}
-              <input type="password" value={pass} onChange={(e) => setPass(e.target.value)} minLength={6} required placeholder="Nueva contraseña (mín. 6)" className="h-12 w-full rounded-2xl border bg-white px-4 text-sm outline-none focus:border-[#A67163]" style={{ borderColor: `${CAFE}15`, color: CAFE }} />
-              <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required placeholder="Confirmar contraseña" className="h-12 w-full rounded-2xl border bg-white px-4 text-sm outline-none focus:border-[#A67163]" style={{ borderColor: `${CAFE}15`, color: CAFE }} />
+              <input type="password" value={pass} onChange={(e) => setPass(e.target.value)} minLength={6} required placeholder="Nueva contraseña (mín. 6)" className="h-12 w-full rounded-2xl border bg-white px-4 text-sm outline-none focus:border-[#2D1A14]/25" style={{ borderColor: `${CAFE}15`, color: CAFE }} />
+              <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required placeholder="Confirmar contraseña" className="h-12 w-full rounded-2xl border bg-white px-4 text-sm outline-none focus:border-[#2D1A14]/25" style={{ borderColor: `${CAFE}15`, color: CAFE }} />
               <button type="submit" disabled={passSaving} className="flex h-12 items-center rounded-2xl px-6 text-sm font-bold disabled:opacity-60" style={{ backgroundColor: CAFE, color: CREMA }}>{passSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Actualizar contraseña"}</button>
             </form>
           )}
@@ -843,7 +843,7 @@ function SeccionDirecciones() {
   async function add(e: React.FormEvent) { e.preventDefault(); if (!form.line || !form.city) return; await persist([...list, form]); setForm(EMPTY_ADDR); setAdding(false) }
   // La primera dirección de la lista es la principal; reordenar la cambia.
   const makePrincipal = (i: number) => persist([list[i], ...list.filter((_, idx) => idx !== i)])
-  const cls = "h-12 w-full rounded-2xl border bg-white px-4 text-sm outline-none focus:border-[#A67163]"
+  const cls = "h-12 w-full rounded-2xl border bg-white px-4 text-sm outline-none focus:border-[#2D1A14]/25"
   return (
     <Panel title="Direcciones" desc="Administra tus direcciones de envío y facturación. La primera es tu dirección principal.">
       {list.length === 0 && !adding && <div className="rounded-2xl border border-dashed py-10 text-center text-sm" style={{ borderColor: `${CAFE}20`, color: `${CAFE}99` }}>Aún no tienes direcciones guardadas.</div>}
@@ -993,21 +993,21 @@ function AuthForm() {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="mb-1.5 block text-xs font-medium" style={{ color: CAFE }}>Nombre</label>
-                      <div className="flex items-center gap-2 rounded-xl border px-3.5 focus-within:border-[#A67163]" style={{ borderColor: `${CAFE}20` }}>
+                      <div className="flex items-center gap-2 rounded-xl border px-3.5 focus-within:border-[#2D1A14]/25" style={{ borderColor: `${CAFE}20` }}>
                         <UserIcon className="h-4 w-4 flex-shrink-0" style={{ color: `${CAFE}55` }} />
                         <input type="text" required={mode === "signup"} placeholder="Tu nombre" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="h-12 w-full flex-1 bg-transparent text-sm outline-none" style={{ color: CAFE }} />
                       </div>
                     </div>
                     <div>
                       <label className="mb-1.5 block text-xs font-medium" style={{ color: CAFE }}>Apellido</label>
-                      <div className="flex items-center gap-2 rounded-xl border px-3.5 focus-within:border-[#A67163]" style={{ borderColor: `${CAFE}20` }}>
+                      <div className="flex items-center gap-2 rounded-xl border px-3.5 focus-within:border-[#2D1A14]/25" style={{ borderColor: `${CAFE}20` }}>
                         <input type="text" required={mode === "signup"} placeholder="Tu apellido" value={lastName} onChange={(e) => setLastName(e.target.value)} className="h-12 w-full flex-1 bg-transparent text-sm outline-none" style={{ color: CAFE }} />
                       </div>
                     </div>
                   </div>
                   <div>
                     <label className="mb-1.5 block text-xs font-medium" style={{ color: CAFE }}>Fecha de nacimiento</label>
-                    <div className="flex items-center gap-2 rounded-xl border px-3.5 focus-within:border-[#A67163]" style={{ borderColor: `${CAFE}20` }}>
+                    <div className="flex items-center gap-2 rounded-xl border px-3.5 focus-within:border-[#2D1A14]/25" style={{ borderColor: `${CAFE}20` }}>
                       <Calendar className="h-4 w-4 flex-shrink-0" style={{ color: `${CAFE}55` }} />
                       <input type="text" inputMode="numeric" maxLength={10} placeholder="DD/MM/AAAA" value={birth} onChange={(e) => setBirth(formatBirth(e.target.value))} className="h-12 flex-1 bg-transparent text-sm outline-none" style={{ color: CAFE }} />
                     </div>
@@ -1019,14 +1019,14 @@ function AuthForm() {
             <div className="space-y-4">
               <div>
                 <label className="mb-1.5 block text-xs font-medium" style={{ color: CAFE }}>Correo electrónico</label>
-                <div className="flex items-center gap-2 rounded-xl border px-3.5 focus-within:border-[#A67163]" style={{ borderColor: `${CAFE}20` }}>
+                <div className="flex items-center gap-2 rounded-xl border px-3.5 focus-within:border-[#2D1A14]/25" style={{ borderColor: `${CAFE}20` }}>
                   <Mail className="h-4 w-4 flex-shrink-0" style={{ color: `${CAFE}55` }} />
                   <input type="email" inputMode="email" required placeholder="tu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 flex-1 bg-transparent text-sm outline-none" style={{ color: CAFE }} />
                 </div>
               </div>
               <div>
                 <label className="mb-1.5 block text-xs font-medium" style={{ color: CAFE }}>Contraseña</label>
-                <div className="flex items-center gap-2 rounded-xl border px-3.5 focus-within:border-[#A67163]" style={{ borderColor: `${CAFE}20` }}>
+                <div className="flex items-center gap-2 rounded-xl border px-3.5 focus-within:border-[#2D1A14]/25" style={{ borderColor: `${CAFE}20` }}>
                   <Lock className="h-4 w-4 flex-shrink-0" style={{ color: `${CAFE}55` }} />
                   <input type={showPwd ? "text" : "password"} required minLength={6} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="h-12 flex-1 bg-transparent text-sm outline-none" style={{ color: CAFE }} />
                   <button type="button" onClick={() => setShowPwd((v) => !v)} aria-label={showPwd ? "Ocultar contraseña" : "Mostrar contraseña"} className="flex-shrink-0">

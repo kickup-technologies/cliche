@@ -249,6 +249,18 @@ html[data-cliche-edit-mode="1"] [data-cliche-edit] {
   border-radius: 4px;
 }
 
+/* Campos de escritura: sin el anillo café — el cursor y el contenedor ya
+   indican el foco. Look limpio en buscador, login y formularios. */
+input:focus-visible,
+input:focus,
+textarea:focus-visible,
+textarea:focus,
+select:focus-visible,
+select:focus,
+[contenteditable]:focus-visible {
+  outline: none;
+}
+
 /* ── Componentes animados premium (estilo 21st.dev) ──────────────────── */
 
 @property --beam-angle {
