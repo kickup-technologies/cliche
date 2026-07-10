@@ -14,9 +14,9 @@ interface StoryCard {
 }
 
 const CARDS: StoryCard[] = [
-  { image: "/images/category-diffusers.jpg", caption: "Hoteles, spa y oficina", href: "/catalogo?segmento=hoteles" },
-  { image: "/images/category-essences.jpg", caption: "Marcas de ropa", href: "/catalogo?segmento=femeninas" },
-  { image: "/images/category-kits.jpg", caption: "Kits para tu marca", href: "/catalogo" },
+  { image: "/images/category-hoteles.png", caption: "Hoteles, spa y oficina", href: "/catalogo?segmento=hoteles" },
+  { image: "/images/category-ropa.png", caption: "Marcas de ropa", href: "/catalogo?segmento=femeninas" },
+  { image: "/images/category-kits-marca.png", caption: "Kits para tu marca", href: "/catalogo" },
 ]
 
 export function EditorialStory() {

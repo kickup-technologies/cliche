@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase"
+import { getSupabaseServer } from "@/lib/supabase/server"
 import { rateLimit } from "@/lib/rate-limit"
 
 export async function POST(req: NextRequest) {
@@ -8,10 +9,22 @@ export async function POST(req: NextRequest) {
   if (limited) return limited
 
   try {
-    const { code, email, subtotal } = await req.json()
+    const { code, subtotal } = await req.json()
 
     if (!code || !subtotal || subtotal <= 0) {
       return NextResponse.json({ valid: false, error: "Datos inválidos" }, { status: 400 })
+    }
+
+    // REGLA: los códigos solo se pueden usar con sesión iniciada. El "un solo
+    // uso" se cuenta contra el correo de la CUENTA (no uno escrito a mano).
+    let email: string | null = null
+    try {
+      const sb = await getSupabaseServer()
+      const { data: auth } = await sb.auth.getUser()
+      email = auth.user?.email ?? null
+    } catch { /* sin sesión */ }
+    if (!email) {
+      return NextResponse.json({ valid: false, error: "Inicia sesión para usar tu código de descuento" })
     }
 
     const db = createServerClient()

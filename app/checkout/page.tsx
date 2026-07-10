@@ -5,6 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useCart } from "@/context/cart-context"
+import { useAuth } from "@/context/auth-context"
 import { useCAPI } from "@/lib/use-capi"
 import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Lock, Truck, Leaf, RotateCcw, Tag, ChevronDown, ChevronUp, Mail, RefreshCw, Phone, MapPin, User, ShieldCheck } from "lucide-react"
 
@@ -40,6 +41,13 @@ export default function CheckoutPage() {
   const [addressNotes, setAddressNotes] = useState("")
   const router = useRouter()
   const { track } = useCAPI()
+  const { user } = useAuth()
+
+  // Con sesión: el correo se fija al de la cuenta (los códigos se validan y
+  // cuentan contra ESE correo, así el "un solo uso por cuenta" es infalsificable).
+  useEffect(() => {
+    if (user?.email) setCustomerEmail(user.email)
+  }, [user])
 
   useEffect(() => {
     const stored = sessionStorage.getItem("checkout-back-url")
@@ -316,7 +324,9 @@ export default function CheckoutPage() {
                 placeholder="Correo electrónico *"
                 value={customerEmail}
                 onChange={(e) => setCustomerEmail(e.target.value)}
-                className="flex-1 px-3 py-3 text-sm bg-transparent text-[#2D1A14] placeholder:text-[#2D1A14]/25 outline-none font-light tracking-wide"
+                readOnly={!!user}
+                title={user ? "Correo de tu cuenta" : undefined}
+                className={`flex-1 px-3 py-3 text-sm bg-transparent text-[#2D1A14] placeholder:text-[#2D1A14]/25 outline-none font-light tracking-wide ${user ? "cursor-not-allowed text-[#2D1A14]/70" : ""}`}
               />
             </div>
 
@@ -377,29 +387,37 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* Código de descuento */}
+          {/* Código de descuento — solo con sesión iniciada */}
           <div className="mt-5">
             <p className="text-[10px] text-[#2D1A14]/30 tracking-[0.2em] uppercase mb-3 flex items-center gap-2">
               <Tag className="w-3 h-3" /> Código de descuento
             </p>
-            <div className={`flex border transition-colors duration-200 ${couponError ? "border-red-400" : couponSuccess ? "border-green-500" : "border-[#2D1A14]/15 hover:border-[#2D1A14]/30"}`}>
-              <input
-                type="text"
-                placeholder="Ingresa tu código"
-                value={couponCode}
-                onChange={(e) => { setCouponCode(e.target.value); setCouponError(null); setCouponSuccess(null) }}
-                className="flex-1 px-4 py-3 text-sm bg-transparent text-[#2D1A14] placeholder:text-[#2D1A14]/25 outline-none font-light tracking-wide uppercase"
-              />
-              <button
-                onClick={handleApplyCoupon}
-                disabled={couponLoading || !couponCode.trim()}
-                className="px-5 py-3 text-[10px] font-semibold text-[#2D1A14]/40 hover:text-[#A67163] transition-colors uppercase tracking-widest border-l border-[#2D1A14]/15 disabled:opacity-40"
-              >
-                {couponLoading ? <RefreshCw className="w-3 h-3 animate-spin" /> : "Aplicar"}
-              </button>
-            </div>
-            {couponError && <p className="text-xs text-red-500 mt-1.5">{couponError}</p>}
-            {couponSuccess && <p className="text-xs text-green-600 mt-1.5">{couponSuccess}</p>}
+            {user ? (
+              <>
+                <div className={`flex border transition-colors duration-200 ${couponError ? "border-red-400" : couponSuccess ? "border-green-500" : "border-[#2D1A14]/15 hover:border-[#2D1A14]/30"}`}>
+                  <input
+                    type="text"
+                    placeholder="Ingresa tu código"
+                    value={couponCode}
+                    onChange={(e) => { setCouponCode(e.target.value); setCouponError(null); setCouponSuccess(null) }}
+                    className="flex-1 px-4 py-3 text-sm bg-transparent text-[#2D1A14] placeholder:text-[#2D1A14]/25 outline-none font-light tracking-wide uppercase"
+                  />
+                  <button
+                    onClick={handleApplyCoupon}
+                    disabled={couponLoading || !couponCode.trim()}
+                    className="px-5 py-3 text-[10px] font-semibold text-[#2D1A14]/40 hover:text-[#A67163] transition-colors uppercase tracking-widest border-l border-[#2D1A14]/15 disabled:opacity-40"
+                  >
+                    {couponLoading ? <RefreshCw className="w-3 h-3 animate-spin" /> : "Aplicar"}
+                  </button>
+                </div>
+                {couponError && <p className="text-xs text-red-500 mt-1.5">{couponError}</p>}
+                {couponSuccess && <p className="text-xs text-green-600 mt-1.5">{couponSuccess}</p>}
+              </>
+            ) : (
+              <p className="text-xs text-[#2D1A14]/55 border border-[#2D1A14]/12 px-4 py-3 leading-relaxed">
+                <Link href="/cuenta" className="text-[#A67163] underline font-medium">Inicia sesión</Link> para aplicar tu código de descuento. Cada código es de un solo uso por cuenta.
+              </p>
+            )}
           </div>
 
           {/* Trust pillars */}

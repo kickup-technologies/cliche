@@ -42,10 +42,12 @@ export async function POST(req: NextRequest) {
     // Si hay sesión iniciada (cookies), vinculamos el pedido a la cuenta para
     // su historial. Se obtiene del servidor (seguro), no se confía en el cliente.
     let userId: string | null = null
+    let userEmail: string | null = null
     try {
       const sb = await getSupabaseServer()
       const { data: auth } = await sb.auth.getUser()
       userId = auth.user?.id ?? null
+      userEmail = auth.user?.email ?? null
     } catch { /* invitado */ }
 
     // ── Separar líneas normales de "kits personalizados" (type:"pack") ──
@@ -176,9 +178,12 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Validar código de descuento server-side (replica /api/discount/validate) ──
+    // REGLAS: (1) solo con sesión iniciada; (2) un solo código por compra —el
+    // cliente envía uno solo, no acumulables; (3) un solo uso por cuenta
+    // (se registra en code_redemptions al confirmarse el pago).
     let discount_amount = 0
     let validatedCode: string | null = null
-    if (discount_code) {
+    if (discount_code && userId && userEmail) {
       const code = String(discount_code).toUpperCase().trim()
       const { data: discount } = await db
         .from("discount_codes")
@@ -194,12 +199,14 @@ export async function POST(req: NextRequest) {
         (discount.max_uses === null || discount.uses_count < discount.max_uses)
 
       let alreadyUsed = false
-      if (usable && email) {
+      if (usable) {
+        // El uso se cuenta contra el correo de la CUENTA autenticada (no el que
+        // venga del formulario), para que nadie evada el "un solo uso".
         const { data: redemption } = await db
           .from("code_redemptions")
           .select("id")
           .eq("code_id", discount.id)
-          .eq("customer_email", email)
+          .eq("customer_email", userEmail)
           .single()
         alreadyUsed = !!redemption
       }
