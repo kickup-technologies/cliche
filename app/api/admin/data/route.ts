@@ -24,6 +24,10 @@ export async function GET(req: NextRequest) {
       supabase
         .from("orders")
         .select("*")
+        // Solo pedidos REALMENTE pagados: los "pending" se crean al iniciar el
+        // checkout (antes de pagar en Mercado Pago) y solo el webhook de pago
+        // aprobado los confirma. El admin nunca debe verlos como pedidos.
+        .neq("status", "pending")
         .gte("created_at", oneYearAgo)
         .order("created_at", { ascending: false }),
       supabase
