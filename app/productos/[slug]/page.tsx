@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: product.name,
-    description: product.description || `${product.name} — Bienestar by Cliché`,
+    description: product.description || `${product.name} — Cliché Colombia`,
     openGraph: {
       title: product.name,
       description: product.description || "",

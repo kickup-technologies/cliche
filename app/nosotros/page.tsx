@@ -11,7 +11,7 @@ import { SplitText } from "@/components/editorial/split-text"
 import { Leaf, Sparkles, MapPin, HandHeart, ArrowRight } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Nuestra historia — Bienestar by Cliché",
+  title: "Nuestra historia",
   description:
     "Somos Cliché: marketing olfativo hecho en Colombia. Aromas artesanales, 100% naturales, diseñados para transformar espacios en sensaciones y recuerdos.",
 }
