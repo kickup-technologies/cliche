@@ -9,7 +9,7 @@ import {
 } from "lucide-react"
 import type { Product } from "@/lib/supabase"
 import { Order, PageView } from "./types"
-import { setAdminPw, clearAdminPw, getAdminPw, adminFetch } from "@/lib/admin-client"
+import { adminFetch } from "@/lib/admin-client"
 
 // Sections
 import { OverviewSection } from "./sections/overview"
@@ -49,10 +49,15 @@ const SIDEBAR = [
 ] as const
 
 export default function AdminPage() {
-  const [authed, setAuthed] = useState(false)
-  const [pwInput, setPwInput] = useState("")
+  // Acceso en 2 factores: sesión normal (cuenta de la dueña) + código OTP de
+  // 4 dígitos enviado a su correo. Cualquier otro visitante es devuelto a la
+  // tienda sin ver nada del panel.
+  const [gate, setGate] = useState<"checking" | "otp" | "unlocked">("checking")
+  const [otpInput, setOtpInput] = useState("")
+  const [otpSent, setOtpSent] = useState(false)
   const [authError, setAuthError] = useState("")
   const [authLoading, setAuthLoading] = useState(false)
+  const authed = gate === "unlocked"
 
   const [activeSection, setActiveSection] = useState<SectionId>("resumen")
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -64,31 +69,56 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
 
-  // Restaura sesión SOLO dentro de la misma pestaña: si ya se inició sesión
-  // (flag + credencial en sessionStorage) seguimos autenticados; si no, se
-  // muestra el formulario de login. (Antes entraba directo sin contraseña.)
+  // Al entrar: preguntar al servidor quién es el visitante.
+  //  - Sin sesión o con cuenta que NO es la admin → a la tienda (sin pistas).
+  //  - Cuenta admin sin desbloquear → pedir el código de 4 dígitos.
+  //  - Cookie admin válida → panel.
   useEffect(() => {
-    try {
-      if (sessionStorage.getItem("cliche_admin_auth") === "ok" && getAdminPw()) {
-        setAuthed(true)
-      }
-    } catch {}
+    fetch("/api/admin/whoami")
+      .then((r) => r.json())
+      .then((d: { authenticated: boolean; isAdminEmail: boolean; unlocked: boolean }) => {
+        if (d.unlocked) { setGate("unlocked"); return }
+        if (d.authenticated && d.isAdminEmail) { setGate("otp"); return }
+        window.location.replace("/")
+      })
+      .catch(() => window.location.replace("/"))
   }, [])
 
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault()
+  async function requestCode() {
     setAuthLoading(true)
     setAuthError("")
     try {
-      const res = await fetch("/api/admin/verify", {
+      const res = await fetch("/api/admin/otp/request", { method: "POST" })
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: "" }))
+        setAuthError(error || "No se pudo enviar el código")
+        return
+      }
+      setOtpSent(true)
+    } catch {
+      setAuthError("Error de conexión")
+    } finally {
+      setAuthLoading(false)
+    }
+  }
+
+  async function handleVerifyCode(e: React.FormEvent) {
+    e.preventDefault()
+    if (!/^\d{4}$/.test(otpInput)) { setAuthError("Escribe los 4 dígitos"); return }
+    setAuthLoading(true)
+    setAuthError("")
+    try {
+      const res = await fetch("/api/admin/otp/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: pwInput }),
+        body: JSON.stringify({ code: otpInput }),
       })
-      if (!res.ok) { setAuthError("Contraseña incorrecta"); return }
-      setAdminPw(pwInput) // guardar credencial para autenticar las llamadas a la API
-      sessionStorage.setItem("cliche_admin_auth", "ok")
-      setAuthed(true)
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: "" }))
+        setAuthError(error || "Código incorrecto")
+        return
+      }
+      setGate("unlocked")
     } catch {
       setAuthError("Error de conexión")
     } finally {
@@ -97,10 +127,7 @@ export default function AdminPage() {
   }
 
   function handleLogout() {
-    sessionStorage.removeItem("cliche_admin_auth")
-    clearAdminPw()
-    setAuthed(false)
-    setPwInput("")
+    fetch("/api/admin/logout", { method: "POST" }).finally(() => window.location.replace("/"))
   }
 
   const loadAll = useCallback(async () => {
@@ -108,7 +135,7 @@ export default function AdminPage() {
     try {
       // Use service-role API route — anon client cannot read orders/page_views (RLS)
       const res = await adminFetch("/api/admin/data")
-      if (res.status === 401) { handleLogout(); return }
+      if (res.status === 401) { setGate("otp"); setOtpSent(false); return }
       if (!res.ok) {
         // Degradar con elegancia: el panel queda usable con datos vacíos en lugar
         // de romper la UI. (Ocurre p. ej. sin SUPABASE_SERVICE_ROLE_KEY en local.)
@@ -153,8 +180,17 @@ export default function AdminPage() {
     inventario: lowStock > 0 ? { count: lowStock, tone: "danger" } : undefined,
   }
 
-  // ── LOGIN ──────────────────────────────────────────────────────────────────
-  if (!authed) {
+  // ── VERIFICANDO IDENTIDAD ──────────────────────────────────────────────────
+  if (gate === "checking") {
+    return (
+      <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center">
+        <RefreshCw className="w-7 h-7 animate-spin text-[#A67163]" />
+      </div>
+    )
+  }
+
+  // ── CÓDIGO DE SEGURIDAD (2º factor) ────────────────────────────────────────
+  if (gate === "otp") {
     return (
       <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center px-4">
         <div className="w-full max-w-sm">
@@ -162,35 +198,64 @@ export default function AdminPage() {
             <div className="w-14 h-14 bg-[#2D1A14] rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Lock className="w-6 h-6 text-white" />
             </div>
-            <h1 className="font-serif text-2xl font-bold text-[#2D1A14]">Panel Admin</h1>
-            <p className="text-sm text-[#2D1A14]/50 mt-1">Bienestar by Cliché</p>
+            <h1 className="font-serif text-2xl font-bold text-[#2D1A14]">Código de seguridad</h1>
+            <p className="text-sm text-[#2D1A14]/50 mt-1">Panel admin · Bienestar by Cliché</p>
           </div>
-          <form onSubmit={handleLogin} className="bg-white rounded-2xl border border-[#2D1A14]/10 p-6 shadow-sm space-y-4">
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-widest text-[#2D1A14]/50 mb-2">Contraseña</label>
-              <input
-                type="password"
-                value={pwInput}
-                onChange={e => setPwInput(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-[#2D1A14]/15 bg-[#FAF8F5] text-[#2D1A14] text-sm focus:outline-none focus:ring-2 focus:ring-[#A67163]/40"
-                placeholder="••••••••"
-                autoFocus
-              />
-              {authError && (
-                <p className="mt-2 text-xs text-red-600 flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" /> {authError}
+          <div className="bg-white rounded-2xl border border-[#2D1A14]/10 p-6 shadow-sm space-y-4">
+            {!otpSent ? (
+              <>
+                <p className="text-sm text-[#2D1A14]/70 text-center">
+                  Por tu seguridad, te enviaremos un código de <b>4 dígitos</b> a tu correo de administradora.
                 </p>
-              )}
-            </div>
-            <button
-              type="submit"
-              disabled={authLoading}
-              className="w-full h-12 rounded-xl bg-[#2D1A14] hover:bg-[#3D2A24] text-white font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
-            >
-              {authLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
-              Ingresar
-            </button>
-          </form>
+                <button
+                  onClick={requestCode}
+                  disabled={authLoading}
+                  className="w-full h-12 rounded-xl bg-[#2D1A14] hover:bg-[#3D2A24] text-white font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                >
+                  {authLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
+                  Enviarme el código
+                </button>
+              </>
+            ) : (
+              <form onSubmit={handleVerifyCode} className="space-y-4">
+                <p className="text-sm text-[#2D1A14]/70 text-center">
+                  Revisa tu correo: te enviamos un código de 4 dígitos. Vence en 10 minutos.
+                </p>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={4}
+                  value={otpInput}
+                  onChange={e => setOtpInput(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  className="w-full px-4 py-3 rounded-xl border border-[#2D1A14]/15 bg-[#FAF8F5] text-[#2D1A14] text-center text-2xl font-bold tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-[#A67163]/40"
+                  placeholder="····"
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  disabled={authLoading || otpInput.length !== 4}
+                  className="w-full h-12 rounded-xl bg-[#2D1A14] hover:bg-[#3D2A24] text-white font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                >
+                  {authLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
+                  Verificar y entrar
+                </button>
+                <button
+                  type="button"
+                  onClick={requestCode}
+                  disabled={authLoading}
+                  className="w-full text-xs text-[#2D1A14]/50 hover:text-[#A67163] transition-colors"
+                >
+                  ¿No te llegó? Reenviar código
+                </button>
+              </form>
+            )}
+            {authError && (
+              <p className="text-xs text-red-600 flex items-center justify-center gap-1">
+                <AlertCircle className="w-3 h-3" /> {authError}
+              </p>
+            )}
+          </div>
         </div>
       </div>
     )

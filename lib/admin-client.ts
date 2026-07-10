@@ -1,31 +1,20 @@
 "use client"
 
 /**
- * Helper del panel admin: añade la credencial `x-admin-password` a cada
- * petición. La contraseña se guarda en sessionStorage al iniciar sesión
- * (se borra al cerrar el navegador/pestaña).
+ * Helper del panel admin. La autorización ya NO viaja en un header con
+ * contraseña: la prueba de acceso es la cookie httpOnly `cliche_admin`
+ * (emitida por /api/admin/otp/verify tras el código de 4 dígitos), que el
+ * navegador adjunta automáticamente en cada petición al mismo origen.
  */
-const PW_KEY = "cliche_admin_pw"
-
-export function setAdminPw(pw: string) {
-  try { sessionStorage.setItem(PW_KEY, pw) } catch {}
-}
-
-export function getAdminPw(): string {
-  try { return sessionStorage.getItem(PW_KEY) || "" } catch { return "" }
-}
-
-export function clearAdminPw() {
-  try { sessionStorage.removeItem(PW_KEY) } catch {}
-}
 
 /**
- * fetch con la cabecera de admin inyectada. Misma firma que fetch().
+ * fetch para las APIs del admin. Misma firma que fetch(). Solo garantiza
+ * el Content-Type en peticiones con body JSON.
  */
 export async function adminFetch(input: string, init: RequestInit = {}): Promise<Response> {
   const headers = new Headers(init.headers || {})
-  headers.set("x-admin-password", getAdminPw())
-  if (init.body && !headers.has("Content-Type")) {
+  const isFormData = typeof FormData !== "undefined" && init.body instanceof FormData
+  if (init.body && !isFormData && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json")
   }
   return fetch(input, { ...init, headers })

@@ -3,7 +3,7 @@ import { useState, useRef } from "react"
 import { Plus, Pencil, Minus, RefreshCw, Save, X, AlertCircle, ToggleLeft, ToggleRight, Upload, ImageIcon } from "lucide-react"
 import { fmt } from "../types"
 import type { Product } from "@/lib/supabase"
-import { adminFetch, getAdminPw } from "@/lib/admin-client"
+import { adminFetch } from "@/lib/admin-client"
 
 async function uploadImage(file: File): Promise<string | null> {
   const fd = new FormData()
@@ -11,7 +11,6 @@ async function uploadImage(file: File): Promise<string | null> {
   const res = await fetch("/api/admin/upload", {
     method: "POST",
     body: fd,
-    headers: { "x-admin-password": getAdminPw() },
   })
   if (!res.ok) return null
   const { url } = await res.json()

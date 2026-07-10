@@ -28,6 +28,55 @@ function createTransport() {
 
 const FROM = process.env.SMTP_FROM ?? "Cliche Aromas <monica@clichecolombia.com>"
 
+/**
+ * Envía el código de seguridad (OTP) de 4 dígitos para desbloquear el panel admin.
+ * Devuelve true si se envió, false si el SMTP no está configurado.
+ */
+export async function sendAdminOtpEmail(to: string, code: string): Promise<boolean> {
+  const transport = createTransport()
+  if (!transport) {
+    console.warn("[mailer] SMTP not configured — no se pudo enviar el código admin")
+    return false
+  }
+
+  const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/></head>
+<body style="margin:0;padding:0;background:#FAF8F5;font-family:Georgia,serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#FAF8F5;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="480" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:24px;overflow:hidden;box-shadow:0 4px 40px rgba(0,0,0,.07);">
+        <tr><td style="background:linear-gradient(135deg,#2D1A14 0%,#6B3D30 100%);padding:36px 40px;text-align:center;">
+          <p style="margin:0 0 6px;font-size:11px;letter-spacing:.25em;text-transform:uppercase;color:rgba(255,255,255,.5);">Panel de administración</p>
+          <h1 style="margin:0;font-family:Georgia,serif;font-size:34px;font-weight:700;color:#fff;letter-spacing:.05em;">Cliché</h1>
+        </td></tr>
+        <tr><td style="padding:40px;text-align:center;">
+          <p style="margin:0 0 8px;font-size:16px;color:#2D1A14;">Tu código de acceso seguro</p>
+          <p style="margin:0 0 24px;font-size:13px;color:#8a7a72;">Escríbelo en el panel para entrar. Vence en 10 minutos.</p>
+          <div style="display:inline-block;background:#FAF8F5;border:1px solid #E7DED8;border-radius:16px;padding:18px 34px;">
+            <span style="font-family:'Courier New',monospace;font-size:42px;font-weight:700;letter-spacing:.35em;color:#2D1A14;">${code}</span>
+          </div>
+          <p style="margin:26px 0 0;font-size:12px;color:#B0A09A;">Si no intentaste entrar al panel, ignora este correo y cambia tu contraseña.</p>
+        </td></tr>
+        <tr><td style="background:#2D1A14;padding:18px 40px;text-align:center;">
+          <p style="margin:0;font-size:11px;color:#B0A09A;">Cliché Aromas · Colombia — código de seguridad</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`
+
+  await transport.sendMail({
+    from: FROM,
+    to,
+    subject: `Tu código de acceso al panel: ${code}`,
+    text: `Tu código de acceso al panel admin de Cliché es: ${code} (vence en 10 minutos).`,
+    html,
+  })
+  return true
+}
+
 export async function sendWelcomeEmail(to: string, discountCode: string): Promise<void> {
   const transport = createTransport()
 

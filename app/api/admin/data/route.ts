@@ -5,7 +5,7 @@ import { isAdmin } from "@/lib/admin-auth"
 /**
  * GET /api/admin/data
  * Fetches all admin data using service role (bypasses RLS).
- * Protegido por la credencial x-admin-password (header). Devuelve datos
+ * Protegido por la cookie firmada del panel admin (isAdmin). Devuelve datos
  * personales de clientes, así que SIN auth no responde.
  */
 export async function GET(req: NextRequest) {

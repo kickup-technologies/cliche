@@ -111,7 +111,7 @@ export function TiendaSection({ settings, onSettingsUpdate }: TiendaSectionProps
           <p className="text-sm font-semibold text-[#2D1A14]">Acceso protegido</p>
         </div>
         <p className="text-xs text-[#2D1A14]/50">
-          Esta URL es privada. La contraseña se configura con la variable de entorno <code className="font-mono">ADMIN_PASSWORD</code> en Vercel.
+          Solo la cuenta de la administradora (<code className="font-mono">ADMIN_EMAIL</code>) puede entrar aquí, verificando además un código de seguridad enviado a su correo.
         </p>
       </div>
     </div>

@@ -5,7 +5,7 @@ import {
   Upload, Trash2, ArrowUp, ArrowDown, Type, Eye, Megaphone, MessageCircle,
   Tag, Zap, ChevronDown, MousePointerClick,
 } from "lucide-react"
-import { adminFetch, getAdminPw } from "@/lib/admin-client"
+import { adminFetch } from "@/lib/admin-client"
 
 interface PersonalizarSectionProps {
   settings: Record<string, string>
@@ -227,7 +227,6 @@ export function PersonalizarSection({ settings, onSettingsUpdate }: Personalizar
       fd.append("file", file)
       const res = await fetch("/api/admin/upload", {
         method: "POST",
-        headers: { "x-admin-password": getAdminPw() },
         body: fd,
       })
       if (!res.ok) {
