@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { ShoppingBag, ChevronDown, ChevronRight, Heart, Instagram, User, Package, LogOut, LogIn, Crown, Leaf, Gift, Tag, Users, X } from "lucide-react"
+import { ShoppingBag, ChevronDown, ChevronRight, Heart, Instagram, User, Package, LogOut, LogIn, Crown, Leaf, Gift, Tag, Users, X, ShieldCheck } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet"
 import {
   DropdownMenu,
@@ -82,6 +82,15 @@ export function Header() {
     if (!user) { setOrders([]); return }
     getSupabaseBrowser().from("orders").select("status, total")
       .then(({ data }: { data: { status: string; total: number }[] | null }) => setOrders(data ?? []))
+  }, [user])
+  // ¿La sesión es de una cuenta administradora? (lo decide el servidor; el
+  // cliente solo recibe sí/no). Muestra el acceso directo al panel.
+  const [isAdminAcct, setIsAdminAcct] = useState(false)
+  useEffect(() => {
+    if (!user) { setIsAdminAcct(false); return }
+    fetch("/api/admin/whoami").then((r) => r.json())
+      .then((d: { isAdminEmail?: boolean }) => setIsAdminAcct(!!d?.isAdminEmail))
+      .catch(() => setIsAdminAcct(false))
   }, [user])
   // Menú de cuenta: se abre al pasar el cursor (con retardo al salir para alcanzar el menú).
   const [accountOpen, setAccountOpen] = useState(false)
@@ -179,6 +188,13 @@ export function Header() {
                                 <ChevronRight className="h-4 w-4 text-white/25" />
                               </Link>
                             ))}
+                            {isAdminAcct && (
+                              <Link href="/admin-cliche-secret" onClick={() => setIsOpen(false)} className="flex h-14 items-center gap-4 border-b border-white/[0.06] transition-colors hover:bg-white/[0.03]">
+                                <ShieldCheck className="h-[18px] w-[18px] flex-shrink-0 text-white/60" strokeWidth={1.4} />
+                                <span className="flex-1 text-[15px] text-white/85">Panel administrador</span>
+                                <ChevronRight className="h-4 w-4 text-white/25" />
+                              </Link>
+                            )}
                             <button type="button" onClick={() => { signOut(); setIsOpen(false) }} className="flex h-14 w-full items-center gap-4 transition-opacity hover:opacity-80" style={{ color: "#D98A7C" }}>
                               <LogOut className="h-[18px] w-[18px] flex-shrink-0" strokeWidth={1.4} />
                               <span className="flex-1 text-left text-[15px]">Cerrar sesión</span>
@@ -331,6 +347,11 @@ export function Header() {
                       <DropdownMenuItem asChild>
                         <Link href="/cuenta?seccion=datos" className="flex h-12 cursor-pointer items-center gap-3 rounded-[14px] px-4 text-[15px] text-[#2D1A14] focus:bg-[#F8F2EE] focus:text-[#A67163] sm:h-14 sm:px-[18px]"><User className="h-[18px] w-[18px]" /> <span className="flex-1">Mis datos</span> <ChevronRight className="h-4 w-4 opacity-30" /></Link>
                       </DropdownMenuItem>
+                      {isAdminAcct && (
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin-cliche-secret" className="flex h-12 cursor-pointer items-center gap-3 rounded-[14px] px-4 text-[15px] text-[#2D1A14] focus:bg-[#F8F2EE] focus:text-[#A67163] sm:h-14 sm:px-[18px]"><ShieldCheck className="h-[18px] w-[18px]" /> <span className="flex-1">Panel administrador</span> <ChevronRight className="h-4 w-4 opacity-30" /></Link>
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuSeparator className="my-1.5" />
                       <DropdownMenuItem onClick={() => signOut()} className="flex h-12 cursor-pointer items-center gap-3 rounded-[14px] px-4 text-[15px] text-red-500/90 focus:bg-red-50 focus:text-red-600 sm:px-[18px]">
                         <LogOut className="h-[18px] w-[18px]" /> <span className="flex-1">Cerrar sesión</span>
