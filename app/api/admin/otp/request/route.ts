@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { randomInt } from "crypto"
 import { getSupabaseServer } from "@/lib/supabase/server"
 import { createServerClient } from "@/lib/supabase"
-import { isAdminEmail, adminEmail, sha256 } from "@/lib/admin-auth"
+import { isAdminEmail, sha256 } from "@/lib/admin-auth"
 import { sendAdminOtpEmail } from "@/lib/mailer"
 import { rateLimit } from "@/lib/rate-limit"
 
@@ -22,7 +22,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 })
   }
 
-  const email = adminEmail()!
+  // El código se liga y se envía al correo del admin que tiene la sesión.
+  const email = user!.email!.trim().toLowerCase()
   const code = String(randomInt(1000, 10000)) // 4 dígitos (1000–9999)
 
   const db = createServerClient()

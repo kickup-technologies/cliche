@@ -22,16 +22,21 @@ function signingSecret(): string | null {
   return process.env.ADMIN_SESSION_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || null
 }
 
-/** Correo autorizado como admin (normalizado). */
-export function adminEmail(): string | null {
-  const e = process.env.ADMIN_EMAIL
-  return e ? e.trim().toLowerCase() : null
+/**
+ * Correos autorizados como admin (normalizados). Se leen de ADMIN_EMAILS
+ * (lista separada por comas) y, además, siempre incluye ADMIN_EMAIL (el
+ * correo de la dueña, que también recibe las alertas de pedidos).
+ */
+export function adminEmails(): string[] {
+  const raw = [process.env.ADMIN_EMAIL, ...(process.env.ADMIN_EMAILS || "").split(",")]
+  return [...new Set(raw.map((e) => (e || "").trim().toLowerCase()).filter(Boolean))]
 }
 
-/** ¿El correo dado es el de la dueña/admin? */
+/** ¿El correo dado pertenece a un admin autorizado? */
 export function isAdminEmail(email: string | null | undefined): boolean {
-  const admin = adminEmail()
-  return !!admin && !!email && email.trim().toLowerCase() === admin
+  if (!email) return false
+  const list = adminEmails()
+  return list.length > 0 && list.includes(email.trim().toLowerCase())
 }
 
 export function sha256(s: string): string {
@@ -49,11 +54,10 @@ export function signAdminToken(email: string, ttlMs: number = TOKEN_TTL_MS): str
   return `${payload}.${sig}`
 }
 
-/** Valida el token: firma correcta, no expirado y correo == ADMIN_EMAIL. */
+/** Valida el token: firma correcta, no expirado y correo en la lista admin. */
 export function verifyAdminToken(token: string | null | undefined): boolean {
   const secret = signingSecret()
-  const admin = adminEmail()
-  if (!secret || !admin || !token) return false
+  if (!secret || adminEmails().length === 0 || !token) return false
   const [payload, sig] = token.split(".")
   if (!payload || !sig) return false
   const expected = createHmac("sha256", secret).update(payload).digest("base64url")
@@ -63,7 +67,7 @@ export function verifyAdminToken(token: string | null | undefined): boolean {
   try {
     const { e, exp } = JSON.parse(Buffer.from(payload, "base64url").toString()) as { e: string; exp: number }
     if (typeof exp !== "number" || Date.now() > exp) return false
-    return e === admin
+    return isAdminEmail(e)
   } catch {
     return false
   }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getSupabaseServer } from "@/lib/supabase/server"
 import { createServerClient } from "@/lib/supabase"
-import { isAdminEmail, adminEmail, sha256, signAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth"
+import { isAdminEmail, sha256, signAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth"
 import { rateLimit } from "@/lib/rate-limit"
 
 /**
@@ -27,7 +27,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Código inválido" }, { status: 400 })
   }
 
-  const email = adminEmail()!
+  // El código válido es el emitido para el correo del admin con la sesión.
+  const email = user!.email!.trim().toLowerCase()
   const db = createServerClient()
   const { data: row } = await db
     .from("admin_otps")
