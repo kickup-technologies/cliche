@@ -22,6 +22,14 @@ import nodemailer from "nodemailer"
 import { createServerClient } from "@/lib/supabase"
 
 /**
+ * URL absoluta para usar dentro de un CORREO: las rutas relativas de la BD
+ * ("/images/…") funcionan en la web pero en el email no apuntan a nada.
+ */
+function absUrl(src: string): string {
+  return src.startsWith("http") ? src : `${process.env.NEXT_PUBLIC_APP_URL || "https://clichecolombia.com"}${src}`
+}
+
+/**
  * Imágenes de producto para los correos: busca en la BD la foto de cada
  * product_id. Falla en silencio (correo sin fotos > correo no enviado).
  */
@@ -36,7 +44,7 @@ async function imagesByProductId(
     const map: Record<string, string> = {}
     for (const p of data || []) {
       const img = p.image_url || p.image_urls?.[0]
-      if (img) map[p.id] = img
+      if (img) map[p.id] = absUrl(img)
     }
     return map
   } catch {
@@ -116,8 +124,8 @@ function shell(content: string, footNote: string): string {
 <body style="margin:0;padding:0;background:${C.bg};">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:${C.bg};padding:52px 16px;"><tr><td align="center">
 
-  <!-- Wordmark -->
-  <p style="margin:0 0 26px;font-family:Georgia,serif;font-size:24px;letter-spacing:.30em;color:${C.ink};">CLICH&Eacute;</p>
+  <!-- Logo de la marca -->
+  <img src="${appUrl()}/images/logo-cliche.png" alt="Clich&eacute;" height="46" style="height:46px;width:auto;display:block;margin:0 auto 26px;"/>
 
   <table width="520" cellpadding="0" cellspacing="0" style="max-width:520px;width:100%;background:#ffffff;border:1px solid ${C.line};border-radius:20px;">
     <tr><td style="padding:46px 42px;">
@@ -176,9 +184,9 @@ export async function sendWelcomeEmail(to: string, discountCode: string): Promis
 
   const content = `
     <div style="text-align:center;">
-      ${kicker("Bienvenida")}
-      ${title("El aroma de tu casa<br/>empieza aqu&iacute;.")}
-      ${para("Gracias por unirte. Este es tu regalo de bienvenida, listo para usar en tu primera compra:", 28)}
+      ${kicker("Te damos la bienvenida")}
+      ${title("Deja que tu historia comience<br/>con nuestro aroma.")}
+      ${para("Gracias por unirte a Clich&eacute;. Cada espacio guarda una historia — y la tuya merece un aroma propio. Este es tu regalo de bienvenida, listo para tu primera compra:", 28)}
       <div style="border:1px solid ${C.accent};border-radius:16px;padding:24px;margin-bottom:10px;">
         <p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:${C.faint};">Tu c&oacute;digo</p>
         <p style="margin:0;font-family:'Courier New',monospace;font-size:30px;letter-spacing:.14em;color:${C.ink};">${discountCode}</p>
@@ -324,7 +332,7 @@ export async function sendAbandonedCartEmail(
   const imgs = await imagesByProductId(items)
   const list = items.slice(0, 4).map((item) => `
     <tr>
-      ${thumbCell(item.image_url || (item.product_id ? imgs[item.product_id] : undefined), item.name)}
+      ${thumbCell(item.image_url ? absUrl(item.image_url) : (item.product_id ? imgs[item.product_id] : undefined), item.name)}
       <td style="padding:10px 0;border-bottom:1px solid ${C.line};font-family:Georgia,serif;font-size:14px;color:${C.ink};">${item.name}</td>
       <td align="right" style="padding:10px 0;border-bottom:1px solid ${C.line};font-family:Georgia,serif;font-size:14px;color:${C.sub};">${fmtCOP(item.price)}</td>
     </tr>`).join("")

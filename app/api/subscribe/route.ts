@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       await sendWelcomeEmail(email, code)
       return NextResponse.json({
         success: true,
-        message: "Ya estabas suscrito — te reenviamos tu código",
+        message: "Ya estabas en la lista — te reenviamos tu código",
         discount_code: code,
       })
     }
