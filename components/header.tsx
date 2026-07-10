@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
+import { ProductSearch } from "@/components/product-search"
 import { useCart } from "@/context/cart-context"
 import { useFavorites } from "@/context/favorites-context"
 import { useAuth } from "@/context/auth-context"
@@ -273,6 +274,7 @@ export function Header() {
             <Link href="/catalogo" className={navLink("hidden lg:inline-flex mr-3")}>
               Catálogo
             </Link>
+            <ProductSearch buttonClassName={iconBtn} />
             <Link href="/favoritos" className={`${iconBtn} hidden sm:flex`} aria-label="Favoritos">
               <Heart className={`h-[18px] w-[18px] ${favCount > 0 ? "fill-red-500 text-red-500" : ""}`} />
               {favCount > 0 && (
