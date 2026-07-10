@@ -5,6 +5,7 @@ import {
   sendAbandonedCartEmail,
   sendReviewRequestEmail,
   sendWelcomeEmail,
+  sendAdminOrderAlert,
 } from "@/lib/mailer"
 
 // ⚠️ TEMPORAL — previsualización de plantillas de correo. BORRAR tras aprobar
@@ -40,6 +41,20 @@ export async function GET(req: NextRequest) {
         break
       case "bienvenida":
         await sendWelcomeEmail(TO, "BIENVENIDA10")
+        break
+      case "alerta":
+        // La alerta va a ADMIN_EMAIL; para la PREVIEW la redirigimos al
+        // destinatario fijo de pruebas (no molestar el buzón real de la admin).
+        process.env.ADMIN_EMAIL = TO
+        await sendAdminOrderAlert({
+          reference: "cliche_demo_A1B2C3D4",
+          total: 234000,
+          customer_name: "Andrés Bonilla",
+          customer_email: "cliente@ejemplo.com",
+          customer_phone: "+57 300 123 4567",
+          shipping_address: { address: "Cra 15 # 85-24, Apto 501", city: "Bogotá", department: "Cundinamarca", notes: "Portería: dejar con el vigilante" },
+          items,
+        })
         break
       default:
         return NextResponse.json({ error: "type inválido: confirmacion | enviado | carrito | resena | bienvenida" }, { status: 400 })
