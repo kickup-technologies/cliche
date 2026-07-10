@@ -153,6 +153,12 @@ export function ProductDetail({ product, related }: Props) {
   // Tier de compra: unidad / kit x3 / x4 / x6 (mismo aroma)
   const [tierId, setTierId] = useState("unit")
   const tier = TIER_BY_ID[tierId] ?? TIER_BY_ID["unit"]
+  // Precio mostrado/cobrado: la UNIDAD usa el precio real del producto (BD) —
+  // igual que cobra el servidor —; los kits usan el precio fijo del tier.
+  const tierPrice = tier.id === "unit" ? product.price : tier.price
+  // Producto de PRUEBA de pagos (slug "prueba"): sin kits ni presentaciones —
+  // solo la unidad a su precio real ($1.000). No afecta a los demás productos.
+  const isTestProduct = product.slug === "prueba"
   const maxQty = Math.max(1, Math.floor(product.stock / tier.units))
   useEffect(() => { setQty((q) => Math.min(q, maxQty)) }, [maxQty])
   const [added, setAdded] = useState(false)
@@ -306,7 +312,7 @@ export function ProductDetail({ product, related }: Props) {
       ...product,
       id: makeVariantId(product.id, tier.id),
       name: tier.units > 1 ? `${product.name} — Kit x${tier.units}` : product.name,
-      price: tier.price,
+      price: tierPrice,
     }
   }
 
@@ -327,7 +333,7 @@ export function ProductDetail({ product, related }: Props) {
         content_name: product.name,
         content_type: 'product',
         currency: 'COP',
-        value: tier.price * qty,
+        value: tierPrice * qty,
         num_items: qty * tier.units,
       },
     })
@@ -506,7 +512,7 @@ export function ProductDetail({ product, related }: Props) {
               {/* Price — según el tier seleccionado */}
               <div className="flex items-baseline gap-3 flex-wrap">
                 <span className="text-[2.15rem] font-semibold text-foreground tracking-tight leading-none">
-                  ${tier.price.toLocaleString("es-CO")}
+                  ${tierPrice.toLocaleString("es-CO")}
                   <span className="text-sm font-normal text-muted-foreground ml-1.5">COP</span>
                 </span>
                 {tier.units > 1 ? (
@@ -530,8 +536,9 @@ export function ProductDetail({ product, related }: Props) {
                 ) : null}
               </div>
 
-              {/* Selector de presentación — unidad o kit (mismo aroma) */}
-              <div>
+              {/* Selector de presentación — unidad o kit (mismo aroma).
+                  Oculto para el producto de prueba: solo se vende la unidad. */}
+              <div className={isTestProduct ? "hidden" : undefined}>
                 <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70">
                   Presentación
                 </p>
@@ -894,7 +901,7 @@ export function ProductDetail({ product, related }: Props) {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs text-muted-foreground truncate lg:font-serif lg:text-sm lg:text-foreground">{product.name}</p>
-            <p className="font-bold text-foreground text-sm">${tier.price.toLocaleString("es-CO")} COP{tier.units > 1 ? ` · Kit x${tier.units}` : ""}</p>
+            <p className="font-bold text-foreground text-sm">${tierPrice.toLocaleString("es-CO")} COP{tier.units > 1 ? ` · Kit x${tier.units}` : ""}</p>
           </div>
           <Button
             size="sm"
