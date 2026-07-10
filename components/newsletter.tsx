@@ -56,6 +56,8 @@ export function Newsletter() {
         return
       }
       if (data.discount_code) setDiscountCode(data.discount_code)
+      // Marca persistente: ya está suscrito → el popup de captura no vuelve a salir.
+      try { localStorage.setItem("cliche_subscribed", "1") } catch {}
       setIsSubmitted(true)
       // ── Meta Pixel + CAPI: Lead (suscripción al newsletter) ──
       track({

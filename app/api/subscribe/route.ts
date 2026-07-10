@@ -20,12 +20,20 @@ export async function POST(req: NextRequest) {
     // Verificar si ya existe
     const { data: existing } = await supabase
       .from("subscribers")
-      .select("id")
+      .select("id, discount_code")
       .eq("email", email)
       .single()
 
     if (existing) {
-      return NextResponse.json({ success: true, message: "Ya estás suscrito" })
+      // Ya estaba suscrito: le REENVIAMOS su código (antes respondíamos "listo"
+      // sin enviar nada, y el usuario esperaba un correo que nunca llegaba).
+      const code = existing.discount_code || "BIENVENIDA10"
+      await sendWelcomeEmail(email, code)
+      return NextResponse.json({
+        success: true,
+        message: "Ya estabas suscrito — te reenviamos tu código",
+        discount_code: code,
+      })
     }
 
     // Código de descuento REAL (debe existir en la tabla discount_codes para que
