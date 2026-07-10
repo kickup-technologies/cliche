@@ -20,6 +20,11 @@ function formatCOP(price: number) {
   return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(price)
 }
 
+/**
+ * Buscador del header: la lupa se expande EN SU MISMO SITIO a una barra
+ * (sin popup). Los resultados caen en un panel anclado bajo la barra.
+ * Búsqueda tolerante a errores de tipeo (lib/fuzzy).
+ */
 export function ProductSearch({ buttonClassName = "" }: { buttonClassName?: string }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -27,9 +32,10 @@ export function ProductSearch({ buttonClassName = "" }: { buttonClassName?: stri
   const [products, setProducts] = useState<SearchProduct[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [active, setActive] = useState(0)
+  const rootRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Carga perezosa del catálogo la primera vez que se abre el buscador.
+  // Carga perezosa del catálogo la primera vez que se abre.
   const loadProducts = useCallback(async () => {
     if (products) return
     setLoading(true)
@@ -47,33 +53,29 @@ export function ProductSearch({ buttonClassName = "" }: { buttonClassName?: stri
   }, [products])
 
   useEffect(() => {
-    if (open) {
-      loadProducts()
-      // pequeño delay para que el autofocus funcione tras la animación
-      const t = setTimeout(() => inputRef.current?.focus(), 40)
-      return () => clearTimeout(t)
-    }
-    setQuery("")
-    setActive(0)
+    if (!open) { setQuery(""); setActive(0); return }
+    loadProducts()
+    // foco tras iniciar la animación de expansión
+    const t = setTimeout(() => inputRef.current?.focus(), 120)
+    return () => clearTimeout(t)
   }, [open, loadProducts])
 
-  // Cerrar con Escape.
+  // Cerrar con Escape o clic fuera.
   useEffect(() => {
     if (!open) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false)
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false) }
+    const onDown = (e: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false)
     }
     window.addEventListener("keydown", onKey)
-    // bloquear scroll del fondo
-    document.body.style.overflow = "hidden"
+    window.addEventListener("mousedown", onDown)
     return () => {
       window.removeEventListener("keydown", onKey)
-      document.body.style.overflow = ""
+      window.removeEventListener("mousedown", onDown)
     }
   }, [open])
 
-  const results = query.trim() && products ? smartSearch(query, products, 7) : []
-
+  const results = open && query.trim() && products ? smartSearch(query, products, 6) : []
   useEffect(() => setActive(0), [query])
 
   const go = (slug: string) => {
@@ -88,96 +90,89 @@ export function ProductSearch({ buttonClassName = "" }: { buttonClassName?: stri
   }
 
   return (
-    <>
-      {/* Disparador sutil: solo el ícono de lupa. */}
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label="Buscar productos"
-        className={buttonClassName}
+    <div ref={rootRef} className="relative flex items-center">
+      {/* Barra expandible: nace desde el ancho del icono y crece en el mismo espacio. */}
+      <div
+        className="flex h-9 items-center overflow-hidden rounded-full transition-[width,background-color,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+        style={{
+          width: open ? "min(240px, 56vw)" : "36px",
+          backgroundColor: open ? "rgba(255,255,255,0.96)" : "transparent",
+          boxShadow: open ? "0 8px 30px -6px rgba(45,26,20,0.25), inset 0 0 0 1px rgba(45,26,20,0.08)" : "none",
+          backdropFilter: open ? "blur(12px)" : undefined,
+        }}
       >
-        <Search className="h-[18px] w-[18px]" />
-      </button>
-
-      {open && (
-        <div
-          className="fixed inset-0 z-[70] flex items-start justify-center px-4 pt-[12vh] sm:pt-[15vh]"
-          role="dialog"
-          aria-modal="true"
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-label="Buscar productos"
+          aria-expanded={open}
+          className={open ? "flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-[#A67163]" : buttonClassName}
         >
-          {/* Fondo */}
+          <Search className="h-[18px] w-[18px]" />
+        </button>
+
+        <input
+          ref={inputRef}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={onInputKey}
+          placeholder="Buscar aroma…"
+          tabIndex={open ? 0 : -1}
+          aria-hidden={!open}
+          className={`h-full min-w-0 flex-1 bg-transparent pr-1 text-[13px] text-[#2D1A14] outline-none placeholder:text-[#2D1A14]/40 transition-opacity duration-200 ${open ? "opacity-100" : "opacity-0"}`}
+        />
+
+        {open && (
           <button
-            aria-label="Cerrar búsqueda"
-            onClick={() => setOpen(false)}
-            className="absolute inset-0 bg-[#2D1A14]/40 backdrop-blur-sm animate-in fade-in duration-200"
-          />
+            type="button"
+            onClick={() => (query ? setQuery("") : setOpen(false))}
+            aria-label={query ? "Borrar búsqueda" : "Cerrar búsqueda"}
+            className="mr-1 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[#2D1A14]/35 transition-colors hover:bg-black/5 hover:text-[#2D1A14]"
+          >
+            {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin text-[#A67163]" /> : <X className="h-3.5 w-3.5" />}
+          </button>
+        )}
+      </div>
 
-          {/* Panel */}
-          <div className="relative w-full max-w-xl overflow-hidden rounded-2xl border border-black/5 bg-white shadow-[0_24px_70px_-12px_rgba(45,26,20,0.35)] animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-200">
-            {/* Input */}
-            <div className="flex items-center gap-3 border-b border-black/[0.06] px-4">
-              <Search className="h-5 w-5 flex-shrink-0 text-[#A67163]" />
-              <input
-                ref={inputRef}
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={onInputKey}
-                placeholder="Busca un aroma por nombre…"
-                className="h-14 w-full bg-transparent text-[15px] text-[#2D1A14] outline-none placeholder:text-[#2D1A14]/35"
-              />
-              {loading && <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin text-[#A67163]" />}
-              <button onClick={() => setOpen(false)} aria-label="Cerrar" className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[#2D1A14]/40 transition-colors hover:bg-black/5 hover:text-[#2D1A14]">
-                <X className="h-4 w-4" />
-              </button>
+      {/* Resultados: panel anclado bajo la barra (no un modal). */}
+      {open && query.trim() && (
+        <div className="absolute right-0 top-[calc(100%+10px)] z-[60] w-[300px] max-w-[86vw] overflow-hidden rounded-2xl border border-black/[0.06] bg-white shadow-[0_24px_60px_-12px_rgba(45,26,20,0.3)] animate-in fade-in slide-in-from-top-1 duration-200">
+          {results.length === 0 ? (
+            <p className="px-4 py-6 text-center text-[13px] text-[#2D1A14]/50">
+              {loading ? "Buscando…" : "No encontramos aromas con ese nombre."}
+            </p>
+          ) : (
+            <div className="p-1.5">
+              {results.map((p, i) => (
+                <button
+                  key={p.id}
+                  onClick={() => go(p.slug)}
+                  onMouseEnter={() => setActive(i)}
+                  className={`flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left transition-colors ${
+                    i === active ? "bg-[#F8F2EE]" : ""
+                  }`}
+                >
+                  <span className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg bg-[#FAF8F5]">
+                    {(p.image_url || p.image_urls?.[0]) && (
+                      <Image
+                        src={p.image_url || p.image_urls![0]}
+                        alt={p.name}
+                        fill
+                        sizes="40px"
+                        className="object-cover"
+                      />
+                    )}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[13px] font-medium text-[#2D1A14]">{p.name}</span>
+                    <span className="text-[12px] text-[#A67163]">{formatCOP(p.price)}</span>
+                  </span>
+                </button>
+              ))}
             </div>
-
-            {/* Resultados */}
-            {query.trim() && (
-              <div className="max-h-[52vh] overflow-y-auto p-2">
-                {results.length === 0 ? (
-                  <p className="px-4 py-8 text-center text-sm text-[#2D1A14]/50">
-                    {loading ? "Buscando…" : <>No encontramos aromas para “<span className="font-medium">{query}</span>”.</>}
-                  </p>
-                ) : (
-                  results.map((p, i) => (
-                    <button
-                      key={p.id}
-                      onClick={() => go(p.slug)}
-                      onMouseEnter={() => setActive(i)}
-                      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
-                        i === active ? "bg-[#F8F2EE]" : "hover:bg-[#FAF8F5]"
-                      }`}
-                    >
-                      <span className="relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-lg bg-[#FAF8F5]">
-                        {(p.image_url || p.image_urls?.[0]) && (
-                          <Image
-                            src={p.image_url || p.image_urls![0]}
-                            alt={p.name}
-                            fill
-                            sizes="44px"
-                            className="object-cover"
-                          />
-                        )}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[14px] font-medium text-[#2D1A14]">{p.name}</span>
-                        <span className="text-[13px] text-[#A67163]">{formatCOP(p.price)}</span>
-                      </span>
-                    </button>
-                  ))
-                )}
-              </div>
-            )}
-
-            {/* Estado inicial (sin texto) */}
-            {!query.trim() && (
-              <p className="px-4 py-6 text-center text-[13px] text-[#2D1A14]/40">
-                Escribe el nombre de un aroma. Aunque tengas un error de tipeo, te lo encontramos.
-              </p>
-            )}
-          </div>
+          )}
         </div>
       )}
-    </>
+    </div>
   )
 }
