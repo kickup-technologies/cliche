@@ -39,6 +39,7 @@ export default function CheckoutPage() {
   const [addressCity, setAddressCity] = useState("")
   const [addressDept, setAddressDept] = useState("")
   const [addressNotes, setAddressNotes] = useState("")
+  const [livePrices, setLivePrices] = useState<Record<string, number>>({})
   const router = useRouter()
   const { track } = useCAPI()
   const { user } = useAuth()
@@ -48,6 +49,21 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (user?.email) setCustomerEmail(user.email)
   }, [user])
+
+  // Precios VIGENTES desde la BD, por si cambiaron después de que el ítem entró
+  // al carrito (p. ej. el producto de prueba, que pasó a $1.000). El servidor ya
+  // cobra el precio real; esto solo alinea lo que MUESTRA la pantalla.
+  useEffect(() => {
+    fetch("/api/products")
+      .then((r) => r.json())
+      .then((data: Array<{ id: string; price: number }>) => {
+        if (!Array.isArray(data)) return
+        const m: Record<string, number> = {}
+        for (const p of data) if (p?.id) m[p.id] = p.price
+        setLivePrices(m)
+      })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     const stored = sessionStorage.getItem("checkout-back-url")
@@ -72,7 +88,11 @@ export default function CheckoutPage() {
   }, [items])
 
   const selectedItems = items.filter((i) => selected[i.product.id])
-  const subtotal = selectedItems.reduce((s, i) => s + i.product.price * i.quantity, 0)
+  // Precio a mostrar: unidades → precio vigente de la BD; kits (id con "::") →
+  // su precio fijo de tier. Así la pantalla coincide con lo que cobra el servidor.
+  const priceOf = (it: { product: { id: string; price: number } }) =>
+    it.product.id.includes("::") ? it.product.price : (livePrices[it.product.id] ?? it.product.price)
+  const subtotal = selectedItems.reduce((s, i) => s + priceOf(i) * i.quantity, 0)
   const FREE_SHIPPING = 300000
   // Producto de prueba de pagos: exento de envío (total exacto = su precio).
   const onlyTestProduct = selectedItems.length > 0 && selectedItems.every((i) => i.product.slug === "prueba")
@@ -152,7 +172,7 @@ export default function CheckoutPage() {
                   name: i.product.name,
                   components: i.pack.components.map((c) => ({ product_id: c.product_id, quantity: c.quantity })),
                 }
-              : { product_id: i.product.id, quantity: i.quantity, unit_price: i.product.price, name: i.product.name }
+              : { product_id: i.product.id, quantity: i.quantity, unit_price: priceOf(i), name: i.product.name }
           ),
           total,
           email: customerEmail,
@@ -255,8 +275,8 @@ export default function CheckoutPage() {
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <p className="font-serif text-sm sm:text-base text-[#2D1A14] leading-snug">{item.product.name}</p>
-                    <p className="text-[10px] text-[#2D1A14]/30 mt-0.5 tracking-widest uppercase">Bienestar by Cliché</p>
-                    <p className="text-[#A67163] text-sm font-medium mt-1.5">{fmt(item.product.price)}<span className="text-[#2D1A14]/30 text-xs ml-1">/ ud.</span></p>
+                    <p className="text-[10px] text-[#2D1A14]/30 mt-0.5 tracking-widest uppercase">Cliché Colombia</p>
+                    <p className="text-[#A67163] text-sm font-medium mt-1.5">{fmt(priceOf(item))}<span className="text-[#2D1A14]/30 text-xs ml-1">/ ud.</span></p>
                     <div className="flex items-center mt-2 border border-[#2D1A14]/12 w-fit">
                       <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)} disabled={item.quantity <= 1} className="w-8 h-8 flex items-center justify-center hover:bg-[#2D1A14]/5 transition-colors text-[#2D1A14]/40 disabled:opacity-20 disabled:cursor-not-allowed">
                         <Minus className="w-2.5 h-2.5" />
@@ -273,7 +293,7 @@ export default function CheckoutPage() {
                     <button onClick={() => removeItem(item.product.id)} className="text-[#2D1A14]/15 hover:text-red-400 transition-colors">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
-                    <p className="font-serif text-base sm:text-lg text-[#2D1A14]">{fmt(item.product.price * item.quantity)}</p>
+                    <p className="font-serif text-base sm:text-lg text-[#2D1A14]">{fmt(priceOf(item) * item.quantity)}</p>
                   </div>
                 </div>
               )
@@ -464,7 +484,7 @@ export default function CheckoutPage() {
                     <p className="text-[#FAF8F5]/75 text-sm leading-snug">{i.product.name}</p>
                     {i.quantity > 1 && <p className="text-[#FAF8F5]/25 text-xs mt-0.5 tracking-wide">× {i.quantity}</p>}
                   </div>
-                  <p className="text-[#FAF8F5]/60 text-sm tabular-nums flex-shrink-0">{fmt(i.product.price * i.quantity)}</p>
+                  <p className="text-[#FAF8F5]/60 text-sm tabular-nums flex-shrink-0">{fmt(priceOf(i) * i.quantity)}</p>
                 </div>
               ))
             )}
@@ -584,7 +604,7 @@ export default function CheckoutPage() {
                       {i.quantity > 1 && <p className="text-[#FAF8F5]/30 text-[10px]">× {i.quantity}</p>}
                     </div>
                   </div>
-                  <p className="text-[#FAF8F5]/60 text-xs tabular-nums flex-shrink-0">{fmt(i.product.price * i.quantity)}</p>
+                  <p className="text-[#FAF8F5]/60 text-xs tabular-nums flex-shrink-0">{fmt(priceOf(i) * i.quantity)}</p>
                 </div>
               ))}
             </div>
