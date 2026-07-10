@@ -6,15 +6,17 @@ export async function GET(req: NextRequest) {
   if (!isAdmin(req)) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
 
   const supabase = createServerClient()
-  const { data, error } = await supabase
+  // Por defecto: solo pedidos REALMENTE pagados (los "pending" se crean antes
+  // de pagar y solo el webhook los confirma). Con ?vista=intentos se devuelven
+  // ÚNICAMENTE esos intentos sin pagar, para la vista secundaria del panel.
+  const vista = req.nextUrl.searchParams.get("vista")
+  let query = supabase
     .from("orders")
     .select("id, status, total, tracking_number, customer_name, customer_email, customer_phone, customer_id_number, shipping_address, discount_code, discount_amount, stripe_session_id, created_at, items")
-    // Solo pedidos REALMENTE pagados: los "pending" se crean antes de pagar
-    // (carritos que se fueron a Mercado Pago y no completaron). El admin solo
-    // ve los que se confirmaron por el webhook.
-    .neq("status", "pending")
     .order("created_at", { ascending: false })
     .limit(200)
+  query = vista === "intentos" ? query.eq("status", "pending") : query.neq("status", "pending")
+  const { data, error } = await query
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data ?? [])

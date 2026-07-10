@@ -1,17 +1,22 @@
 "use client"
-import { useState } from "react"
-import { ShoppingBag, X, RefreshCw, CheckCircle, Truck, ChevronRight, Search, Download } from "lucide-react"
+import { useState, useEffect, useMemo } from "react"
+import Image from "next/image"
+import { ShoppingBag, X, RefreshCw, CheckCircle, Truck, ChevronRight, Search, Download, Hourglass } from "lucide-react"
 import { Order, Period, filterPeriod, fmt, ORDER_STATUS_MAP } from "../types"
 import { PeriodSelector } from "../components/period-selector"
 import { adminFetch } from "@/lib/admin-client"
+import type { Product } from "@/lib/supabase"
 
 type SortKey = "date" | "total" | "status"
+type Vista = "pagados" | "intentos"
 
 export function PedidosSection({
   orders,
+  products = [],
   onOrdersUpdate,
 }: {
   orders: Order[]
+  products?: Product[]
   onOrdersUpdate: (updated: Order) => void
 }) {
   const [period, setPeriod] = useState<Period>("1m")
@@ -23,7 +28,33 @@ export function PedidosSection({
   const [sortAsc, setSortAsc] = useState(false)
   const [query, setQuery] = useState("")
 
-  const periodOrders = filterPeriod(orders, period)
+  // Vista principal: SOLO pedidos pagados. La secundaria ("intentos") muestra
+  // los checkouts que nunca completaron el pago — informativa, se carga aparte.
+  const [vista, setVista] = useState<Vista>("pagados")
+  const [intentos, setIntentos] = useState<Order[] | null>(null)
+  const [intentosLoading, setIntentosLoading] = useState(false)
+  useEffect(() => {
+    if (vista !== "intentos" || intentos !== null) return
+    setIntentosLoading(true)
+    adminFetch("/api/admin/orders?vista=intentos")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d: Order[]) => setIntentos(Array.isArray(d) ? d : []))
+      .catch(() => setIntentos([]))
+      .finally(() => setIntentosLoading(false))
+  }, [vista, intentos])
+
+  // Imagen de cada producto del catálogo, para mostrarla en el ticket.
+  const productImg = useMemo(() => {
+    const map: Record<string, string> = {}
+    for (const p of products) {
+      const img = p.image_url || p.image_urls?.[0]
+      if (img) map[p.id] = img
+    }
+    return map
+  }, [products])
+
+  const sourceOrders = vista === "pagados" ? orders : (intentos ?? [])
+  const periodOrders = filterPeriod(sourceOrders, period)
   const confirmedOrders = periodOrders.filter(o => ["confirmed", "preparing", "shipped", "delivered", "paid"].includes(o.status))
   const periodRevenue = confirmedOrders.reduce((s, o) => s + o.total, 0)
 
@@ -117,7 +148,9 @@ export function PedidosSection({
         <div>
           <h2 className="font-serif text-2xl font-bold text-[#2D1A14]">Pedidos</h2>
           <p className="text-sm text-[#2D1A14]/50 mt-0.5">
-            {periodOrders.length} pedidos · {fmt(periodRevenue)} confirmados
+            {vista === "pagados"
+              ? `${periodOrders.length} pedidos pagados · ${fmt(periodRevenue)} confirmados`
+              : `${periodOrders.length} intentos de pago sin completar (nunca se cobraron)`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -151,18 +184,46 @@ export function PedidosSection({
         )}
       </div>
 
-      {/* Sort controls */}
-      <div className="flex items-center gap-1">
+      {/* Sort controls + vista secundaria */}
+      <div className="flex flex-wrap items-center gap-1">
         <span className="text-xs text-[#2D1A14]/40 mr-1">Ordenar:</span>
         <SortBtn label="Fecha" k="date" />
         <SortBtn label="Total" k="total" />
         <SortBtn label="Estado" k="status" />
+        <span className="mx-2 h-4 w-px bg-[#2D1A14]/10" />
+        <button
+          onClick={() => setVista("pagados")}
+          className={`text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors ${vista === "pagados" ? "bg-[#2D1A14] text-white" : "text-[#2D1A14]/40 hover:text-[#2D1A14]"}`}
+        >
+          Pagados
+        </button>
+        <button
+          onClick={() => setVista("intentos")}
+          className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors ${vista === "intentos" ? "bg-[#2D1A14] text-white" : "text-[#2D1A14]/40 hover:text-[#2D1A14]"}`}
+          title="Personas que llegaron a la pasarela pero no completaron el pago"
+        >
+          <Hourglass className="w-3 h-3" /> Intentos sin pagar
+        </button>
       </div>
+
+      {vista === "intentos" && (
+        <p className="text-xs text-[#2D1A14]/45 bg-[#FAF8F5] border border-[#2D1A14]/8 rounded-xl px-4 py-2.5">
+          Estos NO son pedidos: son personas que iniciaron el pago y no lo terminaron. No se cobró dinero y no hay nada que enviar. Es solo información (p. ej. para recuperar carritos).
+        </p>
+      )}
 
       {sorted.length === 0 ? (
         <div className="bg-white rounded-2xl border border-[#2D1A14]/8 p-12 text-center">
-          <ShoppingBag className="w-10 h-10 text-[#2D1A14]/15 mx-auto mb-3" />
-          <p className="text-sm text-[#2D1A14]/40">{q ? "Sin resultados para tu búsqueda" : "Sin pedidos en este periodo"}</p>
+          {intentosLoading ? (
+            <RefreshCw className="w-8 h-8 text-[#A67163] animate-spin mx-auto" />
+          ) : (
+            <>
+              <ShoppingBag className="w-10 h-10 text-[#2D1A14]/15 mx-auto mb-3" />
+              <p className="text-sm text-[#2D1A14]/40">
+                {q ? "Sin resultados para tu búsqueda" : vista === "intentos" ? "Sin intentos de pago en este periodo" : "Sin pedidos pagados en este periodo"}
+              </p>
+            </>
+          )}
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-[#2D1A14]/8 overflow-hidden">
@@ -253,12 +314,20 @@ export function PedidosSection({
                 <div className="space-y-2">
                   {(selectedOrder.items || []).map((item, i) => (
                     <div key={i} className="bg-[#FAF8F5] rounded-xl px-4 py-3">
-                      <div className="flex items-center justify-between">
-                        <div>
+                      <div className="flex items-center gap-3">
+                        {/* Foto del producto (del catálogo, vía product_id) */}
+                        <span className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-white border border-[#2D1A14]/8">
+                          {item.product_id && productImg[item.product_id] ? (
+                            <Image src={productImg[item.product_id]} alt={item.name || "Producto"} fill sizes="48px" className="object-cover" />
+                          ) : (
+                            <ShoppingBag className="absolute inset-0 m-auto h-5 w-5 text-[#2D1A14]/20" />
+                          )}
+                        </span>
+                        <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium text-[#2D1A14]">{item.name || item.product_id}</p>
                           <p className="text-xs text-[#2D1A14]/40">x {item.quantity}</p>
                         </div>
-                        {item.price ? <p className="text-sm font-semibold text-[#2D1A14]">{fmt(item.price * item.quantity)}</p> : null}
+                        {item.price ? <p className="text-sm font-semibold text-[#2D1A14] flex-shrink-0">{fmt(item.price * item.quantity)}</p> : null}
                       </div>
                       {/* Kit personalizado: frascos elegidos por el cliente */}
                       {item.kind === "pack" && item.components && item.components.length > 0 && (
@@ -286,7 +355,12 @@ export function PedidosSection({
                 </div>
               </div>
 
-              {/* Update status */}
+              {/* Update status — solo pedidos pagados; los intentos no se gestionan */}
+              {selectedOrder.status === "pending" ? (
+                <p className="text-xs text-[#2D1A14]/50 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                  ⚠️ Este es un intento de pago sin completar: el cliente nunca pagó. No hay nada que preparar ni enviar.
+                </p>
+              ) : (
               <div className="space-y-3 pt-2">
                 <p className="text-xs font-bold uppercase tracking-widest text-[#2D1A14]/40">Actualizar estado</p>
                 <select
@@ -314,6 +388,7 @@ export function PedidosSection({
                   Guardar cambios
                 </button>
               </div>
+              )}
 
               {/* Tracking link */}
               <a

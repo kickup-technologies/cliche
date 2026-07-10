@@ -406,7 +406,7 @@ export default function AdminPage() {
             <HeatmapsSection pageViews={pageViews} />
           )}
           {activeSection === "pedidos" && (
-            <PedidosSection orders={orders} onOrdersUpdate={handleOrderUpdate} />
+            <PedidosSection orders={orders} products={products} onOrdersUpdate={handleOrderUpdate} />
           )}
           {activeSection === "descuentos" && (
             <DescuentosSection />
