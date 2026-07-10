@@ -25,14 +25,11 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (existing) {
-      // Ya estaba suscrito: le REENVIAMOS su código (antes respondíamos "listo"
-      // sin enviar nada, y el usuario esperaba un correo que nunca llegaba).
-      const code = existing.discount_code || "BIENVENIDA10"
-      await sendWelcomeEmail(email, code)
+      // Ya estaba suscrito: NO se envía ningún correo de nuevo, solo se avisa.
       return NextResponse.json({
-        success: true,
-        message: "Ya estabas en la lista — te reenviamos tu código",
-        discount_code: code,
+        success: false,
+        alreadySubscribed: true,
+        message: "Este correo ya está suscrito",
       })
     }
 

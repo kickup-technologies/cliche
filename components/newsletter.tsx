@@ -12,6 +12,7 @@ export function Newsletter() {
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(false)
+  const [alreadyMsg, setAlreadyMsg] = useState<string | null>(null)
   const [discountCode, setDiscountCode] = useState("BIENVENIDA10")
   const [discountPct, setDiscountPct] = useState(10)
   const DEFAULT_SUBTITLE = "Suscríbete y recibe tu código de descuento al instante, más tips de aromaterapia y lanzamientos exclusivos."
@@ -42,6 +43,7 @@ export function Newsletter() {
     if (!email) return
     setIsLoading(true)
     setError(false)
+    setAlreadyMsg(null)
     try {
       const res = await fetch("/api/subscribe", {
         method: "POST",
@@ -49,8 +51,14 @@ export function Newsletter() {
         body: JSON.stringify({ email, source: "newsletter" }),
       })
       const data = await res.json().catch(() => ({}))
+      // Correo ya suscrito: no se envía nada, solo se avisa.
+      if (data?.alreadySubscribed) {
+        try { localStorage.setItem("cliche_subscribed", "1") } catch {}
+        setAlreadyMsg("Este correo ya está suscrito.")
+        return
+      }
       // Solo mostramos éxito si el servidor respondió OK de verdad.
-      if (!res.ok) {
+      if (!res.ok || !data?.success) {
         console.error("Error subscribing:", data)
         setError(true)
         return
@@ -130,6 +138,9 @@ export function Newsletter() {
                       <p className="text-sm text-red-600">
                         No pudimos completar la suscripción. Intenta de nuevo en un momento.
                       </p>
+                    )}
+                    {alreadyMsg && (
+                      <p className="text-sm text-primary">{alreadyMsg}</p>
                     )}
                   </form>
                 ) : (
