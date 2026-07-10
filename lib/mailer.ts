@@ -1,15 +1,21 @@
-﻿/**
+/**
  * lib/mailer.ts — SMTP email sender (nodemailer)
  *
- * Env vars needed in Vercel / .env.local when the company email is ready:
- *   SMTP_HOST     e.g. mail.clichecolombia.com  (or smtp.gmail.com)
+ * Env vars needed in Vercel / .env.local:
+ *   SMTP_HOST     smtp.gmail.com
  *   SMTP_PORT     587  (TLS) or 465 (SSL)
  *   SMTP_SECURE   false  (true only for port 465)
- *   SMTP_USER     monica@clichecolombia.com
- *   SMTP_PASS     your-email-password-or-app-password
- *   SMTP_FROM     Cliche Aromas <monica@clichecolombia.com>
+ *   SMTP_USER     Clichepromocionales@gmail.com
+ *   SMTP_PASS     app-password de 16 caracteres
+ *   SMTP_FROM     Cliché Aromas <Clichepromocionales@gmail.com>
  *
- * While env vars are missing the function logs a warning and returns — no crash.
+ * While env vars are missing the functions log a warning and return — no crash.
+ *
+ * ── Diseño de los correos ──
+ * Sistema minimalista compartido (shell): fondo crema, tarjeta blanca con
+ * borde fino (sin gradientes ni sombras pesadas), wordmark serif, kicker en
+ * mayúsculas espaciadas y pie discreto. Cada correo aporta SOLO su motivo
+ * propio (código, recibo, guía, estrellas…) sobre esa base.
  */
 
 import nodemailer from "nodemailer"
@@ -26,12 +32,78 @@ function createTransport() {
   })
 }
 
-const FROM = process.env.SMTP_FROM ?? "Cliche Aromas <monica@clichecolombia.com>"
+const FROM = process.env.SMTP_FROM ?? "Cliché Aromas <monica@clichecolombia.com>"
+
+// ── Paleta y utilidades del sistema de diseño ────────────────────────────────
+const C = {
+  bg: "#FAF8F5",      // crema
+  ink: "#2D1A14",     // café
+  sub: "#6F5D55",     // texto secundario
+  faint: "#A99B93",   // texto terciario / pie
+  line: "#EDE5DF",    // hairlines
+  accent: "#A67163",  // terracota
+}
+
+const fmtCOP = (n: number) =>
+  new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(n)
+
+const appUrl = () => process.env.NEXT_PUBLIC_APP_URL || "https://clichecolombia.com"
+
+/** Botón pill oscuro, único elemento "sólido" de cada correo. */
+function button(href: string, label: string): string {
+  return `<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:6px 0 2px;">
+    <a href="${href}" style="display:inline-block;background:${C.ink};color:#ffffff;text-decoration:none;padding:14px 42px;border-radius:100px;font-family:Georgia,serif;font-size:14px;letter-spacing:.04em;">${label}</a>
+  </td></tr></table>`
+}
+
+/** Kicker: etiqueta corta en mayúsculas espaciadas, terracota. */
+function kicker(text: string): string {
+  return `<p style="margin:0 0 14px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:.32em;text-transform:uppercase;color:${C.accent};">${text}</p>`
+}
+
+/** Título serif grande. */
+function title(text: string): string {
+  return `<h1 style="margin:0 0 14px;font-family:Georgia,serif;font-size:26px;line-height:1.3;font-weight:400;color:${C.ink};">${text}</h1>`
+}
+
+/** Párrafo secundario. */
+function para(text: string, mb = 30): string {
+  return `<p style="margin:0 0 ${mb}px;font-family:Georgia,serif;font-size:15px;line-height:1.75;color:${C.sub};">${text}</p>`
+}
+
+/** Hairline separador. */
+const hr = `<div style="height:1px;background:${C.line};margin:30px 0;"></div>`
 
 /**
- * Envía el código de seguridad (OTP) de 4 dígitos para desbloquear el panel admin.
- * Devuelve true si se envió, false si el SMTP no está configurado.
+ * Cascarón compartido: fondo crema → tarjeta blanca de 520px con borde fino,
+ * wordmark arriba, contenido centrado por cada correo y pie mínimo.
  */
+function shell(content: string, footNote: string): string {
+  return `<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/></head>
+<body style="margin:0;padding:0;background:${C.bg};">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:${C.bg};padding:52px 16px;"><tr><td align="center">
+
+  <!-- Wordmark -->
+  <p style="margin:0 0 26px;font-family:Georgia,serif;font-size:24px;letter-spacing:.30em;color:${C.ink};">CLICH&Eacute;</p>
+
+  <table width="520" cellpadding="0" cellspacing="0" style="max-width:520px;width:100%;background:#ffffff;border:1px solid ${C.line};border-radius:20px;">
+    <tr><td style="padding:46px 42px;">
+      ${content}
+    </td></tr>
+  </table>
+
+  <!-- Pie -->
+  <p style="margin:26px 0 4px;font-family:Arial,sans-serif;font-size:11px;color:${C.faint};">Clich&eacute; Aromas &middot; Colombia</p>
+  <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;color:${C.faint};">${footNote}</p>
+
+</td></tr></table>
+</body></html>`
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 1. Código de seguridad del panel admin — motivo: el código, nada más.
+// ═════════════════════════════════════════════════════════════════════════════
 export async function sendAdminOtpEmail(to: string, code: string): Promise<boolean> {
   const transport = createTransport()
   if (!transport) {
@@ -39,152 +111,60 @@ export async function sendAdminOtpEmail(to: string, code: string): Promise<boole
     return false
   }
 
-  const html = `
-<!DOCTYPE html>
-<html lang="es">
-<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/></head>
-<body style="margin:0;padding:0;background:#FAF8F5;font-family:Georgia,serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#FAF8F5;padding:40px 16px;">
-    <tr><td align="center">
-      <table width="480" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:24px;overflow:hidden;box-shadow:0 4px 40px rgba(0,0,0,.07);">
-        <tr><td style="background:linear-gradient(135deg,#2D1A14 0%,#6B3D30 100%);padding:36px 40px;text-align:center;">
-          <p style="margin:0 0 6px;font-size:11px;letter-spacing:.25em;text-transform:uppercase;color:rgba(255,255,255,.5);">Panel de administración</p>
-          <h1 style="margin:0;font-family:Georgia,serif;font-size:34px;font-weight:700;color:#fff;letter-spacing:.05em;">Cliché</h1>
-        </td></tr>
-        <tr><td style="padding:40px;text-align:center;">
-          <p style="margin:0 0 8px;font-size:16px;color:#2D1A14;">Tu código de acceso seguro</p>
-          <p style="margin:0 0 24px;font-size:13px;color:#8a7a72;">Escríbelo en el panel para entrar. Vence en 10 minutos.</p>
-          <div style="display:inline-block;background:#FAF8F5;border:1px solid #E7DED8;border-radius:16px;padding:18px 34px;">
-            <span style="font-family:'Courier New',monospace;font-size:42px;font-weight:700;letter-spacing:.35em;color:#2D1A14;">${code}</span>
-          </div>
-          <p style="margin:26px 0 0;font-size:12px;color:#B0A09A;">Si no intentaste entrar al panel, ignora este correo y cambia tu contraseña.</p>
-        </td></tr>
-        <tr><td style="background:#2D1A14;padding:18px 40px;text-align:center;">
-          <p style="margin:0;font-size:11px;color:#B0A09A;">Cliché Aromas · Colombia — código de seguridad</p>
-        </td></tr>
-      </table>
-    </td></tr>
-  </table>
-</body></html>`
+  const content = `
+    <div style="text-align:center;">
+      ${kicker("Acceso al panel")}
+      ${title("Tu c&oacute;digo de seguridad")}
+      ${para("Escr&iacute;belo en el panel para entrar. Vence en 10 minutos.", 26)}
+      <div style="display:inline-block;border:1px solid ${C.line};border-radius:16px;padding:20px 38px;">
+        <span style="font-family:'Courier New',monospace;font-size:40px;letter-spacing:.35em;color:${C.ink};">${code}</span>
+      </div>
+      <p style="margin:26px 0 0;font-family:Arial,sans-serif;font-size:12px;color:${C.faint};">Si no intentaste entrar, ignora este correo y cambia tu contrase&ntilde;a.</p>
+    </div>`
 
   await transport.sendMail({
     from: FROM,
     to,
-    subject: `Tu código de acceso al panel: ${code}`,
+    subject: `${code} es tu código de acceso al panel`,
     text: `Tu código de acceso al panel admin de Cliché es: ${code} (vence en 10 minutos).`,
-    html,
+    html: shell(content, "Correo de seguridad generado autom&aacute;ticamente."),
   })
   return true
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// 2. Bienvenida + código de descuento — motivo: el código como regalo.
+// ═════════════════════════════════════════════════════════════════════════════
 export async function sendWelcomeEmail(to: string, discountCode: string): Promise<void> {
   const transport = createTransport()
-
   if (!transport) {
     console.warn("[mailer] SMTP not configured — skipping welcome email for", to)
     return
   }
 
-  const html = `
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Bienvenido a Cliche Aromas</title>
-</head>
-<body style="margin:0;padding:0;background:#FAF8F5;font-family:Georgia,serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#FAF8F5;padding:40px 16px;">
-    <tr><td align="center">
-      <table width="560" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:24px;overflow:hidden;box-shadow:0 4px 40px rgba(0,0,0,.07);">
-
-        <!-- Header -->
-        <tr>
-          <td style="background:linear-gradient(135deg,#2D1A14 0%,#6B3D30 100%);padding:48px 40px;text-align:center;">
-            <p style="margin:0 0 8px;font-size:11px;letter-spacing:.25em;text-transform:uppercase;color:rgba(255,255,255,.5);">Bienvenida a</p>
-            <h1 style="margin:0;font-family:Georgia,serif;font-size:42px;font-weight:700;color:#fff;letter-spacing:.05em;">Cliche</h1>
-            <p style="margin:8px 0 0;font-size:12px;color:rgba(255,255,255,.55);letter-spacing:.12em;text-transform:uppercase;">Aromas que transforman tu espacio</p>
-          </td>
-        </tr>
-
-        <!-- Body -->
-        <tr>
-          <td style="padding:48px 40px;">
-            <p style="margin:0 0 12px;font-size:22px;font-weight:600;color:#2D1A14;">Gracias por ser parte de la familia</p>
-            <p style="margin:0 0 28px;font-size:15px;line-height:1.75;color:#6B5A53;">
-              Ya eres parte de mas de <strong>5.000 hogares colombianos</strong> que transformaron su espacio.
-              Como regalo de bienvenida, aqui esta tu codigo exclusivo de descuento:
-            </p>
-
-            <!-- Code -->
-            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
-              <tr>
-                <td style="background:#FAF0EC;border:2px dashed #C4958A;border-radius:16px;padding:28px;text-align:center;">
-                  <p style="margin:0 0 8px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#8B6E64;">Tu codigo de descuento</p>
-                  <p style="margin:0 0 8px;font-family:'Courier New',monospace;font-size:34px;font-weight:900;letter-spacing:.15em;color:#2D1A14;">${discountCode}</p>
-                  <p style="margin:0;font-size:13px;color:#C4958A;font-weight:600;">Aplica en tu primera compra</p>
-                </td>
-              </tr>
-            </table>
-
-            <!-- Benefits -->
-            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:36px;">
-              <tr>
-                <td width="50%" style="padding:0 10px 14px 0;vertical-align:top;">
-                  <p style="margin:0 0 3px;font-size:14px;color:#2D1A14;font-weight:600;">Envio gratis</p>
-                  <p style="margin:0;font-size:13px;color:#8B6E64;">en compras mayores a $300.000</p>
-                </td>
-                <td width="50%" style="padding:0 0 14px 10px;vertical-align:top;">
-                  <p style="margin:0 0 3px;font-size:14px;color:#2D1A14;font-weight:600;">Garantia 30 dias</p>
-                  <p style="margin:0;font-size:13px;color:#8B6E64;">si no te encanta, te devolvemos</p>
-                </td>
-              </tr>
-              <tr>
-                <td width="50%" style="padding:0 10px 0 0;vertical-align:top;">
-                  <p style="margin:0 0 3px;font-size:14px;color:#2D1A14;font-weight:600;">100% Natural</p>
-                  <p style="margin:0;font-size:13px;color:#8B6E64;">sin quimicos, no mancha</p>
-                </td>
-                <td width="50%" style="padding:0 0 0 10px;vertical-align:top;">
-                  <p style="margin:0 0 3px;font-size:14px;color:#2D1A14;font-weight:600;">Hecho en Colombia</p>
-                  <p style="margin:0;font-size:13px;color:#8B6E64;">artesanal, con amor</p>
-                </td>
-              </tr>
-            </table>
-
-            <!-- CTA -->
-            <table width="100%" cellpadding="0" cellspacing="0">
-              <tr>
-                <td align="center">
-                  <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://clichecolombia.com"}/catalogo"
-                     style="display:inline-block;background:#2D1A14;color:#fff;text-decoration:none;padding:16px 44px;border-radius:100px;font-size:15px;font-weight:700;letter-spacing:.05em;">
-                    Ver catalogo
-                  </a>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-
-        <!-- Footer -->
-        <tr>
-          <td style="background:#FAF8F5;padding:22px 40px;text-align:center;border-top:1px solid #EDD5CF;">
-            <p style="margin:0 0 4px;font-size:12px;color:#8B6E64;">Cliche Aromas - Colombia</p>
-            <p style="margin:0;font-size:11px;color:#B0A09A;">Recibiste este correo porque te suscribiste en nuestro sitio.</p>
-          </td>
-        </tr>
-
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>`
+  const content = `
+    <div style="text-align:center;">
+      ${kicker("Bienvenida")}
+      ${title("El aroma de tu casa<br/>empieza aqu&iacute;.")}
+      ${para("Gracias por unirte. Este es tu regalo de bienvenida, listo para usar en tu primera compra:", 28)}
+      <div style="border:1px solid ${C.accent};border-radius:16px;padding:24px;margin-bottom:10px;">
+        <p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:${C.faint};">Tu c&oacute;digo</p>
+        <p style="margin:0;font-family:'Courier New',monospace;font-size:30px;letter-spacing:.14em;color:${C.ink};">${discountCode}</p>
+      </div>
+      <p style="margin:0 0 30px;font-family:Arial,sans-serif;font-size:12px;color:${C.faint};">Se aplica en el carrito, antes de pagar.</p>
+      ${button(`${appUrl()}/catalogo`, "Descubrir los aromas")}
+      ${hr}
+      <p style="margin:0;font-family:Arial,sans-serif;font-size:12px;line-height:1.9;color:${C.faint};">
+        Env&iacute;o gratis desde $300.000 &nbsp;&middot;&nbsp; Garant&iacute;a de 30 d&iacute;as &nbsp;&middot;&nbsp; Hecho en Colombia
+      </p>
+    </div>`
 
   try {
     await transport.sendMail({
       from: FROM,
       to,
-      subject: `Tu codigo ${discountCode} esta listo — Cliche Aromas`,
-      html,
+      subject: `Tu código ${discountCode} está listo — Cliché Aromas`,
+      html: shell(content, "Recibiste este correo porque te suscribiste en clichecolombia.com."),
     })
     console.log("[mailer] Welcome email sent to", to)
   } catch (err) {
@@ -192,54 +172,94 @@ export async function sendWelcomeEmail(to: string, discountCode: string): Promis
   }
 }
 
-// ── Order confirmation ────────────────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
+// 3. Confirmación de compra — motivo: recibo sereno con check.
+// ═════════════════════════════════════════════════════════════════════════════
 export async function sendOrderConfirmation(
   to: string,
-  order: { id: string; total: number; items: Array<{ product_id: string; quantity: number }> }
+  order: { id: string; total: number; items: Array<{ product_id: string; quantity: number; name?: string; price?: number }> }
 ): Promise<void> {
   const transport = createTransport()
   if (!transport) { console.warn("[mailer] SMTP not configured — skipping order confirmation"); return }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://clichecolombia.com"
   const orderId = order.id.slice(-8).toUpperCase()
-  // total is stored in pesos (integer), NOT centavos — do NOT divide by 100
-  const totalFormatted = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(order.total)
+  // total viene en pesos (entero), NO en centavos — no dividir por 100
+  const rows = (order.items || [])
+    .map((it) => `
+      <tr>
+        <td style="padding:11px 0;border-bottom:1px solid ${C.line};font-family:Georgia,serif;font-size:14px;color:${C.ink};">${it.name ?? "Producto"}&nbsp;<span style="color:${C.faint};font-size:12px;">&times;${it.quantity}</span></td>
+        <td align="right" style="padding:11px 0;border-bottom:1px solid ${C.line};font-family:Georgia,serif;font-size:14px;color:${C.sub};">${it.price ? fmtCOP(it.price * it.quantity) : ""}</td>
+      </tr>`)
+    .join("")
 
-  const html = `
-<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/></head>
-<body style="margin:0;padding:0;background:#FAF8F5;font-family:Georgia,serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#FAF8F5;padding:40px 16px;"><tr><td align="center">
-<table width="560" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:24px;overflow:hidden;box-shadow:0 4px 40px rgba(0,0,0,.07);">
-  <tr><td style="background:linear-gradient(135deg,#2D1A14 0%,#6B3D30 100%);padding:40px;text-align:center;">
-    <h1 style="margin:0;font-family:Georgia,serif;font-size:36px;font-weight:700;color:#fff;">Cliche</h1>
-    <p style="margin:8px 0 0;font-size:12px;color:rgba(255,255,255,.55);letter-spacing:.12em;text-transform:uppercase;">Confirmacion de pedido</p>
-  </td></tr>
-  <tr><td style="padding:40px;">
-    <p style="margin:0 0 8px;font-size:20px;font-weight:600;color:#2D1A14;">Tu pedido fue confirmado</p>
-    <p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:#6B5A53;">Estamos preparando tu aroma con mucho cuidado. Te notificaremos cuando sea despachado.</p>
-    <table width="100%" cellpadding="0" cellspacing="0" style="background:#FAF8F5;border-radius:16px;padding:20px;margin-bottom:28px;">
-      <tr><td style="font-size:13px;color:#8B6E64;">Numero de pedido</td><td align="right" style="font-family:'Courier New',monospace;font-weight:700;color:#2D1A14;font-size:16px;">#${orderId}</td></tr>
-      <tr><td colspan="2" style="padding:8px 0;"><hr style="border:none;border-top:1px solid #EDD5CF;"/></td></tr>
-      <tr><td style="font-size:13px;color:#8B6E64;">Total pagado</td><td align="right" style="font-size:18px;font-weight:700;color:#2D1A14;">${totalFormatted}</td></tr>
+  const content = `
+    <div style="text-align:center;">
+      <div style="display:inline-block;width:44px;height:44px;line-height:44px;border:1px solid ${C.accent};border-radius:100px;color:${C.accent};font-family:Georgia,serif;font-size:20px;margin-bottom:18px;">&#10003;</div>
+      ${kicker("Pedido confirmado")}
+      ${title("Gracias por tu compra.")}
+      ${para(`Tu pago fue confirmado y ya estamos preparando tu pedido <span style="font-family:'Courier New',monospace;color:${C.ink};">#${orderId}</span> con cuidado. Te avisaremos cuando salga en camino.`, 8)}
+    </div>
+    ${hr}
+    <table width="100%" cellpadding="0" cellspacing="0">
+      ${rows}
+      <tr>
+        <td style="padding:14px 0 0;font-family:Georgia,serif;font-size:15px;color:${C.ink};">Total pagado</td>
+        <td align="right" style="padding:14px 0 0;font-family:Georgia,serif;font-size:17px;color:${C.ink};">${fmtCOP(order.total)}</td>
+      </tr>
     </table>
-    <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
-      <a href="${appUrl}/pedido/${order.id}" style="display:inline-block;background:#2D1A14;color:#fff;text-decoration:none;padding:14px 40px;border-radius:100px;font-size:14px;font-weight:700;">
-        Seguir mi pedido
-      </a>
-    </td></tr></table>
-  </td></tr>
-  <tr><td style="background:#FAF8F5;padding:20px 40px;text-align:center;border-top:1px solid #EDD5CF;">
-    <p style="margin:0;font-size:11px;color:#B0A09A;">Cliche Aromas - Colombia | monica@clichecolombia.com</p>
-  </td></tr>
-</table></td></tr></table>
-</body></html>`
+    <div style="height:30px;"></div>
+    ${button(`${appUrl()}/pedido/${order.id}`, "Seguir mi pedido")}`
 
   try {
-    await transport.sendMail({ from: FROM, to, subject: `Pedido #${orderId} confirmado — Cliche Aromas`, html })
+    await transport.sendMail({
+      from: FROM,
+      to,
+      subject: `Pedido #${orderId} confirmado — Cliché Aromas`,
+      html: shell(content, "Guarda este correo como comprobante de tu compra."),
+    })
   } catch (err) { console.error("[mailer] Order confirmation failed:", err) }
 }
 
-// ── Abandoned cart ───────────────────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
+// 4. Pedido enviado — motivo: número de guía protagonista.
+// ═════════════════════════════════════════════════════════════════════════════
+export async function sendOrderShippedEmail(
+  to: string,
+  order: { id: string; customerName?: string | null; trackingNumber?: string | null }
+): Promise<void> {
+  const transport = createTransport()
+  if (!transport) { console.warn("[mailer] SMTP not configured — skipping shipped email"); return }
+
+  const orderId = order.id.slice(-8).toUpperCase()
+  const name = (order.customerName || "").trim().split(/\s+/)[0]
+  const guide = order.trackingNumber?.trim()
+
+  const content = `
+    <div style="text-align:center;">
+      ${kicker("En camino")}
+      ${title(`${name ? name + ", tu" : "Tu"} aroma va en camino.`)}
+      ${para(`El pedido <span style="font-family:'Courier New',monospace;color:${C.ink};">#${orderId}</span> ya sali&oacute; de nuestro taller. Muy pronto tu espacio va a oler distinto.`, guide ? 26 : 30)}
+      ${guide ? `
+      <div style="border:1px solid ${C.line};border-radius:16px;padding:20px;margin-bottom:30px;">
+        <p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:${C.faint};">N&uacute;mero de gu&iacute;a</p>
+        <p style="margin:0;font-family:'Courier New',monospace;font-size:22px;letter-spacing:.08em;color:${C.ink};">${guide}</p>
+      </div>` : ""}
+      ${button(`${appUrl()}/pedido/${order.id}`, "Rastrear mi pedido")}
+    </div>`
+
+  try {
+    await transport.sendMail({
+      from: FROM,
+      to,
+      subject: `Tu pedido #${orderId} va en camino 🚚`,
+      html: shell(content, "Te avisaremos cualquier novedad del env&iacute;o."),
+    })
+  } catch (err) { console.error("[mailer] Shipped email failed:", err) }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 5. Carrito abandonado — motivo: lista ligera + invitación suave.
+// ═════════════════════════════════════════════════════════════════════════════
 export async function sendAbandonedCartEmail(
   to: string,
   items: Array<{ name: string; price: number; image_url?: string }>
@@ -247,43 +267,35 @@ export async function sendAbandonedCartEmail(
   const transport = createTransport()
   if (!transport) { console.warn("[mailer] SMTP not configured — skipping abandoned cart email"); return }
 
-  const itemsList = items.slice(0, 4).map((item) =>
-    `<tr><td style="padding:8px 0;font-size:14px;color:#2D1A14;">${item.name}</td><td align="right" style="padding:8px 0;font-size:14px;font-weight:600;color:#2D1A14;">$${item.price.toLocaleString("es-CO")} COP</td></tr>`
-  ).join("")
+  const list = items.slice(0, 4).map((item) => `
+    <tr>
+      <td style="padding:10px 0;border-bottom:1px solid ${C.line};font-family:Georgia,serif;font-size:14px;color:${C.ink};">${item.name}</td>
+      <td align="right" style="padding:10px 0;border-bottom:1px solid ${C.line};font-family:Georgia,serif;font-size:14px;color:${C.sub};">${fmtCOP(item.price)}</td>
+    </tr>`).join("")
 
-  const html = `
-<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/></head>
-<body style="margin:0;padding:0;background:#FAF8F5;font-family:Georgia,serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#FAF8F5;padding:40px 16px;"><tr><td align="center">
-<table width="540" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:24px;overflow:hidden;box-shadow:0 4px 40px rgba(0,0,0,.07);">
-  <tr><td style="background:linear-gradient(135deg,#2D1A14 0%,#6B3D30 100%);padding:40px;text-align:center;">
-    <h1 style="margin:0;font-family:Georgia,serif;font-size:36px;font-weight:700;color:#fff;">Cliche</h1>
-    <p style="margin:8px 0 0;font-size:12px;color:rgba(255,255,255,.55);letter-spacing:.12em;text-transform:uppercase;">Tu carrito te espera</p>
-  </td></tr>
-  <tr><td style="padding:40px;">
-    <p style="margin:0 0 8px;font-size:20px;font-weight:600;color:#2D1A14;">Olvidaste algo especial</p>
-    <p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:#6B5A53;">Guardamos tu carrito para que puedas retomar tu compra cuando quieras.</p>
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;border-top:1px solid #EDD5CF;">
-      ${itemsList}
-    </table>
-    <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
-      <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://clichecolombia.com"}/" style="display:inline-block;background:#2D1A14;color:#fff;text-decoration:none;padding:16px 44px;border-radius:100px;font-size:15px;font-weight:700;">
-        Completar mi compra
-      </a>
-    </td></tr></table>
-  </td></tr>
-  <tr><td style="background:#FAF8F5;padding:20px 40px;text-align:center;border-top:1px solid #EDD5CF;">
-    <p style="margin:0;font-size:11px;color:#B0A09A;">Cliche Aromas - Colombia | monica@clichecolombia.com</p>
-  </td></tr>
-</table></td></tr></table>
-</body></html>`
+  const content = `
+    <div style="text-align:center;">
+      ${kicker("Tu carrito")}
+      ${title("Lo dejamos guardado<br/>para ti.")}
+      ${para("Estos aromas siguen esperando en tu carrito, tal como los dejaste:", 6)}
+    </div>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:14px 0 30px;">${list}</table>
+    ${button(`${appUrl()}/checkout`, "Terminar mi compra")}
+    <p style="margin:22px 0 0;text-align:center;font-family:Arial,sans-serif;font-size:12px;color:${C.faint};">Si ya no te interesa, simplemente ignora este correo.</p>`
 
   try {
-    await transport.sendMail({ from: FROM, to, subject: "Tu carrito te espera — Cliche Aromas", html })
+    await transport.sendMail({
+      from: FROM,
+      to,
+      subject: "Tu carrito te espera — Cliché Aromas",
+      html: shell(content, "Guardamos tu selecci&oacute;n por tiempo limitado."),
+    })
   } catch (err) { console.error("[mailer] Abandoned cart email failed:", err) }
 }
 
-// ── Review request (sent post-purchase) ──────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
+// 6. Solicitud de reseña — motivo: estrellas terracota.
+// ═════════════════════════════════════════════════════════════════════════════
 export async function sendReviewRequestEmail(
   to: string,
   name: string,
@@ -293,36 +305,28 @@ export async function sendReviewRequestEmail(
   const transport = createTransport()
   if (!transport) { console.warn("[mailer] SMTP not configured — skipping review request"); return }
 
-  const html = `
-<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/></head>
-<body style="margin:0;padding:0;background:#FAF8F5;font-family:Georgia,serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#FAF8F5;padding:40px 16px;"><tr><td align="center">
-<table width="520" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:24px;overflow:hidden;box-shadow:0 4px 40px rgba(0,0,0,.07);">
-  <tr><td style="background:linear-gradient(135deg,#2D1A14 0%,#6B3D30 100%);padding:36px;text-align:center;">
-    <h1 style="margin:0;font-family:Georgia,serif;font-size:32px;font-weight:700;color:#fff;">Cliche</h1>
-  </td></tr>
-  <tr><td style="padding:40px;text-align:center;">
-    <p style="font-size:40px;margin:0 0 16px;">&#11088;</p>
-    <p style="margin:0 0 12px;font-size:20px;font-weight:600;color:#2D1A14;">Hola ${name}, como te fue?</p>
-    <p style="margin:0 0 28px;font-size:15px;line-height:1.7;color:#6B5A53;">Tu opinion ayuda a mas hogares colombianos a encontrar su aroma perfecto. Solo toma 30 segundos.</p>
-    <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://clichecolombia.com"}/resenas" style="display:inline-block;background:#C4958A;color:#fff;text-decoration:none;padding:14px 36px;border-radius:100px;font-size:14px;font-weight:700;margin-bottom:16px;">
-      Dejar mi resena
-    </a>
-  </td></tr>
-  <tr><td style="background:#FAF8F5;padding:20px 40px;text-align:center;border-top:1px solid #EDD5CF;">
-    <p style="margin:0;font-size:11px;color:#B0A09A;">Cliche Aromas - Colombia</p>
-  </td></tr>
-</table></td></tr></table>
-</body></html>`
+  const content = `
+    <div style="text-align:center;">
+      ${kicker("Tu opini&oacute;n")}
+      <p style="margin:0 0 18px;font-size:22px;letter-spacing:.35em;color:${C.accent};">&#9733;&#9733;&#9733;&#9733;&#9733;</p>
+      ${title(`${name}, &iquest;c&oacute;mo huele<br/>tu casa ahora?`)}
+      ${para("Nos encantar&iacute;a saber c&oacute;mo te fue con tu aroma. Tu experiencia gu&iacute;a a otros hogares — y a nosotros nos ayuda a mejorar. Toma 30 segundos.", 30)}
+      ${button(`${appUrl()}/resenas`, "Contar mi experiencia")}
+    </div>`
 
   try {
-    await transport.sendMail({ from: FROM, to, subject: `${name}, como te fue con tu Cliche? Cuentanos`, html })
+    await transport.sendMail({
+      from: FROM,
+      to,
+      subject: `${name}, ¿cómo te fue con tu Cliché?`,
+      html: shell(content, "Gracias por hacer parte de Clich&eacute;."),
+    })
   } catch (err) { console.error("[mailer] Review request failed:", err) }
 }
 
-// ── Admin order alert ─────────────────────────────────────────────────────────
-// Notifica al administrador cuando se confirma un nuevo pedido.
-// Requiere: ADMIN_EMAIL en variables de entorno (puede ser el mismo SMTP_USER)
+// ═════════════════════════════════════════════════════════════════════════════
+// 7. Alerta de pedido nuevo → admin — motivo: ficha operativa compacta.
+// ═════════════════════════════════════════════════════════════════════════════
 export async function sendAdminOrderAlert(order: {
   reference: string
   total: number
@@ -339,106 +343,42 @@ export async function sendAdminOrderAlert(order: {
     return
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://clichecolombia.com"
   const orderId = order.reference.slice(-8).toUpperCase()
-  const totalFormatted = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(order.total)
-
-  const itemsRows = order.items.map((item) => `
-    <tr>
-      <td style="padding:8px 0;border-bottom:1px solid #EDD5CF;font-size:14px;color:#2D1A14;">${item.name ?? item.product_id}</td>
-      <td style="padding:8px 0;border-bottom:1px solid #EDD5CF;font-size:14px;color:#2D1A14;text-align:center;">× ${item.quantity}</td>
-      <td style="padding:8px 0;border-bottom:1px solid #EDD5CF;font-size:14px;color:#2D1A14;text-align:right;">${item.price ? new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",minimumFractionDigits:0}).format(item.price * item.quantity) : "—"}</td>
-    </tr>`).join("")
-
   const addr = order.shipping_address
-  const addressBlock = addr
-    ? `<p style="margin:4px 0;font-size:14px;color:#2D1A14;">${addr.address}</p>
-       <p style="margin:4px 0;font-size:14px;color:#2D1A14;">${addr.city}, ${addr.department}</p>
-       ${addr.notes ? `<p style="margin:4px 0;font-size:13px;color:#8B6E64;font-style:italic;">Nota: ${addr.notes}</p>` : ""}`
-    : `<p style="margin:4px 0;font-size:13px;color:#C4958A;">⚠️ Sin dirección registrada</p>`
+  const row = (label: string, value: string) => `
+    <tr>
+      <td style="padding:9px 0;border-bottom:1px solid ${C.line};font-family:Arial,sans-serif;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:${C.faint};white-space:nowrap;padding-right:18px;">${label}</td>
+      <td align="right" style="padding:9px 0;border-bottom:1px solid ${C.line};font-family:Georgia,serif;font-size:14px;color:${C.ink};">${value}</td>
+    </tr>`
 
-  // SVG icons inline — safe for all email clients
-  const iconBag = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C4958A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px;"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>`
-  const iconUser = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B6E64" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`
-  const iconTruck = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B6E64" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px;"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`
-  const iconList = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B6E64" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px;"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`
+  const itemsRows = order.items.map((it) =>
+    row(`&times;${it.quantity}`, `${it.name ?? it.product_id}${it.price ? ` &nbsp;<span style="color:${C.sub};">${fmtCOP(it.price * it.quantity)}</span>` : ""}`)
+  ).join("")
 
-  const html = `
-<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/></head>
-<body style="margin:0;padding:0;background:#FAF8F5;font-family:Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#FAF8F5;padding:32px 16px;"><tr><td align="center">
-<table width="560" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);">
-
-  <!-- Header -->
-  <tr><td style="background:#2D1A14;padding:28px 32px;text-align:center;">
-    <p style="margin:0 0 4px;font-size:11px;letter-spacing:.2em;color:rgba(255,255,255,.5);text-transform:uppercase;">Cliche Aromas — Panel Admin</p>
-    <h1 style="margin:0;font-size:22px;font-weight:700;color:#fff;">${iconBag} Nuevo pedido confirmado</h1>
-    <p style="margin:8px 0 0;font-size:20px;font-weight:700;color:#C4958A;">${totalFormatted}</p>
-  </td></tr>
-
-  <tr><td style="padding:32px;">
-
-    <!-- Referencia -->
-    <table width="100%" cellpadding="0" cellspacing="0" style="background:#FAF8F5;border-radius:12px;padding:16px;margin-bottom:24px;">
-      <tr>
-        <td style="font-size:12px;color:#8B6E64;text-transform:uppercase;letter-spacing:.1em;">Numero de pedido</td>
-        <td align="right" style="font-family:monospace;font-size:18px;font-weight:700;color:#2D1A14;">#${orderId}</td>
-      </tr>
+  const content = `
+    <div style="text-align:center;">
+      ${kicker("Nuevo pedido pagado")}
+      <p style="margin:0 0 4px;font-family:Georgia,serif;font-size:34px;color:${C.ink};">${fmtCOP(order.total)}</p>
+      <p style="margin:0 0 6px;font-family:'Courier New',monospace;font-size:13px;color:${C.faint};">#${orderId}</p>
+    </div>
+    ${hr}
+    <table width="100%" cellpadding="0" cellspacing="0">
+      ${row("Cliente", order.customer_name ?? "—")}
+      ${row("Email", order.customer_email ?? "—")}
+      ${row("Celular", order.customer_phone ?? "—")}
+      ${addr ? row("Direcci&oacute;n", `${addr.address}, ${addr.city}, ${addr.department}`) : row("Direcci&oacute;n", "⚠️ Sin direcci&oacute;n registrada")}
+      ${addr?.notes ? row("Nota", addr.notes) : ""}
+      ${itemsRows}
     </table>
-
-    <!-- Cliente -->
-    <h2 style="margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:.1em;color:#8B6E64;border-bottom:1px solid #EDD5CF;padding-bottom:8px;">${iconUser} Cliente</h2>
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
-      <tr><td style="font-size:14px;color:#2D1A14;padding:4px 0;"><strong>Nombre:</strong> ${order.customer_name ?? "—"}</td></tr>
-      <tr><td style="font-size:14px;color:#2D1A14;padding:4px 0;"><strong>Email:</strong> ${order.customer_email ?? "—"}</td></tr>
-      <tr><td style="font-size:14px;color:#2D1A14;padding:4px 0;"><strong>Celular:</strong> ${order.customer_phone ?? "—"}</td></tr>
-    </table>
-
-    <!-- Direccion de envio -->
-    <h2 style="margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:.1em;color:#8B6E64;border-bottom:1px solid #EDD5CF;padding-bottom:8px;">${iconTruck} Direccion de envio</h2>
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
-      <tr><td style="background:#FFF8F5;border:2px solid #EDD5CF;border-radius:12px;padding:16px;">
-        ${addressBlock}
-      </td></tr>
-    </table>
-
-    <!-- Productos -->
-    <h2 style="margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:.1em;color:#8B6E64;border-bottom:1px solid #EDD5CF;padding-bottom:8px;">${iconList} Productos</h2>
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
-      <thead><tr>
-        <th style="text-align:left;font-size:12px;color:#8B6E64;padding-bottom:8px;">Producto</th>
-        <th style="text-align:center;font-size:12px;color:#8B6E64;padding-bottom:8px;">Cant.</th>
-        <th style="text-align:right;font-size:12px;color:#8B6E64;padding-bottom:8px;">Subtotal</th>
-      </tr></thead>
-      <tbody>${itemsRows}</tbody>
-      <tfoot><tr>
-        <td colspan="2" style="padding:12px 0 0;font-size:15px;font-weight:700;color:#2D1A14;">TOTAL COBRADO</td>
-        <td style="padding:12px 0 0;font-size:18px;font-weight:700;color:#A67163;text-align:right;">${totalFormatted}</td>
-      </tr></tfoot>
-    </table>
-
-    <!-- CTA -->
-    <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
-      <a href="${appUrl}/admin-cliche-secret" style="display:inline-block;background:#2D1A14;color:#fff;text-decoration:none;padding:14px 36px;border-radius:100px;font-size:14px;font-weight:700;letter-spacing:.05em;">
-        Abrir panel de administrador
-      </a>
-    </td></tr></table>
-
-  </td></tr>
-
-  <tr><td style="background:#FAF8F5;padding:16px 32px;text-align:center;border-top:1px solid #EDD5CF;">
-    <p style="margin:0;font-size:11px;color:#B0A09A;">Generado automaticamente al confirmarse un pago en Wompi.</p>
-  </td></tr>
-
-</table></td></tr></table>
-</body></html>`
+    <div style="height:30px;"></div>
+    ${button(`${appUrl()}/admin-cliche-secret`, "Abrir el panel")}`
 
   try {
     await transport.sendMail({
       from: FROM,
       to: adminEmail,
-      subject: `🛍️ Nuevo pedido #${orderId} — ${totalFormatted} — ${order.customer_name ?? order.customer_email ?? "Cliente"}`,
-      html,
+      subject: `🛍️ Nuevo pedido #${orderId} — ${fmtCOP(order.total)} — ${order.customer_name ?? order.customer_email ?? "Cliente"}`,
+      html: shell(content, "Generado autom&aacute;ticamente al confirmarse el pago en Mercado Pago."),
     })
     console.log("[mailer] Admin order alert sent for", orderId)
   } catch (err) {

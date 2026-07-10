@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase"
 import { isAdmin } from "@/lib/admin-auth"
+import { sendOrderShippedEmail } from "@/lib/mailer"
 
 export async function GET(req: NextRequest) {
   if (!isAdmin(req)) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
@@ -49,6 +50,10 @@ export async function PATCH(req: NextRequest) {
     }
 
     const supabase = createServerClient()
+    // Estado previo: para enviar el correo de "en camino" SOLO cuando el pedido
+    // pasa a "shipped" por primera vez (no en re-guardados del mismo estado).
+    const { data: before } = await supabase.from("orders").select("status").eq("id", id).single()
+
     const { data, error } = await supabase
       .from("orders")
       .update(update)
@@ -57,6 +62,16 @@ export async function PATCH(req: NextRequest) {
       .single()
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    // Correo automático al cliente: "tu pedido va en camino" (con guía si la hay)
+    if (update.status === "shipped" && before?.status !== "shipped" && data?.customer_email) {
+      await sendOrderShippedEmail(data.customer_email, {
+        id: data.stripe_session_id || data.id,
+        customerName: data.customer_name,
+        trackingNumber: data.tracking_number,
+      }).catch((e: unknown) => console.error("[admin/orders] shipped email:", e))
+    }
+
     return NextResponse.json(data)
   } catch (err) {
     console.error("[admin/orders PATCH]", err)

@@ -49,6 +49,8 @@ const POOL: Seed[] = [
   { name: "Isabella M.",  rating: 5, comment: "Compré por probar y terminé enamorada. Súper recomendado, vale cada peso.", daysAgo: 10 },
   { name: "Karen L.",     rating: 4, comment: "Me encantó el aroma, fresco y limpio. Solo que quisiera presentaciones más grandes.", daysAgo: 26 },
   { name: "Melissa C.",   rating: 5, comment: "Llegó a Barranquilla sin problema, bien sellado. El aroma es elegante, no empalaga.", daysAgo: 17 },
+  { name: "Ricardo T.",   rating: 3, comment: "El aroma es rico pero a mí no me duró tanto como esperaba. Eso sí, la atención y el envío fueron excelentes.", daysAgo: 38 },
+  { name: "Diana V.",     rating: 3, comment: "Está bien, aunque pensé que el frasco era más grande por la foto. El olor sí es agradable.", daysAgo: 45 },
 ]
 
 function hash(s: string): number {

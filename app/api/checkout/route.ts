@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
     ]
     const { data: products, error: prodErr } = await supabase
       .from("products")
-      .select("id, name, price, stock, is_active")
+      .select("id, name, slug, price, stock, is_active")
       .in("id", ids)
 
     if (prodErr || !products || products.length === 0) {
@@ -216,7 +216,12 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Total final calculado en el servidor ──
-    const shipping = subtotal >= FREE_SHIPPING ? 0 : SHIPPING_COST
+    // Producto de prueba de pagos (slug "prueba"): exento de envío para que el
+    // total sea EXACTAMENTE su precio ($1.000) al validar la pasarela.
+    const shippingExempt =
+      safeItems.length > 0 &&
+      safeItems.every((it) => it.kind === "unit" && productMap.get(it.product_id)?.slug === "prueba")
+    const shipping = subtotal >= FREE_SHIPPING || shippingExempt ? 0 : SHIPPING_COST
     const total = Math.max(0, subtotal + shipping - discount_amount)
 
     const reference = `cliche_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`

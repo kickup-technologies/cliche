@@ -66,7 +66,9 @@ export default function CheckoutPage() {
   const selectedItems = items.filter((i) => selected[i.product.id])
   const subtotal = selectedItems.reduce((s, i) => s + i.product.price * i.quantity, 0)
   const FREE_SHIPPING = 300000
-  const freeShipping = subtotal >= FREE_SHIPPING
+  // Producto de prueba de pagos: exento de envío (total exacto = su precio).
+  const onlyTestProduct = selectedItems.length > 0 && selectedItems.every((i) => i.product.slug === "prueba")
+  const freeShipping = subtotal >= FREE_SHIPPING || onlyTestProduct
   const shipping = freeShipping ? 0 : subtotal > 0 ? 20500 : 0
   const total = subtotal + shipping - discountAmount
   const pct = Math.min(100, Math.round((subtotal / FREE_SHIPPING) * 100))
