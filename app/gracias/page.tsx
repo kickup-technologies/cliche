@@ -175,7 +175,7 @@ function GraciasContent() {
   }
 
   return (
-    <main className="min-h-screen bg-background py-16 px-4">
+    <main className="min-h-screen bg-background py-16 px-4 overflow-x-hidden">
       <div className="max-w-lg w-full mx-auto">
         {loading ? (
           <div className="animate-pulse text-center">
@@ -282,24 +282,27 @@ function GraciasContent() {
               </div>
             )}
 
-            {/* Seguir comprando — carrusel 3D de aromas */}
-            <div className="bg-card border border-border rounded-3xl p-6 mb-6 overflow-hidden">
-              <div className="flex items-center gap-2 mb-1">
+            {/* Seguir comprando — encabezado centrado */}
+            <div className="text-center mb-3">
+              <div className="flex items-center justify-center gap-2 mb-1">
                 <ShoppingBag className="w-4 h-4 text-primary" />
                 <span className="text-xs font-bold uppercase tracking-widest text-primary">Seguir comprando</span>
               </div>
-              <h2 className="text-xl font-serif font-bold text-foreground mb-4">
+              <h2 className="text-xl font-serif font-bold text-foreground">
                 Descubre más aromas
               </h2>
-
-              <div className="-mx-6">
-                <Gracias3DCarousel />
-              </div>
-
-              <Button asChild size="lg" className="w-full h-12 font-semibold mt-2">
-                <Link href="/catalogo">Ver todos los aromas</Link>
-              </Button>
             </div>
+
+            {/* Carrusel 3D a PANTALLA COMPLETA: rompe el max-w-lg y usa todo el
+                ancho del viewport. Sin transform en el ancestro (rompía la
+                medición de tamaño de react-three-fiber). */}
+            <div className="w-screen ml-[calc(50%-50vw)] mb-4">
+              <Gracias3DCarousel />
+            </div>
+
+            <Button asChild size="lg" className="w-full h-12 font-semibold mb-4">
+              <Link href="/catalogo">Ver todos los aromas</Link>
+            </Button>
 
             <Button asChild variant="outline" size="lg" className="w-full">
               <Link href="/">Seguir explorando</Link>

@@ -2,30 +2,36 @@
 
 import { Component, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
-import { useGLTF, Html } from "@react-three/drei"
+import { useGLTF } from "@react-three/drei"
 import * as THREE from "three"
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js"
 import { modelForSlug } from "@/lib/product-models"
 
 /**
- * Gracias3DCarousel — carrusel "Seguir comprando" para la página de gracias.
+ * Gracias3DCarousel — carrusel "Seguir comprando" a pantalla completa.
  *
- * UN SOLO Canvas (una sola sesión WebGL) con todos los frascos en la misma
- * escena: renderizar un Canvas por producto reventaría el límite de contextos
- * WebGL del navegador y mataría el rendimiento en móvil. La fila se desplaza
- * lento y en bucle infinito (posición por módulo, sin saltos visibles); cada
- * frasco gira sobre su propio eje. El nombre aparece cuando el frasco llega al
- * centro y enlaza a su producto.
+ * UN SOLO Canvas WebGL con todos los frascos en la misma escena (renderizar un
+ * Canvas por producto reventaría el límite de contextos WebGL y mataría el móvil).
+ * La fila se desplaza lento en bucle infinito (posición por módulo, sin saltos
+ * visibles) y cada frasco gira sobre su propio eje.
+ *
+ * El nombre NO va pegado a cada frasco (eso se solapaba): hay UNA sola etiqueta
+ * centrada que muestra el aroma que está en el centro y enlaza a su producto.
  */
 
 const TILT_Z = (28 * Math.PI) / 180
-const FIT = 1.9          // alto objetivo de cada frasco
-const SPACING = 2.7      // separación entre frascos (unidades)
-const SPEED = 0.42       // velocidad del carrusel (unidades/seg) — lento
-const SPIN = 0.5         // giro sobre el eje (rad/seg)
-const FADE = 2.4         // distancia desde el centro a la que el nombre se apaga
+const FIT = 1.95     // alto objetivo de cada frasco
+const SPACING = 3.3  // separación (grande → cubre pantallas anchas sin huecos)
+const SPEED = 0.5    // velocidad del carrusel (unidades/seg) — lento
+const SPIN = 0.5     // giro sobre el eje (rad/seg)
+const COUNT = 6      // nº de frascos cargados (equilibrio peso/cobertura)
 
 type CarouselItem = { slug: string; name: string; url: string }
+
+/** "Aroma Agua — Fragancia Fresca" → "Agua" */
+function shortName(name: string) {
+  return name.replace(/^Aroma\s+/i, "").split("—")[0].trim()
+}
 
 function StudioEnv() {
   const gl = useThree((s) => s.gl)
@@ -55,9 +61,7 @@ function Bottle({
   const cloned = useMemo(() => scene.clone(true), [scene])
   const groupRef = useRef<THREE.Group>(null!)
   const spinRef = useRef<THREE.Group>(null!)
-  const labelRef = useRef<HTMLAnchorElement>(null)
 
-  // Centrar en el origen y escalar para encuadrar
   const scale = useMemo(() => {
     const box = new THREE.Box3().setFromObject(cloned)
     const size = new THREE.Vector3()
@@ -72,18 +76,12 @@ function Bottle({
   const total = count * SPACING
 
   useFrame((_, delta) => {
-    // Posición por módulo: cada frasco baja a la izquierda y reaparece por la
-    // derecha sin salto visible (el salto ocurre fuera de cámara, en |x|=total/2).
+    // Posición por módulo: baja a la izquierda y reaparece por la derecha sin
+    // salto visible (el salto ocurre fuera de cámara, en |x| = total/2).
     const s = scrollRef.current
     const x = (((index * SPACING - s) % total) + total) % total - total / 2
     if (groupRef.current) groupRef.current.position.x = x
     if (spinRef.current) spinRef.current.rotation.y += delta * SPIN
-    // El nombre se desvanece a medida que el frasco se aleja del centro.
-    if (labelRef.current) {
-      const op = Math.max(0, 1 - Math.abs(x) / FADE)
-      labelRef.current.style.opacity = String(op)
-      labelRef.current.style.pointerEvents = op > 0.55 ? "auto" : "none"
-    }
   })
 
   return (
@@ -93,34 +91,42 @@ function Bottle({
           <primitive object={cloned} />
         </group>
       </group>
-      <Html position={[0, -1.5, 0]} center distanceFactor={8} zIndexRange={[10, 0]}>
-        <a
-          ref={labelRef}
-          href={`/productos/${item.slug}`}
-          className="whitespace-nowrap rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold text-[#2D1A14] shadow-sm ring-1 ring-black/5 backdrop-blur"
-          style={{ opacity: 0 }}
-        >
-          {item.name}
-        </a>
-      </Html>
     </group>
   )
 }
 
-function ScrollDriver({
-  scrollRef, pausedRef,
+/** Avanza el scroll y actualiza la ÚNICA etiqueta con el aroma más centrado. */
+function Driver({
+  items, scrollRef, pausedRef, labelRef,
 }: {
+  items: CarouselItem[]
   scrollRef: React.MutableRefObject<number>
   pausedRef: React.MutableRefObject<boolean>
+  labelRef: React.MutableRefObject<HTMLAnchorElement | null>
 }) {
+  const lastIdx = useRef(-1)
   useFrame((_, delta) => {
     if (!pausedRef.current) scrollRef.current += delta * SPEED
+    const s = scrollRef.current
+    const n = items.length
+    const total = n * SPACING
+    let best = 0
+    let bestAbs = Infinity
+    for (let i = 0; i < n; i++) {
+      const x = (((i * SPACING - s) % total) + total) % total - total / 2
+      const a = Math.abs(x)
+      if (a < bestAbs) { bestAbs = a; best = i }
+    }
+    if (best !== lastIdx.current && labelRef.current) {
+      lastIdx.current = best
+      labelRef.current.textContent = shortName(items[best].name)
+      labelRef.current.setAttribute("href", `/productos/${items[best].slug}`)
+    }
   })
   return null
 }
 
-/** Si WebGL o un GLB fallan en el dispositivo del cliente, NO rompemos la
- *  página de gracias: el carrusel simplemente no se muestra. */
+/** Si WebGL o un GLB fallan en el dispositivo, NO rompemos la página de gracias. */
 class CarouselBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   state = { failed: false }
   static getDerivedStateFromError() { return { failed: true } }
@@ -140,6 +146,7 @@ function Carousel3D() {
   const [items, setItems] = useState<CarouselItem[] | null>(null)
   const scrollRef = useRef(0)
   const pausedRef = useRef(false)
+  const labelRef = useRef<HTMLAnchorElement | null>(null)
 
   useEffect(() => {
     let active = true
@@ -151,12 +158,13 @@ function Carousel3D() {
           .filter((p) => p.slug !== "prueba")
           .map((p) => ({ slug: p.slug, name: p.name, url: modelForSlug(p.slug) }))
           .filter((p): p is CarouselItem => !!p.url)
-        // Barajar y limitar para no cargar demasiados GLB en móvil.
         for (let i = withModel.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1))
           ;[withModel[i], withModel[j]] = [withModel[j], withModel[i]]
         }
-        setItems(withModel.slice(0, 8))
+        const picked = withModel.slice(0, COUNT)
+        picked.forEach((p) => useGLTF.preload(p.url))
+        setItems(picked)
       })
       .catch(() => setItems([]))
     return () => { active = false }
@@ -166,7 +174,7 @@ function Carousel3D() {
 
   return (
     <div
-      className="relative w-full h-[300px] select-none"
+      className="relative w-full h-[260px] sm:h-[320px] md:h-[380px] select-none"
       onPointerEnter={() => { pausedRef.current = true }}
       onPointerLeave={() => { pausedRef.current = false }}
     >
@@ -175,23 +183,32 @@ function Carousel3D() {
           <div className="w-12 h-12 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
         </div>
       ) : (
-        <Canvas
-          camera={{ position: [0, 0.15, 6.6], fov: 30 }}
-          gl={{ alpha: true, antialias: true, toneMapping: THREE.ACESFilmicToneMapping, powerPreference: "high-performance" }}
-          dpr={[1, 1.75]}
-          style={{ background: "transparent" }}
-        >
-          <ambientLight intensity={0.5} />
-          <directionalLight position={[3, 5, 3]} intensity={1.6} />
-          <directionalLight position={[-3, 2, -2]} intensity={0.5} />
-          <Suspense fallback={null}>
-            <StudioEnv />
-            {items.map((item, i) => (
-              <Bottle key={item.slug} item={item} index={i} count={items.length} scrollRef={scrollRef} />
-            ))}
-          </Suspense>
-          <ScrollDriver scrollRef={scrollRef} pausedRef={pausedRef} />
-        </Canvas>
+        <>
+          <Canvas
+            camera={{ position: [0, 0.15, 6.8], fov: 30 }}
+            gl={{ alpha: true, antialias: true, toneMapping: THREE.ACESFilmicToneMapping, powerPreference: "high-performance" }}
+            dpr={[1, 1.5]}
+            style={{ background: "transparent" }}
+          >
+            <ambientLight intensity={0.6} />
+            <directionalLight position={[3, 5, 3]} intensity={1.9} />
+            <directionalLight position={[-3, 2, -2]} intensity={0.6} />
+            <Suspense fallback={null}>
+              <StudioEnv />
+              {items.map((item, i) => (
+                <Bottle key={item.slug} item={item} index={i} count={items.length} scrollRef={scrollRef} />
+              ))}
+              <Driver items={items} scrollRef={scrollRef} pausedRef={pausedRef} labelRef={labelRef} />
+            </Suspense>
+          </Canvas>
+
+          {/* Una sola etiqueta centrada — el aroma que está en el centro. */}
+          <a
+            ref={labelRef}
+            href="/catalogo"
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-white/90 px-4 py-1.5 text-sm font-semibold text-[#2D1A14] shadow-sm ring-1 ring-black/5 backdrop-blur transition-opacity hover:bg-white"
+          />
+        </>
       )}
     </div>
   )
