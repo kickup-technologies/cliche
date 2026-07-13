@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { ShoppingBag, ChevronDown, ChevronRight, Heart, Instagram, User, Package, LogOut, LogIn, Crown, Leaf, Gift, Tag, Users, X, ShieldCheck } from "lucide-react"
+import { ShoppingBag, ChevronDown, ChevronRight, Heart, Instagram, User, Package, LogOut, LogIn, Crown, Leaf, Gift, Users, X, ShieldCheck } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet"
 import {
   DropdownMenu,
@@ -33,7 +33,6 @@ const navigation = [
     ],
   },
   { name: "Arma tu kit", href: "/arma-tu-kit", highlight: true },
-  { name: "Ofertas", href: "/ofertas", highlight: true },
   { name: "Nosotros", href: "/nosotros" },
 ]
 
@@ -41,7 +40,6 @@ const navigation = [
 const MOBILE_EXPLORE = [
   { name: "Aromas", href: "/catalogo", icon: Leaf },
   { name: "Arma tu kit", href: "/arma-tu-kit", icon: Gift, dot: true },
-  { name: "Ofertas", href: "/ofertas", icon: Tag, dot: true },
   { name: "Nosotros", href: "/nosotros", icon: Users },
 ]
 const MOBILE_ACCOUNT = [
