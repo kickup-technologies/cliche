@@ -162,9 +162,7 @@ function Carousel3D() {
           const j = Math.floor(Math.random() * (i + 1))
           ;[withModel[i], withModel[j]] = [withModel[j], withModel[i]]
         }
-        const picked = withModel.slice(0, COUNT)
-        picked.forEach((p) => useGLTF.preload(p.url))
-        setItems(picked)
+        setItems(withModel.slice(0, COUNT))
       })
       .catch(() => setItems([]))
     return () => { active = false }
@@ -198,15 +196,17 @@ function Carousel3D() {
               {items.map((item, i) => (
                 <Bottle key={item.slug} item={item} index={i} count={items.length} scrollRef={scrollRef} />
               ))}
-              <Driver items={items} scrollRef={scrollRef} pausedRef={pausedRef} labelRef={labelRef} />
             </Suspense>
+            {/* Fuera del Suspense: la etiqueta se llena desde el primer frame,
+                sin esperar a que carguen todos los GLB. */}
+            <Driver items={items} scrollRef={scrollRef} pausedRef={pausedRef} labelRef={labelRef} />
           </Canvas>
 
           {/* Una sola etiqueta centrada — el aroma que está en el centro. */}
           <a
             ref={labelRef}
             href="/catalogo"
-            className="absolute bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-white/90 px-4 py-1.5 text-sm font-semibold text-[#2D1A14] shadow-sm ring-1 ring-black/5 backdrop-blur transition-opacity hover:bg-white"
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-white/90 px-4 py-1.5 text-sm font-semibold text-[#2D1A14] shadow-sm ring-1 ring-black/5 backdrop-blur transition-opacity hover:bg-white empty:opacity-0"
           />
         </>
       )}
