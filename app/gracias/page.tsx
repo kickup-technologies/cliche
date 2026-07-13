@@ -37,12 +37,9 @@ function GraciasContent() {
   // Mercado Pago manda status / collection_status en la URL de retorno.
   const isFailed = [status, collectionStatus].some((s) => s && FAILED_STATUSES.includes(s.toUpperCase()))
 
-  // Pago exitoso → mostramos gracias 5 segundos y devolvemos al inicio.
-  useEffect(() => {
-    if (isFailed) return
-    const t = setTimeout(() => router.push("/"), 5000)
-    return () => clearTimeout(t)
-  }, [isFailed, router])
+  // La página de agradecimiento se QUEDA: el cliente decide cuándo salir con los
+  // botones ("Seguir mi pedido" / "Seguir explorando"). Antes se autorredirigía
+  // al inicio a los 5s y la confirmación pasaba desapercibida.
 
   useEffect(() => {
     if (!isFailed) {
@@ -55,8 +52,11 @@ function GraciasContent() {
       setLoading(false)
       return
     }
-    // Simulate loading + fetch referral code if session exists
-    const t = setTimeout(async () => {
+    // Confirmar el pago + tracking + referido. Pase lo que pase, la página de
+    // gracias SIEMPRE se muestra (setLoading(false) al final): nunca se queda
+    // colgada en la pantalla de carga.
+    let cancelled = false
+    ;(async () => {
       if (sessionId) {
         // ── Respaldo del webhook: confirmar el pago server-side al volver ──
         // Verifica el pago contra Mercado Pago y confirma el pedido si está
@@ -73,6 +73,9 @@ function GraciasContent() {
         }
 
         // ── Meta Pixel + CAPI: Purchase event (deduplicado por pedido) ──
+        // Va dentro de su propio try y NO corta el flujo: si el pedido aún no
+        // está confirmado, simplemente no se dispara el evento, pero la página
+        // de gracias se muestra igual.
         try {
           const fired = sessionStorage.getItem(`purchase_fired_${sessionId}`)
           if (!fired) {
@@ -82,25 +85,26 @@ function GraciasContent() {
               // Solo contar como conversión si el pago está confirmado: evita
               // inflar el Purchase de Meta con pedidos pendientes/fallidos.
               const PAID = ["confirmed", "paid", "preparing", "shipped", "delivered"]
-              if (!PAID.includes(order.status)) return
-              const items = (order.items as Array<{ product_id: string; quantity: number }>) || []
-              track({
-                event_name: "Purchase",
-                custom_data: {
-                  currency: "COP",
-                  value: Number(order.total) || 0,
-                  content_ids: items.map((i) => i.product_id),
-                  content_type: "product",
-                  num_items: items.reduce((n, i) => n + (i.quantity || 1), 0),
-                },
-                // Advanced Matching — el servidor los hashea con SHA-256
-                // antes de enviarlos a Meta (nunca van crudos a Facebook)
-                user_data: {
-                  ...(order.customer_email && { raw_email: order.customer_email }),
-                  ...(order.customer_phone && { raw_phone: order.customer_phone }),
-                },
-              })
-              sessionStorage.setItem(`purchase_fired_${sessionId}`, "1")
+              if (PAID.includes(order.status)) {
+                const items = (order.items as Array<{ product_id: string; quantity: number }>) || []
+                track({
+                  event_name: "Purchase",
+                  custom_data: {
+                    currency: "COP",
+                    value: Number(order.total) || 0,
+                    content_ids: items.map((i) => i.product_id),
+                    content_type: "product",
+                    num_items: items.reduce((n, i) => n + (i.quantity || 1), 0),
+                  },
+                  // Advanced Matching — el servidor los hashea con SHA-256
+                  // antes de enviarlos a Meta (nunca van crudos a Facebook)
+                  user_data: {
+                    ...(order.customer_email && { raw_email: order.customer_email }),
+                    ...(order.customer_phone && { raw_phone: order.customer_phone }),
+                  },
+                })
+                sessionStorage.setItem(`purchase_fired_${sessionId}`, "1")
+              }
             }
           }
         } catch {
@@ -121,9 +125,9 @@ function GraciasContent() {
           // silent — referral is a nice-to-have
         }
       }
-      setLoading(false)
-    }, 1500)
-    return () => clearTimeout(t)
+      if (!cancelled) setLoading(false)
+    })()
+    return () => { cancelled = true }
   }, [sessionId, isFailed]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function copyCode() {
