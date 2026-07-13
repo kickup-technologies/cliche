@@ -6,12 +6,19 @@ import { useSearchParams } from "next/navigation"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
-  CheckCircle, ShoppingBag, Mail, Sparkles, ArrowRight,
+  CheckCircle, ShoppingBag, Mail,
   Tag, Share2, Star, Copy, Check, XCircle, RefreshCw
 } from "lucide-react"
+import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
 import { useCart } from "@/context/cart-context"
 import { useCAPI } from "@/lib/use-capi"
+
+// Carrusel 3D "Seguir comprando" — solo cliente (WebGL), se carga aparte.
+const Gracias3DCarousel = dynamic(() => import("@/components/gracias-carousel"), {
+  ssr: false,
+  loading: () => <div className="w-full h-[300px]" />,
+})
 
 interface ReferralData {
   code: string
@@ -30,7 +37,6 @@ function GraciasContent() {
   const { clearCart } = useCart()
   const { track } = useCAPI()
   const [loading, setLoading] = useState(true)
-  const [copied, setCopied] = useState(false)
   const [refCopied, setRefCopied] = useState(false)
   const [referral, setReferral] = useState<ReferralData | null>(null)
 
@@ -129,12 +135,6 @@ function GraciasContent() {
     })()
     return () => { cancelled = true }
   }, [sessionId, isFailed]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  function copyCode() {
-    navigator.clipboard.writeText("RITUAL15")
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
 
   function copyReferral() {
     if (!referral) return
@@ -282,46 +282,22 @@ function GraciasContent() {
               </div>
             )}
 
-            {/* Upsell — Completa tu ritual */}
-            <div className="bg-card border border-border rounded-3xl p-6 mb-6">
-              <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="w-4 h-4 text-primary" />
-                <span className="text-xs font-bold uppercase tracking-widest text-primary">Completa tu ritual</span>
+            {/* Seguir comprando — carrusel 3D de aromas */}
+            <div className="bg-card border border-border rounded-3xl p-6 mb-6 overflow-hidden">
+              <div className="flex items-center gap-2 mb-1">
+                <ShoppingBag className="w-4 h-4 text-primary" />
+                <span className="text-xs font-bold uppercase tracking-widest text-primary">Seguir comprando</span>
               </div>
-              <h2 className="text-xl font-serif font-bold text-foreground mb-1">
-                Kit Elementos x4
+              <h2 className="text-xl font-serif font-bold text-foreground mb-4">
+                Descubre más aromas
               </h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                Las 4 fragancias emblema — Agua, Aire, Tierra y Fuego. El ritual completo para tu hogar.
-              </p>
 
-              {/* Discount code */}
-              <div className="bg-muted/50 rounded-xl p-4 mb-4 flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-0.5">Código exclusivo por tu compra</p>
-                  <div className="flex items-center gap-2">
-                    <Tag className="w-4 h-4 text-primary" />
-                    <span className="font-mono font-bold text-lg text-foreground tracking-widest">RITUAL15</span>
-                    <span className="text-xs bg-primary text-white px-2 py-0.5 rounded-full font-bold">-15%</span>
-                  </div>
-                </div>
-                <button
-                  onClick={copyCode}
-                  className="flex items-center gap-1 text-xs font-semibold text-primary underline underline-offset-2 hover:text-primary/70 transition-colors"
-                >
-                  {copied ? <><Check className="w-3 h-3" /> ¡Copiado!</> : <><Copy className="w-3 h-3" /> Copiar</>}
-                </button>
+              <div className="-mx-6">
+                <Gracias3DCarousel />
               </div>
 
-              <div className="flex items-center justify-between mb-4 text-sm">
-                <span className="text-muted-foreground line-through">$190.000</span>
-                <span className="text-xl font-bold text-foreground">$161.500 COP</span>
-              </div>
-
-              <Button asChild size="lg" className="w-full h-12 font-semibold">
-                <Link href="/productos/kit-elementos-x4">
-                  Ver el kit <ArrowRight className="ml-2 w-4 h-4" />
-                </Link>
+              <Button asChild size="lg" className="w-full h-12 font-semibold mt-2">
+                <Link href="/catalogo">Ver todos los aromas</Link>
               </Button>
             </div>
 
