@@ -33,6 +33,7 @@ export function PedidosSection({
   const [vista, setVista] = useState<Vista>("pagados")
   const [intentos, setIntentos] = useState<Order[] | null>(null)
   const [intentosLoading, setIntentosLoading] = useState(false)
+  const [reconciling, setReconciling] = useState(false)
   useEffect(() => {
     if (vista !== "intentos" || intentos !== null) return
     setIntentosLoading(true)
@@ -133,6 +134,29 @@ export function PedidosSection({
     }
   }
 
+  // Reconciliar pagos: pregunta a Mercado Pago por cada pedido "pending" y
+  // confirma los que en realidad SÍ se pagaron (red de seguridad del webhook).
+  async function reconcilePayments() {
+    if (reconciling) return
+    setReconciling(true)
+    try {
+      const res = await adminFetch("/api/admin/orders/reconcile", { method: "POST" })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        alert(data.error || "No se pudo reconciliar. Revisa que MERCADOPAGO_ACCESS_TOKEN esté configurado.")
+        return
+      }
+      if (data.confirmed > 0) {
+        alert(`Se recuperaron ${data.confirmed} pago(s) que no se habían registrado. Actualizando…`)
+        window.location.reload()
+      } else {
+        alert(`Revisados ${data.checked} intento(s): ninguno tenía un pago aprobado en Mercado Pago. Todo al día.`)
+      }
+    } finally {
+      setReconciling(false)
+    }
+  }
+
   const SortBtn = ({ label, k }: { label: string; k: SortKey }) => (
     <button
       onClick={() => handleSort(k)}
@@ -155,6 +179,15 @@ export function PedidosSection({
         </div>
         <div className="flex items-center gap-2">
           <PeriodSelector value={period} onChange={setPeriod} />
+          <button
+            onClick={reconcilePayments}
+            disabled={reconciling}
+            className="flex items-center gap-1.5 h-9 px-3 rounded-xl border border-[#A67163]/40 text-xs font-semibold text-[#A67163] hover:bg-[#A67163]/8 transition-colors disabled:opacity-40"
+            title="Consulta Mercado Pago y confirma pedidos que se pagaron pero quedaron como intento sin pagar"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${reconciling ? "animate-spin" : ""}`} />
+            {reconciling ? "Reconciliando…" : "Reconciliar pagos"}
+          </button>
           <button
             onClick={exportCSV}
             disabled={filtered.length === 0}

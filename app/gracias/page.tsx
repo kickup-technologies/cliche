@@ -58,6 +58,20 @@ function GraciasContent() {
     // Simulate loading + fetch referral code if session exists
     const t = setTimeout(async () => {
       if (sessionId) {
+        // ── Respaldo del webhook: confirmar el pago server-side al volver ──
+        // Verifica el pago contra Mercado Pago y confirma el pedido si está
+        // aprobado. Así el pedido queda confirmado aunque el webhook falle o
+        // llegue tarde. Es idempotente y no confía en el cliente.
+        try {
+          await fetch("/api/orders/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ reference: sessionId }),
+          })
+        } catch {
+          // silent — si falla, el webhook o la reconciliación del panel lo cubren
+        }
+
         // ── Meta Pixel + CAPI: Purchase event (deduplicado por pedido) ──
         try {
           const fired = sessionStorage.getItem(`purchase_fired_${sessionId}`)
