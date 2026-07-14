@@ -3,23 +3,23 @@ import { createServerClient } from "@/lib/supabase"
 import { sendAbandonedCartEmail } from "@/lib/mailer"
 
 /**
- * GET /api/abandoned-cart  — disparado por Vercel Cron (cada hora).
+ * GET /api/abandoned-cart  — disparado por Vercel Cron (1 vez/día, ver vercel.json).
  *
  * Un "carrito abandonado" = orden con status='pending' creada hace 1–24h
- * que nunca fue confirmada por Wompi. El email del cliente ya quedó capturado
- * al iniciar el checkout, así que podemos recuperarlo.
+ * que nunca fue confirmada por Mercado Pago. El email del cliente ya quedó
+ * capturado al iniciar el checkout, así que podemos recuperarlo.
  *
  * Protegido por CRON_SECRET: Vercel envía Authorization: Bearer <CRON_SECRET>
- * automáticamente cuando la env var existe.
+ * cuando la env var existe (hay que crearla a mano en el proyecto de Vercel).
  */
 export async function GET(req: NextRequest) {
-  // ── Autenticación de cron ──────────────────────────────────────────
+  // ── Autenticación de cron (FAIL-CLOSED) ────────────────────────────
+  // Sin CRON_SECRET configurado el endpoint se niega a correr: si validáramos
+  // solo cuando la var existe, olvidarla dejaría el cron público y cualquiera
+  // podría dispararlo para spamear a los clientes con correos.
   const cronSecret = process.env.CRON_SECRET
-  if (cronSecret) {
-    const auth = req.headers.get("authorization")
-    if (auth !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
+  if (!cronSecret || req.headers.get("authorization") !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   }
 
   try {

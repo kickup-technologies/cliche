@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect, useMemo } from "react"
 import Image from "next/image"
-import { ShoppingBag, X, RefreshCw, CheckCircle, Truck, ChevronRight, Search, Download, Hourglass } from "lucide-react"
+import { ShoppingBag, X, RefreshCw, CheckCircle, Truck, ChevronRight, Search, Download, Hourglass, Printer } from "lucide-react"
 import { Order, Period, filterPeriod, fmt, ORDER_STATUS_MAP } from "../types"
 import { PeriodSelector } from "../components/period-selector"
 import { adminFetch } from "@/lib/admin-client"
@@ -9,6 +9,69 @@ import type { Product } from "@/lib/supabase"
 
 type SortKey = "date" | "total" | "status"
 type Vista = "pagados" | "intentos"
+
+// Un pago tal como lo devuelve /api/admin/orders/diagnose (resumen de MP).
+interface PagoMP {
+  id: number
+  fecha: string | null
+  estado: string | null
+  detalle: string | null
+  metodo: string | null
+  monto: number | null
+}
+
+// Traducción de los códigos de Mercado Pago al español de la operadora: sin
+// esto el drawer mostraría "cc_rejected_high_risk" y nadie sabría qué decirle
+// al cliente que pregunta por qué no pasó su tarjeta.
+const MP_ESTADO_ES: Record<string, string> = {
+  approved: "Aprobado",
+  rejected: "Rechazado",
+  pending: "Pendiente",
+  in_process: "En proceso",
+  cancelled: "Cancelado",
+  refunded: "Reembolsado",
+  charged_back: "Contracargo",
+}
+
+const MP_DETALLE_ES: Record<string, string> = {
+  cc_rejected_high_risk: "Rechazada por el antifraude de Mercado Pago",
+  cc_rejected_call_for_authorize: "El banco pide autorizar la compra por teléfono",
+  cc_rejected_insufficient_amount: "Fondos insuficientes",
+  cc_rejected_other_reason: "El banco rechazó el pago sin dar más detalle",
+  cc_rejected_card_disabled: "Tarjeta inactiva: el cliente debe habilitarla con su banco",
+  cc_rejected_duplicated_payment: "Pago duplicado: ya hay un pago reciente por el mismo monto",
+  cc_rejected_max_attempts: "Superó el número de intentos permitidos",
+  cc_rejected_blacklist: "Tarjeta bloqueada por Mercado Pago",
+  cc_rejected_card_error: "Error al procesar la tarjeta",
+  cc_rejected_invalid_installments: "El banco no acepta ese número de cuotas",
+  pending_contingency: "Mercado Pago sigue procesando el pago",
+  pending_waiting_payment: "Esperando que el cliente pague (efectivo/PSE)",
+  pending_waiting_transfer: "Esperando la transferencia del cliente",
+  expired: "El intento de pago expiró",
+  accredited: "Pago aprobado y acreditado",
+}
+
+function detalleMP(detalle: string | null | undefined): string {
+  if (!detalle) return "Sin detalle del banco"
+  if (MP_DETALLE_ES[detalle]) return MP_DETALLE_ES[detalle]
+  // Toda la familia cc_rejected_bad_filled_* significa lo mismo para la dueña.
+  if (detalle.startsWith("cc_rejected_bad_filled")) return "Datos de la tarjeta mal digitados"
+  return `Código de Mercado Pago: ${detalle}`
+}
+
+// Resumen "producto x cantidad" en una sola celda/línea. Los kits despliegan
+// sus componentes para que quien empaca sepa exactamente qué frascos van.
+function itemsResumen(o: Order): string {
+  return (o.items || [])
+    .map(i => {
+      const base = `${i.name || i.product_id || "?"} x${i.quantity}`
+      const comps = i.components && i.components.length > 0
+        ? ` (${i.components.map(c => `${c.name} x${c.quantity}`).join(", ")})`
+        : ""
+      return base + comps
+    })
+    .join(" | ")
+}
 
 export function PedidosSection({
   orders,
@@ -44,6 +107,26 @@ export function PedidosSection({
       .finally(() => setIntentosLoading(false))
   }, [vista, intentos])
 
+  // Motivo de rechazo: al abrir un intento sin pagar se consultan on-demand
+  // sus pagos en Mercado Pago (vía diagnose?reference=X) para mostrar POR QUÉ
+  // no se completó (antifraude, fondos, datos mal digitados, etc.).
+  const [pagosIntento, setPagosIntento] = useState<PagoMP[] | null>(null)
+  const [pagosLoading, setPagosLoading] = useState(false)
+  useEffect(() => {
+    if (!selectedOrder || selectedOrder.status !== "pending") { setPagosIntento(null); return }
+    const ref = selectedOrder.stripe_session_id
+    if (!ref) { setPagosIntento([]); return }
+    let cancelled = false
+    setPagosIntento(null)
+    setPagosLoading(true)
+    adminFetch(`/api/admin/orders/diagnose?reference=${encodeURIComponent(ref)}`)
+      .then((r) => (r.ok ? r.json() : { pagos: [] }))
+      .then((d: { pagos?: PagoMP[] }) => { if (!cancelled) setPagosIntento(Array.isArray(d.pagos) ? d.pagos : []) })
+      .catch(() => { if (!cancelled) setPagosIntento([]) })
+      .finally(() => { if (!cancelled) setPagosLoading(false) })
+    return () => { cancelled = true }
+  }, [selectedOrder])
+
   // Imagen de cada producto del catálogo, para mostrarla en el ticket.
   const productImg = useMemo(() => {
     const map: Record<string, string> = {}
@@ -58,6 +141,9 @@ export function PedidosSection({
   const periodOrders = filterPeriod(sourceOrders, period)
   const confirmedOrders = periodOrders.filter(o => ["confirmed", "preparing", "shipped", "delivered", "paid"].includes(o.status))
   const periodRevenue = confirmedOrders.reduce((s, o) => s + o.total, 0)
+  // El header dice "N pedidos pagados": los cancelados siguen en la lista
+  // (para consultarlos) pero no deben inflar ese conteo.
+  const paidCount = periodOrders.filter(o => o.status !== "cancelled").length
 
   const q = query.trim().toLowerCase()
   const filtered = q
@@ -70,17 +156,25 @@ export function PedidosSection({
     : periodOrders
 
   function exportCSV() {
-    const headers = ["Pedido", "Estado", "Cliente", "Email", "Telefono", "Ciudad", "Total", "Guia", "Fecha"]
+    // Columnas pensadas para generar guías de envío (Servientrega, Coordinadora,
+    // Interrapidísimo exigen dirección completa + departamento + cédula del
+    // destinatario) y para empacar sin abrir pedido por pedido ("Productos").
+    const headers = ["Pedido", "Estado", "Cliente", "Cedula", "Email", "Telefono", "Direccion", "Ciudad", "Departamento", "Notas", "Productos", "Total", "Guia", "Fecha"]
     const rows = filtered.map(o => [
       "#" + (o.stripe_session_id || o.id).slice(-8).toUpperCase(),
       ORDER_STATUS_MAP[o.status]?.label || o.status,
       o.customer_name || "",
+      o.customer_id_number || "",
       o.customer_email || "",
       o.customer_phone || "",
+      o.shipping_address?.address || "",
       o.shipping_address?.city || "",
+      o.shipping_address?.department || "",
+      o.shipping_address?.notes || "",
+      itemsResumen(o),
       o.total,
       o.tracking_number || "",
-      new Date(o.created_at).toLocaleString("es-CO"),
+      new Date(o.created_at).toLocaleString("es-CO", { timeZone: "America/Bogota" }),
     ])
     const escape = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`
     const csv = [headers, ...rows].map(r => r.map(escape).join(",")).join("\r\n")
@@ -173,7 +267,7 @@ export function PedidosSection({
           <h2 className="font-serif text-2xl font-bold text-[#2D1A14]">Pedidos</h2>
           <p className="text-sm text-[#2D1A14]/50 mt-0.5">
             {vista === "pagados"
-              ? `${periodOrders.length} pedidos pagados · ${fmt(periodRevenue)} confirmados`
+              ? `${paidCount} pedidos pagados · ${fmt(periodRevenue)} confirmados`
               : `${periodOrders.length} intentos de pago sin completar (nunca se cobraron)`}
           </p>
         </div>
@@ -390,9 +484,43 @@ export function PedidosSection({
 
               {/* Update status — solo pedidos pagados; los intentos no se gestionan */}
               {selectedOrder.status === "pending" ? (
+              <div className="space-y-3">
                 <p className="text-xs text-[#2D1A14]/50 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
                   ⚠️ Este es un intento de pago sin completar: el cliente nunca pagó. No hay nada que preparar ni enviar.
                 </p>
+                {/* Motivo de rechazo: qué dijo Mercado Pago de cada intento */}
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-[#2D1A14]/40 mb-2">¿Por qué no se completó el pago?</p>
+                  {pagosLoading ? (
+                    <p className="text-xs text-[#2D1A14]/40 flex items-center gap-2">
+                      <RefreshCw className="w-3 h-3 animate-spin" /> Consultando Mercado Pago…
+                    </p>
+                  ) : !pagosIntento || pagosIntento.length === 0 ? (
+                    <p className="text-xs text-[#2D1A14]/40 bg-[#FAF8F5] rounded-xl px-4 py-3">
+                      Mercado Pago no registra ningún intento de pago con esta referencia: el cliente abandonó antes de intentar pagar (o el token de MP no está configurado).
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {pagosIntento.map(p => (
+                        <div key={p.id} className="bg-[#FAF8F5] rounded-xl px-4 py-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${p.estado === "approved" ? "bg-green-50 text-green-700 border-green-200" : p.estado === "rejected" ? "bg-red-50 text-red-700 border-red-200" : "bg-yellow-50 text-yellow-700 border-yellow-200"}`}>
+                              {MP_ESTADO_ES[p.estado || ""] || p.estado || "?"}
+                            </span>
+                            <span className="text-[10px] text-[#2D1A14]/40">
+                              {p.fecha ? new Date(p.fecha).toLocaleString("es-CO", { timeZone: "America/Bogota", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ""}
+                            </span>
+                          </div>
+                          <p className="text-sm text-[#2D1A14] mt-1.5">{detalleMP(p.detalle)}</p>
+                          <p className="text-xs text-[#2D1A14]/40 mt-0.5">
+                            {p.metodo || "método desconocido"}{typeof p.monto === "number" ? ` · ${fmt(p.monto)}` : ""}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
               ) : (
               <div className="space-y-3 pt-2">
                 <p className="text-xs font-bold uppercase tracking-widest text-[#2D1A14]/40">Actualizar estado</p>
@@ -401,9 +529,15 @@ export function PedidosSection({
                   onChange={e => setStatusInput(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl border border-[#2D1A14]/15 bg-white text-[#2D1A14] text-sm focus:outline-none focus:ring-2 focus:ring-[#A67163]/40"
                 >
-                  {Object.entries(ORDER_STATUS_MAP).map(([key, st]) => (
-                    <option key={key} value={key}>{st.label}</option>
-                  ))}
+                  {Object.entries(ORDER_STATUS_MAP)
+                    // "pending" no es un destino válido para un pedido pagado:
+                    // lo sacaría de la vista de pagados y "Reconciliar" lo
+                    // re-confirmaría descontando stock por segunda vez. El API
+                    // también lo rechaza (candado en el PATCH).
+                    .filter(([key]) => key !== "pending")
+                    .map(([key, st]) => (
+                      <option key={key} value={key}>{st.label}</option>
+                    ))}
                 </select>
                 <input
                   type="text"
@@ -423,6 +557,19 @@ export function PedidosSection({
               </div>
               )}
 
+              {/* Imprimir rótulo: abre el diálogo de impresión mostrando SOLO el
+                  bloque .rotulo-print (ver <style> de abajo) — datos mínimos
+                  para pegar en la caja, sin librerías. Solo pedidos reales. */}
+              {selectedOrder.status !== "pending" && (
+                <button
+                  onClick={() => window.print()}
+                  className="w-full h-11 rounded-xl border border-[#2D1A14]/15 text-[#2D1A14] font-semibold flex items-center justify-center gap-2 hover:bg-[#FAF8F5] transition-colors"
+                >
+                  <Printer className="w-4 h-4" />
+                  Imprimir rótulo
+                </button>
+              )}
+
               {/* Tracking link */}
               <a
                 href={`/pedido/${selectedOrder.stripe_session_id || selectedOrder.id}`}
@@ -434,6 +581,46 @@ export function PedidosSection({
                 Ver página de seguimiento del cliente
               </a>
             </div>
+          </div>
+
+          {/* Rótulo imprimible: invisible en pantalla; al imprimir se oculta
+              todo el panel y queda únicamente este bloque en la hoja. */}
+          <style>{`
+            .rotulo-print { display: none; }
+            @media print {
+              body * { visibility: hidden; }
+              .rotulo-print, .rotulo-print * { visibility: visible; }
+              .rotulo-print { display: block; position: fixed; inset: 0; background: #fff; color: #000; padding: 32px; z-index: 9999; }
+            }
+          `}</style>
+          <div className="rotulo-print" style={{ fontFamily: "Arial, sans-serif" }}>
+            <p style={{ fontSize: 12, margin: 0, color: "#555" }}>
+              Bienestar by Cliché · Pedido #{(selectedOrder.stripe_session_id || selectedOrder.id).slice(-8).toUpperCase()}
+            </p>
+            <h1 style={{ fontSize: 24, margin: "10px 0 4px" }}>{selectedOrder.customer_name || "—"}</h1>
+            <p style={{ fontSize: 16, margin: "2px 0" }}>Tel: {selectedOrder.customer_phone || "—"}</p>
+            {selectedOrder.customer_id_number && (
+              <p style={{ fontSize: 14, margin: "2px 0" }}>Cédula/NIT: {selectedOrder.customer_id_number}</p>
+            )}
+            <p style={{ fontSize: 18, margin: "10px 0 2px", fontWeight: 700 }}>{selectedOrder.shipping_address?.address || "—"}</p>
+            <p style={{ fontSize: 16, margin: "2px 0" }}>
+              {[selectedOrder.shipping_address?.city, selectedOrder.shipping_address?.department].filter(Boolean).join(", ") || "—"}
+            </p>
+            {selectedOrder.shipping_address?.notes && (
+              <p style={{ fontSize: 13, margin: "6px 0 0", fontStyle: "italic" }}>Referencia: {selectedOrder.shipping_address.notes}</p>
+            )}
+            <hr style={{ margin: "14px 0", border: "none", borderTop: "1px solid #000" }} />
+            <p style={{ fontSize: 12, margin: "0 0 4px", textTransform: "uppercase", letterSpacing: 1 }}>Contenido</p>
+            <ul style={{ fontSize: 14, margin: 0, paddingLeft: 18 }}>
+              {(selectedOrder.items || []).map((item, i) => (
+                <li key={i} style={{ margin: "2px 0" }}>
+                  {item.name || item.product_id} x{item.quantity}
+                  {item.components && item.components.length > 0 && (
+                    <span style={{ color: "#555" }}> ({item.components.map(c => `${c.name} x${c.quantity}`).join(", ")})</span>
+                  )}
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       )}

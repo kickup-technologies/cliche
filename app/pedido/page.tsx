@@ -42,7 +42,8 @@ export default function PedidoSearchPage() {
           <h1 className="font-serif text-4xl font-light text-[#2D1A14] mb-2">Seguimiento</h1>
           <p className="text-[#2D1A14]/50 text-sm mb-10">
             Ingresa tu número de pedido para ver el estado actual de tu envío.
-            Lo encontrarás en el correo de confirmación que te enviamos.
+            Sirve el número corto que aparece en tu recibo (ej: los 8 caracteres
+            del correo de confirmación) o la referencia completa.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -56,7 +57,9 @@ export default function PedidoSearchPage() {
                   type="text"
                   value={reference}
                   onChange={(e) => { setReference(e.target.value); setError("") }}
-                  placeholder="ej: cliche_1748000000_abc12"
+                  // La API acepta la referencia completa o un sufijo de ≥6
+                  // caracteres, así que el número corto del recibo funciona.
+                  placeholder="Ej: los 8 caracteres de tu recibo o la referencia completa"
                   className="w-full bg-white border border-[#2D1A14]/15 rounded-xl px-4 py-3.5 text-[#2D1A14] placeholder-[#2D1A14]/30 focus:outline-none focus:ring-2 focus:ring-[#A67163]/40 focus:border-[#A67163] transition-all pr-12 text-sm font-mono"
                 />
                 <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#2D1A14]/30" />
@@ -79,7 +82,8 @@ export default function PedidoSearchPage() {
             <ul className="space-y-2 text-sm text-[#2D1A14]/60">
               <li className="flex items-start gap-2">
                 <span className="text-[#A67163] font-bold mt-0.5">1.</span>
-                En el correo de confirmación que te enviamos al comprar.
+                En el correo de confirmación que te enviamos al comprar
+                (el número corto de 8 caracteres del recibo también sirve).
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-[#A67163] font-bold mt-0.5">2.</span>

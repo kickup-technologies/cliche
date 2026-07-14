@@ -8,7 +8,7 @@ import { useCart } from "@/context/cart-context"
 import { useFavorites } from "@/context/favorites-context"
 import { useCAPI } from "@/lib/use-capi"
 import { useSiteSettings } from "@/lib/use-site-settings"
-import { parseUrgencyConfig, fillUrgency } from "@/lib/urgency"
+import { parseUrgencyConfig } from "@/lib/urgency"
 import { usePersonalizedUrgency } from "@/lib/personalized-urgency"
 import { getCatalogProduct } from "@/lib/catalog-data"
 
@@ -156,9 +156,6 @@ export function ProductDetail({ product, related }: Props) {
     const t = setInterval(tick, 1000)
     return () => clearInterval(t)
   }, [pUrg])
-  // Valor determinista para SSR (evita hydration mismatch). El número real,
-  // aleatorio dentro del rango del admin, se siembra tras el montaje (efecto abajo).
-  const [viewers, setViewers] = useState(12)
   // Gallery: null = show 3D render, string = show that photo URL
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   // Urgency timer — 24h from first visit (sessionStorage persists across reloads)
@@ -199,35 +196,11 @@ export function ProductDetail({ product, related }: Props) {
   const galleryImages: string[] = Array.isArray(product.image_urls) ? product.image_urls.filter(Boolean) : []
   // Share
   const [shared, setShared] = useState(false)
-  // Recent purchase ghost notification
-  const NAMES = ["Laura", "Valentina", "Sofía", "Camila", "Isabella", "María", "Daniela", "Juliana"]
-  const CITIES = ["Bogotá", "Medellín", "Cali", "Barranquilla", "Bucaramanga", "Cartagena", "Pereira"]
-  const [recentBuyer, setRecentBuyer] = useState<{ name: string; city: string } | null>(null)
-  useEffect(() => {
-    const show = () => {
-      setRecentBuyer({
-        name: NAMES[Math.floor(Math.random() * NAMES.length)],
-        city: CITIES[Math.floor(Math.random() * CITIES.length)],
-      })
-      setTimeout(() => setRecentBuyer(null), 4000)
-    }
-    const initial = setTimeout(show, 6000)
-    const interval = setInterval(show, 28000)
-    return () => { clearTimeout(initial); clearInterval(interval) }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  // Viewers en vivo — fluctúa cada 18s dentro del rango configurado en el admin
-  const spMin = urgency.social_proof.min
-  const spMax = urgency.social_proof.max
-  useEffect(() => {
-    // Tras el montaje (solo cliente) sembramos el número real aleatorio dentro del rango.
-    setViewers(Math.max(spMin, Math.min(spMax, Math.floor(Math.random() * 16) + 7)))
-    const id = setInterval(() => {
-      setViewers((v) => Math.max(spMin, Math.min(spMax, v + (Math.random() > 0.45 ? 1 : -1))))
-    }, 18000)
-    return () => clearInterval(id)
-  }, [spMin, spMax])
+  // NOTA: se eliminaron el toast de "compradores recientes" con nombres/ciudades
+  // inventados y el contador aleatorio de "personas viendo": eran datos fabricados
+  // (publicidad engañosa, arts. 29-30 Ley 1480 — riesgo de sanción SIC) y cualquier
+  // cliente podía detectar el patrón. La prueba social real vive en
+  // /api/recent-purchases (compras verdaderas) consumido por SocialProofToast.
 
   // La página entra cuando el render 3D está listo (así nunca se ve el frasco a
   // medio cargar). Hay un timeout de respaldo por si el modelo tarda/falla, para
@@ -376,10 +349,12 @@ export function ProductDetail({ product, related }: Props) {
                           </span>
                         </div>
                       )}
-                      {/* Escasez PERSONALIZADA (ficción decoplada del stock real) */}
-                      {pUrg?.active && product.stock > 0 && (
+                      {/* Escasez REAL: solo se muestra cuando el stock verdadero de la
+                          BD está bajo (≤8). Antes usaba un número ficticio desacoplado
+                          del inventario — publicidad engañosa ante la SIC (Ley 1480). */}
+                      {product.stock > 0 && product.stock <= 8 && (
                         <div className="absolute top-4 right-4 text-[11px] font-medium tracking-wide text-foreground/80 bg-background/80 backdrop-blur-sm border border-foreground/10 px-3 py-1.5 rounded-full">
-                          ¡Solo quedan {pUrg.units} unidades!
+                          Quedan {product.stock} unidades
                         </div>
                       )}
                     </>
@@ -441,14 +416,6 @@ export function ProductDetail({ product, related }: Props) {
                 transition: 'opacity 600ms ease 300ms, transform 600ms ease 300ms',
               }}
             >
-              {/* Live viewers — prueba social, discreta */}
-              {urgency.social_proof.enabled && (
-                <p className="flex items-center gap-2 text-[11px] uppercase tracking-[0.15em] text-muted-foreground/70">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
-                  {fillUrgency(urgency.social_proof.message, { n: viewers })}
-                </p>
-              )}
-
               {/* Title */}
               <h1 className="font-serif text-[2rem] lg:text-[2.75rem] font-bold text-foreground leading-[1.08] tracking-tight">
                 {product.name}
@@ -889,37 +856,6 @@ export function ProductDetail({ product, related }: Props) {
         </div>
       </div>
 
-      {/* Recent buyer notification — premium social proof toast */}
-      <div
-        className="fixed bottom-24 left-4 z-50 transition-all duration-500"
-        style={{
-          opacity: recentBuyer ? 1 : 0,
-          transform: recentBuyer ? 'translateY(0)' : 'translateY(12px)',
-          pointerEvents: 'none',
-        }}
-      >
-        <div className="bg-white border border-border/60 rounded-2xl shadow-2xl px-4 py-3 flex items-center gap-3 max-w-[260px]"
-          style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.10)' }}
-        >
-          {/* Icon */}
-          <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-            <ShoppingBag className="w-4 h-4 text-primary" />
-          </div>
-          {/* Text */}
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-foreground leading-tight truncate">
-              {recentBuyer?.name} · {recentBuyer?.city}
-            </p>
-            <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
-              Acaba de adquirir este producto
-            </p>
-          </div>
-          {/* Verified dot */}
-          <div className="flex-shrink-0">
-            <div className="w-2 h-2 rounded-full bg-green-500 ring-2 ring-green-500/20" />
-          </div>
-        </div>
-      </div>
     </>
   )
 }

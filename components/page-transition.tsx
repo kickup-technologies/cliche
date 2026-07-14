@@ -11,9 +11,12 @@ import { usePathname, useRouter } from "next/navigation"
  * Intercepta los clics globalmente (funciona en catálogo, segmentos, vitrina…)
  * y respeta clic-medio / cmd-clic / reduced-motion.
  */
-const COVER_MS = 460
-const HOLD_MS = 120
-const EXIT_MS = 480
+// Tiempos cortos: la versión anterior (460 + 120 + 480 ms) sumaba ~1.1 s
+// artificiales a CADA clic de producto — la "lentitud" que reportaban era en
+// buena parte esta espera deliberada. El efecto premium se conserva.
+const COVER_MS = 200
+const HOLD_MS = 40
+const EXIT_MS = 200
 
 /** Dispara la cortina de transición por código y navega a `href`. */
 export function navigateWithCurtain(href: string) {
@@ -30,6 +33,9 @@ export function PageTransition() {
   const phaseRef = useRef(phase)
   phaseRef.current = phase
   const target = useRef<string | null>(null)
+  // Momento en que empezó a cubrir la cortina: para descontar del tiempo de
+  // espera lo que la navegación ya avanzó en paralelo.
+  const coverStart = useRef(0)
 
   // Intercepta clics a productos en toda la página
   useEffect(() => {
@@ -75,24 +81,29 @@ export function PageTransition() {
     return () => window.removeEventListener("cliche:nav", onNav as EventListener)
   }, [router])
 
-  // Tras cubrir la pantalla, navega
+  // La navegación arranca EN PARALELO con la cortina (antes esperaba a que
+  // terminara de cubrir): la carga de la página destino corre por debajo de
+  // la animación en vez de sumarse después de ella.
   useEffect(() => {
     if (phase !== "cover" || !target.current) return
-    const t = window.setTimeout(() => {
-      if (target.current) router.push(target.current)
-    }, COVER_MS + HOLD_MS)
+    coverStart.current = performance.now()
+    router.push(target.current)
     // Fallback: si el pathname destino es el mismo que el actual (p.ej. logout
     // estando ya en el inicio), el efecto de salida por pathname no dispara;
     // forzamos la salida para que la cortina no se quede pegada.
     const fb = window.setTimeout(() => setPhase((p) => (p === "cover" ? "exit" : p)), COVER_MS + HOLD_MS + 900)
-    return () => { clearTimeout(t); clearTimeout(fb) }
+    return () => clearTimeout(fb)
   }, [phase, router])
 
-  // Cuando llega a la página destino, la cortina sale hacia arriba
+  // Cuando llega a la página destino, la cortina sale hacia arriba. Si la
+  // navegación fue más rápida que la cortina (rutas prefetcheadas), esperamos
+  // lo que falte para que termine de cubrir antes de salir — sin glitch.
   useEffect(() => {
     if (target.current && pathname === target.current) {
       target.current = null
-      const t = window.setTimeout(() => setPhase("exit"), 120)
+      const elapsed = performance.now() - coverStart.current
+      const wait = Math.max(COVER_MS + HOLD_MS - elapsed, 40)
+      const t = window.setTimeout(() => setPhase("exit"), wait)
       return () => clearTimeout(t)
     }
   }, [pathname])

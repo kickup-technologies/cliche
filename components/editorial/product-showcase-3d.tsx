@@ -78,6 +78,7 @@ export function ProductShowcase3D() {
   const [active, setActive] = useState(0)
   const [phase, setPhase] = useState<"in" | "out">("in")
   const [mount3D, setMount3D] = useState(false)
+  const [inView, setInView] = useState(false)
   const sectionRef = useRef<HTMLElement>(null)
   const timers = useRef<number[]>([])
 
@@ -95,8 +96,27 @@ export function ProductShowcase3D() {
     return () => io.disconnect()
   }, [])
 
+  // Segundo observer (NO se desconecta): apaga el WebGL cuando la sección sale
+  // de pantalla. Sin esto la GPU seguía renderizando el frasco a 60 fps aunque
+  // el usuario estuviera en el footer — el scroll trabado en gama media venía
+  // en gran parte de aquí. Al desmontar el Canvas (abajo) se libera el loop;
+  // al volver, el GLB ya está en la caché de useGLTF y remonta rápido.
+  useEffect(() => {
+    const el = sectionRef.current
+    if (!el) return
+    const io = new IntersectionObserver(
+      ([e]) => setInView(e.isIntersecting),
+      { rootMargin: "200px" },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
+    // Con la sección fuera de pantalla no rotamos: cada rotación descargaría
+    // el siguiente GLB (~1.5 MB) sin que nadie lo esté viendo.
+    if (!inView) return
     const id = window.setInterval(() => {
       setPhase("out")
       timers.current.push(
@@ -111,7 +131,7 @@ export function ProductShowcase3D() {
       timers.current.forEach(clearTimeout)
       timers.current = []
     }
-  }, [])
+  }, [inView])
 
   const item = SHOWCASE[active]
   const out = phase === "out"
@@ -133,7 +153,11 @@ export function ProductShowcase3D() {
         {/* Render 3D real, girando — se desvanece y entra el siguiente */}
         <div className="relative mx-auto aspect-square w-full max-w-[460px]">
           <div className="absolute inset-0" style={renderStyle}>
-            {mount3D ? (
+            {/* mount3D difiere la PRIMERA carga; inView desmonta el Canvas al
+                salir de pantalla para frenar el frameloop (no podemos pausarlo
+                por prop). Remontar re-pasa por Suspense, así que la textura
+                siempre llega completa — no repite el bug del frasco en blanco. */}
+            {mount3D && inView ? (
               <MeshyViewer url={item.model} />
             ) : (
               <div className="flex h-full w-full items-center justify-center">

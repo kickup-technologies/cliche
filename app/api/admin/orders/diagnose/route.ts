@@ -12,6 +12,10 @@ import { isAdmin } from "@/lib/admin-auth"
  * cc_rejected_call_for_authorize, collector no puede pagarse a sí mismo, etc.).
  * Cruza cada pago con el pedido local (por external_reference) para dar
  * contexto. Solo lectura; no cambia nada.
+ *
+ * Con ?reference=X devuelve SOLO los pagos de esa referencia (el
+ * stripe_session_id del pedido): lo usa el drawer de "Intentos sin pagar"
+ * para mostrar por qué se rechazó el pago de un pedido concreto.
  */
 export async function GET(req: NextRequest) {
   if (!isAdmin(req)) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
@@ -23,8 +27,16 @@ export async function GET(req: NextRequest) {
 
   try {
     const client = new MercadoPagoConfig({ accessToken })
+    const reference = req.nextUrl.searchParams.get("reference")?.trim() || null
     const res = await new Payment(client).search({
-      options: { sort: "date_created", criteria: "desc", limit: 30 },
+      options: {
+        sort: "date_created",
+        criteria: "desc",
+        limit: 30,
+        // MP permite filtrar la búsqueda por external_reference: así el drawer
+        // de un pedido trae únicamente SUS intentos de pago, no los últimos 30.
+        ...(reference ? { external_reference: reference } : {}),
+      },
     })
 
     const payments = (res.results || []).map((p) => ({

@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
   CheckCircle, ShoppingBag, Mail,
-  Tag, Share2, Star, Copy, Check, XCircle, RefreshCw
+  Tag, Share2, Copy, Check, XCircle, RefreshCw, Clock
 } from "lucide-react"
 import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
@@ -28,6 +28,15 @@ interface ReferralData {
 // Estados de fallo (Wompi histórico + Mercado Pago)
 const FAILED_STATUSES = ["DECLINED", "ERROR", "VOIDED", "FAILED", "REJECTED", "FAILURE", "CANCELLED", "CANCELED", "NULL"]
 
+// Estados "en proceso" de Mercado Pago: típicos de PSE y transferencias, el
+// banco puede tardar minutos (u horas) en acreditar. NO son éxito ni fallo.
+const PENDING_STATUSES = ["PENDING", "IN_PROCESS", "IN_MEDIATION", "AUTHORIZED"]
+
+// Referidos ocultos: el código generado HOY no se puede canjear en el checkout
+// (callejón sin salida para el cliente). Poner en true para reactivar el bloque
+// cuando exista el canje real del código.
+const REFERRAL_ENABLED = false
+
 function GraciasContent() {
   const params = useSearchParams()
   const sessionId = params.get("reference") || params.get("session_id")
@@ -43,15 +52,19 @@ function GraciasContent() {
   // Mercado Pago manda status / collection_status en la URL de retorno.
   const isFailed = [status, collectionStatus].some((s) => s && FAILED_STATUSES.includes(s.toUpperCase()))
 
+  // Pago aún en proceso según la URL de retorno (PSE/transferencias). Es el
+  // valor inicial: la respuesta de /api/orders/verify (server-side, confiable)
+  // lo corrige en cualquier dirección cuando llega.
+  const isPendingUrl = [status, collectionStatus].some((s) => s && PENDING_STATUSES.includes(s.toUpperCase()))
+  const [pending, setPending] = useState(isPendingUrl)
+
   // La página de agradecimiento se QUEDA: el cliente decide cuándo salir con los
   // botones ("Seguir mi pedido" / "Seguir explorando"). Antes se autorredirigía
   // al inicio a los 5s y la confirmación pasaba desapercibida.
 
-  useEffect(() => {
-    if (!isFailed) {
-      clearCart()
-    }
-  }, [isFailed]) // eslint-disable-line react-hooks/exhaustive-deps
+  // OJO: el carrito NO se limpia aquí. Antes se limpiaba con solo "no falló",
+  // pero un pago pendiente puede terminar rechazado y el cliente perdía su
+  // carrito. Ahora clearCart() solo corre cuando verify confirma el pago.
 
   useEffect(() => {
     if (isFailed) {
@@ -69,11 +82,25 @@ function GraciasContent() {
         // aprobado. Así el pedido queda confirmado aunque el webhook falle o
         // llegue tarde. Es idempotente y no confía en el cliente.
         try {
-          await fetch("/api/orders/verify", {
+          const verifyRes = await fetch("/api/orders/verify", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ reference: sessionId }),
           })
+          if (verifyRes.ok) {
+            // La respuesta de verify manda sobre los params de la URL:
+            // {status: "pending" | "confirmed" | "already" | "not_found"}
+            const v = await verifyRes.json()
+            if (v.status === "confirmed" || v.status === "already") {
+              if (!cancelled) setPending(false)
+              // Solo aquí se limpia el carrito: el pago está acreditado de
+              // verdad. Si el pago sigue pendiente y luego falla, el cliente
+              // conserva su carrito para reintentar.
+              clearCart()
+            } else if (v.status === "pending") {
+              if (!cancelled) setPending(true)
+            }
+          }
         } catch {
           // silent — si falla, el webhook o la reconciliación del panel lo cubren
         }
@@ -174,6 +201,42 @@ function GraciasContent() {
     )
   }
 
+  // Pago EN PROCESO (PSE/transferencias): ni éxito ni fallo todavía. Se muestra
+  // un estado honesto de espera y el carrito queda intacto por si el banco
+  // rechaza. El webhook / verify confirmarán por correo cuando se acredite.
+  if (!loading && pending) {
+    return (
+      <main className="min-h-screen bg-[#FAF8F5] flex items-center justify-center py-16 px-4">
+        <div className="max-w-md w-full text-center">
+          <div className="w-24 h-24 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Clock className="w-12 h-12 text-amber-500" />
+          </div>
+          <h1 className="font-serif text-3xl font-light text-[#2D1A14] mb-3">Tu pago está en proceso</h1>
+          <p className="text-[#2D1A14]/50 text-sm leading-relaxed mb-8">
+            El banco está confirmando tu transacción (PSE y transferencias pueden tardar unos minutos).
+            Te enviaremos el correo de confirmación apenas se acredite — también puedes revisar el estado
+            en Seguir mi pedido.
+          </p>
+          {sessionId && (
+            <p className="text-xs text-[#2D1A14]/40 mb-6">
+              Pedido #{sessionId.slice(-8).toUpperCase()}
+            </p>
+          )}
+          <div className="flex flex-col gap-3">
+            {sessionId && (
+              <Button asChild size="lg" className="w-full h-12 font-semibold">
+                <Link href={`/pedido/${sessionId}`}>Ver estado de mi pedido</Link>
+              </Button>
+            )}
+            <Button asChild variant="outline" size="lg" className="w-full">
+              <Link href="/">Seguir explorando</Link>
+            </Button>
+          </div>
+        </div>
+      </main>
+    )
+  }
+
   return (
     <main className="min-h-screen bg-background py-16 px-4 overflow-x-hidden">
       <div className="max-w-lg w-full mx-auto">
@@ -194,7 +257,9 @@ function GraciasContent() {
                 ¡Gracias por tu compra!
               </h1>
               <p className="text-muted-foreground mb-6">
-                Tu pedido fue confirmado. Revisa tu correo — te enviamos los detalles y número de seguimiento.
+                {/* Sin prometer "número de seguimiento": la guía llega después,
+                    cuando el pedido se despacha. Aquí solo llega el recibo. */}
+                Tu pedido fue confirmado. Revisa tu correo — te enviamos el recibo con los detalles.
               </p>
 
               <div className="bg-muted/50 rounded-2xl p-5 mb-6 space-y-3 text-left">
@@ -223,30 +288,14 @@ function GraciasContent() {
               )}
             </div>
 
-            {/* Google Review CTA */}
-            <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-5 mb-5 flex items-start gap-4">
-              <div className="flex-shrink-0">
-                <div className="w-10 h-10 bg-yellow-100 rounded-xl flex items-center justify-center">
-                  <Star className="w-5 h-5 text-yellow-500 fill-yellow-400" />
-                </div>
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold text-foreground text-sm mb-1">¿Ya te gustó la experiencia?</p>
-                <p className="text-xs text-muted-foreground mb-3">Una reseña en Google nos ayuda a llegar a más hogares colombianos. ¡Solo toma 30 segundos!</p>
-                <a
-                  href="https://g.page/r/CLICHE_AROMAS_GOOGLE_PLACE_ID/review"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 text-xs font-bold px-4 py-2 rounded-xl transition-colors"
-                >
-                  <Star className="w-3.5 h-3.5 fill-yellow-900" />
-                  Dejar reseña en Google
-                </a>
-              </div>
-            </div>
+            {/* CTA de reseña de Google ELIMINADO: el enlace usaba el placeholder
+                CLICHE_AROMAS_GOOGLE_PLACE_ID (muerto, llevaba a un 404 de Google).
+                Cuando exista el Place ID real del negocio, restaurar aquí el
+                bloque con el enlace https://g.page/r/<PLACE_ID>/review */}
 
-            {/* Referral program */}
-            {referral && (
+            {/* Referral program — oculto tras REFERRAL_ENABLED (ver arriba):
+                el código prometido no se puede canjear aún en el checkout. */}
+            {REFERRAL_ENABLED && referral && (
               <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-3xl p-6 mb-5">
                 <div className="flex items-center gap-2 mb-3">
                   <Share2 className="w-4 h-4 text-primary" />

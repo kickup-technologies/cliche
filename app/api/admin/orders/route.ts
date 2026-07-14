@@ -54,6 +54,15 @@ export async function PATCH(req: NextRequest) {
     // pasa a "shipped" por primera vez (no en re-guardados del mismo estado).
     const { data: before } = await supabase.from("orders").select("status").eq("id", id).single()
 
+    // CANDADO: un pedido PAGADO nunca puede volver a "pending". Si volviera,
+    // desaparecería de la vista de pagados (una venta real sin despachar) y
+    // el botón "Reconciliar pagos" lo re-confirmaría descontando stock por
+    // segunda vez y reenviando el correo de confirmación al cliente.
+    const PAID_STATUSES = ["confirmed", "preparing", "shipped", "delivered", "paid"]
+    if (update.status === "pending" && before && PAID_STATUSES.includes(before.status)) {
+      return NextResponse.json({ error: "Un pedido pagado no puede volver a Pendiente" }, { status: 400 })
+    }
+
     const { data, error } = await supabase
       .from("orders")
       .update(update)

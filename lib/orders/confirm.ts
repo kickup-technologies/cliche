@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { sendOrderConfirmation, sendAdminOrderAlert } from "@/lib/mailer"
+import { sendPurchaseCAPI } from "@/lib/capi-server"
 
 export type ConfirmResult =
   | { status: "confirmed"; reference: string }
@@ -61,7 +62,14 @@ export async function confirmPaidOrder(
         })
       }
     } else if (item?.product_id) {
-      await db.rpc("decrement_stock", { p_product_id: item.product_id, p_quantity: item.quantity })
+      // Los kits del mismo aroma guardan `units` (frascos por kit): un Kit x6
+      // debe descontar quantity * 6 frascos, no 1. Las órdenes viejas sin
+      // `units` siguen descontando quantity tal cual (retrocompatible).
+      const units = Number(item.units) || 1
+      await db.rpc("decrement_stock", {
+        p_product_id: item.product_id,
+        p_quantity: (Number(item.quantity) || 0) * units,
+      })
     }
   }
 
@@ -92,6 +100,20 @@ export async function confirmPaidOrder(
       await sendOrderConfirmation(customerEmail, { id: reference, total: order.total, items: order.items || [] })
     } catch { /* no bloquear */ }
   }
+
+  // 5b. Purchase server-side a la Conversions API de Meta: garantiza la
+  //     conversión aunque el comprador nunca vuelva a /gracias (PSE/app móvil).
+  //     event_id = referencia del pedido → Meta deduplica con el pixel del
+  //     navegador si el cliente sí aterriza en /gracias. Nunca bloquea el flujo.
+  try {
+    await sendPurchaseCAPI({
+      reference,
+      total: Number(order.total) || 0,
+      items: order.items || [],
+      customer_email: customerEmail,
+      customer_phone: order.customer_phone || null,
+    })
+  } catch { /* no bloquear */ }
 
   // 6. Alerta al administrador
   try {

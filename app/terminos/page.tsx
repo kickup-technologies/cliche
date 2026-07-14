@@ -76,8 +76,8 @@ export default function TerminosPage() {
               </p>
             </section>
 
-            {/* 5 */}
-            <section>
+            {/* 5 — el ancla id="envios" existe porque el footer enlaza /terminos#envios */}
+            <section id="envios" className="scroll-mt-28">
               <h2 className="text-xl font-serif font-bold text-foreground mb-3">5. Envíos y tiempos de entrega</h2>
               <div className="space-y-3 text-muted-foreground leading-relaxed">
                 <p>Los envíos se realizan a todo el territorio nacional colombiano mediante operadores logísticos autorizados.</p>
@@ -91,9 +91,45 @@ export default function TerminosPage() {
               </div>
             </section>
 
-            {/* 6 */}
+            {/* 6 — Derecho de retracto: obligatorio en ventas a distancia (art. 47
+                Ley 1480); es lo primero que revisa la SIC ante una queja. */}
+            <section id="retracto" className="scroll-mt-28">
+              <h2 className="text-xl font-serif font-bold text-foreground mb-3">6. Derecho de retracto (art. 47, Ley 1480 de 2011)</h2>
+              <p className="text-muted-foreground leading-relaxed">
+                Por tratarse de una venta a distancia (comercio electrónico), el consumidor cuenta con el derecho de retracto: puede desistir de la compra dentro de los <strong>cinco (5) días hábiles</strong> siguientes a la entrega del producto, sin necesidad de justificar su decisión.
+              </p>
+              <ul className="list-disc list-inside text-muted-foreground space-y-2 mt-3">
+                <li>Al ejercer el retracto se resuelve el contrato y Cliché Aromas devolverá <strong>la totalidad del dinero pagado</strong>, en un plazo máximo de treinta (30) días calendario desde que el consumidor comunicó su decisión.</li>
+                <li>El producto debe devolverse en las mismas condiciones en que fue recibido: <strong>sin uso</strong>, con su empaque y sellos originales.</li>
+                <li>Los <strong>costos de transporte de la devolución</strong> del producto corren por cuenta del consumidor, conforme al artículo 47 de la Ley 1480.</li>
+                <li>Para ejercerlo, escribe a <strong>monica@clichecolombia.com</strong> o al WhatsApp del Sitio indicando tu número de pedido dentro del plazo señalado.</li>
+              </ul>
+              <p className="text-muted-foreground leading-relaxed mt-3">
+                Este derecho es irrenunciable y opera con independencia de la garantía voluntaria descrita en la sección 8.
+              </p>
+            </section>
+
+            {/* 7 — Reversión del pago (art. 51 Ley 1480): aplica a compras con
+                tarjeta u otros instrumentos de pago electrónico. */}
             <section>
-              <h2 className="text-xl font-serif font-bold text-foreground mb-3">6. Política de devoluciones y garantía</h2>
+              <h2 className="text-xl font-serif font-bold text-foreground mb-3">7. Reversión del pago (art. 51, Ley 1480 de 2011)</h2>
+              <p className="text-muted-foreground leading-relaxed">
+                Cuando la compra se realice con tarjeta de crédito, débito o cualquier otro instrumento de pago electrónico, el consumidor podrá solicitar la <strong>reversión del pago</strong> ante el emisor de su medio de pago en los siguientes casos:
+              </p>
+              <ul className="list-disc list-inside text-muted-foreground space-y-2 mt-3">
+                <li>Cuando sea objeto de fraude.</li>
+                <li>Cuando la operación corresponda a una transacción no solicitada.</li>
+                <li>Cuando el producto adquirido no sea recibido.</li>
+                <li>Cuando el producto entregado no corresponda a lo solicitado o sea defectuoso.</li>
+              </ul>
+              <p className="text-muted-foreground leading-relaxed mt-3">
+                Para ello, el consumidor deberá presentar queja ante Cliché Aromas y notificar al emisor del instrumento de pago dentro de los cinco (5) días hábiles siguientes a la fecha en que tuvo noticia de la operación o en que debió recibir el producto, devolviendo el producto cuando corresponda, conforme al artículo 51 de la Ley 1480 y sus normas reglamentarias.
+              </p>
+            </section>
+
+            {/* 8 */}
+            <section>
+              <h2 className="text-xl font-serif font-bold text-foreground mb-3">8. Política de devoluciones y garantía</h2>
               <p className="text-muted-foreground leading-relaxed">
                 Cliché Aromas ofrece una garantía de <strong>30 días calendario</strong> desde la fecha de recepción del producto. Para hacer efectiva la garantía:
               </p>

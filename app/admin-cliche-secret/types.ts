@@ -42,10 +42,23 @@ export const CONFIRMED = ["confirmed", "preparing", "shipped", "delivered", "pai
 
 export const ORDER_STATUS_MAP: Record<string, { label: string; color: string; bg: string; border: string }> = {
   pending:   { label: "Pendiente",      color: "text-yellow-700", bg: "bg-yellow-50",  border: "border-yellow-200" },
+  paid:      { label: "Pagado",         color: "text-teal-700",   bg: "bg-teal-50",    border: "border-teal-200" },
   confirmed: { label: "Confirmado",     color: "text-blue-700",   bg: "bg-blue-50",    border: "border-blue-200" },
   preparing: { label: "En preparación", color: "text-[#A67163]",  bg: "bg-[#A67163]/10", border: "border-[#A67163]/20" },
   shipped:   { label: "Despachado",     color: "text-purple-700", bg: "bg-purple-50",  border: "border-purple-200" },
   delivered: { label: "Entregado",      color: "text-green-700",  bg: "bg-green-50",   border: "border-green-200" },
+  // "cancelled" existe en el API desde siempre pero no tenía entrada aquí:
+  // sin ella el dropdown no ofrecía cancelar y el badge salía en inglés crudo.
+  cancelled: { label: "Cancelado",      color: "text-red-700",    bg: "bg-red-50",     border: "border-red-200" },
+}
+
+// Zona horaria del negocio: Colombia es UTC-5 y no tiene horario de verano.
+// Todas las agrupaciones "por día" deben usar el día calendario de Bogotá,
+// no el UTC del servidor/navegador: un pago a las 8 p. m. del viernes debe
+// caer en la barra del viernes, no en la del sábado.
+export function bogotaDay(d: Date | string): string {
+  // "en-CA" formatea como YYYY-MM-DD, comparable lexicográficamente.
+  return new Date(d).toLocaleDateString("en-CA", { timeZone: "America/Bogota" })
 }
 
 export function cutoff(period: Period): Date {
@@ -86,21 +99,23 @@ export function buildDailyData(
   for (let i = days - 1; i >= 0; i -= granularity) {
     const to = new Date(Date.now() - i * 86400000)
     const from = new Date(Date.now() - Math.min(i + granularity - 1, days - 1) * 86400000)
-    const fromStr = from.toISOString().slice(0, 10)
-    const toStr = to.toISOString().slice(0, 10)
+    // Buckets por día calendario de Bogotá (antes era UTC: las ventas de la
+    // noche caían en el día siguiente y "Hoy" no cuadraba con los KPIs).
+    const fromStr = bogotaDay(from)
+    const toStr = bogotaDay(to)
 
     const periodOrders = orders.filter(o => {
-      const d = o.created_at.slice(0, 10)
+      const d = bogotaDay(o.created_at)
       return d >= fromStr && d <= toStr && CONFIRMED.includes(o.status)
     })
     const periodViews = views.filter(v => {
-      const d = v.created_at.slice(0, 10)
+      const d = bogotaDay(v.created_at)
       return d >= fromStr && d <= toStr
     })
 
     const label = granularity === 1
-      ? to.toLocaleDateString("es-CO", { month: "short", day: "numeric" })
-      : `${from.toLocaleDateString("es-CO", { month: "short", day: "numeric" })} – ${to.toLocaleDateString("es-CO", { day: "numeric" })}`
+      ? to.toLocaleDateString("es-CO", { month: "short", day: "numeric", timeZone: "America/Bogota" })
+      : `${from.toLocaleDateString("es-CO", { month: "short", day: "numeric", timeZone: "America/Bogota" })} – ${to.toLocaleDateString("es-CO", { day: "numeric", timeZone: "America/Bogota" })}`
 
     result.push({
       label,

@@ -20,8 +20,11 @@ import { ShieldCheck } from "lucide-react"
  * expone en window.__cookieConsent. Venta en Colombia (Ley 1581/Decreto 1377):
  * categorías activadas por defecto en el panel; el banner prioriza "Aceptar".
  *
- * Nota: este banner NO se muestra en el panel de administración
- * (rutas /admin*), solo en la tienda de cara al cliente.
+ * Nota: este banner NO se muestra en el panel de administración (rutas /admin*)
+ * ni en el checkout (/checkout): en móvil tapaba el botón "Pagar" de la barra
+ * sticky y bloqueaba la compra. En el resto de la tienda su z-index se mantiene
+ * POR DEBAJO de las barras fijas de compra (producto z-40, checkout z-50) para
+ * que nunca cubra un CTA de pago.
  */
 
 export type ConsentState = {
@@ -64,11 +67,13 @@ export function CookieConsent() {
   const pathname = usePathname()
   const [visible, setVisible] = useState(false)
 
-  // No mostrar en el panel de administración — solo en la tienda
-  const isAdminArea = pathname?.startsWith("/admin")
+  // No mostrar en el panel de administración ni en el checkout: en el checkout
+  // móvil el banner quedaba encima del botón "Pagar" (barra sticky inferior) y
+  // bloqueaba el pago hasta que el usuario decidiera sobre las cookies.
+  const isHiddenRoute = pathname?.startsWith("/admin") || pathname?.startsWith("/checkout")
 
   useEffect(() => {
-    if (isAdminArea) return
+    if (isHiddenRoute) return
     const existing = loadConsent()
     if (existing) {
       ;(window as unknown as Record<string, unknown>).__cookieConsent = existing
@@ -76,9 +81,9 @@ export function CookieConsent() {
     }
     const t = setTimeout(() => setVisible(true), 1200)
     return () => clearTimeout(t)
-  }, [isAdminArea])
+  }, [isHiddenRoute])
 
-  if (isAdminArea || !visible) return null
+  if (isHiddenRoute || !visible) return null
 
   const decide = (accepted: boolean) => {
     saveConsent({
@@ -98,7 +103,7 @@ export function CookieConsent() {
       role="dialog"
       aria-modal="false"
       aria-label="Aviso de cookies"
-      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[2147483647] w-[calc(100%-2rem)] max-w-md px-1"
+      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-2rem)] max-w-md px-1"
       style={{ fontFamily: "system-ui, sans-serif" }}
     >
       <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_8px_40px_-8px_rgba(45,26,20,0.25)] border border-[#ece2dc] px-5 py-4">

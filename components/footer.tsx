@@ -22,7 +22,7 @@ const footerLinks = {
   empresa: [
     { name: "Nuestra Historia", href: "/nosotros" },
     { name: "Marcas aliadas", href: "/#marcas" },
-    { name: "Crea tu aroma", href: "https://clichecolombia.com/pages/quiero-crear-un-aroma-para-mi-marca" },
+    { name: "Crea tu aroma", href: "/arma-tu-kit" },
     { name: "Distribuidores", href: "https://wa.me/573194565463?text=Hola!+Quiero+info+sobre+distribuidores" },
   ],
   soporte: [
@@ -163,7 +163,9 @@ export function Footer() {
         <div className="border-t border-background/10 py-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-sm text-background/60">
-              © 2025 Bienestar by Cliché. Todos los derechos reservados. · Colombia
+              {/* Identificación del vendedor (art. 50 lit. b Ley 1480): razón social y
+                  NIT verificados en el RUES (matrícula 68456412, CC Medellín). */}
+              © 2026 Cliché S.A.S. · NIT 901.432.536-8 · Medellín, Colombia · Todos los derechos reservados.
             </p>
             <div className="flex items-center gap-4 flex-wrap justify-center sm:justify-end">
               {/* Visa */}

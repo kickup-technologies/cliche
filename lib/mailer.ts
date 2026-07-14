@@ -192,7 +192,7 @@ export async function sendWelcomeEmail(to: string, discountCode: string): Promis
         <p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:${C.faint};">Tu c&oacute;digo de descuento</p>
         <p style="margin:0;font-family:'Courier New',monospace;font-size:30px;font-weight:700;letter-spacing:.14em;color:${C.ink};">${discountCode}</p>
       </div>
-      <p style="margin:0 0 30px;font-family:Arial,sans-serif;font-size:12px;color:${C.faint};">Se aplica en el carrito, antes de pagar.</p>
+      <p style="margin:0 0 30px;font-family:Arial,sans-serif;font-size:12px;color:${C.faint};">Inicia sesi&oacute;n y apl&iacute;calo en tu carrito, antes de pagar.</p>
       ${button(`${appUrl()}/catalogo`, "Descubrir los aromas")}
       ${hr}
       <p style="margin:0;font-family:Arial,sans-serif;font-size:12px;line-height:1.9;color:${C.faint};">
@@ -218,7 +218,18 @@ export async function sendWelcomeEmail(to: string, discountCode: string): Promis
 // ═════════════════════════════════════════════════════════════════════════════
 export async function sendOrderConfirmation(
   to: string,
-  order: { id: string; total: number; items: Array<{ product_id: string; quantity: number; name?: string; price?: number }> }
+  order: {
+    id: string
+    total: number
+    items: Array<{ product_id: string; quantity: number; name?: string; price?: number }>
+    // ── Opcionales (retrocompatibles): si el llamador los pasa, el recibo
+    //    desglosa subtotal/envío/descuento y muestra a quién y dónde se envía.
+    //    Si faltan, el correo se ve igual que antes (solo "Total pagado"). ──
+    customerName?: string | null
+    shippingAddress?: { address: string; city: string; department: string; notes?: string | null } | null
+    discountCode?: string | null
+    discountAmount?: number | null
+  }
 ): Promise<void> {
   const transport = createTransport()
   if (!transport) { console.warn("[mailer] SMTP not configured — skipping order confirmation"); return }
@@ -235,6 +246,45 @@ export async function sendOrderConfirmation(
       </tr>`)
     .join("")
 
+  // ── Desglose del recibo ──
+  // El total del checkout se calculó como subtotal + envío − descuento, pero la
+  // orden solo guarda el total: reconstruimos subtotal sumando las líneas y de
+  // ahí derivamos el envío. Solo mostramos el desglose si TODAS las líneas
+  // traen precio y las cuentas cierran — un recibo sin desglose es mejor que
+  // uno con números que no suman.
+  const items = order.items || []
+  const discount = Math.max(0, Math.round(order.discountAmount ?? 0))
+  const allPriced = items.length > 0 && items.every((it) => typeof it.price === "number" && it.price > 0)
+  const subtotal = allPriced ? items.reduce((s, it) => s + (it.price as number) * it.quantity, 0) : 0
+  const shippingCost = allPriced ? order.total - subtotal + discount : -1
+  const canBreakDown = allPriced && shippingCost >= 0
+
+  const summaryRow = (label: string, value: string) => `
+      <tr>
+        <td colspan="2" style="padding:11px 0 0;font-family:Georgia,serif;font-size:14px;color:${C.sub};">${label}</td>
+        <td align="right" style="padding:11px 0 0;font-family:Georgia,serif;font-size:14px;color:${C.sub};">${value}</td>
+      </tr>`
+  const breakdown = canBreakDown
+    ? `
+      ${summaryRow("Subtotal", fmtCOP(subtotal))}
+      ${discount > 0 ? summaryRow(`Descuento${order.discountCode ? ` (${order.discountCode})` : ""}`, `&minus;${fmtCOP(discount)}`) : ""}
+      ${summaryRow("Env&iacute;o", shippingCost === 0 ? "Env&iacute;o gratis" : fmtCOP(shippingCost))}`
+    : ""
+
+  // ── Datos de entrega: a quién y dónde llega el paquete ──
+  const addr = order.shippingAddress
+  const deliveryLines = [
+    order.customerName?.trim() || "",
+    addr ? `${addr.address}, ${addr.city}, ${addr.department}` : "",
+    addr?.notes?.trim() || "",
+  ].filter(Boolean)
+  const deliveryBlock = deliveryLines.length
+    ? `
+    ${hr}
+    <p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:${C.faint};text-align:center;">Datos de entrega</p>
+    <p style="margin:0;font-family:Georgia,serif;font-size:14px;line-height:1.8;color:${C.sub};text-align:center;">${deliveryLines.join("<br/>")}</p>`
+    : ""
+
   const content = `
     <div style="text-align:center;">
       <div style="display:inline-block;width:44px;height:44px;line-height:44px;border:1px solid ${C.accent};border-radius:100px;color:${C.accent};font-family:Georgia,serif;font-size:20px;margin-bottom:18px;">&#10003;</div>
@@ -245,11 +295,13 @@ export async function sendOrderConfirmation(
     ${hr}
     <table width="100%" cellpadding="0" cellspacing="0">
       ${rows}
+      ${breakdown}
       <tr>
-        <td style="padding:14px 0 0;font-family:Georgia,serif;font-size:15px;color:${C.ink};">Total pagado</td>
+        <td colspan="2" style="padding:14px 0 0;font-family:Georgia,serif;font-size:15px;color:${C.ink};">Total pagado</td>
         <td align="right" style="padding:14px 0 0;font-family:Georgia,serif;font-size:17px;color:${C.ink};">${fmtCOP(order.total)}</td>
       </tr>
     </table>
+    ${deliveryBlock}
     <div style="height:30px;"></div>
     ${button(`${appUrl()}/pedido/${order.id}`, "Seguir mi pedido")}`
 
@@ -363,14 +415,43 @@ export async function sendAbandonedCartEmail(
 // ═════════════════════════════════════════════════════════════════════════════
 // 6. Solicitud de reseña — motivo: estrellas terracota.
 // ═════════════════════════════════════════════════════════════════════════════
+/**
+ * Resuelve la URL donde el cliente puede dejar su reseña: la página del PRIMER
+ * producto comprado (las reseñas viven como sección #resenas dentro de
+ * /productos/[slug] — no existe una página /resenas independiente). Si el item
+ * es un kit personalizado ("pack-…" no existe en products), usamos su primer
+ * componente. Si nada resuelve, caemos al catálogo: mejor que un enlace roto.
+ */
+async function reviewUrlForItems(
+  items: Array<{ product_id?: string; components?: Array<{ product_id?: string }> }>
+): Promise<string> {
+  try {
+    const candidateIds = items
+      .flatMap((it) => [it.product_id, ...(it.components || []).map((c) => c.product_id)])
+      .filter((id): id is string => !!id && !id.startsWith("pack-"))
+    if (candidateIds.length) {
+      const db = createServerClient()
+      const { data } = await db.from("products").select("id, slug").in("id", [...new Set(candidateIds)])
+      const slugById = new Map((data || []).map((p) => [p.id, p.slug]))
+      // Respetar el orden de compra: el primer item que resuelva a un slug gana.
+      for (const id of candidateIds) {
+        const slug = slugById.get(id)
+        if (slug) return `${appUrl()}/productos/${slug}#resenas`
+      }
+    }
+  } catch { /* enlace de respaldo abajo */ }
+  return `${appUrl()}/catalogo`
+}
+
 export async function sendReviewRequestEmail(
   to: string,
   name: string,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _items: unknown[]
+  items: Array<{ product_id?: string; components?: Array<{ product_id?: string }> }>
 ): Promise<void> {
   const transport = createTransport()
   if (!transport) { console.warn("[mailer] SMTP not configured — skipping review request"); return }
+
+  const reviewUrl = await reviewUrlForItems(items || [])
 
   const content = `
     <div style="text-align:center;">
@@ -378,7 +459,7 @@ export async function sendReviewRequestEmail(
       <p style="margin:0 0 18px;font-size:22px;letter-spacing:.35em;color:${C.accent};">&#9733;&#9733;&#9733;&#9733;&#9733;</p>
       ${title(`${name}, &iquest;c&oacute;mo huele<br/>tu casa ahora?`)}
       ${para("Nos encantar&iacute;a saber c&oacute;mo te fue con tu aroma. Tu experiencia gu&iacute;a a otros hogares — y a nosotros nos ayuda a mejorar. Toma 30 segundos.", 30)}
-      ${button(`${appUrl()}/resenas`, "Contar mi experiencia")}
+      ${button(reviewUrl, "Contar mi experiencia")}
     </div>`
 
   try {

@@ -31,6 +31,9 @@ export default function CheckoutPage() {
   const [couponSuccess, setCouponSuccess] = useState<string | null>(null)
   const [discountAmount, setDiscountAmount] = useState(0)
   const [appliedCode, setAppliedCode] = useState<string | null>(null)
+  // Ley 1581/Decreto 1377: la autorización de tratamiento de datos debe ser
+  // previa y expresa — sin marcar el checkbox no se puede pagar.
+  const [acceptedPolicies, setAcceptedPolicies] = useState(false)
   // Shipping address
   const [customerName, setCustomerName] = useState("")
   const [customerPhone, setCustomerPhone] = useState("")
@@ -140,6 +143,10 @@ export default function CheckoutPage() {
       setError("Ingresa un correo electrónico válido.")
       return
     }
+    if (!acceptedPolicies) {
+      setError("Debes autorizar el tratamiento de tus datos personales y aceptar los Términos para continuar.")
+      return
+    }
     setIsLoading(true)
     setError(null)
     // ── Meta Pixel + CAPI: AddPaymentInfo (datos completos, va a pagar) ──
@@ -190,8 +197,20 @@ export default function CheckoutPage() {
         }),
       })
       const data = await res.json()
-      if (data.url) window.location.href = data.url
-      else setError(data.error || "Error al procesar. Intenta de nuevo.")
+      if (data.url) {
+        window.location.href = data.url
+      } else if (res.status === 400 && appliedCode && /c[oó]digo/i.test(data.error ?? "")) {
+        // El servidor rechazó el CUPÓN (expiró, ya se usó o la sesión caducó
+        // entre aplicar y pagar). No redirigimos: mostramos el error bajo el
+        // campo del código y retiramos el descuento para que el total mostrado
+        // vuelva a coincidir con lo que se cobraría.
+        setCouponError(data.error)
+        setCouponSuccess(null)
+        setDiscountAmount(0)
+        setAppliedCode(null)
+      } else {
+        setError(data.error || "Error al procesar. Intenta de nuevo.")
+      }
     } catch {
       setError("Error de conexión. Intenta de nuevo.")
     } finally {
@@ -440,6 +459,25 @@ export default function CheckoutPage() {
             )}
           </div>
 
+          {/* Autorización de datos personales (Ley 1581 de 2012) + aceptación de
+              términos — obligatoria ANTES de pagar; el botón queda deshabilitado
+              hasta que el cliente la marque. */}
+          <label className="mt-6 flex items-start gap-3 cursor-pointer select-none border border-[#2D1A14]/12 px-4 py-3 hover:border-[#2D1A14]/25 transition-colors duration-200">
+            <input
+              type="checkbox"
+              required
+              checked={acceptedPolicies}
+              onChange={(e) => { setAcceptedPolicies(e.target.checked); if (e.target.checked) setError(null) }}
+              className="mt-0.5 w-4 h-4 flex-shrink-0 accent-[#A67163]"
+            />
+            <span className="text-xs text-[#2D1A14]/60 leading-relaxed">
+              Autorizo el tratamiento de mis datos personales según la{" "}
+              <Link href="/privacidad" target="_blank" className="text-[#A67163] underline font-medium">Política de privacidad</Link>{" "}
+              y acepto los{" "}
+              <Link href="/terminos" target="_blank" className="text-[#A67163] underline font-medium">Términos y Condiciones</Link>. *
+            </span>
+          </label>
+
           {/* Trust pillars */}
           <div className="grid grid-cols-3 gap-4 mt-8 pt-8 border-t border-[#2D1A14]/8">
             {[
@@ -542,7 +580,8 @@ export default function CheckoutPage() {
           <div className="mt-8 space-y-3">
             <button
               onClick={handlePay}
-              disabled={isLoading || selectedItems.length === 0}
+              disabled={isLoading || selectedItems.length === 0 || !acceptedPolicies}
+              title={!acceptedPolicies ? "Marca la autorización de datos personales para continuar" : undefined}
               className="w-full rounded-full py-4 px-6 flex items-center justify-center gap-3 bg-[#A67163] text-white font-semibold text-sm tracking-wide hover:bg-[#8B5E52] active:scale-[0.99] transition-all duration-200 disabled:opacity-25 disabled:cursor-not-allowed"
             >
               {isLoading
@@ -574,7 +613,9 @@ export default function CheckoutPage() {
                   <span key={m} className="text-[8px] font-medium text-[#FAF8F5]/20 border border-[#FAF8F5]/8 rounded px-2 py-0.5 tracking-wider">{m}</span>
                 ))}
               </div>
-              <p className="text-center text-[#FAF8F5]/10 text-[8px] tracking-widest uppercase mt-3">Powered by Wompi · Bancolombia</p>
+              {/* La pasarela real es Mercado Pago (/api/checkout crea la preferencia):
+                  anunciar otra marca justo antes de redirigir huele a phishing. */}
+              <p className="text-center text-[#FAF8F5]/10 text-[8px] tracking-widest uppercase mt-3">Pago seguro procesado por Mercado Pago</p>
             </div>
           </div>
 
@@ -672,7 +713,8 @@ export default function CheckoutPage() {
           {/* Botón pagar */}
           <button
             onClick={handlePay}
-            disabled={isLoading || selectedItems.length === 0}
+            disabled={isLoading || selectedItems.length === 0 || !acceptedPolicies}
+            title={!acceptedPolicies ? "Marca la autorización de datos personales para continuar" : undefined}
             className="flex-shrink-0 rounded-full py-3.5 px-6 flex items-center justify-center gap-2 bg-[#A67163] text-white font-semibold text-sm tracking-wide hover:bg-[#8B5E52] active:scale-[0.98] transition-all duration-200 disabled:opacity-25 disabled:cursor-not-allowed"
           >
             {isLoading

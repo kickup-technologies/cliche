@@ -11,12 +11,11 @@ import { sendReviewRequestEmail } from "@/lib/mailer"
  * Protegido por CRON_SECRET.
  */
 export async function GET(req: NextRequest) {
+  // FAIL-CLOSED: sin CRON_SECRET el endpoint rechaza todo — olvidar la var
+  // no puede dejar el cron público (cualquiera podría spamear a los clientes).
   const cronSecret = process.env.CRON_SECRET
-  if (cronSecret) {
-    const auth = req.headers.get("authorization")
-    if (auth !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
+  if (!cronSecret || req.headers.get("authorization") !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   }
 
   try {
@@ -47,7 +46,13 @@ export async function GET(req: NextRequest) {
     for (const order of orders) {
       const firstName = (order.customer_name as string)?.split(" ")[0] || "Cliente"
       try {
-        await sendReviewRequestEmail(order.customer_email as string, firstName, (order.items as unknown[]) || [])
+        // Los items van tal cual quedaron en la orden: el mailer resuelve el
+        // slug del primer producto para enlazar la reseña a SU página.
+        await sendReviewRequestEmail(
+          order.customer_email as string,
+          firstName,
+          (order.items as Array<{ product_id?: string; components?: Array<{ product_id?: string }> }>) || []
+        )
         await supabase
           .from("orders")
           .update({ review_email_sent: true })

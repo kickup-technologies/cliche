@@ -15,10 +15,11 @@ export const dynamic = "force-dynamic"
  * CRON_SECRET.
  */
 export async function GET(req: NextRequest) {
+  // FAIL-CLOSED: sin CRON_SECRET el endpoint rechaza todo — olvidar la var
+  // no puede dejar el cron público (cualquiera dispararía mensajes de WhatsApp).
   const cronSecret = process.env.CRON_SECRET
-  if (cronSecret) {
-    const auth = req.headers.get("authorization")
-    if (auth !== `Bearer ${cronSecret}`) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+  if (!cronSecret || req.headers.get("authorization") !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   }
 
   try {

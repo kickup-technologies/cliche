@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
     let subtotal = 0
     type PackComp = { product_id: string; name: string; quantity: number }
     type SafeItem =
-      | { kind: "unit"; product_id: string; quantity: number; name: string; price: number }
+      | { kind: "unit"; product_id: string; quantity: number; units: number; name: string; price: number }
       | { kind: "pack"; tier: string; quantity: number; name: string; price: number; components: PackComp[] }
     const safeItems: SafeItem[] = []
 
@@ -125,7 +125,9 @@ export async function POST(req: NextRequest) {
       const linePrice = tier.id === "unit" ? Number(p.price) : tier.price
       const lineName = tier.units > 1 ? `${p.name} — Kit x${tier.units}` : p.name
       subtotal += linePrice * it.quantity
-      safeItems.push({ kind: "unit", product_id: p.id, quantity: it.quantity, name: lineName, price: linePrice })
+      // Se persiste `units` (frascos por kit) para que la confirmación descuente
+      // quantity * units del stock — antes un Kit x6 descontaba 1 solo frasco.
+      safeItems.push({ kind: "unit", product_id: p.id, quantity: it.quantity, units: tier.units, name: lineName, price: linePrice })
     }
 
     // Líneas de kit personalizado (varios aromas, precio FIJO del tier).
@@ -183,7 +185,19 @@ export async function POST(req: NextRequest) {
     // (se registra en code_redemptions al confirmarse el pago).
     let discount_amount = 0
     let validatedCode: string | null = null
-    if (discount_code && userId && userEmail) {
+    if (discount_code) {
+      // Si el código llegó pero NO se puede aplicar (expiró entre aplicar y pagar,
+      // ya lo usó, o la sesión caducó y llega sin userId), NO cobramos el total
+      // sin descuento en silencio: el botón le prometió al cliente un precio menor
+      // y cobrarle más es un reclamo/chargeback seguro. Rechazamos con 400.
+      const invalidCoupon = () =>
+        NextResponse.json(
+          { error: "Tu código de descuento ya no es válido o requiere iniciar sesión. Retíralo o corrígelo para continuar." },
+          { status: 400 }
+        )
+
+      if (!userId || !userEmail) return invalidCoupon()
+
       const code = String(discount_code).toUpperCase().trim()
       const { data: discount } = await db
         .from("discount_codes")
@@ -198,28 +212,24 @@ export async function POST(req: NextRequest) {
         (!discount.expires_at || new Date(discount.expires_at) >= now) &&
         (discount.max_uses === null || discount.uses_count < discount.max_uses)
 
-      let alreadyUsed = false
-      if (usable) {
-        // El uso se cuenta contra el correo de la CUENTA autenticada (no el que
-        // venga del formulario), para que nadie evada el "un solo uso".
-        const { data: redemption } = await db
-          .from("code_redemptions")
-          .select("id")
-          .eq("code_id", discount.id)
-          .eq("customer_email", userEmail)
-          .single()
-        alreadyUsed = !!redemption
-      }
+      if (!usable) return invalidCoupon()
 
-      if (usable && !alreadyUsed) {
-        if (discount.type === "percentage") {
-          discount_amount = Math.round((subtotal * discount.value) / 100)
-        } else {
-          discount_amount = Math.min(discount.value, subtotal)
-        }
-        validatedCode = code
+      // El uso se cuenta contra el correo de la CUENTA autenticada (no el que
+      // venga del formulario), para que nadie evada el "un solo uso".
+      const { data: redemption } = await db
+        .from("code_redemptions")
+        .select("id")
+        .eq("code_id", discount.id)
+        .eq("customer_email", userEmail)
+        .single()
+      if (redemption) return invalidCoupon()
+
+      if (discount.type === "percentage") {
+        discount_amount = Math.round((subtotal * discount.value) / 100)
+      } else {
+        discount_amount = Math.min(discount.value, subtotal)
       }
-      // Si el código no es válido, simplemente se ignora (no se aplica descuento)
+      validatedCode = code
     }
 
     // ── Total final calculado en el servidor ──
@@ -234,10 +244,10 @@ export async function POST(req: NextRequest) {
     const reference = `cliche_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
 
     // Guardar orden pendiente con montos AUTORITATIVOS del servidor.
-    // Esto SÍ requiere service-role (RLS orders_service_only). Si la
-    // SUPABASE_SERVICE_ROLE_KEY está mal en producción, este insert falla y la
-    // orden nunca aparece en el panel de admin → registramos el error explícito
-    // para poder diagnosticarlo (antes el .catch silencioso lo ocultaba).
+    // Esto SÍ requiere service-role (RLS orders_service_only). Si el insert
+    // falla (key mal rotada, RLS, columna nueva) NO seguimos al cobro: cobrar
+    // sin pedido en la BD deja dinero sin rastro que ni el webhook ni el botón
+    // Reconciliar pueden recuperar (solo recorren órdenes que EXISTEN).
     try {
       const { error: orderErr } = await db.from("orders").insert({
         stripe_session_id: reference,
@@ -247,7 +257,7 @@ export async function POST(req: NextRequest) {
         items: safeItems.map((i) =>
           i.kind === "pack"
             ? { kind: "pack", product_id: `pack-${i.tier}`, name: i.name, tier: i.tier, quantity: i.quantity, price: i.price, components: i.components }
-            : { product_id: i.product_id, quantity: i.quantity, name: i.name, price: i.price }
+            : { product_id: i.product_id, quantity: i.quantity, units: i.units, name: i.name, price: i.price }
         ),
         customer_email: email || null,
         customer_name: customer_name || null,
@@ -260,10 +270,21 @@ export async function POST(req: NextRequest) {
       if (orderErr) {
         console.error("[checkout] no se pudo guardar la orden pendiente:", orderErr.message,
           "— revisa SUPABASE_SERVICE_ROLE_KEY en Vercel")
+        return NextResponse.json({ error: "No pudimos iniciar tu pedido. Intenta de nuevo." }, { status: 500 })
       }
     } catch (e) {
       console.error("[checkout] excepción guardando orden pendiente:", e)
+      return NextResponse.json({ error: "No pudimos iniciar tu pedido. Intenta de nuevo." }, { status: 500 })
     }
+
+    // ── Datos del pagador para el antifraude de Mercado Pago ──
+    // name/surname separados y la cédula (sin puntos) suben la tasa de
+    // aprobación de tarjetas; MP los cruza con los datos del banco emisor.
+    const nameParts = typeof customer_name === "string" ? customer_name.trim().split(/\s+/) : []
+    const payerName = nameParts[0] || null
+    const payerSurname = nameParts.slice(1).join(" ") || null
+    const payerIdNumber =
+      typeof customer_id_number === "string" ? customer_id_number.replace(/\D/g, "") || null : null
 
     // ── Crear preferencia de pago en Mercado Pago (Checkout Pro) ──
     // Cobramos el total AUTORITATIVO del servidor en UNA sola línea, así el
@@ -281,10 +302,15 @@ export async function POST(req: NextRequest) {
               currency_id: "COP",
             },
           ],
+          // Cuantos más datos reales del pagador reciba Mercado Pago, mejor
+          // puntúa su antifraude y más tarjetas aprueba: separamos nombre y
+          // apellido y enviamos la cédula como identification (type CC).
           payer: {
             ...(email ? { email } : {}),
-            ...(customer_name ? { name: customer_name } : {}),
+            ...(payerName ? { name: payerName } : {}),
+            ...(payerSurname ? { surname: payerSurname } : {}),
             ...(customer_phone ? { phone: { number: customer_phone.replace(/\D/g, "") } } : {}),
+            ...(payerIdNumber ? { identification: { type: "CC", number: payerIdNumber } } : {}),
           },
           // external_reference = nuestra referencia → así el webhook encuentra el pedido.
           external_reference: reference,

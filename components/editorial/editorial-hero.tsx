@@ -58,8 +58,27 @@ const SLIDES: Slide[] = [
 
 export function EditorialHero() {
   const [active, setActive] = useState(0)
+  // null durante SSR/hidratación: aún no conocemos el ancho real. Con matchMedia
+  // renderizamos UNA sola variante (desktop o móvil) — display:none NO evita la
+  // descarga de una imagen, así que antes bajaban las 2 variantes de cada slide.
+  const [media, setMedia] = useState<"mobile" | "desktop" | null>(null)
+  // Los slides no activos montan su media unos segundos después del primer
+  // paint: el slide 1 (LCP) no compite con las imágenes de los slides 2 y 3.
+  const [warm, setWarm] = useState(false)
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([])
   const touch = useRef<{ x: number; y: number } | null>(null)
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)")
+    const update = () => setMedia(mq.matches ? "desktop" : "mobile")
+    update()
+    mq.addEventListener("change", update)
+    const t = window.setTimeout(() => setWarm(true), 3500)
+    return () => {
+      mq.removeEventListener("change", update)
+      clearTimeout(t)
+    }
+  }, [])
 
   useEffect(() => {
     const t = setInterval(() => setActive((i) => (i + 1) % SLIDES.length), 7000)
@@ -86,7 +105,9 @@ export function EditorialHero() {
     }
   }
 
-  // Reproduce solo el video del slide activo; pausa los demás (rendimiento)
+  // Reproduce solo el video del slide activo; pausa los demás (rendimiento).
+  // Depende también de `media`: el video se monta tarde (solo en desktop) y
+  // debe arrancar si el slide ya era el activo cuando apareció.
   useEffect(() => {
     videoRefs.current.forEach((v, i) => {
       if (!v) return
@@ -97,7 +118,7 @@ export function EditorialHero() {
         v.pause()
       }
     })
-  }, [active])
+  }, [active, media])
 
   return (
     <section
@@ -111,6 +132,14 @@ export function EditorialHero() {
         // Slides con imagen + versión móvil → layout "split" en celular:
         // imagen arriba, texto en un panel café debajo (no tapa el producto).
         const splitMobile = !!slide.media.mobileSrc
+        // Solo el slide activo carga su media de inmediato; los demás esperan
+        // a "warm" (unos segundos después del primer paint) o a volverse activos.
+        const mountMedia = isActive || warm
+        // Mientras media === null (SSR / primer render) se montan ambas variantes
+        // para no romper la hidratación; el truco de sizes (abajo) hace que la
+        // variante oculta solo descargue un thumbnail de 16px.
+        const showDesktopMedia = mountMedia && (!splitMobile || media !== "mobile")
+        const showMobileMedia = mountMedia && splitMobile && media !== "desktop"
 
         return (
           <div
@@ -122,40 +151,51 @@ export function EditorialHero() {
             {/* Media de fondo PC: video o imagen. Si hay versión móvil, se oculta
                 en celular (md:block) y abajo se monta el split. */}
             {slide.media.type === "video" ? (
-              <video
-                ref={(el) => { videoRefs.current[i] = el }}
-                src={slide.media.src}
-                poster={slide.media.poster}
-                muted
-                loop
-                playsInline
-                autoPlay={i === 0}
-                preload={i === 0 ? "auto" : "metadata"}
-                className={`absolute inset-0 h-full w-full object-cover ${slide.media.mobileSrc ? "hidden md:block" : ""}`}
-              />
+              // El video SOLO se monta cuando sabemos que es desktop (md+): en
+              // móvil está oculto por CSS pero play() forzaba la descarga de
+              // los 5 MB de hero-2.mp4 por datos móviles. Si tiene variante
+              // móvil, exigimos media === "desktop"; preload solo al activo.
+              (splitMobile ? media === "desktop" : mountMedia) && (
+                <video
+                  ref={(el) => { videoRefs.current[i] = el }}
+                  src={slide.media.src}
+                  poster={slide.media.poster}
+                  muted
+                  loop
+                  playsInline
+                  autoPlay={i === 0}
+                  preload={isActive ? "auto" : "none"}
+                  className={`absolute inset-0 h-full w-full object-cover ${slide.media.mobileSrc ? "hidden md:block" : ""}`}
+                />
+              )
             ) : (
-              <Image
-                src={slide.media.src}
-                alt={slide.title.replace(/\n/g, " ")}
-                fill
-                priority={i === 0}
-                sizes="100vw"
-                className={`object-cover ${slide.media.mobileSrc ? "hidden md:block" : ""}`}
-                style={{ objectPosition: slide.media.objectPosition ?? "center" }}
-              />
+              showDesktopMedia && (
+                <Image
+                  src={slide.media.src}
+                  alt={slide.title.replace(/\n/g, " ")}
+                  fill
+                  priority={i === 0}
+                  // En móvil esta variante está oculta: 1px hace que el browser
+                  // elija el srcset más pequeño (16px) en vez del de 100vw.
+                  sizes={splitMobile ? "(max-width: 767px) 1px, 100vw" : "100vw"}
+                  className={`object-cover ${slide.media.mobileSrc ? "hidden md:block" : ""}`}
+                  style={{ objectPosition: slide.media.objectPosition ?? "center" }}
+                />
+              )
             )}
 
             {/* Celular (split): imagen vertical en la mitad superior, degradada
                 hacia el fondo café; el texto vive debajo y NO tapa el producto.
                 Aplica a cualquier slide con mobileSrc (imagen o video en PC). */}
-            {slide.media.mobileSrc && (
+            {showMobileMedia && (
               <div className="absolute inset-x-0 top-0 h-[57%] overflow-hidden md:hidden">
                 <Image
-                  src={slide.media.mobileSrc}
+                  src={slide.media.mobileSrc!}
                   alt={slide.title.replace(/\n/g, " ")}
                   fill
                   priority={i === 0}
-                  sizes="100vw"
+                  // En desktop esta variante está oculta: 1px → thumbnail de 16px
+                  sizes="(min-width: 768px) 1px, 100vw"
                   className="object-cover"
                   style={{ objectPosition: slide.media.mobileObjectPosition ?? "center" }}
                 />

@@ -32,7 +32,10 @@ const fmt = (n: number) =>
   new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(n)
 
 const STATUS_STEPS = [
-  { key: "pending",   label: "Pedido recibido",  icon: Clock,        color: "text-yellow-500", bg: "bg-yellow-50",  desc: "Tu pago fue confirmado" },
+  // OJO: "pending" significa que el pago AÚN NO está acreditado (PSE puede
+  // tardar). Antes decía "Tu pago fue confirmado", falso para un pedido sin
+  // pagar — la confirmación real es el paso "confirmed".
+  { key: "pending",   label: "Pedido recibido",  icon: Clock,        color: "text-yellow-500", bg: "bg-yellow-50",  desc: "Esperando confirmación del pago (PSE puede tardar unos minutos)" },
   { key: "confirmed", label: "Confirmado",        icon: CheckCircle,  color: "text-blue-500",   bg: "bg-blue-50",    desc: "Tu pedido está en el sistema" },
   { key: "preparing", label: "En preparación",    icon: Package,      color: "text-[#A67163]",  bg: "bg-[#A67163]/10", desc: "Estamos empacando tu aroma" },
   { key: "shipped",   label: "Despachado",        icon: Truck,        color: "text-purple-500", bg: "bg-purple-50",  desc: "En camino a tu puerta" },
@@ -186,11 +189,13 @@ export default function PedidoPage() {
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="font-serif text-sm text-[#2D1A14] leading-snug">{item.name}</p>
+                          {/* Fallbacks defensivos: pedidos antiguos pueden no tener
+                              name/price guardados (evita "undefined" y "COP NaN") */}
+                          <p className="font-serif text-sm text-[#2D1A14] leading-snug">{item.name || "Producto Cliché"}</p>
                           <p className="text-xs text-[#2D1A14]/40 mt-0.5">× {item.quantity}</p>
                         </div>
                         <p className="text-sm font-medium text-[#2D1A14] tabular-nums">
-                          {fmt(item.price * item.quantity)}
+                          {fmt((Number(item.price) || 0) * item.quantity)}
                         </p>
                       </div>
                     ))}

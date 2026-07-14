@@ -146,12 +146,15 @@ export function OverviewSection({ orders, pageViews, products }: { orders: Order
           </p>
           <p className="text-xs text-[#2D1A14]/40 mt-1">con 5 o menos unidades</p>
         </div>
+        {/* Antes esta tarjeta contaba "pending", pero /api/admin/data ya no los
+            envía (siempre daba 0). Lo accionable es lo contrario: pedidos ya
+            PAGADOS que aún no se han despachado. */}
         <div className="bg-white rounded-2xl border border-[#2D1A14]/8 p-5">
-          <p className="text-xs text-[#2D1A14]/50 font-semibold uppercase tracking-wider mb-3">Pendientes</p>
-          <p className={`text-2xl font-bold ${(statusCounts["pending"] || 0) > 0 ? "text-yellow-600" : "text-[#2D1A14]"}`}>
-            {statusCounts["pending"] || 0}
+          <p className="text-xs text-[#2D1A14]/50 font-semibold uppercase tracking-wider mb-3">Por despachar</p>
+          <p className={`text-2xl font-bold ${((statusCounts["paid"] || 0) + (statusCounts["confirmed"] || 0) + (statusCounts["preparing"] || 0)) > 0 ? "text-yellow-600" : "text-[#2D1A14]"}`}>
+            {(statusCounts["paid"] || 0) + (statusCounts["confirmed"] || 0) + (statusCounts["preparing"] || 0)}
           </p>
-          <p className="text-xs text-[#2D1A14]/40 mt-1">pedidos sin confirmar</p>
+          <p className="text-xs text-[#2D1A14]/40 mt-1">pedidos pagados sin enviar</p>
         </div>
         <div className="bg-white rounded-2xl border border-[#2D1A14]/8 p-5">
           <p className="text-xs text-[#2D1A14]/50 font-semibold uppercase tracking-wider mb-3">Descuentos otorgados</p>
@@ -163,13 +166,19 @@ export function OverviewSection({ orders, pageViews, products }: { orders: Order
       {/* Status breakdown */}
       <div className="bg-white rounded-2xl border border-[#2D1A14]/8 p-5">
         <h3 className="text-sm font-semibold text-[#2D1A14] mb-4">Estado de pedidos en el periodo</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          {Object.entries(ORDER_STATUS_MAP).map(([key, st]) => (
-            <div key={key} className={`rounded-xl border px-4 py-3 ${st.bg} ${st.border}`}>
-              <p className={`text-xl font-bold ${st.color}`}>{statusCounts[key] || 0}</p>
-              <p className={`text-xs font-medium mt-0.5 ${st.color}`}>{st.label}</p>
-            </div>
-          ))}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {Object.entries(ORDER_STATUS_MAP)
+            // "pending" no llega al payload del admin (son intentos sin pagar),
+            // así que su celda sería estructuralmente 0: se omite del desglose.
+            // "cancelled" y "paid" sí se muestran para que ningún pedido real
+            // quede fuera de los contadores.
+            .filter(([key]) => key !== "pending")
+            .map(([key, st]) => (
+              <div key={key} className={`rounded-xl border px-4 py-3 ${st.bg} ${st.border}`}>
+                <p className={`text-xl font-bold ${st.color}`}>{statusCounts[key] || 0}</p>
+                <p className={`text-xs font-medium mt-0.5 ${st.color}`}>{st.label}</p>
+              </div>
+            ))}
         </div>
       </div>
 

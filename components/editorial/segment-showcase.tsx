@@ -159,17 +159,21 @@ function Category({ seg, i, pool }: { seg: Segment; i: number; pool: Product[] }
                 transition: `clip-path 0.95s ${EASE} ${delay}ms`,
               }}
             >
+              {/* relative: ancla el fill de next/image DENTRO del wrapper con
+                  zoom, para que la imagen herede la animación de escala */}
               <div
-                className="h-full w-full"
+                className="relative h-full w-full"
                 style={{ transform: inView ? "scale(1)" : "scale(1.14)", transition: `transform 1.2s ${EASE} ${delay}ms` }}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                {/* next/image en vez de <img> crudo: los PNG originales pesan
+                    hasta 2 MB y esta tarjeta mide máx. 260px — Next sirve
+                    AVIF/WebP redimensionado y cacheado en el edge */}
+                <Image
                   src={p.image_url || "/placeholder-product.jpg"}
                   alt={p.name}
-                  loading="lazy"
-                  decoding="async"
-                  className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                  fill
+                  sizes="(max-width: 1024px) 50vw, 260px"
+                  className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                 />
               </div>
             </div>
