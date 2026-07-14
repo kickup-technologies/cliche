@@ -30,8 +30,8 @@ const faqs = [
     a: "Sí. Si por cualquier motivo el producto no cumple tus expectativas, tienes 30 días para solicitar cambio o devolución sin preguntas. Escríbenos por WhatsApp o al correo monica@clichecolombia.com y lo resolvemos de inmediato.",
   },
   {
-    q: "¿El código BIENVENIDA20 tiene restricciones?",
-    a: "El código BIENVENIDA20 aplica a cualquier compra y da un 20% de descuento sobre el total del carrito. Solo puede usarse una vez por cliente. Válido hasta agotar existencias de la promoción.",
+    q: "¿El código BIENVENIDA10 tiene restricciones?",
+    a: "El código BIENVENIDA10 da un 10% de descuento sobre el valor de los productos de tu primera compra (el descuento no aplica al costo de envío). Solo puede usarse una vez por cliente y requiere iniciar sesión. Válido hasta agotar existencias de la promoción.",
   },
   {
     q: "¿Cómo uso exactamente el aroma? ¿Cuántos pufs aplico?",

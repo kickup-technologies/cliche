@@ -39,7 +39,7 @@ const process = [
   {
     step: "02",
     title: "Aplica tu descuento",
-    description: "Usa el código BIENVENIDA20 para 20% OFF en tu primera compra — válido de inmediato",
+    description: "Usa el código BIENVENIDA10 para 10% OFF en tu primera compra — válido de inmediato",
   },
   {
     step: "03",

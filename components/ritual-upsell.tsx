@@ -8,7 +8,7 @@ const ritualProducts = [
   {
     slug: "kit-elementos-x4",
     name: "Kit Elementos x4",
-    tagline: "El ritual completo — Agua, Aire, Tierra y Fuego",
+    tagline: "La colección completa — Agua, Aire, Tierra y Fuego",
     price: "$190.000",
     badge: "Más vendido",
     badgeColor: "bg-primary",
@@ -52,7 +52,7 @@ export function RitualUpsell() {
             Colección destacada
           </p>
           <h2 className="text-3xl lg:text-4xl font-serif font-bold text-shimmer-light mb-3">
-            El ritual completo
+            La colección completa
           </h2>
           <span className="accent-rule" />
           <p className="text-background/60 max-w-md mx-auto text-sm">

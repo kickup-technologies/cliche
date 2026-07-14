@@ -44,7 +44,7 @@ const BENEFIT_MAP: Record<string, string> = {
   "aroma-best-friends":      "Alegría frutal — buen humor instantáneo",
   "aroma-lycra-de-verano":   "Energía cítrica — para mañanas activas",
   "kit-armonia-x3":          "3 aromas esenciales — ahorra $24.000 vs individual",
-  "kit-elementos-x4":        "El ritual completo — los 4 pilares de Cliché",
+  "kit-elementos-x4":        "La colección completa — los 4 pilares de Cliché",
 }
 
 // Session-stable views per product (generated once, persists through re-renders)

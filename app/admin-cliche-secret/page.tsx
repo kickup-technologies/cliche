@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react"
 import { supabase } from "@/lib/supabase"
 import {
   LayoutDashboard, TrendingUp, BarChart3, Star, ShoppingBag, Zap,
-  Package, Settings, Lock, RefreshCw, AlertCircle, Eye, LogOut, Menu, X, Paintbrush, Flame, Ticket, MessageCircle,
+  Package, Settings, Lock, RefreshCw, AlertCircle, Eye, LogOut, Menu, X, Paintbrush, Flame, Ticket, MessageCircle, Users,
 } from "lucide-react"
 import type { Product } from "@/lib/supabase"
 import { Order, PageView } from "./types"
@@ -21,8 +21,9 @@ import { InventarioSection } from "./sections/inventario"
 import { HeatmapsSection } from "./sections/heatmaps"
 import { DescuentosSection } from "./sections/descuentos"
 import { AsistenteSection } from "./sections/asistente"
+import { ClientesSection } from "./sections/clientes"
 
-type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "heatmaps" | "pedidos" | "descuentos" | "inventario" | "asistente"
+type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "heatmaps" | "pedidos" | "clientes" | "descuentos" | "inventario" | "asistente"
 
 interface Setting { key: string; value: string }
 
@@ -38,6 +39,7 @@ const SIDEBAR = [
   ]},
   { section: "OPERACIONES", items: [
     { id: "pedidos",   label: "Pedidos",              icon: ShoppingBag },
+    { id: "clientes",  label: "Clientes",             icon: Users },
     { id: "descuentos", label: "Códigos de descuento", icon: Ticket },
   ]},
   { section: "ASISTENTE", items: [
@@ -407,6 +409,9 @@ export default function AdminPage() {
           )}
           {activeSection === "pedidos" && (
             <PedidosSection orders={orders} products={products} onOrdersUpdate={handleOrderUpdate} />
+          )}
+          {activeSection === "clientes" && (
+            <ClientesSection />
           )}
           {activeSection === "descuentos" && (
             <DescuentosSection />

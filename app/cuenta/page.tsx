@@ -898,7 +898,9 @@ function SeccionDirecciones() {
 /* ─────────────────────────── LOGIN / SIGNUP ─────────────────────────── */
 function AuthForm() {
   const params = useSearchParams()
-  const [mode, setMode] = useState<"login" | "signup">("login")
+  // /cuenta?modo=registro abre directo el formulario de crear cuenta (es el
+  // destino de los botones "Crear cuenta" del header y el newsletter).
+  const [mode, setMode] = useState<"login" | "signup">(params.get("modo") === "registro" ? "signup" : "login")
   const [email, setEmail] = useState(""); const [password, setPassword] = useState("")
   const [firstName, setFirstName] = useState(""); const [lastName, setLastName] = useState("")
   const [birth, setBirth] = useState("")
@@ -963,9 +965,12 @@ function AuthForm() {
   return (
     <div className="grid h-screen overflow-hidden lg:grid-cols-[2fr_3fr]">
       {/* ── Columna izquierda: formulario (40%), ÚNICA con scroll ── */}
-      {/* overflow-y-auto en un bloque normal → la rueda del mouse scrollea bien.
-          El centrado se hace con flex-col interno (min-h-screen) sin romper el scroll. */}
-      <div className="overflow-y-auto px-6 sm:px-10" style={{ backgroundColor: CREMA }}>
+      {/* data-lenis-prevent es OBLIGATORIO: Lenis (scroll suave global) captura
+          la rueda/trackpad para animar el scroll de la PÁGINA (que aquí mide
+          h-screen y no scrollea), dejando muerto este contenedor interno — solo
+          funcionaba arrastrando la barra. Con el atributo, la rueda scrollea
+          nativo aquí (mismo patrón que /checkout). */}
+      <div className="overflow-y-auto overscroll-contain px-6 sm:px-10" data-lenis-prevent style={{ backgroundColor: CREMA }}>
         <div className="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-center py-12">
           {/* Logo */}
           <div className="mb-9 text-center">

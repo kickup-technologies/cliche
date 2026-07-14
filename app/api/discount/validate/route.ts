@@ -69,13 +69,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Calcular descuento
+    // Calcular descuento — aplica SOLO al subtotal de productos (nunca al
+    // envío): se topa al subtotal, igual que en /api/checkout.
     let discount_amount = 0
     if (discount.type === "percentage") {
       discount_amount = Math.round((subtotal * discount.value) / 100)
     } else {
-      discount_amount = Math.min(discount.value, subtotal)
+      discount_amount = Number(discount.value)
     }
+    discount_amount = Math.min(discount_amount, subtotal)
 
     return NextResponse.json({
       valid: true,

@@ -10,7 +10,7 @@ import { useCart } from "@/context/cart-context"
 import { useCAPI } from "@/lib/use-capi"
 
 /**
- * LeadPopup — captura de correo a cambio de un código real (BIENVENIDA20).
+ * LeadPopup — captura de correo a cambio de un código real (BIENVENIDA10).
  *
  * Diseño: tarjeta VERTICAL con la foto de MAHAI de fondo a sangre completa y el
  * texto superpuesto sobre la zona crema (izquierda). Optimizado para móvil
@@ -22,7 +22,7 @@ import { useCAPI } from "@/lib/use-capi"
  */
 const SESSION_KEY = "cliche_lead_seen"   // por sesión
 const SUB_KEY = "cliche_subscribed"      // persistente (no volver a mostrar)
-const FALLBACK_CODE = "BIENVENIDA20"
+const FALLBACK_CODE = "BIENVENIDA10"
 
 const CREMA = "#FAF8F5"
 const CAFE = "#2D1A14"
@@ -174,11 +174,11 @@ export function LeadPopup() {
               <img src="/images/logo-cliche.png" alt="Cliché" className="mb-4 h-8 w-auto object-contain" />
 
               <h3 className="font-serif font-medium leading-[1.08]" style={{ color: CAFE, fontSize: "clamp(1.75rem, 7vw, 2.4rem)" }}>
-                {items.length > 0 ? "No dejes tu aroma a medias." : "Descubre el ritual que tu hogar merece."}
+                {items.length > 0 ? "No dejes tu aroma a medias." : "Descubre el aroma que tu hogar merece."}
               </h3>
 
               <p className="mt-3 text-[13px] leading-relaxed sm:text-sm" style={{ color: `${CAFE}B0` }}>
-                Suscríbete y recibe un <span className="font-bold" style={{ color: TERRA }}>20% OFF</span> en tu primera
+                Suscríbete y recibe un <span className="font-bold" style={{ color: TERRA }}>10% OFF</span> en tu primera
                 compra, además de acceso a lanzamientos exclusivos y consejos para un hogar más consciente.
               </p>
 
@@ -198,7 +198,7 @@ export function LeadPopup() {
                   className="h-11 w-full rounded-xl text-sm font-bold tracking-wide"
                   style={{ backgroundColor: TERRA, color: CREMA }}
                 >
-                  {loading ? "Enviando…" : "Quiero mi 20% OFF"}
+                  {loading ? "Enviando…" : "Quiero mi 10% OFF"}
                 </Button>
               </form>
 

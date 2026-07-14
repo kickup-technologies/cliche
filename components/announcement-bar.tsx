@@ -7,13 +7,12 @@ import { useSiteSettings } from "@/lib/use-site-settings"
 // Nota: esta barra tenía una cuenta regresiva "hasta medianoche" que se
 // reiniciaba cada día — una oferta que nunca vencía de verdad (urgencia
 // ficticia, Ley 1480). Se eliminó: la barra informa beneficios REALES
-// (envío gratis y código de bienvenida) sin presión falsa.
+// (envío gratis) sin presión falsa. El código de bienvenida se quitó del
+// banner por decisión del negocio (2026-07-14): el código llega por correo.
 export function AnnouncementBar() {
   const settings = useSiteSettings()
   const [isVisible, setIsVisible] = useState(true)
 
-  const discountPct = settings.discount_percentage ?? 10
-  const discountCode = settings.discount_code ?? "BIENVENIDA10"
   const announcement = settings.announcement_text ?? ""
   const freeShip = Number(settings.free_shipping_threshold ?? 300000)
   const enabled = settings.urgency_bar_enabled !== false
@@ -29,8 +28,6 @@ export function AnnouncementBar() {
     <div className="flex shrink-0 items-center gap-2.5 px-5">
       <Zap className="w-3.5 h-3.5 flex-shrink-0 text-[#C4958A]" />
       <span className="font-semibold text-[#FAF8F5]">{announcement || `Envío gratis en compras mayores a ${freeShipLabel}`}</span>
-      <span className="text-[#FAF8F5]/30">•</span>
-      <span className="text-[#FAF8F5]/80">Código <span className="font-bold tracking-wider text-[#C4958A]">{discountCode}</span> → {discountPct}% OFF</span>
       <span className="text-[#FAF8F5]/30">•</span>
     </div>
   )
@@ -49,8 +46,6 @@ export function AnnouncementBar() {
       <div className="container mx-auto hidden items-center justify-center gap-3 px-10 py-2.5 text-sm font-medium sm:flex">
         <Zap className="w-3.5 h-3.5 flex-shrink-0 text-[#C4958A]" />
         <span className="font-semibold text-[#FAF8F5]" data-cliche-edit="announcement_text" data-cliche-label="Texto del anuncio">{announcement || <>Envío gratis en compras mayores a <span className="text-[#C4958A]">{freeShipLabel}</span></>}</span>
-        <span className="hidden md:block w-px h-3 bg-[#FAF8F5]/20" />
-        <span className="hidden md:inline text-[#FAF8F5]/80">Código <span className="font-bold text-[#C4958A] tracking-wider">{discountCode}</span> → {discountPct}% OFF</span>
       </div>
 
       <button

@@ -20,13 +20,37 @@
 
 import nodemailer from "nodemailer"
 import { createServerClient } from "@/lib/supabase"
+import { LOGO_PNG_BASE64 } from "@/lib/email-logo"
+
+/**
+ * Host para URLs dentro de un CORREO. El apex clichecolombia.com responde
+ * 308 → www y varios clientes de correo no siguen redirects al cargar
+ * imágenes (fotos de producto rotas). En el navegador el redirect es
+ * transparente, así que en correos usamos siempre el host www directo.
+ */
+function emailHost(): string {
+  const base = process.env.NEXT_PUBLIC_APP_URL || "https://clichecolombia.com"
+  return base.replace("://clichecolombia.com", "://www.clichecolombia.com").replace(/\/$/, "")
+}
 
 /**
  * URL absoluta para usar dentro de un CORREO: las rutas relativas de la BD
  * ("/images/…") funcionan en la web pero en el email no apuntan a nada.
  */
 function absUrl(src: string): string {
-  return src.startsWith("http") ? src : `${process.env.NEXT_PUBLIC_APP_URL || "https://clichecolombia.com"}${src}`
+  return src.startsWith("http") ? src : `${emailHost()}${src}`
+}
+
+/**
+ * Logo de la marca como adjunto inline (cid:cliche-logo). Embebido en el
+ * correo: se muestra en todos los clientes, sin depender de que carguen
+ * imágenes remotas ni de redirects del dominio.
+ */
+const LOGO_ATTACHMENT = {
+  filename: "cliche-logo.png",
+  content: Buffer.from(LOGO_PNG_BASE64, "base64"),
+  contentType: "image/png",
+  cid: "cliche-logo",
 }
 
 /**
@@ -87,7 +111,7 @@ const C = {
 const fmtCOP = (n: number) =>
   new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(n)
 
-const appUrl = () => process.env.NEXT_PUBLIC_APP_URL || "https://clichecolombia.com"
+const appUrl = () => emailHost()
 
 /** Botón pill oscuro, único elemento "sólido" de cada correo. */
 function button(href: string, label: string): string {
@@ -125,8 +149,8 @@ function shell(content: string, footNote: string): string {
 <body style="margin:0;padding:0;background:${C.bg};">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:${C.bg};padding:52px 16px;"><tr><td align="center">
 
-  <!-- Logo de la marca -->
-  <img src="${appUrl()}/images/logo-cliche.png" alt="Clich&eacute;" height="46" style="height:46px;width:auto;display:block;margin:0 auto 26px;"/>
+  <!-- Logo de la marca (adjunto inline: se ve aunque bloqueen imágenes remotas) -->
+  <img src="cid:cliche-logo" alt="Clich&eacute;" height="46" style="height:46px;width:auto;display:block;margin:0 auto 26px;"/>
 
   <table width="520" cellpadding="0" cellspacing="0" style="max-width:520px;width:100%;background:#ffffff;border:1px solid ${C.line};border-radius:20px;">
     <tr><td style="padding:46px 42px;">
@@ -169,6 +193,7 @@ export async function sendAdminOtpEmail(to: string, code: string): Promise<boole
     subject: `${code} es tu código de acceso al panel`,
     text: `Tu código de acceso al panel admin de Cliché es: ${code} (vence en 10 minutos).`,
     html: shell(content, "Correo de seguridad generado autom&aacute;ticamente."),
+    attachments: [LOGO_ATTACHMENT],
   })
   return true
 }
@@ -206,6 +231,7 @@ export async function sendWelcomeEmail(to: string, discountCode: string): Promis
       to,
       subject: `Tu código ${discountCode} está listo — Cliché Aromas`,
       html: shell(content, "Recibiste este correo porque te suscribiste en clichecolombia.com."),
+      attachments: [LOGO_ATTACHMENT],
     })
     console.log("[mailer] Welcome email sent to", to)
   } catch (err) {
@@ -311,6 +337,7 @@ export async function sendOrderConfirmation(
       to,
       subject: `Pedido #${orderId} confirmado — Cliché Aromas`,
       html: shell(content, "Guarda este correo como comprobante de tu compra."),
+      attachments: [LOGO_ATTACHMENT],
     })
   } catch (err) { console.error("[mailer] Order confirmation failed:", err) }
 }
@@ -370,6 +397,7 @@ export async function sendOrderShippedEmail(
       to,
       subject: `Tu pedido #${orderId} va en camino 🚚`,
       html: shell(content, "Te avisaremos cualquier novedad del env&iacute;o."),
+      attachments: [LOGO_ATTACHMENT],
     })
   } catch (err) { console.error("[mailer] Shipped email failed:", err) }
 }
@@ -408,6 +436,7 @@ export async function sendAbandonedCartEmail(
       to,
       subject: "Tu carrito te espera — Cliché Aromas",
       html: shell(content, "Guardamos tu selecci&oacute;n por tiempo limitado."),
+      attachments: [LOGO_ATTACHMENT],
     })
   } catch (err) { console.error("[mailer] Abandoned cart email failed:", err) }
 }
@@ -468,6 +497,7 @@ export async function sendReviewRequestEmail(
       to,
       subject: `${name}, ¿cómo te fue con tu Cliché?`,
       html: shell(content, "Gracias por hacer parte de Clich&eacute;."),
+      attachments: [LOGO_ATTACHMENT],
     })
   } catch (err) { console.error("[mailer] Review request failed:", err) }
 }
@@ -534,6 +564,7 @@ export async function sendAdminOrderAlert(order: {
       to: adminEmail,
       subject: `🛍️ Nuevo pedido #${orderId} — ${fmtCOP(order.total)} — ${order.customer_name ?? order.customer_email ?? "Cliente"}`,
       html: shell(content, "Generado autom&aacute;ticamente al confirmarse el pago en Mercado Pago."),
+      attachments: [LOGO_ATTACHMENT],
     })
     console.log("[mailer] Admin order alert sent for", orderId)
   } catch (err) {

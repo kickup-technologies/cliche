@@ -193,7 +193,7 @@ export function CartDrawer() {
               {recommendations.length > 0 && (
                 <div className="pt-6 mt-2">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.25em] mb-4" style={{ color: `${BROWN}40` }}>
-                    Completa tu ritual
+                    Completa tu colección
                   </p>
                   <div className="space-y-3">
                     {recommendations.map((rec) => (

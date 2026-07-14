@@ -224,11 +224,15 @@ export async function POST(req: NextRequest) {
         .single()
       if (redemption) return invalidCoupon()
 
+      // REGLA DE NEGOCIO (innegociable): el descuento aplica SOLO al valor de
+      // los productos. Se topa al subtotal para que NUNCA toque el costo de
+      // envío — el envío se cobra completo siempre (salvo umbral de envío gratis).
       if (discount.type === "percentage") {
         discount_amount = Math.round((subtotal * discount.value) / 100)
       } else {
-        discount_amount = Math.min(discount.value, subtotal)
+        discount_amount = Number(discount.value)
       }
+      discount_amount = Math.min(discount_amount, subtotal)
       validatedCode = code
     }
 
@@ -239,7 +243,9 @@ export async function POST(req: NextRequest) {
       safeItems.length > 0 &&
       safeItems.every((it) => it.kind === "unit" && productMap.get(it.product_id)?.slug === "prueba")
     const shipping = subtotal >= FREE_SHIPPING || shippingExempt ? 0 : SHIPPING_COST
-    const total = Math.max(0, subtotal + shipping - discount_amount)
+    // total = (productos − descuento) + envío. Como el descuento viene topado
+    // al subtotal, el total SIEMPRE incluye el envío completo.
+    const total = Math.max(0, subtotal - discount_amount) + shipping
 
     const reference = `cliche_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
 

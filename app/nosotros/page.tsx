@@ -80,7 +80,7 @@ export default function NosotrosPage() {
               <p>
                 Por eso diseñamos fragancias artesanales, 100% naturales, que no buscan
                 tapar olores sino crear atmósferas. Cada nota está pensada para acompañar
-                un momento: el ritual de la mañana, la calma de la noche, la primera
+                un momento: el comienzo de la mañana, la calma de la noche, la primera
                 impresión de quien cruza tu puerta.
               </p>
               <p className="font-serif text-xl italic text-foreground/80">
@@ -96,7 +96,7 @@ export default function NosotrosPage() {
             <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl">
               <Image
                 src="/images/lifestyle-bedroom.jpg"
-                alt="Ritual de aroma en el hogar"
+                alt="Momento de aroma en el hogar"
                 fill
                 sizes="(max-width: 768px) 100vw, 50vw"
                 className="object-cover"

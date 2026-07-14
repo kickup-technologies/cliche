@@ -34,8 +34,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Código de descuento REAL (debe existir en la tabla discount_codes para que
-    // funcione en el checkout). El popup de captura entrega 20%; el resto, 10%.
-    const discountCode = source === "popup" || source === "exit-intent" ? "BIENVENIDA20" : "BIENVENIDA10"
+    // funcione en el checkout). Único código de bienvenida vigente: 10%.
+    // (BIENVENIDA20 se eliminó el 2026-07-14 por decisión del negocio.)
+    const discountCode = "BIENVENIDA10"
 
     // Guardar en Supabase
     const { error } = await supabase.from("subscribers").insert({

@@ -36,7 +36,7 @@ const BENEFIT_MAP: Record<string, string> = {
   "aroma-best-friends":      "Energía frutal y alegre. El aroma de los domingos en casa y las mañanas perfectas.",
   "aroma-happiness":         "Optimismo en cada puf. Cítricos vivos que transforman el estado de ánimo en segundos.",
   "kit-armonia-x3":          "Los 3 aromas esenciales de Cliché en un solo kit. Ahorra $24.000 frente al precio individual.",
-  "kit-elementos-x4":        "El ritual completo — Agua, Aire, Tierra y Fuego. Los 4 pilares de Cliché a precio especial.",
+  "kit-elementos-x4":        "La colección completa — Agua, Aire, Tierra y Fuego. Los 4 pilares de Cliché a precio especial.",
 }
 
 // ── Intersection-observer hook for entrance animation ─────────────────────

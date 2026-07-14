@@ -105,14 +105,18 @@ export default function CheckoutPage() {
   const onlyTestProduct = selectedItems.length > 0 && selectedItems.every((i) => i.product.slug === "prueba")
   const freeShipping = subtotal >= FREE_SHIPPING || onlyTestProduct
   const shipping = freeShipping ? 0 : subtotal > 0 ? 20500 : 0
-  // Réplica exacta de la fórmula del servidor (/api/checkout): porcentaje sobre
-  // el subtotal seleccionado, o monto fijo topado al subtotal.
+  // Réplica exacta de la fórmula del servidor (/api/checkout): el descuento
+  // aplica SOLO a los productos (topado al subtotal) — NUNCA al envío, que se
+  // cobra completo siempre que no aplique el envío gratis.
   const discountAmount = appliedDiscount
-    ? appliedDiscount.type === "percentage"
-      ? Math.round((subtotal * appliedDiscount.value) / 100)
-      : Math.min(appliedDiscount.value, subtotal)
+    ? Math.min(
+        appliedDiscount.type === "percentage"
+          ? Math.round((subtotal * appliedDiscount.value) / 100)
+          : appliedDiscount.value,
+        subtotal
+      )
     : 0
-  const total = subtotal + shipping - discountAmount
+  const total = Math.max(0, subtotal - discountAmount) + shipping
   const pct = Math.min(100, Math.round((subtotal / FREE_SHIPPING) * 100))
 
   async function handleApplyCoupon() {

@@ -204,7 +204,7 @@ export function Header() {
                           <Link href="/cuenta" onClick={() => setIsOpen(false)} className="flex h-14 items-center gap-4 border-b border-white/[0.06] text-[15px] text-white/85">
                             <LogIn className="h-[18px] w-[18px] text-white/60" strokeWidth={1.4} /> <span className="flex-1">Iniciar sesión</span> <ChevronRight className="h-4 w-4 text-white/25" />
                           </Link>
-                          <Link href="/cuenta" onClick={() => setIsOpen(false)} className="flex h-14 items-center gap-4 text-[15px] text-white/85">
+                          <Link href="/cuenta?modo=registro" onClick={() => setIsOpen(false)} className="flex h-14 items-center gap-4 text-[15px] text-white/85">
                             <User className="h-[18px] w-[18px] text-white/60" strokeWidth={1.4} /> <span className="flex-1">Crear cuenta</span> <ChevronRight className="h-4 w-4 text-white/25" />
                           </Link>
                         </div>
@@ -362,7 +362,7 @@ export function Header() {
                       <Link href="/cuenta" className="cursor-pointer gap-2"><LogIn className="h-4 w-4" /> Iniciar sesión</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/cuenta" className="cursor-pointer gap-2"><User className="h-4 w-4" /> Crear cuenta</Link>
+                      <Link href="/cuenta?modo=registro" className="cursor-pointer gap-2"><User className="h-4 w-4" /> Crear cuenta</Link>
                     </DropdownMenuItem>
                   </div>
                 )}
