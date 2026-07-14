@@ -174,12 +174,12 @@ export function LeadPopup() {
               <img src="/images/logo-cliche.png" alt="Cliché" className="mb-4 h-8 w-auto object-contain" />
 
               <h3 className="font-serif font-medium leading-[1.08]" style={{ color: CAFE, fontSize: "clamp(1.75rem, 7vw, 2.4rem)" }}>
-                {items.length > 0 ? "No dejes tu aroma a medias." : "Descubre el aroma que tu hogar merece."}
+                {items.length > 0 ? "No dejes tu aroma a medias." : "Descubre el aroma que tu marca merece."}
               </h3>
 
               <p className="mt-3 text-[13px] leading-relaxed sm:text-sm" style={{ color: `${CAFE}B0` }}>
-                Suscríbete y recibe un <span className="font-bold" style={{ color: TERRA }}>10% OFF</span> en tu primera
-                compra, además de acceso a lanzamientos exclusivos y consejos para un hogar más consciente.
+                Suscríbete y recibe un <span className="font-bold" style={{ color: TERRA }}>10% OFF</span> en el primer
+                pedido de tu marca, además de ideas de marketing olfativo y acceso a los lanzamientos antes que nadie.
               </p>
 
               <form onSubmit={submit} className="mt-5 space-y-2.5">
@@ -222,7 +222,7 @@ export function LeadPopup() {
                   ))}
                 </div>
                 <p className="text-[10.5px] leading-tight" style={{ color: `${CAFE}99` }}>
-                  Únete a la comunidad que elige consciencia y bienestar. El código se aplica <span className="font-semibold" style={{ color: CAFE }}>iniciando sesión</span> en tu carrito.
+                  Únete a las marcas y negocios que eligen consciencia y bienestar. El código se aplica <span className="font-semibold" style={{ color: CAFE }}>iniciando sesión</span> en tu carrito.
                 </p>
               </div>
 
