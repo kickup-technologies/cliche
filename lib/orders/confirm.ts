@@ -51,26 +51,48 @@ export async function confirmPaidOrder(
     return { status: "already", reference }
   }
 
-  // 2. Descontar stock (kits: cada frasco que los compone)
-  for (const item of order.items || []) {
-    if (item?.kind === "pack" && Array.isArray(item.components)) {
-      const packQty = Number(item.quantity) || 1
-      for (const c of item.components) {
-        await db.rpc("decrement_stock", {
-          p_product_id: c.product_id,
-          p_quantity: (Number(c.quantity) || 0) * packQty,
-        })
+  // 2. Descontar stock (kits: cada frasco que los compone).
+  //    decrement_stock es atómico y devuelve -1 si NO había suficiente (dos
+  //    compras concurrentes de la última unidad). Recogemos esos faltantes para
+  //    avisar al admin: el pedido YA está pagado, así que confirma igual, pero
+  //    el dueño necesita saber que vendió más de lo que tenía. Todo el bloque va
+  //    en try/catch: un error transitorio del RPC no debe abortar los correos ni
+  //    la alerta de pedido (el pago ya ocurrió).
+  const oversold: Array<{ product_id: string; qty: number }> = []
+  const decrement = async (product_id: string, qty: number) => {
+    if (!product_id || qty <= 0) return
+    const { data: result, error } = await db.rpc("decrement_stock", {
+      p_product_id: product_id,
+      p_quantity: qty,
+    })
+    if (error) throw error
+    if (typeof result === "number" && result < 0) oversold.push({ product_id, qty })
+  }
+  try {
+    for (const item of order.items || []) {
+      if (item?.kind === "pack" && Array.isArray(item.components)) {
+        const packQty = Number(item.quantity) || 1
+        for (const c of item.components) {
+          await decrement(c.product_id, (Number(c.quantity) || 0) * packQty)
+        }
+      } else if (item?.product_id) {
+        // Los kits del mismo aroma guardan `units` (frascos por kit): un Kit x6
+        // debe descontar quantity * 6 frascos, no 1. Las órdenes viejas sin
+        // `units` siguen descontando quantity tal cual (retrocompatible).
+        const units = Number(item.units) || 1
+        await decrement(item.product_id, (Number(item.quantity) || 0) * units)
       }
-    } else if (item?.product_id) {
-      // Los kits del mismo aroma guardan `units` (frascos por kit): un Kit x6
-      // debe descontar quantity * 6 frascos, no 1. Las órdenes viejas sin
-      // `units` siguen descontando quantity tal cual (retrocompatible).
-      const units = Number(item.units) || 1
-      await db.rpc("decrement_stock", {
-        p_product_id: item.product_id,
-        p_quantity: (Number(item.quantity) || 0) * units,
-      })
     }
+  } catch (err) {
+    // No abortamos: el pago ya se hizo. Registramos para que el dueño lo revise.
+    console.error(`[confirm] fallo descontando stock del pedido ${reference}:`, err)
+  }
+  if (oversold.length > 0) {
+    // Señal clara en logs (Vercel) para reconciliar inventario manualmente.
+    console.error(
+      `[OVERSELL] Pedido ${reference} confirmado con stock insuficiente:`,
+      JSON.stringify(oversold),
+    )
   }
 
   // 3. Registrar uso del código de descuento.

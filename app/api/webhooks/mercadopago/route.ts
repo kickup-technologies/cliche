@@ -3,6 +3,7 @@ import crypto from "crypto"
 import { MercadoPagoConfig, Payment } from "mercadopago"
 import { createServerClient } from "@/lib/supabase"
 import { confirmPaidOrder } from "@/lib/orders/confirm"
+import { rateLimit } from "@/lib/rate-limit"
 
 /**
  * POST /api/webhooks/mercadopago
@@ -20,6 +21,13 @@ import { confirmPaidOrder } from "@/lib/orders/confirm"
  * advertencia pero NO bloquea: la verificación contra la API decide.
  */
 export async function POST(req: NextRequest) {
+  // Anti-abuso: como una firma inválida no bloquea (para no repetir el bug de
+  // "ningún pago se confirmaba"), limitamos la tasa para que nadie use este
+  // endpoint como amplificador de consultas Payment.get a la API de MP con ids
+  // arbitrarios. Un flujo real de MP cabe de sobra en este techo.
+  const limited = rateLimit(req, { id: "mp-webhook", limit: 60, windowMs: 60_000 })
+  if (limited) return limited
+
   try {
     const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
     if (!accessToken) {

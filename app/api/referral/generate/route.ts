@@ -2,10 +2,19 @@ import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase"
 import { rateLimit } from "@/lib/rate-limit"
 
-function makeCode(email: string): string {
-  const base = email.split("@")[0].replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 6)
-  const suffix = Math.random().toString(36).slice(2, 5).toUpperCase()
-  return `${base}${suffix}`
+import { randomBytes } from "crypto"
+
+/**
+ * Código de referido ALEATORIO. Antes se derivaba del correo del comprador
+ * (`email.split("@")[0]`), lo que filtraba un fragmento del correo/nombre a
+ * quien recibiera el código. Ahora es aleatorio (sin PII) y con más entropía.
+ */
+function makeCode(): string {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" // sin O/0/I/1 (legibilidad)
+  const bytes = randomBytes(8)
+  let code = "CLICHE"
+  for (let i = 0; i < 6; i++) code += alphabet[bytes[i] % alphabet.length]
+  return code
 }
 
 export async function POST(req: NextRequest) {
@@ -46,7 +55,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Create new referral code
-    const code = makeCode(ownerEmail)
+    const code = makeCode()
     const discount_percent = 10
 
     const { error } = await supabase.from("referral_codes").insert({
