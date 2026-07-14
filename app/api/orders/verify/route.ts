@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     }
 
     const db = createServerClient()
-    const result = await confirmPaidOrder(db, reference, { email: approved.email })
+    const result = await confirmPaidOrder(db, reference, { email: approved.email }, { paidAmount: approved.amount })
     return NextResponse.json({ status: result.status })
   } catch (err) {
     console.error("[orders/verify]", err)

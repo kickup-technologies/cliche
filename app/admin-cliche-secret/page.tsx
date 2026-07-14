@@ -106,7 +106,7 @@ export default function AdminPage() {
 
   async function handleVerifyCode(e: React.FormEvent) {
     e.preventDefault()
-    if (!/^\d{4}$/.test(otpInput)) { setAuthError("Escribe los 4 dígitos"); return }
+    if (!/^\d{6}$/.test(otpInput)) { setAuthError("Escribe los 6 dígitos"); return }
     setAuthLoading(true)
     setAuthError("")
     try {
@@ -207,7 +207,7 @@ export default function AdminPage() {
             {!otpSent ? (
               <>
                 <p className="text-sm text-[#2D1A14]/70 text-center">
-                  Por tu seguridad, te enviaremos un código de <b>4 dígitos</b> a tu correo de administradora.
+                  Por tu seguridad, te enviaremos un código de <b>6 dígitos</b> a tu correo de administradora.
                 </p>
                 <button
                   onClick={requestCode}
@@ -221,22 +221,22 @@ export default function AdminPage() {
             ) : (
               <form onSubmit={handleVerifyCode} className="space-y-4">
                 <p className="text-sm text-[#2D1A14]/70 text-center">
-                  Revisa tu correo: te enviamos un código de 4 dígitos. Vence en 10 minutos.
+                  Revisa tu correo: te enviamos un código de 6 dígitos. Vence en 10 minutos.
                 </p>
                 <input
                   type="text"
                   inputMode="numeric"
                   autoComplete="one-time-code"
-                  maxLength={4}
+                  maxLength={6}
                   value={otpInput}
-                  onChange={e => setOtpInput(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                  className="w-full px-4 py-3 rounded-xl border border-[#2D1A14]/15 bg-[#FAF8F5] text-[#2D1A14] text-center text-2xl font-bold tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-[#A67163]/40"
-                  placeholder="····"
+                  onChange={e => setOtpInput(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  className="w-full px-4 py-3 rounded-xl border border-[#2D1A14]/15 bg-[#FAF8F5] text-[#2D1A14] text-center text-2xl font-bold tracking-[0.4em] focus:outline-none focus:ring-2 focus:ring-[#A67163]/40"
+                  placeholder="······"
                   autoFocus
                 />
                 <button
                   type="submit"
-                  disabled={authLoading || otpInput.length !== 4}
+                  disabled={authLoading || otpInput.length !== 6}
                   className="w-full h-12 rounded-xl bg-[#2D1A14] hover:bg-[#3D2A24] text-white font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
                 >
                   {authLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}

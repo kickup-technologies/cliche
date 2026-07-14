@@ -97,9 +97,10 @@ export async function GET() {
       newsletter_subtitle: raw.newsletter_subtitle ?? DEFAULTS.newsletter_subtitle,
       urgency_config: parseUrgencyConfig(raw.urgency_config),
     }, {
-      // Cacheado en el CDN: la config del sitio se lee en cada carga (barra de
-      // anuncio, hero, etc.); con esto la BD recibe ~1 consulta/min en total.
-      headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
+      // Cacheado en CDN (s-maxage) + navegador (max-age): la config se lee en
+      // CADA página (barra, hero, footer, whatsapp). Con max-age el navegador la
+      // reutiliza durante la sesión y no repite la petición al cambiar de página.
+      headers: { "Cache-Control": "public, max-age=30, s-maxage=60, stale-while-revalidate=300" },
     })
   } catch (err) {
     console.error('[settings GET]', err)

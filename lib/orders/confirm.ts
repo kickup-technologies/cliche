@@ -24,6 +24,7 @@ export async function confirmPaidOrder(
   db: SupabaseClient,
   reference: string,
   payer?: { email?: string | null; name?: string | null },
+  opts?: { paidAmount?: number | null },
 ): Promise<ConfirmResult> {
   const { data: order } = await db
     .from("orders")
@@ -33,6 +34,21 @@ export async function confirmPaidOrder(
 
   if (!order) return { status: "not_found", reference }
   if (order.status !== "pending") return { status: "already", reference }
+
+  // Defensa en profundidad: el monto pagado DEBE coincidir con el total del
+  // pedido. Hoy siempre coincide (la preferencia se crea server-side con el
+  // total autoritativo y la referencia es única/aleatoria), pero si esa premisa
+  // se rompiera (referencia reutilizada, preferencia manipulada) lo dejamos
+  // registrado para reconciliar. No bloquea: el pago ya está aprobado en MP.
+  if (
+    opts?.paidAmount != null &&
+    Number.isFinite(opts.paidAmount) &&
+    Math.abs(Number(opts.paidAmount) - Number(order.total)) > 1
+  ) {
+    console.error(
+      `[AMOUNT-MISMATCH] Pedido ${reference}: pagado ${opts.paidAmount} vs total ${order.total}. Revisar manualmente.`,
+    )
+  }
 
   // Preferimos lo que el cliente tecleó en el checkout; el pagador de MP como respaldo.
   const customerEmail = order.customer_email || payer?.email || null

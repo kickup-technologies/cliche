@@ -85,7 +85,12 @@ export async function POST(req: NextRequest) {
 
     const supabase = createServerClient()
     const payerName = [payment.payer?.first_name, payment.payer?.last_name].filter(Boolean).join(" ") || null
-    const result = await confirmPaidOrder(supabase, reference, { email: payment.payer?.email || null, name: payerName })
+    const result = await confirmPaidOrder(
+      supabase,
+      reference,
+      { email: payment.payer?.email || null, name: payerName },
+      { paidAmount: typeof payment.transaction_amount === "number" ? payment.transaction_amount : null },
+    )
     console.log(`[mp webhook] pago ${dataId} aprobado — pedido ${reference}: ${result.status}`)
 
     return NextResponse.json({ received: true })

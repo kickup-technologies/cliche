@@ -5,7 +5,7 @@ import { isAdminEmail, sha256, signAdminToken, ADMIN_COOKIE } from "@/lib/admin-
 import { rateLimit } from "@/lib/rate-limit"
 
 /**
- * POST /api/admin/otp/verify — valida el código de 4 dígitos. Si es correcto,
+ * POST /api/admin/otp/verify — valida el código de 6 dígitos. Si es correcto,
  * emite la cookie httpOnly `cliche_admin` (token firmado, 8h) que desbloquea
  * el panel. Solo funciona si la sesión actual es ADMIN_EMAIL.
  */
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 
   const body = (await req.json().catch(() => ({}))) as { code?: string }
   const code = String(body.code ?? "").trim()
-  if (!/^\d{4}$/.test(code)) {
+  if (!/^\d{6}$/.test(code)) {
     return NextResponse.json({ error: "Código inválido" }, { status: 400 })
   }
 

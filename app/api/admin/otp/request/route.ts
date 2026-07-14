@@ -7,7 +7,7 @@ import { sendAdminOtpEmail } from "@/lib/mailer"
 import { rateLimit } from "@/lib/rate-limit"
 
 /**
- * POST /api/admin/otp/request — genera un código de 4 dígitos y lo envía por
+ * POST /api/admin/otp/request — genera un código de 6 dígitos y lo envía por
  * correo a la cuenta admin. Solo funciona si la sesión actual es ADMIN_EMAIL.
  */
 export async function POST(req: NextRequest) {
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
 
   // El código se liga y se envía al correo del admin que tiene la sesión.
   const email = user!.email!.trim().toLowerCase()
-  const code = String(randomInt(1000, 10000)) // 4 dígitos (1000–9999)
+  const code = String(randomInt(100000, 1000000)) // 6 dígitos (100000–999999) → 1M combinaciones
 
   const db = createServerClient()
   // Invalidar cualquier código previo sin usar.
