@@ -117,6 +117,10 @@ export function ProductShowcase3D() {
     // Con la sección fuera de pantalla no rotamos: cada rotación descargaría
     // el siguiente GLB (~1.5 MB) sin que nadie lo esté viendo.
     if (!inView) return
+    // Si el usuario salió del viewport justo durante la transición "out", el
+    // cleanup canceló el timeout que devolvía phase a "in" y la vitrina quedaba
+    // invisible hasta el siguiente ciclo. Al reentrar, siempre arrancamos visibles.
+    setPhase("in")
     const id = window.setInterval(() => {
       setPhase("out")
       timers.current.push(

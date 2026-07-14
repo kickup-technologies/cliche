@@ -81,11 +81,16 @@ export function OverviewSection({ orders, pageViews, products }: { orders: Order
   }
   const topCodes = Object.entries(codeCounts).sort((a, b) => b[1].uses - a[1].uses).slice(0, 5)
 
-  // Status breakdown
+  // Status breakdown del periodo seleccionado (para el desglose de estados)
   const statusCounts: Record<string, number> = {}
   for (const o of filterPeriod(orders, period)) {
     statusCounts[o.status] = (statusCounts[o.status] || 0) + 1
   }
+  // "Por despachar" es un BACKLOG absoluto, no una métrica del periodo: un
+  // pedido pagado hace 35 días sin enviar debe seguir sonando aunque el
+  // selector esté en "1 mes" — si se filtrara por periodo, se volvería
+  // invisible justo el pedido olvidado que más importa.
+  const porDespachar = orders.filter(o => ["paid", "confirmed", "preparing"].includes(o.status)).length
 
   return (
     <div className="space-y-6">
@@ -151,10 +156,10 @@ export function OverviewSection({ orders, pageViews, products }: { orders: Order
             PAGADOS que aún no se han despachado. */}
         <div className="bg-white rounded-2xl border border-[#2D1A14]/8 p-5">
           <p className="text-xs text-[#2D1A14]/50 font-semibold uppercase tracking-wider mb-3">Por despachar</p>
-          <p className={`text-2xl font-bold ${((statusCounts["paid"] || 0) + (statusCounts["confirmed"] || 0) + (statusCounts["preparing"] || 0)) > 0 ? "text-yellow-600" : "text-[#2D1A14]"}`}>
-            {(statusCounts["paid"] || 0) + (statusCounts["confirmed"] || 0) + (statusCounts["preparing"] || 0)}
+          <p className={`text-2xl font-bold ${porDespachar > 0 ? "text-yellow-600" : "text-[#2D1A14]"}`}>
+            {porDespachar}
           </p>
-          <p className="text-xs text-[#2D1A14]/40 mt-1">pedidos pagados sin enviar</p>
+          <p className="text-xs text-[#2D1A14]/40 mt-1">pedidos pagados sin enviar (histórico completo)</p>
         </div>
         <div className="bg-white rounded-2xl border border-[#2D1A14]/8 p-5">
           <p className="text-xs text-[#2D1A14]/50 font-semibold uppercase tracking-wider mb-3">Descuentos otorgados</p>

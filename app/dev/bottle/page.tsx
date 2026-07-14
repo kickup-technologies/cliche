@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
+import { notFound } from "next/navigation"
 import * as THREE from "three"
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js"
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js"
@@ -13,6 +14,9 @@ import { loadFlatLabelTexture, FLAT_LABEL_ARC, AMBER_GLASS } from "@/lib/bottle-
  * Replica exactamente la lógica de etiqueta/vidrio de spray-bottle-3d.tsx.
  */
 export default function DevBottlePage() {
+  // Herramienta solo de desarrollo: en producción esta ruta no existe (404).
+  if (process.env.NODE_ENV === "production") notFound()
+
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -102,7 +106,9 @@ export default function DevBottlePage() {
       camera.lookAt(0, 0, 0)
       // el GLTF ya viene de pie (Y-up); no se rota el root
 
-      ;(window as unknown as Record<string, unknown>).__renderBottle = (w = 900, h = 1100, angleY = 0) => {
+      // Función tipada localmente: evita el error TS "Object is of type 'unknown'"
+      // al invocarla tras leerla del Record<string, unknown> de window.
+      const renderBottle = (w = 900, h = 1100, angleY = 0): string => {
         renderer.setSize(w, h, false)
         camera.aspect = w / h
         camera.updateProjectionMatrix()
@@ -110,7 +116,8 @@ export default function DevBottlePage() {
         renderer.render(scene, camera)
         return renderer.domElement.toDataURL("image/png")
       }
-      ;(window as unknown as Record<string, unknown>).__renderBottle()
+      ;(window as unknown as Record<string, unknown>).__renderBottle = renderBottle
+      renderBottle()
       ;(window as unknown as Record<string, unknown>).__ready = true
     })
 

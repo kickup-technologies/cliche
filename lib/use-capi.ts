@@ -6,6 +6,7 @@
  */
 
 import { useCallback } from 'react'
+import { getConsent } from '@/components/cookie-consent'
 
 declare global {
   interface Window {
@@ -44,6 +45,12 @@ export interface CAPIEventPayload {
     /** Teléfono crudo — el servidor lo normaliza y hashea antes de enviar a Meta */
     raw_phone?: string
   }
+  /**
+   * Id de deduplicación explícito. El Purchase DEBE pasar la referencia del
+   * pedido: el servidor (lib/capi-server) envía el mismo evento con ese id al
+   * confirmar, y solo con ids IGUALES Meta deduplica en vez de contar doble.
+   */
+  event_id?: string
 }
 
 function getCookie(name: string): string | undefined {
@@ -60,8 +67,13 @@ function generateEventId(): string {
 
 export function useCAPI() {
   const track = useCallback(async (payload: CAPIEventPayload) => {
+    // Consentimiento (modelo opt-out, igual que PixelManager): si el usuario
+    // RECHAZÓ cookies de marketing, no se envía nada — ni Pixel ni CAPI.
+    const consent = getConsent()
+    if (consent && !consent.marketing) return
+
     const { event_name, custom_data, user_data } = payload
-    const event_id = generateEventId()
+    const event_id = payload.event_id || generateEventId()
     const event_source_url = window.location.href
 
     // 1. Browser pixel (deduplication via event_id)

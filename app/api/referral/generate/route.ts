@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase"
+import { rateLimit } from "@/lib/rate-limit"
 
 function makeCode(email: string): string {
   const base = email.split("@")[0].replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 6)
@@ -8,6 +9,10 @@ function makeCode(email: string): string {
 }
 
 export async function POST(req: NextRequest) {
+  // Anti-abuso: máx. 5 generaciones de código por IP por minuto
+  const limited = rateLimit(req, { id: "referral-generate", limit: 5, windowMs: 60_000 })
+  if (limited) return limited
+
   try {
     const { session_id } = await req.json()
     if (!session_id) return NextResponse.json({ error: "session_id required" }, { status: 400 })

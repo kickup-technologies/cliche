@@ -49,9 +49,21 @@ function loadConsent(): ConsentState | null {
   }
 }
 
+/**
+ * Replica la decisión de marketing en una cookie legible por el servidor.
+ * localStorage NO viaja en las peticiones, así que /api/capi necesita esta
+ * cookie para saber si puede reenviar eventos a Meta ("1" = sí, "0" = no).
+ */
+function syncConsentCookie(consent: ConsentState) {
+  if (typeof document === "undefined") return
+  const value = consent.marketing ? "1" : "0"
+  document.cookie = `cliche_marketing_consent=${value}; path=/; max-age=31536000; SameSite=Lax`
+}
+
 /** Guarda el consentimiento y notifica a los componentes que escuchan. */
 export function saveConsent(consent: ConsentState) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(consent))
+  syncConsentCookie(consent)
   ;(window as unknown as Record<string, unknown>).__cookieConsent = consent
   window.dispatchEvent(new CustomEvent("cliche-consent-change", { detail: consent }))
 }
@@ -77,6 +89,9 @@ export function CookieConsent() {
     const existing = loadConsent()
     if (existing) {
       ;(window as unknown as Record<string, unknown>).__cookieConsent = existing
+      // Usuarios que decidieron antes de existir la cookie server-side:
+      // sincronizamos su elección para que /api/capi también la respete.
+      syncConsentCookie(existing)
       return
     }
     const t = setTimeout(() => setVisible(true), 1200)
@@ -99,11 +114,14 @@ export function CookieConsent() {
   }
 
   return (
+    // bottom-24 deja libre la franja inferior donde viven las barras fijas de
+    // compra (producto z-40, ~72px de alto): el banner queda SIEMPRE clickeable
+    // sin tapar jamás un CTA de pago (por eso también z-30, debajo de ellas).
     <div
       role="dialog"
       aria-modal="false"
       aria-label="Aviso de cookies"
-      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-2rem)] max-w-md px-1"
+      className="fixed bottom-24 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-2rem)] max-w-md px-1"
       style={{ fontFamily: "system-ui, sans-serif" }}
     >
       <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_8px_40px_-8px_rgba(45,26,20,0.25)] border border-[#ece2dc] px-5 py-4">

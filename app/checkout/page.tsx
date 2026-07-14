@@ -29,7 +29,11 @@ export default function CheckoutPage() {
   const [couponLoading, setCouponLoading] = useState(false)
   const [couponError, setCouponError] = useState<string | null>(null)
   const [couponSuccess, setCouponSuccess] = useState<string | null>(null)
-  const [discountAmount, setDiscountAmount] = useState(0)
+  // Del cupón se guarda tipo+valor (no un monto fijo): el monto se DERIVA del
+  // subtotal vigente más abajo, así marcar/desmarcar artículos o cambiar
+  // cantidades recalcula el descuento y la pantalla siempre coincide con lo
+  // que cobra el servidor (antes quedaba congelado y se cobraba de más).
+  const [appliedDiscount, setAppliedDiscount] = useState<{ type: string; value: number } | null>(null)
   const [appliedCode, setAppliedCode] = useState<string | null>(null)
   // Ley 1581/Decreto 1377: la autorización de tratamiento de datos debe ser
   // previa y expresa — sin marcar el checkbox no se puede pagar.
@@ -101,6 +105,13 @@ export default function CheckoutPage() {
   const onlyTestProduct = selectedItems.length > 0 && selectedItems.every((i) => i.product.slug === "prueba")
   const freeShipping = subtotal >= FREE_SHIPPING || onlyTestProduct
   const shipping = freeShipping ? 0 : subtotal > 0 ? 20500 : 0
+  // Réplica exacta de la fórmula del servidor (/api/checkout): porcentaje sobre
+  // el subtotal seleccionado, o monto fijo topado al subtotal.
+  const discountAmount = appliedDiscount
+    ? appliedDiscount.type === "percentage"
+      ? Math.round((subtotal * appliedDiscount.value) / 100)
+      : Math.min(appliedDiscount.value, subtotal)
+    : 0
   const total = subtotal + shipping - discountAmount
   const pct = Math.min(100, Math.round((subtotal / FREE_SHIPPING) * 100))
 
@@ -117,12 +128,12 @@ export default function CheckoutPage() {
       })
       const data = await res.json()
       if (data.valid) {
-        setDiscountAmount(data.discount_amount)
+        setAppliedDiscount({ type: data.type, value: Number(data.value) || 0 })
         setAppliedCode(couponCode.toUpperCase().trim())
         setCouponSuccess(`Descuento aplicado: ${data.type === "percentage" ? `${data.value}%` : fmt(data.value)} de descuento`)
       } else {
         setCouponError(data.error || "Código inválido")
-        setDiscountAmount(0)
+        setAppliedDiscount(null)
         setAppliedCode(null)
       }
     } catch {
@@ -201,13 +212,15 @@ export default function CheckoutPage() {
         window.location.href = data.url
       } else if (res.status === 400 && appliedCode && /c[oó]digo/i.test(data.error ?? "")) {
         // El servidor rechazó el CUPÓN (expiró, ya se usó o la sesión caducó
-        // entre aplicar y pagar). No redirigimos: mostramos el error bajo el
-        // campo del código y retiramos el descuento para que el total mostrado
-        // vuelva a coincidir con lo que se cobraría.
+        // entre aplicar y pagar). No redirigimos: mostramos el error junto al
+        // campo del código Y junto al botón Pagar (el usuario está mirando el
+        // panel de pago, no la columna del cupón) y retiramos el descuento para
+        // que el total mostrado vuelva a coincidir con lo que se cobraría.
         setCouponError(data.error)
         setCouponSuccess(null)
-        setDiscountAmount(0)
+        setAppliedDiscount(null)
         setAppliedCode(null)
+        setError(`${data.error} El total se actualizó sin el descuento.`)
       } else {
         setError(data.error || "Error al procesar. Intenta de nuevo.")
       }
@@ -580,8 +593,7 @@ export default function CheckoutPage() {
           <div className="mt-8 space-y-3">
             <button
               onClick={handlePay}
-              disabled={isLoading || selectedItems.length === 0 || !acceptedPolicies}
-              title={!acceptedPolicies ? "Marca la autorización de datos personales para continuar" : undefined}
+              disabled={isLoading || selectedItems.length === 0}
               className="w-full rounded-full py-4 px-6 flex items-center justify-center gap-3 bg-[#A67163] text-white font-semibold text-sm tracking-wide hover:bg-[#8B5E52] active:scale-[0.99] transition-all duration-200 disabled:opacity-25 disabled:cursor-not-allowed"
             >
               {isLoading
@@ -713,8 +725,7 @@ export default function CheckoutPage() {
           {/* Botón pagar */}
           <button
             onClick={handlePay}
-            disabled={isLoading || selectedItems.length === 0 || !acceptedPolicies}
-            title={!acceptedPolicies ? "Marca la autorización de datos personales para continuar" : undefined}
+            disabled={isLoading || selectedItems.length === 0}
             className="flex-shrink-0 rounded-full py-3.5 px-6 flex items-center justify-center gap-2 bg-[#A67163] text-white font-semibold text-sm tracking-wide hover:bg-[#8B5E52] active:scale-[0.98] transition-all duration-200 disabled:opacity-25 disabled:cursor-not-allowed"
           >
             {isLoading

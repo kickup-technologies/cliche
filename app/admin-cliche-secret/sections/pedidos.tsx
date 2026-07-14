@@ -557,12 +557,13 @@ export function PedidosSection({
               </div>
               )}
 
-              {/* Imprimir rótulo: abre el diálogo de impresión mostrando SOLO el
-                  bloque .rotulo-print (ver <style> de abajo) — datos mínimos
-                  para pegar en la caja, sin librerías. Solo pedidos reales. */}
+              {/* Imprimir rótulo: abre una ventana con SOLO el rótulo y lanza el
+                  diálogo de impresión — exactamente una hoja, sin trucos CSS
+                  sobre el panel (window.print() sobre el admin generaba páginas
+                  repetidas/en blanco). Solo pedidos reales. */}
               {selectedOrder.status !== "pending" && (
                 <button
-                  onClick={() => window.print()}
+                  onClick={() => printRotulo(selectedOrder)}
                   className="w-full h-11 rounded-xl border border-[#2D1A14]/15 text-[#2D1A14] font-semibold flex items-center justify-center gap-2 hover:bg-[#FAF8F5] transition-colors"
                 >
                   <Printer className="w-4 h-4" />
@@ -583,47 +584,50 @@ export function PedidosSection({
             </div>
           </div>
 
-          {/* Rótulo imprimible: invisible en pantalla; al imprimir se oculta
-              todo el panel y queda únicamente este bloque en la hoja. */}
-          <style>{`
-            .rotulo-print { display: none; }
-            @media print {
-              body * { visibility: hidden; }
-              .rotulo-print, .rotulo-print * { visibility: visible; }
-              .rotulo-print { display: block; position: fixed; inset: 0; background: #fff; color: #000; padding: 32px; z-index: 9999; }
-            }
-          `}</style>
-          <div className="rotulo-print" style={{ fontFamily: "Arial, sans-serif" }}>
-            <p style={{ fontSize: 12, margin: 0, color: "#555" }}>
-              Bienestar by Cliché · Pedido #{(selectedOrder.stripe_session_id || selectedOrder.id).slice(-8).toUpperCase()}
-            </p>
-            <h1 style={{ fontSize: 24, margin: "10px 0 4px" }}>{selectedOrder.customer_name || "—"}</h1>
-            <p style={{ fontSize: 16, margin: "2px 0" }}>Tel: {selectedOrder.customer_phone || "—"}</p>
-            {selectedOrder.customer_id_number && (
-              <p style={{ fontSize: 14, margin: "2px 0" }}>Cédula/NIT: {selectedOrder.customer_id_number}</p>
-            )}
-            <p style={{ fontSize: 18, margin: "10px 0 2px", fontWeight: 700 }}>{selectedOrder.shipping_address?.address || "—"}</p>
-            <p style={{ fontSize: 16, margin: "2px 0" }}>
-              {[selectedOrder.shipping_address?.city, selectedOrder.shipping_address?.department].filter(Boolean).join(", ") || "—"}
-            </p>
-            {selectedOrder.shipping_address?.notes && (
-              <p style={{ fontSize: 13, margin: "6px 0 0", fontStyle: "italic" }}>Referencia: {selectedOrder.shipping_address.notes}</p>
-            )}
-            <hr style={{ margin: "14px 0", border: "none", borderTop: "1px solid #000" }} />
-            <p style={{ fontSize: 12, margin: "0 0 4px", textTransform: "uppercase", letterSpacing: 1 }}>Contenido</p>
-            <ul style={{ fontSize: 14, margin: 0, paddingLeft: 18 }}>
-              {(selectedOrder.items || []).map((item, i) => (
-                <li key={i} style={{ margin: "2px 0" }}>
-                  {item.name || item.product_id} x{item.quantity}
-                  {item.components && item.components.length > 0 && (
-                    <span style={{ color: "#555" }}> ({item.components.map(c => `${c.name} x${c.quantity}`).join(", ")})</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
         </div>
       )}
     </div>
   )
+}
+
+/** Escapa texto para incrustarlo en el HTML del rótulo. */
+function esc(s: unknown): string {
+  return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+}
+
+/**
+ * Abre una ventana pequeña con SOLO el rótulo del pedido y lanza la impresión.
+ * Una hoja exacta con los datos de envío y el contenido de la caja.
+ */
+function printRotulo(o: Order) {
+  const ref = "#" + (o.stripe_session_id || o.id).slice(-8).toUpperCase()
+  const dir = o.shipping_address
+  const items = (o.items || [])
+    .map((item) => {
+      const comps = item.components && item.components.length > 0
+        ? ` <span style="color:#555">(${item.components.map((c) => `${esc(c.name)} x${c.quantity}`).join(", ")})</span>`
+        : ""
+      return `<li style="margin:2px 0">${esc(item.name || item.product_id)} x${item.quantity}${comps}</li>`
+    })
+    .join("")
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>Rótulo ${esc(ref)}</title></head>
+<body style="font-family:Arial,sans-serif;color:#000;padding:24px;margin:0">
+  <p style="font-size:12px;margin:0;color:#555">Cliché S.A.S. · Pedido ${esc(ref)}</p>
+  <h1 style="font-size:24px;margin:10px 0 4px">${esc(o.customer_name || "—")}</h1>
+  <p style="font-size:16px;margin:2px 0">Tel: ${esc(o.customer_phone || "—")}</p>
+  ${o.customer_id_number ? `<p style="font-size:14px;margin:2px 0">Cédula/NIT: ${esc(o.customer_id_number)}</p>` : ""}
+  <p style="font-size:18px;margin:10px 0 2px;font-weight:700">${esc(dir?.address || "—")}</p>
+  <p style="font-size:16px;margin:2px 0">${esc([dir?.city, dir?.department].filter(Boolean).join(", ") || "—")}</p>
+  ${dir?.notes ? `<p style="font-size:13px;margin:6px 0 0;font-style:italic">Referencia: ${esc(dir.notes)}</p>` : ""}
+  <hr style="margin:14px 0;border:none;border-top:1px solid #000" />
+  <p style="font-size:12px;margin:0 0 4px;text-transform:uppercase;letter-spacing:1px">Contenido</p>
+  <ul style="font-size:14px;margin:0;padding-left:18px">${items}</ul>
+</body></html>`
+  const w = window.open("", "_blank", "width=640,height=760")
+  if (!w) { alert("El navegador bloqueó la ventana del rótulo. Permite popups para el panel.") ; return }
+  w.document.write(html)
+  w.document.close()
+  w.focus()
+  // Pequeño respiro para que el DOM de la ventana termine de pintar antes de imprimir.
+  setTimeout(() => { w.print() }, 150)
 }

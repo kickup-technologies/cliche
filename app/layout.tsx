@@ -10,6 +10,7 @@ import { PageTracker } from '@/components/page-tracker'
 import { EditOverlay } from '@/components/edit-overlay'
 import { CookieConsent } from '@/components/cookie-consent'
 import { PixelManager } from '@/components/pixel-manager'
+import { PixelRouteTracker } from '@/components/pixel-route-tracker'
 import { SmoothScroll } from '@/components/smooth-scroll'
 import { PageTransition } from '@/components/page-transition'
 import { LeadPopup } from '@/components/lead-popup'
@@ -126,6 +127,7 @@ export default function RootLayout({
         <EditOverlay />
         <CookieConsent />
         <PixelManager />
+        <PixelRouteTracker />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

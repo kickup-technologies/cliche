@@ -73,17 +73,30 @@ export async function confirmPaidOrder(
     }
   }
 
-  // 3. Registrar uso del código de descuento
-  if (order.discount_code && customerEmail) {
+  // 3. Registrar uso del código de descuento.
+  //    El checkout valida el "un solo uso" contra el correo de la CUENTA
+  //    autenticada — la redención debe registrarse bajo ESE mismo correo. Si se
+  //    registrara con el del formulario (customer_email), bastaría teclear un
+  //    correo distinto en cada compra para reutilizar el código sin límite.
+  if (order.discount_code) {
     try {
-      const { data: discountCode } = await db
-        .from("discount_codes").select("id").eq("code", order.discount_code).single()
-      if (discountCode) {
-        await db.from("code_redemptions").upsert(
-          { code_id: discountCode.id, customer_email: customerEmail, order_reference: reference },
-          { onConflict: "code_id,customer_email", ignoreDuplicates: true }
-        )
-        await db.rpc("increment_uses_count", { p_code_id: discountCode.id })
+      let redemptionEmail = customerEmail
+      if (order.user_id) {
+        try {
+          const { data: authUser } = await db.auth.admin.getUserById(order.user_id)
+          redemptionEmail = authUser?.user?.email || redemptionEmail
+        } catch { /* fallback al correo del pedido */ }
+      }
+      if (redemptionEmail) {
+        const { data: discountCode } = await db
+          .from("discount_codes").select("id").eq("code", order.discount_code).single()
+        if (discountCode) {
+          await db.from("code_redemptions").upsert(
+            { code_id: discountCode.id, customer_email: redemptionEmail, order_reference: reference },
+            { onConflict: "code_id,customer_email", ignoreDuplicates: true }
+          )
+          await db.rpc("increment_uses_count", { p_code_id: discountCode.id })
+        }
       }
     } catch { /* no bloquear */ }
   }
@@ -97,7 +110,15 @@ export async function confirmPaidOrder(
       )
     } catch { /* silent */ }
     try {
-      await sendOrderConfirmation(customerEmail, { id: reference, total: order.total, items: order.items || [] })
+      await sendOrderConfirmation(customerEmail, {
+        id: reference,
+        total: order.total,
+        items: order.items || [],
+        customerName,
+        shippingAddress: order.shipping_address || null,
+        discountCode: order.discount_code || null,
+        discountAmount: order.discount_amount || 0,
+      })
     } catch { /* no bloquear */ }
   }
 

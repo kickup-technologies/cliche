@@ -7,8 +7,6 @@ import dynamic from "next/dynamic"
 import { useCart } from "@/context/cart-context"
 import { useFavorites } from "@/context/favorites-context"
 import { useCAPI } from "@/lib/use-capi"
-import { useSiteSettings } from "@/lib/use-site-settings"
-import { parseUrgencyConfig } from "@/lib/urgency"
 import { usePersonalizedUrgency } from "@/lib/personalized-urgency"
 import { getCatalogProduct } from "@/lib/catalog-data"
 
@@ -139,11 +137,8 @@ export function ProductDetail({ product, related }: Props) {
   const [packOpen, setPackOpen] = useState(false)
   // Acordeón de info — qué sección está abierta (una a la vez; null = todas cerradas por defecto)
   const [openSection, setOpenSection] = useState<string | null>(null)
-  // Configuración de Urgencia Inteligente (editable desde el admin → sección Urgencia)
-  const settings = useSiteSettings()
-  const urgency = parseUrgencyConfig(settings.urgency_config)
   // Urgencia PERSONALIZADA por sesión (se activa solo si el visitante muestra
-  // interés en ESTE producto). Decoplada del stock real (que es privado).
+  // interés en ESTE producto).
   const pUrg = usePersonalizedUrgency(product.slug)
   const [offerLeft, setOfferLeft] = useState<{ m: number; s: number } | null>(null)
   useEffect(() => {
@@ -158,27 +153,9 @@ export function ProductDetail({ product, related }: Props) {
   }, [pUrg])
   // Gallery: null = show 3D render, string = show that photo URL
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
-  // Urgency timer — 24h from first visit (sessionStorage persists across reloads)
-  const [timeLeft, setTimeLeft] = useState({ h: 23, m: 59, s: 59 })
-  const countdownHours = urgency.countdown.hours
-  useEffect(() => {
-    // La duración (horas) la decide el admin. Si cambia, se reinicia la ventana.
-    const KEY = `cliche_urgency_${product.id}_${countdownHours}`
-    const stored = sessionStorage.getItem(KEY)
-    const expiry = stored ? Number(stored) : Date.now() + countdownHours * 60 * 60 * 1000
-    if (!stored) sessionStorage.setItem(KEY, String(expiry))
-    const tick = () => {
-      const diff = Math.max(0, expiry - Date.now())
-      setTimeLeft({
-        h: Math.floor(diff / 3600000),
-        m: Math.floor((diff % 3600000) / 60000),
-        s: Math.floor((diff % 60000) / 1000),
-      })
-    }
-    tick()
-    const id = setInterval(tick, 1000)
-    return () => clearInterval(id)
-  }, [product.id, countdownHours])
+  // (El countdown 24h de urgencia se eliminó junto con la prueba social falsa;
+  // su interval re-renderizaba toda la página —con canvas 3D incluido— cada
+  // segundo sin que ningún JSX lo mostrara.)
   const pad = (n: number) => String(n).padStart(2, "0")
   // Sticky CTA — show when page scrolled past the add-to-cart button
   const [showSticky, setShowSticky] = useState(false)

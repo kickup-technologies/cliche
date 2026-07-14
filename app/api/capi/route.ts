@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendCAPIEvents, CAPIUserData, CAPICustomData, hashValue, normalizePhone } from '@/lib/meta-capi'
+import { rateLimit } from '@/lib/rate-limit'
 
 /**
  * POST /api/capi
@@ -19,6 +20,16 @@ interface IncomingUserData extends Partial<CAPIUserData> {
 }
 
 export async function POST(req: NextRequest) {
+  // Anti-spam: máx. 30 eventos por IP por minuto
+  const limited = rateLimit(req, { id: 'capi', limit: 30, windowMs: 60_000 })
+  if (limited) return limited
+
+  // Consentimiento: si el usuario rechazó cookies de marketing (cookie replicada
+  // desde el banner), no reenviamos nada a Meta. 204 = aceptado pero sin acción.
+  if (req.cookies.get('cliche_marketing_consent')?.value === '0') {
+    return new NextResponse(null, { status: 204 })
+  }
+
   try {
     const body = await req.json()
     const { event_name, event_source_url, event_id, user_data, custom_data } = body as {

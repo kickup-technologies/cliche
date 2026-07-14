@@ -93,10 +93,16 @@ function GraciasContent() {
             const v = await verifyRes.json()
             if (v.status === "confirmed" || v.status === "already") {
               if (!cancelled) setPending(false)
-              // Solo aquí se limpia el carrito: el pago está acreditado de
-              // verdad. Si el pago sigue pendiente y luego falla, el cliente
-              // conserva su carrito para reintentar.
-              clearCart()
+              // Solo aquí se limpia el carrito (pago acreditado de verdad), y
+              // UNA sola vez por pedido: revisitar este /gracias días después
+              // (historial, pestaña restaurada) devuelve "already" de nuevo y
+              // sin esta marca borraría el carrito NUEVO que el cliente esté
+              // armando, sin ningún pago de por medio.
+              const clearedKey = `cart_cleared_${sessionId}`
+              if (!localStorage.getItem(clearedKey)) {
+                clearCart()
+                localStorage.setItem(clearedKey, "1")
+              }
             } else if (v.status === "pending") {
               if (!cancelled) setPending(true)
             }
@@ -122,6 +128,10 @@ function GraciasContent() {
                 const items = (order.items as Array<{ product_id: string; quantity: number }>) || []
                 track({
                   event_name: "Purchase",
+                  // Mismo event_id que usa el servidor (lib/capi-server envía
+                  // Purchase con la referencia al confirmar): Meta deduplica y
+                  // el pedido cuenta UNA vez aunque lleguen ambos eventos.
+                  event_id: sessionId,
                   custom_data: {
                     currency: "COP",
                     value: Number(order.total) || 0,
