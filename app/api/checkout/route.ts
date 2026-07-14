@@ -3,10 +3,7 @@ import { MercadoPagoConfig, Preference } from "mercadopago"
 import { supabase, createServerClient } from "@/lib/supabase"
 import { getSupabaseServer } from "@/lib/supabase/server"
 import { rateLimit } from "@/lib/rate-limit"
-import { parseVariantId, TIER_BY_ID } from "@/lib/pricing"
-
-const FREE_SHIPPING = 300_000
-const SHIPPING_COST = 20_500
+import { parseVariantId, TIER_BY_ID, SHIPPING_COST, parseFreeShippingThreshold } from "@/lib/pricing"
 
 type IncomingItem = { product_id: string; quantity: number; name?: string }
 type IncomingPack = {
@@ -237,6 +234,15 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Total final calculado en el servidor ──
+    // Umbral de envío gratis: se lee del setting del admin (el mismo que ve la
+    // tienda) para que el cobro y lo que se muestra siempre coincidan. Fallback
+    // robusto si el setting falta o es inválido.
+    const { data: shipSetting } = await supabase
+      .from("site_settings")
+      .select("value")
+      .eq("key", "free_shipping_threshold")
+      .maybeSingle()
+    const FREE_SHIPPING = parseFreeShippingThreshold(shipSetting?.value)
     // Producto de prueba de pagos (slug "prueba"): exento de envío para que el
     // total sea EXACTAMENTE su precio ($1.000) al validar la pasarela.
     const shippingExempt =

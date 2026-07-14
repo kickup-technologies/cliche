@@ -14,7 +14,11 @@ export async function GET(
   const { id } = await params
   const supabase = createServerClient()
 
-  const SELECT = "id, status, total, tracking_number, customer_name, created_at, items, stripe_session_id"
+  // NO se incluye customer_name (ni email/teléfono/dirección): este endpoint es
+  // público (basta la referencia del pedido, que se comparte en recibos/capturas)
+  // y devolver el nombre expondría un dato personal a quien tenga ese número.
+  // La página de seguimiento no usa el nombre. Solo estado/total/items/guía.
+  const SELECT = "id, status, total, tracking_number, created_at, items, stripe_session_id"
 
   // Buscar por UUID o por referencia de pedido (stripe_session_id)
   let data: Record<string, unknown> | null = null
@@ -29,10 +33,10 @@ export async function GET(
     data = res.data
 
     // La página de gracias y los correos muestran "Pedido #XXXXXXXX" (últimos 8
-    // caracteres en MAYÚSCULAS): aceptamos también ese sufijo (≥6 chars, sin
-    // importar mayúsculas) para que el número que le enseñamos al cliente
-    // realmente funcione en el buscador de seguimiento.
-    if (!data && id.length >= 6 && id.length < 20) {
+    // caracteres en MAYÚSCULAS): aceptamos también ese sufijo para que el número
+    // que le enseñamos al cliente funcione en el buscador de seguimiento. Mínimo
+    // 8 chars (el largo del número impreso) para reducir colisiones/adivinación.
+    if (!data && id.length >= 8 && id.length < 20) {
       // Escapar comodines de ilike para que "_" del sufijo sea literal
       const escaped = id.replace(/[\\%_]/g, (m) => `\\${m}`)
       const res2 = await supabase

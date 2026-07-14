@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation"
 import { useCart } from "@/context/cart-context"
 import { useAuth } from "@/context/auth-context"
 import { useCAPI } from "@/lib/use-capi"
+import { useSiteSettings } from "@/lib/use-site-settings"
+import { SHIPPING_COST, parseFreeShippingThreshold } from "@/lib/pricing"
 import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Lock, Truck, Leaf, RotateCcw, Tag, ChevronDown, ChevronUp, Mail, RefreshCw, Phone, MapPin, User, ShieldCheck } from "lucide-react"
 
 function fmt(n: number) {
@@ -50,6 +52,7 @@ export default function CheckoutPage() {
   const router = useRouter()
   const { track } = useCAPI()
   const { user } = useAuth()
+  const siteSettings = useSiteSettings()
 
   // Con sesión: el correo se fija al de la cuenta (los códigos se validan y
   // cuentan contra ESE correo, así el "un solo uso por cuenta" es infalsificable).
@@ -100,11 +103,13 @@ export default function CheckoutPage() {
   const priceOf = (it: { product: { id: string; price: number } }) =>
     it.product.id.includes("::") ? it.product.price : (livePrices[it.product.id] ?? it.product.price)
   const subtotal = selectedItems.reduce((s, i) => s + priceOf(i) * i.quantity, 0)
-  const FREE_SHIPPING = 300000
+  // Umbral de envío gratis desde el setting del admin (misma fuente que el
+  // servidor de checkout), con fallback. Así lo mostrado coincide con lo cobrado.
+  const FREE_SHIPPING = parseFreeShippingThreshold(siteSettings.free_shipping_threshold)
   // Producto de prueba de pagos: exento de envío (total exacto = su precio).
   const onlyTestProduct = selectedItems.length > 0 && selectedItems.every((i) => i.product.slug === "prueba")
   const freeShipping = subtotal >= FREE_SHIPPING || onlyTestProduct
-  const shipping = freeShipping ? 0 : subtotal > 0 ? 20500 : 0
+  const shipping = freeShipping ? 0 : subtotal > 0 ? SHIPPING_COST : 0
   // Réplica exacta de la fórmula del servidor (/api/checkout): el descuento
   // aplica SOLO a los productos (topado al subtotal) — NUNCA al envío, que se
   // cobra completo siempre que no aplique el envío gratis.

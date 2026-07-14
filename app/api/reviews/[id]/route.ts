@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createServerClient, supabase } from "@/lib/supabase"
+import { createServerClient } from "@/lib/supabase"
+import { isAdmin } from "@/lib/admin-auth"
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // SOLO admin: este endpoint usa service role (salta RLS) y borra por id.
+  // Sin este guard, cualquiera podía borrar cualquier reseña (o todas).
+  if (!isAdmin(req)) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+
   try {
     const { id } = await params
-
-    // Try service role first (bypasses RLS), fall back to anon
-    const db = (() => {
-      try { return createServerClient() } catch { return supabase }
-    })()
+    const db = createServerClient()
 
     const { error } = await db
       .from("reviews")

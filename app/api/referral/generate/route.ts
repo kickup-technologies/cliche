@@ -26,7 +26,13 @@ export async function POST(req: NextRequest) {
       .eq("stripe_session_id", session_id)
       .single()
 
-    const ownerEmail = order?.customer_email ?? session_id
+    // El código de referido SOLO se emite para un pedido REAL con correo. Sin
+    // esto, un session_id inventado se usaba como owner_email → cualquiera podía
+    // sembrar filas basura en referral_codes con un "dueño" arbitrario.
+    const ownerEmail = order?.customer_email
+    if (!order || !ownerEmail) {
+      return NextResponse.json({ error: "Pedido no encontrado" }, { status: 404 })
+    }
 
     // Check if we already generated a referral code for this buyer
     const { data: existing } = await supabase

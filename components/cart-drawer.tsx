@@ -5,6 +5,8 @@ import Image from "next/image"
 import Link from "next/link"
 import { X, Plus, Minus, ShoppingBag, Trash2, ArrowRight, Truck, Check, ChevronDown } from "lucide-react"
 import { useCart } from "@/context/cart-context"
+import { useSiteSettings } from "@/lib/use-site-settings"
+import { parseFreeShippingThreshold } from "@/lib/pricing"
 import type { Product } from "@/lib/supabase"
 
 // Paleta de marca (fiel al landing / checkout)
@@ -16,10 +18,10 @@ function formatPrice(price: number) {
   return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(price)
 }
 
-const FREE_SHIPPING = 300000
-
 export function CartDrawer() {
   const { items, removeItem, updateQuantity, total, itemCount, checkout, isCheckingOut, isDrawerOpen, closeDrawer, addItem } = useCart()
+  const settings = useSiteSettings()
+  const FREE_SHIPPING = parseFreeShippingThreshold(settings.free_shipping_threshold)
   const [recommendations, setRecommendations] = useState<Product[]>([])
   const [openPacks, setOpenPacks] = useState<Record<string, boolean>>({})
 

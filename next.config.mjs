@@ -15,15 +15,33 @@
 // REGLA: `connect-src` e `img-src` SIEMPRE deben incluir `blob:` y `data:`,
 // y `worker-src` debe permitir `blob:`. No los quites al endurecer la CSP.
 // (Ya nos pasó una vez: el frasco se veía blanco por esto.)
+// Allowlist de orígenes de SCRIPTS de terceros que la tienda carga de verdad
+// (analítica + social proof + Vercel). Restringir script-src a esta lista —en
+// vez de un `https:` abierto— impide que una inyección cargue un <script> desde
+// un dominio atacante. Si añades un proveedor nuevo, agrégalo aquí.
+//   connect.facebook.net → Meta Pixel · googletagmanager/google-analytics → GA4
+//   analytics.tiktok.com → TikTok · *.clarity.ms → Clarity · cdn.prooffactor → social proof
+//   va.vercel-scripts.com → Vercel Analytics
+const SCRIPT_SRC = [
+  "'self'", "'unsafe-inline'", "'unsafe-eval'",
+  "https://connect.facebook.net",
+  "https://www.googletagmanager.com",
+  "https://*.google-analytics.com",
+  "https://analytics.tiktok.com",
+  "https://*.clarity.ms",
+  "https://cdn.prooffactor.com",
+  "https://va.vercel-scripts.com",
+].join(" ")
+
 const ContentSecurityPolicy = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
+  `script-src ${SCRIPT_SRC}`,
   "style-src 'self' 'unsafe-inline' https:",
   "img-src 'self' data: blob: https:",                 // blob:/data: → texturas 3D (NO quitar)
   "font-src 'self' data: https:",
   "connect-src 'self' https: wss: blob: data:",        // blob:/data: → texturas 3D (NO quitar)
   "media-src 'self' https: blob:",
-  "frame-src 'self' https:",
+  "frame-src 'self' https:",                            // https: → checkout Mercado Pago
   "worker-src 'self' blob:",                            // blob: → decodificadores 3D (NO quitar)
   "object-src 'none'",
   "base-uri 'self'",
@@ -41,6 +59,9 @@ const securityHeaders = [
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), browsing-topics=(), interest-cohort=()" },
   { key: "X-DNS-Prefetch-Control", value: "on" },
   { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
+  // Aísla el contexto de navegación de otras ventanas (mitiga tabnabbing y
+  // XS-Leaks). "allow-popups" preserva flujos que abran popup (p. ej. OAuth).
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
 ]
 
 const nextConfig = {

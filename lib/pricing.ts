@@ -13,6 +13,19 @@ export interface PriceTier {
 
 export const UNIT_PRICE = 78000
 
+// ── Envío (fuente ÚNICA) ──────────────────────────────────────────────────
+// Antes 300000/20500 estaban hardcodeados en 6 archivos y el knob
+// `free_shipping_threshold` del admin no afectaba el cobro. Ahora todos
+// importan de aquí, y el umbral se lee del setting con este fallback.
+export const SHIPPING_COST = 20_500
+export const DEFAULT_FREE_SHIPPING_THRESHOLD = 300_000
+
+/** Umbral de envío gratis desde el setting del admin, con fallback robusto. */
+export function parseFreeShippingThreshold(raw: unknown): number {
+  const n = Number(raw)
+  return Number.isFinite(n) && n > 0 ? n : DEFAULT_FREE_SHIPPING_THRESHOLD
+}
+
 export const PRICE_TIERS: PriceTier[] = [
   { id: "unit", units: 1, price: 78000,  label: "1 unidad" },
   { id: "x3",   units: 3, price: 145000, label: "Kit x3" },

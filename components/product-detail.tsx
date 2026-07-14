@@ -7,6 +7,8 @@ import dynamic from "next/dynamic"
 import { useCart } from "@/context/cart-context"
 import { useFavorites } from "@/context/favorites-context"
 import { useCAPI } from "@/lib/use-capi"
+import { useSiteSettings } from "@/lib/use-site-settings"
+import { parseFreeShippingThreshold } from "@/lib/pricing"
 import { usePersonalizedUrgency } from "@/lib/personalized-urgency"
 import { getCatalogProduct } from "@/lib/catalog-data"
 
@@ -117,6 +119,7 @@ const VALUE_MAP: Record<string, string> = {
 
 export function ProductDetail({ product, related }: Props) {
   const { addItem, openDrawer, total, checkout, isCheckingOut } = useCart()
+  const siteSettings = useSiteSettings()
   const { toggleFavorite, isFavorite } = useFavorites()
   const fav = isFavorite(product.id)
   // Rating y conteo unificados (semilla + reales) — misma fuente que la sección
@@ -528,7 +531,7 @@ export function ProductDetail({ product, related }: Props) {
 
               {/* Free shipping progress bar — only shown when cart has items */}
               {(() => {
-                const FREE_SHIPPING = 300000
+                const FREE_SHIPPING = parseFreeShippingThreshold(siteSettings.free_shipping_threshold)
                 const cartTotal = total // total from useCart(), in COP
                 if (cartTotal <= 0) return null
                 const pct = Math.min(100, Math.round((cartTotal / FREE_SHIPPING) * 100))

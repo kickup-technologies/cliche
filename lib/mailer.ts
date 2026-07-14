@@ -204,7 +204,7 @@ export async function sendAdminOtpEmail(to: string, code: string): Promise<boole
 export async function sendWelcomeEmail(to: string, discountCode: string): Promise<void> {
   const transport = createTransport()
   if (!transport) {
-    console.warn("[mailer] SMTP not configured — skipping welcome email for", to)
+    console.warn("[mailer] SMTP not configured — skipping welcome email")
     return
   }
 
@@ -233,7 +233,7 @@ export async function sendWelcomeEmail(to: string, discountCode: string): Promis
       html: shell(content, "Recibiste este correo porque te suscribiste en clichecolombia.com."),
       attachments: [LOGO_ATTACHMENT],
     })
-    console.log("[mailer] Welcome email sent to", to)
+    console.log("[mailer] Welcome email sent")
   } catch (err) {
     console.error("[mailer] Failed to send welcome email:", err)
   }
