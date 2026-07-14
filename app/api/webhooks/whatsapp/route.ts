@@ -41,9 +41,15 @@ export async function POST(req: NextRequest) {
   const sb = createServerClient()
   const config = await loadBotConfig()
 
-  // ── Verificación de firma (si hay secret configurado) ───────────────────────
+  // ── Verificación de firma — FAIL-CLOSED ─────────────────────────────────────
+  // Sin secret configurado se RECHAZA todo: antes (fail-open) cualquiera podía
+  // inyectar mensajes falsos al bot mientras el setup estuviera incompleto.
   const webhookSecret = config.wasender_webhook_secret || process.env.WASENDER_WEBHOOK_SECRET || ""
-  if (webhookSecret) {
+  if (!webhookSecret) {
+    console.warn("[WA] webhook sin secret configurado — rechazado (configura WASENDER_WEBHOOK_SECRET o el secret del panel)")
+    return NextResponse.json({ ok: false, error: "webhook not configured" }, { status: 401 })
+  }
+  {
     const sig = req.headers.get("x-webhook-signature") ?? req.headers.get("x-wasender-signature") ?? ""
     let valid = false
     try {

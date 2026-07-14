@@ -322,8 +322,8 @@ export default function CheckoutPage() {
 
                   {/* Precio + borrar */}
                   <div className="flex flex-col items-end justify-between min-w-[72px] sm:min-w-[90px]">
-                    <button onClick={() => removeItem(item.product.id)} className="text-[#2D1A14]/15 hover:text-red-400 transition-colors">
-                      <Trash2 className="w-3.5 h-3.5" />
+                    <button onClick={() => removeItem(item.product.id)} aria-label="Quitar del carrito" className="-m-2 p-2 text-[#2D1A14]/15 hover:text-red-400 transition-colors">
+                      <Trash2 className="w-4 h-4" />
                     </button>
                     <p className="font-serif text-base sm:text-lg text-[#2D1A14]">{fmt(priceOf(item) * item.quantity)}</p>
                   </div>

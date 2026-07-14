@@ -17,6 +17,7 @@ import { useAuth } from "@/context/auth-context"
 import { useFavorites } from "@/context/favorites-context"
 import { getSupabaseBrowser } from "@/lib/supabase/client"
 import { NOTES_MAP } from "@/lib/aroma-notes"
+import { SPENT_STATUSES } from "@/lib/loyalty"
 import type { Product } from "@/lib/supabase"
 
 const CREMA = "#FAF8F5"
@@ -275,7 +276,7 @@ function ProfileCard({ email, createdAt, orders }: { email: string; createdAt?: 
   const md = (user?.user_metadata ?? {}) as Record<string, unknown>
   // Nombre real del cliente (lo que guardó en "Mis datos"); si no, el correo.
   const name = ((md.first_name as string) || (md.full_name as string) || "").trim() || email.split("@")[0]
-  const spent = (orders || []).filter(o => ["confirmed", "shipped", "delivered", "paid"].includes(o.status)).reduce((s, o) => s + (o.total || 0), 0)
+  const spent = (orders || []).filter(o => SPENT_STATUSES.includes(o.status)).reduce((s, o) => s + (o.total || 0), 0)
   const { tier, next } = tierOf(spent)
   const progress = next ? Math.min(100, Math.round((spent - tier.min) / (next.min - tier.min) * 100)) : 100
   const since = createdAt ? new Date(createdAt).toLocaleDateString("es-CO", { month: "long", year: "numeric" }) : ""
@@ -313,10 +314,10 @@ function ProfileCard({ email, createdAt, orders }: { email: string; createdAt?: 
 
 /* Tarjeta Beneficios Club — identidad, no dashboard (sin stats ni productos) */
 function ClubBenefits({ orders }: { orders: Order[] | null }) {
-  const spent = (orders || []).filter(o => ["confirmed", "shipped", "delivered", "paid"].includes(o.status)).reduce((s, o) => s + (o.total || 0), 0)
+  const spent = (orders || []).filter(o => SPENT_STATUSES.includes(o.status)).reduce((s, o) => s + (o.total || 0), 0)
   const { tier } = tierOf(spent)
   const benefits = [
-    { icon: Truck, text: "Envío gratis en todos tus pedidos" },
+    { icon: Truck, text: "Envío gratis en compras desde $300.000" },
     { icon: Star, text: "Acceso anticipado a ofertas y lanzamientos" },
     { icon: Crown, text: `Beneficios nivel ${tier.name}` },
   ]
@@ -903,7 +904,6 @@ function AuthForm() {
   const [birth, setBirth] = useState("")
   const [loading, setLoading] = useState(false)
   const [showPwd, setShowPwd] = useState(false)
-  const [remember, setRemember] = useState(true)
   const [msg, setMsg] = useState<{ type: "ok" | "err" | "info"; text: string } | null>(null)
   useEffect(() => { if (params.get("error")) setMsg({ type: "err", text: "No se pudo verificar el enlace. Intenta de nuevo." }) }, [params])
   async function submit(e: React.FormEvent) {
@@ -1040,10 +1040,8 @@ function AuthForm() {
             <div className={`grid transition-all duration-500 ease-out ${mode === "login" ? "grid-rows-[1fr] opacity-100 mt-4" : "grid-rows-[0fr] opacity-0"}`}>
               <div className="overflow-hidden">
                 <div className="flex items-center justify-between">
-                  <label className="flex cursor-pointer items-center gap-2 text-xs" style={{ color: `${CAFE}99` }}>
-                    <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="h-3.5 w-3.5 rounded accent-[#A67163]" />
-                    Recordarme
-                  </label>
+                  <span />{/* "Recordarme" eliminado: no tenía efecto (Supabase persiste
+                      la sesión siempre) — promesa de UI sin función. */}
                   <button type="button" onClick={forgotPassword} disabled={loading} className="text-xs font-medium underline-offset-2 hover:underline disabled:opacity-60" style={{ color: TERRA }}>
                     ¿Olvidaste tu contraseña?
                   </button>

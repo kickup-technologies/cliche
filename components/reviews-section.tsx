@@ -196,9 +196,13 @@ function ReviewCard({ review, productName, productImage, onDelete }: {
       <div className="space-y-3">
         <div>
           <p className="text-sm font-medium text-foreground">{review.reviewer_name}</p>
-          <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-foreground/70">
-            <BadgeCheck className="w-3.5 h-3.5 text-primary" /> Comprador verificado
-          </p>
+          {/* "Comprador verificado" SOLO para reseñas reales: mostrarla en las
+              semilla es publicidad engañosa (Ley 1480, riesgo ante la SIC). */}
+          {!isSeed && (
+            <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-foreground/70">
+              <BadgeCheck className="w-3.5 h-3.5 text-primary" /> Comprador verificado
+            </p>
+          )}
         </div>
 
         {productName && (

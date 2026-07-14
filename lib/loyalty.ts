@@ -14,5 +14,5 @@ export function tierOf(spent: number): { tier: Tier; next: Tier | undefined } {
 }
 
 /** Estados de pedido que cuentan como gasto acumulado para el nivel. */
-export const SPENT_STATUSES = ["confirmed", "shipped", "delivered", "paid"]
+export const SPENT_STATUSES = ["confirmed", "preparing", "shipped", "delivered", "paid"]
 export const formatCOP = (n: number) => `$${(n || 0).toLocaleString("es-CO")}`

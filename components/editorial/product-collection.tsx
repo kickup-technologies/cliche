@@ -158,7 +158,7 @@ export function ProductCollection({
                         setQuickView(product)
                       }}
                       aria-label={`Vista rápida de ${product.name}`}
-                      className="absolute right-3 top-3 flex h-9 w-9 -translate-y-1 items-center justify-center rounded-full bg-white/95 text-foreground opacity-0 shadow-sm transition-all duration-300 hover:bg-foreground hover:text-background group-hover:translate-y-0 group-hover:opacity-100"
+                      className="absolute right-3 top-3 flex h-9 w-9 -translate-y-1 items-center justify-center rounded-full bg-white/95 text-foreground opacity-0 pointer-events-none shadow-sm transition-all duration-300 hover:bg-foreground hover:text-background group-hover:translate-y-0 group-hover:opacity-100 group-hover:pointer-events-auto"
                     >
                       <Eye className="h-4 w-4" />
                     </button>
@@ -167,7 +167,7 @@ export function ProductCollection({
                     <button
                       onClick={(e) => handleAdd(e, product)}
                       disabled={product.stock === 0}
-                      className={`absolute inset-x-3 bottom-3 translate-y-3 py-3 text-[0.66rem] font-semibold uppercase tracking-[0.2em] text-background opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-50 ${
+                      className={`absolute inset-x-3 bottom-3 translate-y-3 py-3 text-[0.66rem] font-semibold uppercase tracking-[0.2em] text-background opacity-0 pointer-events-none transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-hover:pointer-events-auto disabled:cursor-not-allowed disabled:opacity-50 ${
                         addedId === product.id ? "bg-primary" : "bg-foreground hover:bg-primary"
                       }`}
                     >

@@ -63,7 +63,7 @@ export function Testimonials() {
     <section className="overflow-hidden bg-secondary py-20 md:py-28">
       <div className="container mx-auto mb-12 px-4 text-center">
         <p className="mb-3 text-[0.7rem] font-semibold uppercase tracking-[0.3em] text-primary">
-          Más de 500 marcas con su aroma
+          Marcas colombianas con su propio aroma
         </p>
         <SplitText
           text="Marcas que ya tienen el suyo"

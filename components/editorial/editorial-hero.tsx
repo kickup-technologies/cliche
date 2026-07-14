@@ -325,10 +325,14 @@ export function EditorialHero() {
             key={i}
             aria-label={`Ir al slide ${i + 1}`}
             onClick={() => setActive(i)}
-            className={`h-[2px] rounded-full transition-all duration-500 ${
-              i === active ? "w-10 bg-white" : "w-3 bg-white/35 hover:bg-white/65"
-            }`}
-          />
+            /* py-2.5 da un área tocable de ~24px de alto (los 2px visuales eran
+               imposibles de pulsar en móvil); el aspecto no cambia. */
+            className="group/dot py-2.5 -my-2.5"
+          >
+            <span className={`block h-[2px] rounded-full transition-all duration-500 ${
+              i === active ? "w-10 bg-white" : "w-3 bg-white/35 group-hover/dot:bg-white/65"
+            }`} />
+          </button>
         ))}
       </div>
     </section>

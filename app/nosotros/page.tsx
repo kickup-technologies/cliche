@@ -40,7 +40,7 @@ const VALUES = [
 ]
 
 const STATS = [
-  { value: "+500", label: "marcas y hogares que confían" },
+  { value: "B2B", label: "marcas y hogares que confían" },
   { value: "20+", label: "aromas en colección" },
   { value: "100%", label: "natural y artesanal" },
   { value: "8 h", label: "de duración por aplicación" },

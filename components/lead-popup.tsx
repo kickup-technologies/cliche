@@ -222,7 +222,7 @@ export function LeadPopup() {
                   ))}
                 </div>
                 <p className="text-[10.5px] leading-tight" style={{ color: `${CAFE}99` }}>
-                  Únete a más de <span className="font-semibold" style={{ color: CAFE }}>5.000 personas</span> que eligen consciencia y bienestar.
+                  Únete a la comunidad que elige consciencia y bienestar. El código se aplica <span className="font-semibold" style={{ color: CAFE }}>iniciando sesión</span> en tu carrito.
                 </p>
               </div>
 

@@ -17,7 +17,7 @@ const DEFAULT_ITEMS = [
   "Aromas artesanales",
   "Hecho en Colombia",
   "No mancha textiles",
-  "+500 marcas confían",
+  "Marcas que confían",
 ]
 
 export function Marquee({

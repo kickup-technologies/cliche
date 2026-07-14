@@ -59,6 +59,11 @@ function hash(s: string): number {
   return h
 }
 
+// Fecha ANCLA fija para las reseñas semilla: envejecen naturalmente como
+// cualquier reseña real. Antes se calculaban contra Date.now() y siempre
+// parecían de "hace unos días" — fechas rodantes engañosas (Ley 1480).
+const SEED_ANCHOR_MS = Date.UTC(2026, 5, 15) // 15 jun 2026 (pre-lanzamiento)
+
 export function seededReviews(productId: string): Review[] {
   if (!productId) return []
   const h = hash(productId)
@@ -75,7 +80,7 @@ export function seededReviews(productId: string): Review[] {
       rating: s.rating,
       comment: s.comment,
       media_urls: null,
-      created_at: new Date(Date.now() - (s.daysAgo + dayShift) * 86400000).toISOString(),
+      created_at: new Date(SEED_ANCHOR_MS - (s.daysAgo + dayShift) * 86400000).toISOString(),
     } as unknown as Review)
   }
   return out

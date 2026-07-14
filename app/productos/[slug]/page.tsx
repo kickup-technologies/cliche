@@ -2,7 +2,6 @@ import { notFound } from "next/navigation"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { ProductDetail } from "@/components/product-detail"
 import { CATALOG_AS_PRODUCTS, getCatalogProduct } from "@/lib/catalog-data"
-import { seededReviews } from "@/lib/seed-reviews"
 import type { Metadata } from "next"
 
 // ISR: páginas estáticas servidas desde CDN, regeneradas cada 5 min. Escala a
@@ -98,19 +97,10 @@ export default async function ProductPage({ params }: Props) {
         : "https://schema.org/OutOfStock",
       seller: { "@type": "Organization", name: "Cliché Aromas" },
     },
-    ...(() => {
-      // Mismas reseñas semilla que ve el usuario → structured data consistente
-      const seeds = seededReviews(product.id)
-      if (!seeds.length) return {}
-      const avg = seeds.reduce((s, r) => s + r.rating, 0) / seeds.length
-      return {
-        aggregateRating: {
-          "@type": "AggregateRating",
-          ratingValue: Number(avg.toFixed(1)),
-          reviewCount: seeds.length,
-        },
-      }
-    })(),
+    // Sin aggregateRating: se construía con reseñas SEMILLA (fabricadas) — a
+    // Google eso le puede costar la elegibilidad de rich snippets del dominio
+    // entero. Se restaurará calculado SOLO con reseñas reales aprobadas cuando
+    // haya suficientes (tabla reviews).
   }
 
   return (
