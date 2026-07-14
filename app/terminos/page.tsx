@@ -39,7 +39,11 @@ export default function TerminosPage() {
               <p className="text-muted-foreground leading-relaxed">
                 <strong>Cliché Aromas</strong> es una marca colombiana dedicada a la fabricación y comercialización de aromatizantes textiles y ambientadores de alta concentración. Operamos desde Colombia y atendemos a todo el territorio nacional.
               </p>
+              {/* Identificación completa del vendedor (art. 50 lit. b Ley 1480):
+                  razón social, NIT y dirección física de notificación. */}
               <ul className="list-disc list-inside text-muted-foreground space-y-1 mt-3">
+                <li>Razón social: <strong>Cliché S.A.S.</strong> · NIT <strong>901.432.536-8</strong></li>
+                <li>Dirección de notificación: <strong>Calle 5A # 43B-25, Local 101, Medellín, Antioquia, Colombia</strong></li>
                 <li>Correo electrónico: <strong>monica@clichecolombia.com</strong></li>
                 <li>WhatsApp: disponible en el Sitio</li>
                 <li>País de operación: Colombia</li>
