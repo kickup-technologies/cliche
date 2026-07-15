@@ -33,6 +33,7 @@ export interface Product {
   description: string | null
   image_url: string
   image_urls: string[]
+  category?: string | null
   badge: string | null
   badge_color: string | null
   stock: number

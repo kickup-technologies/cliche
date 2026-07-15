@@ -20,6 +20,7 @@
 
 import nodemailer from "nodemailer"
 import { createServerClient } from "@/lib/supabase"
+import { carrierName, trackingUrl } from "@/lib/carriers"
 
 /**
  * Host para URLs dentro de un CORREO. El apex clichecolombia.com responde
@@ -355,6 +356,7 @@ export async function sendOrderShippedEmail(
     id: string
     customerName?: string | null
     trackingNumber?: string | null
+    carrier?: string | null
     items?: Array<{ product_id?: string; name?: string; quantity?: number }>
   }
 ): Promise<void> {
@@ -364,6 +366,10 @@ export async function sendOrderShippedEmail(
   const orderId = order.id.slice(-8).toUpperCase()
   const name = (order.customerName || "").trim().split(/\s+/)[0]
   const guide = order.trackingNumber?.trim()
+  // Transportista + link de rastreo con la guía (FedEx/UPS la pre-cargan;
+  // Servientrega/Interrapidísimo abren su página de rastreo — la guía va arriba).
+  const carrierLabel = carrierName(order.carrier)
+  const trackUrl = trackingUrl(order.carrier, guide)
 
   // Fotos de lo que va en la caja
   const items = order.items || []
@@ -381,6 +387,7 @@ export async function sendOrderShippedEmail(
       ${para(`El pedido <span style="font-family:'Courier New',monospace;color:${C.ink};">#${orderId}</span> ya sali&oacute; de nuestro taller. Muy pronto tu espacio va a oler distinto.`, guide ? 26 : 30)}
       ${guide ? `
       <div style="border:1px solid ${C.line};border-radius:16px;padding:20px;margin-bottom:26px;">
+        ${carrierLabel ? `<p style="margin:0 0 10px;font-family:Georgia,serif;font-size:14px;color:${C.sub};">Transportadora: <span style="color:${C.ink};">${carrierLabel}</span></p>` : ""}
         <p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:${C.faint};">N&uacute;mero de gu&iacute;a</p>
         <p style="margin:0;font-family:'Courier New',monospace;font-size:22px;letter-spacing:.08em;color:${C.ink};">${guide}</p>
       </div>` : ""}
@@ -388,7 +395,10 @@ export async function sendOrderShippedEmail(
     ${itemRows ? `
     <p style="margin:0 0 4px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:${C.faint};text-align:center;">Lo que va en tu caja</p>
     <table width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 28px;">${itemRows}</table>` : ""}
-    ${button(`${appUrl()}/pedido/${order.id}`, "Rastrear mi pedido")}
+    ${trackUrl
+      ? button(trackUrl, `Rastrear con ${carrierLabel || "la transportadora"}`)
+      : button(`${appUrl()}/pedido/${order.id}`, "Rastrear mi pedido")}
+    ${trackUrl ? `<p style="margin:12px 0 0;text-align:center;font-family:Arial,sans-serif;font-size:12px;color:${C.faint};">Tambi&eacute;n puedes seguirlo desde <a href="${appUrl()}/pedido/${order.id}" style="color:${C.accent};">tu pedido</a>.</p>` : ""}
     ${hr}
     <div style="text-align:center;">
       <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;line-height:1.7;color:${C.sub};">Mientras llega, &iquest;ya pensaste qu&eacute; aroma sigue?<br/>Un espacio, un aroma — cada rinc&oacute;n cuenta su historia.</p>

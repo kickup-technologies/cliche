@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   const vista = req.nextUrl.searchParams.get("vista")
   let query = supabase
     .from("orders")
-    .select("id, status, total, tracking_number, customer_name, customer_email, customer_phone, customer_id_number, shipping_address, discount_code, discount_amount, stripe_session_id, created_at, items")
+    .select("id, status, total, tracking_number, carrier, customer_name, customer_email, customer_phone, customer_id_number, shipping_address, discount_code, discount_amount, stripe_session_id, created_at, items")
     .order("created_at", { ascending: false })
     .limit(200)
   query = vista === "intentos" ? query.eq("status", "pending") : query.neq("status", "pending")
@@ -31,10 +31,11 @@ export async function PATCH(req: NextRequest) {
   if (!isAdmin(req)) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
 
   try {
-    const { id, status, tracking_number } = await req.json()
+    const { id, status, tracking_number, carrier } = await req.json()
     if (!id) return NextResponse.json({ error: "Falta el id del pedido" }, { status: 400 })
 
     const ALLOWED_STATUS = ["pending", "confirmed", "preparing", "shipped", "delivered", "paid", "cancelled"]
+    const ALLOWED_CARRIERS = ["servientrega", "interrapidisimo", "fedex", "ups"]
     const update: Record<string, unknown> = {}
     if (status !== undefined) {
       if (!ALLOWED_STATUS.includes(status)) {
@@ -44,6 +45,13 @@ export async function PATCH(req: NextRequest) {
     }
     if (tracking_number !== undefined) {
       update.tracking_number = String(tracking_number).trim() || null
+    }
+    if (carrier !== undefined) {
+      const c = carrier ? String(carrier).trim() : ""
+      if (c && !ALLOWED_CARRIERS.includes(c)) {
+        return NextResponse.json({ error: "Transportadora inválida" }, { status: 400 })
+      }
+      update.carrier = c || null
     }
     if (Object.keys(update).length === 0) {
       return NextResponse.json({ error: "Nada que actualizar" }, { status: 400 })
@@ -72,12 +80,14 @@ export async function PATCH(req: NextRequest) {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-    // Correo automático al cliente: "tu pedido va en camino" (con guía si la hay)
+    // Correo automático al cliente: "tu pedido va en camino" (con guía +
+    // transportadora + link de rastreo si los hay)
     if (update.status === "shipped" && before?.status !== "shipped" && data?.customer_email) {
       await sendOrderShippedEmail(data.customer_email, {
         id: data.stripe_session_id || data.id,
         customerName: data.customer_name,
         trackingNumber: data.tracking_number,
+        carrier: data.carrier,
         items: data.items || [],
       }).catch((e: unknown) => console.error("[admin/orders] shipped email:", e))
     }

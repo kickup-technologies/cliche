@@ -1,17 +1,24 @@
 "use client"
 import { useState, useRef } from "react"
-import { Plus, Pencil, Minus, RefreshCw, Save, X, AlertCircle, ToggleLeft, ToggleRight, Upload, ImageIcon } from "lucide-react"
+import { Plus, Pencil, Minus, RefreshCw, Save, X, AlertCircle, ToggleLeft, ToggleRight, Upload, ImageIcon, Trash2 } from "lucide-react"
 import { fmt } from "../types"
 import type { Product } from "@/lib/supabase"
 import { adminFetch } from "@/lib/admin-client"
 
+// Categorías (familias olfativas) que el admin asigna al producto. Deben
+// coincidir con las del catálogo (app/catalogo/page.tsx → FAMILIES).
+const CATEGORIES = [
+  { value: "citricos", label: "Cítricos" },
+  { value: "florales", label: "Florales" },
+  { value: "amaderados", label: "Amaderados" },
+  { value: "dulces", label: "Dulces" },
+  { value: "frescos", label: "Frescos" },
+] as const
+
 async function uploadImage(file: File): Promise<string | null> {
   const fd = new FormData()
   fd.append("file", file)
-  const res = await fetch("/api/admin/upload", {
-    method: "POST",
-    body: fd,
-  })
+  const res = await fetch("/api/admin/upload", { method: "POST", body: fd })
   if (!res.ok) return null
   const { url } = await res.json()
   return url
@@ -21,46 +28,74 @@ function autoSlug(name: string) {
   return "aroma-" + name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
 }
 
+/** Lista efectiva de imágenes del producto (image_urls, o image_url suelta). */
+function imagesOf(p: Partial<Product> | null): string[] {
+  if (!p) return []
+  if (Array.isArray(p.image_urls) && p.image_urls.length) return p.image_urls
+  return p.image_url ? [p.image_url] : []
+}
+
 export function InventarioSection({ products, onRefresh }: { products: Product[]; onRefresh: () => Promise<void> }) {
   const [modal, setModal] = useState<{ open: boolean; product: Partial<Product> | null }>({ open: false, product: null })
   const [modalSaving, setModalSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [modalError, setModalError] = useState("")
   const [uploadProgress, setUploadProgress] = useState(false)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   function openEdit(product: Product) {
-    setModalError(""); setImagePreview(null)
+    setModalError("")
     setModal({ open: true, product: { ...product } })
   }
   function openNew() {
-    setModalError(""); setImagePreview(null)
-    setModal({ open: true, product: { name: "", slug: "", price: 78000, stock: 50, rating: 4.8, reviews: 0, is_active: true } })
+    setModalError("")
+    setModal({ open: true, product: { name: "", slug: "", price: 78000, original_price: null, description: "", category: "", image_urls: [], stock: 50, rating: 4.8, reviews: 0, is_active: true } })
   }
-  function closeModal() { setModal({ open: false, product: null }); setModalError(""); setImagePreview(null) }
+  function closeModal() { setModal({ open: false, product: null }); setModalError("") }
 
-  function setField(key: string, value: string | number | boolean | null) {
+  function setField(key: string, value: string | number | boolean | string[] | null) {
     setModal(prev => ({ ...prev, product: { ...prev.product, [key]: value } }))
   }
 
-  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setImagePreview(URL.createObjectURL(file))
-    setUploadProgress(true)
-    const url = await uploadImage(file)
-    setUploadProgress(false)
-    if (url) {
-      setField("image_url", url)
-    } else {
-      setModalError("Error al subir imagen")
+  // Subir una o varias imágenes de referencia: se agregan a image_urls y la
+  // primera es la principal (image_url).
+  async function handleFilesChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+    setUploadProgress(true); setModalError("")
+    const uploaded: string[] = []
+    for (const f of files) {
+      const url = await uploadImage(f)
+      if (url) uploaded.push(url)
     }
+    setUploadProgress(false)
+    if (fileRef.current) fileRef.current.value = ""
+    if (!uploaded.length) { setModalError("No se pudo subir la imagen"); return }
+    const all = [...imagesOf(modal.product), ...uploaded]
+    setModal(prev => ({ ...prev, product: { ...prev.product, image_urls: all, image_url: all[0] } }))
+  }
+  function removeImage(idx: number) {
+    const all = imagesOf(modal.product).filter((_, i) => i !== idx)
+    setModal(prev => ({ ...prev, product: { ...prev.product, image_urls: all, image_url: all[0] || "" } }))
+  }
+  function makeMain(idx: number) {
+    const all = imagesOf(modal.product)
+    if (idx <= 0 || idx >= all.length) return
+    const reordered = [all[idx], ...all.filter((_, i) => i !== idx)]
+    setModal(prev => ({ ...prev, product: { ...prev.product, image_urls: reordered, image_url: reordered[0] } }))
   }
 
   async function saveProduct() {
     if (!modal.product) return
-    const p = modal.product
-    if (!p.name || !p.slug || !p.price) { setModalError("Nombre, slug y precio son requeridos"); return }
+    const p = { ...modal.product }
+    if (!p.name?.trim()) { setModalError("El título es obligatorio"); return }
+    if (!p.price || Number(p.price) <= 0) { setModalError("El precio debe ser mayor a 0"); return }
+    // Slug automático desde el título (no se pide al usuario).
+    if (!p.slug?.trim()) p.slug = autoSlug(p.name)
+    // Normalizar imágenes: la primera es la principal.
+    const imgs = imagesOf(p)
+    p.image_urls = imgs
+    p.image_url = imgs[0] || ""
     setModalSaving(true); setModalError("")
     try {
       const res = p.id
@@ -76,6 +111,22 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
     } finally { setModalSaving(false) }
   }
 
+  async function deleteProduct() {
+    if (!modal.product?.id) return
+    if (!confirm(`¿Eliminar "${modal.product.name}" de la tienda? Esta acción no se puede deshacer.`)) return
+    setDeleting(true); setModalError("")
+    try {
+      const res = await adminFetch(`/api/admin/products/${modal.product.id}`, { method: "DELETE" })
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: "" }))
+        throw new Error(error || "No se pudo eliminar")
+      }
+      await onRefresh(); closeModal()
+    } catch (err: unknown) {
+      setModalError(err instanceof Error ? err.message : "No se pudo eliminar")
+    } finally { setDeleting(false) }
+  }
+
   async function updateStock(id: string, stock: number) {
     await adminFetch(`/api/admin/products/${id}`, { method: "PUT", body: JSON.stringify({ stock }) })
     await onRefresh()
@@ -85,6 +136,8 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
     await adminFetch(`/api/admin/products/${id}`, { method: "PUT", body: JSON.stringify({ is_active }) })
     await onRefresh()
   }
+
+  const modalImages = imagesOf(modal.product)
 
   return (
     <div className="space-y-4">
@@ -106,6 +159,7 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
       {products.map(product => (
         <div key={product.id} className="bg-white rounded-2xl border border-[#2D1A14]/8 p-4">
           <div className="flex items-center gap-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={product.image_url || "/placeholder-product.jpg"}
               alt={product.name}
@@ -141,6 +195,7 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
               <button
                 onClick={() => openEdit(product)}
                 className="w-8 h-8 rounded-lg border border-[#2D1A14]/15 hover:bg-[#FAF8F5] flex items-center justify-center transition-colors"
+                title="Editar"
               >
                 <Pencil className="w-3.5 h-3.5 text-[#2D1A14]/50" />
               </button>
@@ -149,7 +204,7 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
         </div>
       ))}
 
-      {/* Product Modal */}
+      {/* Product Modal — formulario simple */}
       {modal.open && modal.product && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={closeModal}>
           <div
@@ -165,57 +220,106 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
-              {/* Name */}
+            <div className="p-6 space-y-5">
+              {/* Título */}
               <div>
-                <label className="text-xs font-semibold text-[#2D1A14]/50 uppercase tracking-wide mb-1.5 block">Nombre *</label>
+                <label className="text-xs font-semibold text-[#2D1A14]/50 uppercase tracking-wide mb-1.5 block">Título del producto *</label>
                 <input
                   type="text"
                   value={modal.product.name || ""}
-                  onChange={e => {
-                    setField("name", e.target.value)
-                    if (!modal.product?.id) setField("slug", autoSlug(e.target.value))
-                  }}
+                  onChange={e => setField("name", e.target.value)}
                   className="w-full px-3 py-2.5 rounded-xl border border-[#2D1A14]/15 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#A67163]/40"
-                  placeholder="Aroma Tao"
+                  placeholder="Ej: Aroma Tao"
                 />
               </div>
 
-              {/* Slug */}
+              {/* Categoría */}
               <div>
-                <label className="text-xs font-semibold text-[#2D1A14]/50 uppercase tracking-wide mb-1.5 block">Slug * (URL)</label>
+                <label className="text-xs font-semibold text-[#2D1A14]/50 uppercase tracking-wide mb-1.5 block">Categoría</label>
+                <select
+                  value={modal.product.category || ""}
+                  onChange={e => setField("category", e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-[#2D1A14]/15 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#A67163]/40"
+                >
+                  <option value="">— Elegir categoría —</option>
+                  {CATEGORIES.map(c => (
+                    <option key={c.value} value={c.value}>{c.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Imágenes de referencia (varias) */}
+              <div>
+                <label className="text-xs font-semibold text-[#2D1A14]/50 uppercase tracking-wide mb-1.5 block">Imágenes de referencia</label>
+                <div className="flex flex-wrap gap-2.5">
+                  {modalImages.map((src, i) => (
+                    <div key={src + i} className="relative w-20 h-20 rounded-xl border border-[#2D1A14]/15 bg-[#FAF8F5] overflow-hidden group">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={src} alt={`Imagen ${i + 1}`} className="w-full h-full object-contain" />
+                      {i === 0 ? (
+                        <span className="absolute bottom-0 inset-x-0 bg-[#2D1A14]/80 text-white text-[9px] font-semibold text-center py-0.5">Principal</span>
+                      ) : (
+                        <button type="button" onClick={() => makeMain(i)} className="absolute bottom-0 inset-x-0 bg-black/40 text-white text-[9px] font-semibold text-center py-0.5 opacity-0 group-hover:opacity-100 transition-opacity" title="Hacer principal">Hacer principal</button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeImage(i)}
+                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-white/90 border border-[#2D1A14]/10 flex items-center justify-center text-[#2D1A14]/60 hover:text-red-600"
+                        title="Quitar"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    disabled={uploadProgress}
+                    className="w-20 h-20 rounded-xl border-2 border-dashed border-[#2D1A14]/20 bg-[#FAF8F5] flex flex-col items-center justify-center gap-1 text-[#2D1A14]/40 hover:border-[#A67163]/50 hover:text-[#A67163] transition-colors disabled:opacity-50"
+                  >
+                    {uploadProgress ? <RefreshCw className="w-5 h-5 animate-spin" /> : <><Upload className="w-5 h-5" /><span className="text-[10px] font-medium">Subir</span></>}
+                  </button>
+                </div>
                 <input
-                  type="text"
-                  value={modal.product.slug || ""}
-                  onChange={e => setField("slug", e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-[#2D1A14]/15 bg-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#A67163]/40"
-                  placeholder="aroma-tao"
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleFilesChange}
+                  className="hidden"
                 />
+                {modalImages.length === 0 && (
+                  <p className="text-[11px] text-[#2D1A14]/40 mt-2 flex items-center gap-1.5">
+                    <ImageIcon className="w-3.5 h-3.5" /> Sube una o varias fotos. La primera será la principal.
+                  </p>
+                )}
               </div>
 
-              {/* Price / Stock / Rating grid */}
+              {/* Precios */}
               <div className="grid grid-cols-2 gap-3">
-                {[
-                  { key: "price", label: "Precio COP *", placeholder: "78000" },
-                  { key: "original_price", label: "Precio original", placeholder: "90000" },
-                  { key: "stock", label: "Stock", placeholder: "50" },
-                  { key: "rating", label: "Rating (0-5)", placeholder: "4.8", step: "0.1" },
-                ].map(({ key, label, placeholder, step }) => (
-                  <div key={key}>
-                    <label className="text-xs font-semibold text-[#2D1A14]/50 uppercase tracking-wide mb-1.5 block">{label}</label>
-                    <input
-                      type="number"
-                      step={step}
-                      value={(modal.product as Record<string, unknown>)[key] as number ?? ""}
-                      onChange={e => setField(key, e.target.value ? Number(e.target.value) : null)}
-                      className="w-full px-3 py-2.5 rounded-xl border border-[#2D1A14]/15 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#A67163]/40"
-                      placeholder={placeholder}
-                    />
-                  </div>
-                ))}
+                <div>
+                  <label className="text-xs font-semibold text-[#2D1A14]/50 uppercase tracking-wide mb-1.5 block">Precio (COP) *</label>
+                  <input
+                    type="number"
+                    value={modal.product.price ?? ""}
+                    onChange={e => setField("price", e.target.value ? Number(e.target.value) : 0)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-[#2D1A14]/15 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#A67163]/40"
+                    placeholder="78000"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-[#2D1A14]/50 uppercase tracking-wide mb-1.5 block">Antes (tachado)</label>
+                  <input
+                    type="number"
+                    value={modal.product.original_price ?? ""}
+                    onChange={e => setField("original_price", e.target.value ? Number(e.target.value) : null)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-[#2D1A14]/15 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#A67163]/40"
+                    placeholder="Opcional"
+                  />
+                </div>
               </div>
 
-              {/* Description */}
+              {/* Descripción */}
               <div>
                 <label className="text-xs font-semibold text-[#2D1A14]/50 uppercase tracking-wide mb-1.5 block">Descripción</label>
                 <textarea
@@ -223,88 +327,31 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
                   value={modal.product.description || ""}
                   onChange={e => setField("description", e.target.value)}
                   className="w-full px-3 py-2.5 rounded-xl border border-[#2D1A14]/15 bg-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#A67163]/40"
-                  placeholder="Describe el producto..."
+                  placeholder="Describe el aroma y para qué espacios es ideal…"
                 />
               </div>
 
-              {/* Image upload */}
-              <div>
-                <label className="text-xs font-semibold text-[#2D1A14]/50 uppercase tracking-wide mb-1.5 block">Imagen del producto</label>
-                <div className="flex items-start gap-3">
-                  <div className="w-20 h-20 rounded-xl border border-[#2D1A14]/15 bg-[#FAF8F5] flex items-center justify-center overflow-hidden flex-shrink-0">
-                    {(imagePreview || modal.product.image_url) ? (
-                      <img src={imagePreview || modal.product.image_url} alt="preview" className="w-full h-full object-contain" />
-                    ) : (
-                      <ImageIcon className="w-6 h-6 text-[#2D1A14]/20" />
-                    )}
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <button
-                      type="button"
-                      onClick={() => fileRef.current?.click()}
-                      disabled={uploadProgress}
-                      className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[#2D1A14]/15 text-sm text-[#2D1A14]/70 hover:bg-[#FAF8F5] transition-colors disabled:opacity-50 w-full justify-center"
-                    >
-                      {uploadProgress ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                      {uploadProgress ? "Subiendo..." : "Subir imagen"}
-                    </button>
-                    <input
-                      ref={fileRef}
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      onChange={handleFileChange}
-                      className="hidden"
-                    />
-                    <input
-                      type="text"
-                      value={modal.product.image_url || ""}
-                      onChange={e => { setField("image_url", e.target.value); setImagePreview(null) }}
-                      className="w-full px-3 py-2 rounded-xl border border-[#2D1A14]/15 bg-white text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[#A67163]/40"
-                      placeholder="O pega una URL..."
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Badge */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Stock + Activo (compacto) */}
+              <div className="grid grid-cols-2 gap-3 items-end">
                 <div>
-                  <label className="text-xs font-semibold text-[#2D1A14]/50 uppercase tracking-wide mb-1.5 block">Badge</label>
+                  <label className="text-xs font-semibold text-[#2D1A14]/50 uppercase tracking-wide mb-1.5 block">Stock</label>
                   <input
-                    type="text"
-                    value={modal.product.badge || ""}
-                    onChange={e => setField("badge", e.target.value)}
+                    type="number"
+                    value={modal.product.stock ?? ""}
+                    onChange={e => setField("stock", e.target.value ? Number(e.target.value) : 0)}
                     className="w-full px-3 py-2.5 rounded-xl border border-[#2D1A14]/15 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#A67163]/40"
-                    placeholder="Nuevo"
+                    placeholder="50"
                   />
                 </div>
-                <div>
-                  <label className="text-xs font-semibold text-[#2D1A14]/50 uppercase tracking-wide mb-1.5 block">Color badge</label>
-                  <select
-                    value={modal.product.badge_color || ""}
-                    onChange={e => setField("badge_color", e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl border border-[#2D1A14]/15 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#A67163]/40"
-                  >
-                    <option value="">Sin badge</option>
-                    <option value="bg-primary">Terracota</option>
-                    <option value="bg-amber-500">Ambar</option>
-                    <option value="bg-green-600">Verde</option>
-                    <option value="bg-red-500">Rojo</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Active */}
-              <div className="flex items-center gap-3 pt-1">
-                <input
-                  type="checkbox"
-                  id="is_active"
-                  checked={modal.product.is_active ?? true}
-                  onChange={e => setField("is_active", e.target.checked)}
-                  className="w-4 h-4 accent-[#A67163]"
-                />
-                <label htmlFor="is_active" className="text-sm text-[#2D1A14] font-medium">Producto activo (visible en tienda)</label>
+                <label className="flex items-center gap-2.5 h-11 px-3 rounded-xl border border-[#2D1A14]/15 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={modal.product.is_active ?? true}
+                    onChange={e => setField("is_active", e.target.checked)}
+                    className="w-4 h-4 accent-[#A67163]"
+                  />
+                  <span className="text-sm text-[#2D1A14] font-medium">Visible en tienda</span>
+                </label>
               </div>
 
               {modalError && (
@@ -317,19 +364,31 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
                 <button
                   className="flex-1 h-11 rounded-xl border border-[#2D1A14]/15 text-sm font-semibold text-[#2D1A14] hover:bg-[#FAF8F5] transition-colors"
                   onClick={closeModal}
-                  disabled={modalSaving}
+                  disabled={modalSaving || deleting}
                 >
                   Cancelar
                 </button>
                 <button
-                  className="flex-1 h-11 rounded-xl bg-[#2D1A14] hover:bg-[#3D2A24] text-white text-sm font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                  className="flex-[1.4] h-11 rounded-xl bg-[#2D1A14] hover:bg-[#3D2A24] text-white text-sm font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
                   onClick={saveProduct}
-                  disabled={modalSaving}
+                  disabled={modalSaving || deleting}
                 >
                   {modalSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                  {modal.product.id ? "Guardar" : "Crear"}
+                  {modal.product.id ? "Guardar cambios" : "Crear producto"}
                 </button>
               </div>
+
+              {/* Eliminar producto (solo al editar) */}
+              {modal.product.id && (
+                <button
+                  onClick={deleteProduct}
+                  disabled={deleting || modalSaving}
+                  className="w-full h-11 rounded-xl border border-red-200 text-sm font-semibold text-red-600 hover:bg-red-50 flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                >
+                  {deleting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  Eliminar producto de la tienda
+                </button>
+              )}
             </div>
           </div>
         </div>

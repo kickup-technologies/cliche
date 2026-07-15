@@ -5,6 +5,7 @@ import { ShoppingBag, X, RefreshCw, CheckCircle, Truck, ChevronRight, Search, Do
 import { Order, Period, filterPeriod, fmt, ORDER_STATUS_MAP } from "../types"
 import { PeriodSelector } from "../components/period-selector"
 import { adminFetch } from "@/lib/admin-client"
+import { CARRIERS } from "@/lib/carriers"
 import type { Product } from "@/lib/supabase"
 
 type SortKey = "date" | "total" | "status"
@@ -86,6 +87,7 @@ export function PedidosSection({
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [statusInput, setStatusInput] = useState("")
   const [trackingInput, setTrackingInput] = useState("")
+  const [carrierInput, setCarrierInput] = useState("")
   const [orderSaving, setOrderSaving] = useState(false)
   const [sortKey, setSortKey] = useState<SortKey>("date")
   const [sortAsc, setSortAsc] = useState(false)
@@ -159,7 +161,7 @@ export function PedidosSection({
     // Columnas pensadas para generar guías de envío (Servientrega, Coordinadora,
     // Interrapidísimo exigen dirección completa + departamento + cédula del
     // destinatario) y para empacar sin abrir pedido por pedido ("Productos").
-    const headers = ["Pedido", "Estado", "Cliente", "Cedula", "Email", "Telefono", "Direccion", "Ciudad", "Departamento", "Notas", "Productos", "Total", "Guia", "Fecha"]
+    const headers = ["Pedido", "Estado", "Cliente", "Cedula", "Email", "Telefono", "Direccion", "Ciudad", "Departamento", "Notas", "Productos", "Total", "Transportadora", "Guia", "Fecha"]
     const rows = filtered.map(o => [
       "#" + (o.stripe_session_id || o.id).slice(-8).toUpperCase(),
       ORDER_STATUS_MAP[o.status]?.label || o.status,
@@ -173,6 +175,7 @@ export function PedidosSection({
       o.shipping_address?.notes || "",
       itemsResumen(o),
       o.total,
+      CARRIERS.find(c => c.id === o.carrier)?.name || "",
       o.tracking_number || "",
       new Date(o.created_at).toLocaleString("es-CO", { timeZone: "America/Bogota" }),
     ])
@@ -204,13 +207,19 @@ export function PedidosSection({
     setSelectedOrder(o)
     setStatusInput(o.status)
     setTrackingInput(o.tracking_number || "")
+    setCarrierInput(o.carrier || "")
   }
 
   async function saveOrderStatus() {
     if (!selectedOrder) return
     setOrderSaving(true)
-    const update: Partial<Order> = { status: statusInput }
-    if (trackingInput.trim()) update.tracking_number = trackingInput.trim()
+    // Guía y transportadora se envían SIEMPRE (aunque se borren) para poder
+    // corregir/limpiar; el correo de "enviado" usa ambos para el link de rastreo.
+    const update: Partial<Order> = {
+      status: statusInput,
+      tracking_number: trackingInput.trim() || null,
+      carrier: carrierInput || null,
+    }
     try {
       const res = await adminFetch("/api/admin/orders", {
         method: "PATCH",
@@ -539,13 +548,37 @@ export function PedidosSection({
                       <option key={key} value={key}>{st.label}</option>
                     ))}
                 </select>
-                <input
-                  type="text"
-                  value={trackingInput}
-                  onChange={e => setTrackingInput(e.target.value)}
-                  placeholder="Número de guía (opcional)"
-                  className="w-full px-4 py-3 rounded-xl border border-[#2D1A14]/15 bg-white text-[#2D1A14] text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#A67163]/40"
-                />
+                {/* Transportadora + número de guía. Al pasar el pedido a
+                    "Despachado" se le envía al cliente el correo con la guía y
+                    el link de rastreo de la transportadora elegida. */}
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-[#2D1A14]/40 mb-1 block">Transportadora</label>
+                  <select
+                    value={carrierInput}
+                    onChange={e => setCarrierInput(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-[#2D1A14]/15 bg-white text-[#2D1A14] text-sm focus:outline-none focus:ring-2 focus:ring-[#A67163]/40"
+                  >
+                    <option value="">— Sin transportadora —</option>
+                    {CARRIERS.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-[#2D1A14]/40 mb-1 block">Número de guía</label>
+                  <input
+                    type="text"
+                    value={trackingInput}
+                    onChange={e => setTrackingInput(e.target.value)}
+                    placeholder="Ej: 099001234567"
+                    className="w-full px-4 py-3 rounded-xl border border-[#2D1A14]/15 bg-white text-[#2D1A14] text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#A67163]/40"
+                  />
+                </div>
+                {statusInput === "shipped" && (
+                  <p className="text-xs text-[#2D1A14]/50 bg-[#FAF8F5] border border-[#2D1A14]/8 rounded-xl px-3 py-2">
+                    Al guardar en <b>Despachado</b>, el cliente recibe un correo con la guía{carrierInput ? " y el link de rastreo de " + (CARRIERS.find(c => c.id === carrierInput)?.name || "") : ""}.
+                  </p>
+                )}
                 <button
                   className="w-full h-11 rounded-xl bg-[#2D1A14] hover:bg-[#3D2A24] text-white font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
                   onClick={saveOrderStatus}

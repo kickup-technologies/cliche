@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase"
 import { isAdmin } from "@/lib/admin-auth"
-import { pickProductFields } from "../route"
+import { pickProductFields, revalidateProductPages } from "../route"
 
 /**
  * PUT /api/admin/products/[id]  — actualiza cualquier campo permitido del
@@ -35,6 +35,8 @@ export async function PUT(
       .single()
 
     if (error) throw error
+    // Refleja el cambio de inmediato en la ficha del producto + catálogo/home.
+    revalidateProductPages(data?.slug)
     return NextResponse.json(data)
   } catch (err) {
     console.error("[admin/products PUT]", err)
@@ -52,8 +54,11 @@ export async function DELETE(
 
   try {
     const db = createServerClient()
+    // Leemos el slug ANTES de borrar para poder revalidar su ficha.
+    const { data: existing } = await db.from("products").select("slug").eq("id", id).single()
     const { error } = await db.from("products").delete().eq("id", id)
     if (error) throw error
+    revalidateProductPages(existing?.slug)
     return NextResponse.json({ ok: true })
   } catch (err) {
     console.error("[admin/products DELETE]", err)

@@ -23,6 +23,7 @@ export interface Order {
   discount_code: string | null
   discount_amount: number
   tracking_number: string | null
+  carrier: string | null
 }
 
 export interface PageView { path: string; created_at: string }

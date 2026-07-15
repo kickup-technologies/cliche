@@ -53,8 +53,12 @@ const FAMILY_MAP: Record<string, string> = {
   "best-friends": "frescos", "air-fresh": "frescos",
 }
 
-function familyOf(slug: string): string {
-  return FAMILY_MAP[slug.replace(/^aroma-/, "")] ?? "frescos"
+// La familia (categoría) la elige el admin en el panel (product.category).
+// Si no está asignada, se cae al mapeo histórico por slug para no romper los
+// productos existentes.
+function familyOf(p: { slug: string; category?: string | null }): string {
+  if (p.category && FAMILIES.some((f) => f.value === p.category)) return p.category
+  return FAMILY_MAP[p.slug.replace(/^aroma-/, "")] ?? "frescos"
 }
 
 /* ───────────────────────── Tarjeta de producto ───────────────────────── */
@@ -417,7 +421,7 @@ function CatalogoInner() {
             <div key={`${family}-${segment}`} className="space-y-20 duration-500 animate-in fade-in md:space-y-28">
               {shownFamilies.map((f, i) => {
                 const fam = byCategory
-                  .filter((p) => familyOf(p.slug) === f.value)
+                  .filter((p) => familyOf(p) === f.value)
                   .filter((p) => segment === "all" || segmentsForSlug(p.slug).includes(segment))
                 return (
                   <FamilySection

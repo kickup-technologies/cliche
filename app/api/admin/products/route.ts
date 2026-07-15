@@ -1,17 +1,35 @@
 import { NextRequest, NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
 import { createServerClient } from "@/lib/supabase"
 import { isAdmin } from "@/lib/admin-auth"
 
 // Campos que el admin puede escribir (whitelist — nunca confiar en todo el body)
 export const PRODUCT_FIELDS = [
   "name", "slug", "price", "original_price", "description", "image_url",
-  "image_urls", "badge", "badge_color", "stock", "rating", "reviews", "is_active",
+  "image_urls", "category", "badge", "badge_color", "stock", "rating", "reviews", "is_active",
 ] as const
 
 export function pickProductFields(body: Record<string, unknown>) {
   const out: Record<string, unknown> = {}
   for (const k of PRODUCT_FIELDS) if (k in body) out[k] = body[k]
   return out
+}
+
+/**
+ * Purga la caché estática de las páginas que muestran productos para que un
+ * alta/edición/borrado se REFLEJE de inmediato (sin esperar el revalidate de
+ * 5 min de /productos/[slug] ni el caché del catálogo). Si se da el slug,
+ * también revalida esa ficha concreta.
+ */
+export function revalidateProductPages(slug?: string | null) {
+  try {
+    revalidatePath("/")
+    revalidatePath("/catalogo")
+    revalidatePath("/ofertas")
+    if (slug) revalidatePath(`/productos/${slug}`)
+  } catch (e) {
+    console.error("[products] revalidate falló:", e)
+  }
 }
 
 export async function GET(req: NextRequest) {
@@ -46,6 +64,7 @@ export async function POST(req: NextRequest) {
     const db = createServerClient()
     const { data, error } = await db.from("products").insert(fields).select().single()
     if (error) throw error
+    revalidateProductPages(data?.slug)
     return NextResponse.json(data)
   } catch (err) {
     console.error("[admin/products POST]", err)
