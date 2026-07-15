@@ -18,6 +18,12 @@ type SlideMedia = {
   // que se vea integrado. Útil cuando el producto se corta arriba/abajo.
   desktopContain?: boolean
   bg?: string
+  // Zoom fino por dispositivo (transform scale sobre la imagen). >1 acerca,
+  // <1 aleja. mobileBg rellena el hueco que deja un zoom-out en móvil con el
+  // color del fondo de la foto para que se vea integrado.
+  desktopScale?: number
+  mobileScale?: number
+  mobileBg?: string
 }
 
 interface Slide {
@@ -41,7 +47,7 @@ const SLIDES: Slide[] = [
     align: "left",
   },
   {
-    media: { type: "image", src: "/images/segments/best-friends.png", mobileSrc: "/images/segments/best-friends-mobile.png", desktopContain: true, bg: "#f2dac1", mobileObjectPosition: "center 42%" },
+    media: { type: "image", src: "/images/segments/best-friends.png", mobileSrc: "/images/segments/best-friends-mobile.png", desktopContain: true, bg: "#f2dac1", mobileObjectPosition: "center 42%", objectPosition: "64% center", desktopScale: 1.1, mobileScale: 0.92, mobileBg: "#fce4ca" },
     eyebrow: "Mascotas & sus espacios",
     title: "Que su rincón huela\ntan bien como ellos",
     subtitle: "Best Friends refresca las camas, mantas y espacios de tus mascotas con frambuesa, flores dulces y azúcar suave. Limpio, seguro y de larga duración.",
@@ -185,7 +191,14 @@ export function EditorialHero() {
                   className={`${slide.media.desktopContain ? "object-contain" : "object-cover"} ${slide.media.mobileSrc ? "hidden md:block" : ""}`}
                   // backgroundColor rellena las barras de object-contain con el
                   // color del fondo de la foto → el frasco completo sin cortes.
-                  style={{ objectPosition: slide.media.objectPosition ?? "center", backgroundColor: slide.media.desktopContain ? slide.media.bg : undefined }}
+                  // scale (desktopScale) acerca/aleja levemente (overflow recortado
+                  // por la sección); transform-origin fija el zoom al centro.
+                  style={{
+                    objectPosition: slide.media.objectPosition ?? "center",
+                    backgroundColor: slide.media.desktopContain ? slide.media.bg : undefined,
+                    transform: slide.media.desktopScale ? `scale(${slide.media.desktopScale})` : undefined,
+                    transformOrigin: "center",
+                  }}
                 />
               )
             )}
@@ -194,7 +207,7 @@ export function EditorialHero() {
                 hacia el fondo café; el texto vive debajo y NO tapa el producto.
                 Aplica a cualquier slide con mobileSrc (imagen o video en PC). */}
             {showMobileMedia && (
-              <div className="absolute inset-x-0 top-0 h-[57%] overflow-hidden md:hidden">
+              <div className="absolute inset-x-0 top-0 h-[57%] overflow-hidden md:hidden" style={{ backgroundColor: slide.media.mobileBg }}>
                 <Image
                   src={slide.media.mobileSrc!}
                   alt={slide.title.replace(/\n/g, " ")}
@@ -203,7 +216,9 @@ export function EditorialHero() {
                   // En desktop esta variante está oculta: 1px → thumbnail de 16px
                   sizes="(min-width: 768px) 1px, 100vw"
                   className="object-cover"
-                  style={{ objectPosition: slide.media.mobileObjectPosition ?? "center" }}
+                  // scale (mobileScale) <1 aleja levemente; el hueco lo rellena
+                  // el fondo crema del contenedor (mobileBg).
+                  style={{ objectPosition: slide.media.mobileObjectPosition ?? "center", transform: slide.media.mobileScale ? `scale(${slide.media.mobileScale})` : undefined, transformOrigin: "center" }}
                 />
                 {/* Fade fino solo en el borde inferior: no oscurece el label */}
                 <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#2D1A14] to-transparent" />
