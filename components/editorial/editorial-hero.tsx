@@ -46,7 +46,7 @@ const SLIDES: Slide[] = [
     align: "left",
   },
   {
-    media: { type: "image", src: "/images/segments/gym.png", mobileSrc: "/images/segments/gym-mobile.png" },
+    media: { type: "image", src: "/images/segments/gym-v2.png", mobileSrc: "/images/segments/gym-mobile-v2.png" },
     eyebrow: "Gimnasios & deporte",
     title: "El aroma que\naguanta tu ritmo",
     subtitle: "Lycra de Verano mantiene tu ropa deportiva fresca entrenamiento tras entrenamiento. La frescura que tu marca lleva puesta.",
