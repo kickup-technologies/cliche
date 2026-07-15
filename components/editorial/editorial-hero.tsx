@@ -13,6 +13,11 @@ type SlideMedia = {
   mobileSrc?: string
   objectPosition?: string
   mobileObjectPosition?: string
+  // desktopContain: en PC muestra la imagen COMPLETA (object-contain) en vez de
+  // recortarla; las barras que quedan usan `bg` (color del fondo de la foto) para
+  // que se vea integrado. Útil cuando el producto se corta arriba/abajo.
+  desktopContain?: boolean
+  bg?: string
 }
 
 interface Slide {
@@ -36,7 +41,7 @@ const SLIDES: Slide[] = [
     align: "left",
   },
   {
-    media: { type: "image", src: "/images/segments/best-friends.png", mobileSrc: "/images/segments/best-friends-mobile.png" },
+    media: { type: "image", src: "/images/segments/best-friends.png", mobileSrc: "/images/segments/best-friends-mobile.png", desktopContain: true, bg: "#f2dac1", mobileObjectPosition: "center 42%" },
     eyebrow: "Mascotas & sus espacios",
     title: "Que su rincón huela\ntan bien como ellos",
     subtitle: "Best Friends refresca las camas, mantas y espacios de tus mascotas con frambuesa, flores dulces y azúcar suave. Limpio, seguro y de larga duración.",
@@ -177,8 +182,10 @@ export function EditorialHero() {
                   // En móvil esta variante está oculta: 1px hace que el browser
                   // elija el srcset más pequeño (16px) en vez del de 100vw.
                   sizes={splitMobile ? "(max-width: 767px) 1px, 100vw" : "100vw"}
-                  className={`object-cover ${slide.media.mobileSrc ? "hidden md:block" : ""}`}
-                  style={{ objectPosition: slide.media.objectPosition ?? "center" }}
+                  className={`${slide.media.desktopContain ? "object-contain" : "object-cover"} ${slide.media.mobileSrc ? "hidden md:block" : ""}`}
+                  // backgroundColor rellena las barras de object-contain con el
+                  // color del fondo de la foto → el frasco completo sin cortes.
+                  style={{ objectPosition: slide.media.objectPosition ?? "center", backgroundColor: slide.media.desktopContain ? slide.media.bg : undefined }}
                 />
               )
             )}
