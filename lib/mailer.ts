@@ -20,13 +20,13 @@
 
 import nodemailer from "nodemailer"
 import { createServerClient } from "@/lib/supabase"
-import { LOGO_PNG_BASE64 } from "@/lib/email-logo"
 
 /**
  * Host para URLs dentro de un CORREO. El apex clichecolombia.com responde
  * 308 → www y varios clientes de correo no siguen redirects al cargar
- * imágenes (fotos de producto rotas). En el navegador el redirect es
- * transparente, así que en correos usamos siempre el host www directo.
+ * imágenes (logo/fotos rotos). En el navegador el redirect es transparente,
+ * así que en correos usamos SIEMPRE el host www directo (200, sin redirect):
+ * así el logo se ve como imagen normal, NO como archivo adjunto.
  */
 function emailHost(): string {
   const base = process.env.NEXT_PUBLIC_APP_URL || "https://clichecolombia.com"
@@ -41,16 +41,10 @@ function absUrl(src: string): string {
   return src.startsWith("http") ? src : `${emailHost()}${src}`
 }
 
-/**
- * Logo de la marca como adjunto inline (cid:cliche-logo). Embebido en el
- * correo: se muestra en todos los clientes, sin depender de que carguen
- * imágenes remotas ni de redirects del dominio.
- */
-const LOGO_ATTACHMENT = {
-  filename: "cliche-logo.png",
-  content: Buffer.from(LOGO_PNG_BASE64, "base64"),
-  contentType: "image/png",
-  cid: "cliche-logo",
+// Redes sociales de la marca (para el bloque "Síguenos" del pie).
+const SOCIAL = {
+  instagram: "https://www.instagram.com/clichearomasoficial",
+  tiktok: "https://www.tiktok.com/@clichearomasoficial",
 }
 
 /**
@@ -149,8 +143,9 @@ function shell(content: string, footNote: string): string {
 <body style="margin:0;padding:0;background:${C.bg};">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:${C.bg};padding:52px 16px;"><tr><td align="center">
 
-  <!-- Logo de la marca (adjunto inline: se ve aunque bloqueen imágenes remotas) -->
-  <img src="cid:cliche-logo" alt="Clich&eacute;" height="46" style="height:46px;width:auto;display:block;margin:0 auto 26px;"/>
+  <!-- Logo de la marca (imagen remota al host www directo → se ve natural,
+       NO como archivo adjunto) -->
+  <img src="${emailHost()}/images/logo-cliche.png" alt="Clich&eacute;" height="46" style="height:46px;width:auto;display:block;margin:0 auto 26px;"/>
 
   <table width="520" cellpadding="0" cellspacing="0" style="max-width:520px;width:100%;background:#ffffff;border:1px solid ${C.line};border-radius:20px;">
     <tr><td style="padding:46px 42px;">
@@ -158,8 +153,23 @@ function shell(content: string, footNote: string): string {
     </td></tr>
   </table>
 
+  <!-- Síguenos en redes: iconos-botón con el enlace oculto (solo se ve el icono) -->
+  <p style="margin:30px 0 12px;font-family:Arial,sans-serif;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:${C.faint};">S&iacute;guenos en nuestras redes</p>
+  <table cellpadding="0" cellspacing="0" style="margin:0 auto;"><tr>
+    <td style="padding:0 7px;">
+      <a href="${SOCIAL.instagram}" target="_blank" style="text-decoration:none;">
+        <img src="${emailHost()}/images/email/instagram.png" alt="Instagram" width="40" height="40" style="width:40px;height:40px;display:block;border:0;"/>
+      </a>
+    </td>
+    <td style="padding:0 7px;">
+      <a href="${SOCIAL.tiktok}" target="_blank" style="text-decoration:none;">
+        <img src="${emailHost()}/images/email/tiktok.png" alt="TikTok" width="40" height="40" style="width:40px;height:40px;display:block;border:0;"/>
+      </a>
+    </td>
+  </tr></table>
+
   <!-- Pie -->
-  <p style="margin:26px 0 4px;font-family:Arial,sans-serif;font-size:11px;color:${C.faint};">Clich&eacute; Aromas &middot; Colombia</p>
+  <p style="margin:24px 0 4px;font-family:Arial,sans-serif;font-size:11px;color:${C.faint};">Clich&eacute; Aromas &middot; Colombia</p>
   <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;color:${C.faint};">${footNote}</p>
 
 </td></tr></table>
@@ -192,9 +202,7 @@ export async function sendAdminOtpEmail(to: string, code: string): Promise<boole
     to,
     subject: `${code} es tu código de acceso al panel`,
     text: `Tu código de acceso al panel admin de Cliché es: ${code} (vence en 10 minutos).`,
-    html: shell(content, "Correo de seguridad generado autom&aacute;ticamente."),
-    attachments: [LOGO_ATTACHMENT],
-  })
+    html: shell(content, "Correo de seguridad generado autom&aacute;ticamente."),  })
   return true
 }
 
@@ -230,9 +238,7 @@ export async function sendWelcomeEmail(to: string, discountCode: string): Promis
       from: FROM,
       to,
       subject: `Tu código ${discountCode} está listo — Cliché Aromas`,
-      html: shell(content, "Recibiste este correo porque te suscribiste en clichecolombia.com."),
-      attachments: [LOGO_ATTACHMENT],
-    })
+      html: shell(content, "Recibiste este correo porque te suscribiste en clichecolombia.com."),    })
     console.log("[mailer] Welcome email sent")
   } catch (err) {
     console.error("[mailer] Failed to send welcome email:", err)
@@ -336,9 +342,7 @@ export async function sendOrderConfirmation(
       from: FROM,
       to,
       subject: `Pedido #${orderId} confirmado — Cliché Aromas`,
-      html: shell(content, "Guarda este correo como comprobante de tu compra."),
-      attachments: [LOGO_ATTACHMENT],
-    })
+      html: shell(content, "Guarda este correo como comprobante de tu compra."),    })
   } catch (err) { console.error("[mailer] Order confirmation failed:", err) }
 }
 
@@ -396,9 +400,7 @@ export async function sendOrderShippedEmail(
       from: FROM,
       to,
       subject: `Tu pedido #${orderId} va en camino 🚚`,
-      html: shell(content, "Te avisaremos cualquier novedad del env&iacute;o."),
-      attachments: [LOGO_ATTACHMENT],
-    })
+      html: shell(content, "Te avisaremos cualquier novedad del env&iacute;o."),    })
   } catch (err) { console.error("[mailer] Shipped email failed:", err) }
 }
 
@@ -435,9 +437,7 @@ export async function sendAbandonedCartEmail(
       from: FROM,
       to,
       subject: "Tu carrito te espera — Cliché Aromas",
-      html: shell(content, "Guardamos tu selecci&oacute;n por tiempo limitado."),
-      attachments: [LOGO_ATTACHMENT],
-    })
+      html: shell(content, "Guardamos tu selecci&oacute;n por tiempo limitado."),    })
   } catch (err) { console.error("[mailer] Abandoned cart email failed:", err) }
 }
 
@@ -496,9 +496,7 @@ export async function sendReviewRequestEmail(
       from: FROM,
       to,
       subject: `${name}, ¿cómo te fue con tu Cliché?`,
-      html: shell(content, "Gracias por hacer parte de Clich&eacute;."),
-      attachments: [LOGO_ATTACHMENT],
-    })
+      html: shell(content, "Gracias por hacer parte de Clich&eacute;."),    })
   } catch (err) { console.error("[mailer] Review request failed:", err) }
 }
 
@@ -563,9 +561,7 @@ export async function sendAdminOrderAlert(order: {
       from: FROM,
       to: adminEmail,
       subject: `🛍️ Nuevo pedido #${orderId} — ${fmtCOP(order.total)} — ${order.customer_name ?? order.customer_email ?? "Cliente"}`,
-      html: shell(content, "Generado autom&aacute;ticamente al confirmarse el pago en Mercado Pago."),
-      attachments: [LOGO_ATTACHMENT],
-    })
+      html: shell(content, "Generado autom&aacute;ticamente al confirmarse el pago en Mercado Pago."),    })
     console.log("[mailer] Admin order alert sent for", orderId)
   } catch (err) {
     console.error("[mailer] Admin alert failed:", err)
