@@ -8,7 +8,7 @@ import {
   Mail, Lock, LogOut, Package, MapPin, User as UserIcon, CheckCircle, AlertCircle,
   Loader2, Plus, Trash2, Heart, Star, Truck, RotateCcw, ShieldCheck,
   Crown, ChevronRight, ArrowRight, PackageOpen, Sparkles, Phone, Calendar, Monitor, Pencil,
-  Smartphone, Tablet, Eye, EyeOff, type LucideIcon,
+  Smartphone, Tablet, Eye, EyeOff, X, KeyRound, type LucideIcon,
 } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -896,6 +896,146 @@ function SeccionDirecciones() {
 }
 
 /* ─────────────────────────── LOGIN / SIGNUP ─────────────────────────── */
+/* ───────── Restablecer contraseña (código de 6 dígitos, correo propio) ─────────
+   3 pasos: (1) pedir el correo → se envía el código; (2) digitar el código →
+   se verifica y devuelve un token; (3) escribir la nueva clave + reconfirmar →
+   se guarda en la BD. Reemplaza el enlace de Supabase por un flujo de la marca. */
+function ForgotPasswordFlow({ initialEmail, onClose }: { initialEmail: string; onClose: () => void }) {
+  const [step, setStep] = useState<"email" | "code" | "newpass" | "done">("email")
+  const [email, setEmail] = useState(initialEmail || "")
+  const [code, setCode] = useState("")
+  const [token, setToken] = useState("")
+  const [pass, setPass] = useState(""); const [confirm, setConfirm] = useState("")
+  const [showPwd, setShowPwd] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  async function sendCode(e: React.FormEvent) {
+    e.preventDefault()
+    if (!email.trim().includes("@")) { setErr("Escribe un correo válido."); return }
+    setLoading(true); setErr(null)
+    try {
+      await fetch("/api/auth/password/request", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      })
+      setStep("code")
+    } catch { setErr("No se pudo enviar el código. Intenta de nuevo.") }
+    finally { setLoading(false) }
+  }
+  async function verifyCode(e: React.FormEvent) {
+    e.preventDefault()
+    if (!/^\d{6}$/.test(code.trim())) { setErr("Escribe los 6 dígitos del código."); return }
+    setLoading(true); setErr(null)
+    try {
+      const res = await fetch("/api/auth/password/verify", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), code: code.trim() }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { setErr(data.error || "Código incorrecto."); return }
+      setToken(data.token); setStep("newpass")
+    } catch { setErr("Error de conexión.") }
+    finally { setLoading(false) }
+  }
+  async function savePass(e: React.FormEvent) {
+    e.preventDefault()
+    if (pass.length < 6) { setErr("La contraseña debe tener al menos 6 caracteres."); return }
+    if (pass !== confirm) { setErr("Las contraseñas no coinciden."); return }
+    setLoading(true); setErr(null)
+    try {
+      const res = await fetch("/api/auth/password/reset", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, password: pass }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { setErr(data.error || "No se pudo cambiar la contraseña."); return }
+      setStep("done")
+    } catch { setErr("Error de conexión.") }
+    finally { setLoading(false) }
+  }
+
+  const fieldWrap = "flex items-center gap-2 rounded-xl border px-3.5 focus-within:border-[#2D1A14]/25"
+
+  return (
+    <div className="fixed inset-0 z-[130] flex items-center justify-center p-4" data-lenis-prevent>
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-sm rounded-3xl bg-white p-7 shadow-2xl">
+        <button onClick={onClose} aria-label="Cerrar" className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-black/5" style={{ color: `${CAFE}80` }}>
+          <X className="h-4 w-4" />
+        </button>
+
+        <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl" style={{ backgroundColor: `${TERRA}18` }}>
+          <KeyRound className="h-5 w-5" style={{ color: TERRA }} />
+        </div>
+
+        {step === "email" && (
+          <form onSubmit={sendCode}>
+            <h3 className="font-serif text-2xl font-medium" style={{ color: CAFE }}>Restablecer contraseña</h3>
+            <p className="mt-2 text-sm" style={{ color: `${CAFE}99` }}>Escribe tu correo y te enviaremos un código de 6 dígitos.</p>
+            <div className={`mt-5 ${fieldWrap}`} style={{ borderColor: `${CAFE}20` }}>
+              <Mail className="h-4 w-4 flex-shrink-0" style={{ color: `${CAFE}55` }} />
+              <input type="email" inputMode="email" required placeholder="tu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 flex-1 bg-transparent text-sm outline-none" style={{ color: CAFE }} autoFocus />
+            </div>
+            {err && <p className="mt-3 text-xs text-red-600">{err}</p>}
+            <button type="submit" disabled={loading} className="mt-5 flex h-12 w-full items-center justify-center rounded-xl text-sm font-bold tracking-wide text-white disabled:opacity-60" style={{ backgroundColor: TERRA }}>
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviarme el código"}
+            </button>
+          </form>
+        )}
+
+        {step === "code" && (
+          <form onSubmit={verifyCode}>
+            <h3 className="font-serif text-2xl font-medium" style={{ color: CAFE }}>Revisa tu correo</h3>
+            <p className="mt-2 text-sm" style={{ color: `${CAFE}99` }}>Si <b>{email}</b> tiene una cuenta, te llegó un código de 6 dígitos. Vence en 10 minutos.</p>
+            <input type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              className="mt-5 w-full rounded-xl border bg-[#FAF8F5] px-4 py-3 text-center text-2xl font-bold tracking-[0.4em] outline-none focus:ring-2 focus:ring-[#A67163]/40"
+              style={{ borderColor: `${CAFE}20`, color: CAFE }} placeholder="······" autoFocus />
+            {err && <p className="mt-3 text-xs text-red-600">{err}</p>}
+            <button type="submit" disabled={loading || code.length !== 6} className="mt-5 flex h-12 w-full items-center justify-center rounded-xl text-sm font-bold tracking-wide text-white disabled:opacity-60" style={{ backgroundColor: TERRA }}>
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verificar código"}
+            </button>
+            <button type="button" onClick={sendCode} disabled={loading} className="mt-3 w-full text-xs" style={{ color: `${CAFE}66` }}>¿No te llegó? Reenviar código</button>
+          </form>
+        )}
+
+        {step === "newpass" && (
+          <form onSubmit={savePass}>
+            <h3 className="font-serif text-2xl font-medium" style={{ color: CAFE }}>Nueva contraseña</h3>
+            <p className="mt-2 text-sm" style={{ color: `${CAFE}99` }}>Escríbela dos veces para confirmar. Mínimo 6 caracteres.</p>
+            <div className={`mt-5 ${fieldWrap}`} style={{ borderColor: `${CAFE}20` }}>
+              <Lock className="h-4 w-4 flex-shrink-0" style={{ color: `${CAFE}55` }} />
+              <input type={showPwd ? "text" : "password"} required minLength={6} placeholder="Nueva contraseña" value={pass} onChange={(e) => setPass(e.target.value)} className="h-12 flex-1 bg-transparent text-sm outline-none" style={{ color: CAFE }} autoFocus />
+              <button type="button" onClick={() => setShowPwd((v) => !v)} aria-label={showPwd ? "Ocultar" : "Mostrar"}>
+                {showPwd ? <EyeOff className="h-4 w-4" style={{ color: `${CAFE}55` }} /> : <Eye className="h-4 w-4" style={{ color: `${CAFE}55` }} />}
+              </button>
+            </div>
+            <div className={`mt-3 ${fieldWrap}`} style={{ borderColor: `${CAFE}20` }}>
+              <Lock className="h-4 w-4 flex-shrink-0" style={{ color: `${CAFE}55` }} />
+              <input type={showPwd ? "text" : "password"} required minLength={6} placeholder="Repite la contraseña" value={confirm} onChange={(e) => setConfirm(e.target.value)} className="h-12 flex-1 bg-transparent text-sm outline-none" style={{ color: CAFE }} />
+            </div>
+            {err && <p className="mt-3 text-xs text-red-600">{err}</p>}
+            <button type="submit" disabled={loading} className="mt-5 flex h-12 w-full items-center justify-center rounded-xl text-sm font-bold tracking-wide text-white disabled:opacity-60" style={{ backgroundColor: TERRA }}>
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Guardar nueva contraseña"}
+            </button>
+          </form>
+        )}
+
+        {step === "done" && (
+          <div>
+            <h3 className="font-serif text-2xl font-medium" style={{ color: CAFE }}>¡Contraseña actualizada!</h3>
+            <p className="mt-2 text-sm" style={{ color: `${CAFE}99` }}>Ya puedes iniciar sesión con tu nueva contraseña.</p>
+            <button onClick={onClose} className="mt-6 flex h-12 w-full items-center justify-center rounded-xl text-sm font-bold tracking-wide text-white" style={{ backgroundColor: CAFE }}>
+              Iniciar sesión
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function AuthForm() {
   const params = useSearchParams()
   // /cuenta?modo=registro abre directo el formulario de crear cuenta (es el
@@ -906,6 +1046,7 @@ function AuthForm() {
   const [birth, setBirth] = useState("")
   const [loading, setLoading] = useState(false)
   const [showPwd, setShowPwd] = useState(false)
+  const [forgotOpen, setForgotOpen] = useState(false)
   const [msg, setMsg] = useState<{ type: "ok" | "err" | "info"; text: string } | null>(null)
   useEffect(() => { if (params.get("error")) setMsg({ type: "err", text: "No se pudo verificar el enlace. Intenta de nuevo." }) }, [params])
   async function submit(e: React.FormEvent) {
@@ -939,7 +1080,7 @@ function AuthForm() {
         if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
           throw new Error("Este correo ya está registrado. Inicia sesión.")
         }
-        setMsg({ type: "info", text: "Te enviamos un correo de verificación. Ábrelo para activar tu cuenta." })
+        setMsg({ type: "info", text: "¡Cuenta creada! Te enviamos un correo para activarla (el remitente puede aparecer como Supabase). Ábrelo y toca el enlace. Si no lo ves en unos minutos, revisa la carpeta de spam o promociones." })
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
         if (error) throw new Error(/confirm/i.test(error.message) ? "Verifica tu correo antes de iniciar sesión." : "Correo o contraseña incorrectos.")
@@ -950,20 +1091,15 @@ function AuthForm() {
       }
     } catch (err) { setMsg({ type: "err", text: err instanceof Error ? err.message : "Ocurrió un error." }) } finally { setLoading(false) }
   }
-  async function forgotPassword() {
-    if (!email.trim()) { setMsg({ type: "err", text: "Escribe tu correo arriba y te enviamos el enlace." }); return }
-    setLoading(true); setMsg(null)
-    try {
-      const { error } = await getSupabaseBrowser().auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/auth/reset`,
-      })
-      if (error) throw error
-      setMsg({ type: "info", text: "Si el correo está registrado, te enviamos un enlace para restablecer tu contraseña. Revisa tu bandeja." })
-    } catch { setMsg({ type: "err", text: "No se pudo enviar el correo. Intenta de nuevo." }) }
-    finally { setLoading(false) }
+  // "Olvidé mi contraseña": abre el flujo propio de código de 6 dígitos (correo
+  // desde nuestro dominio), en vez del enlace de Supabase.
+  function forgotPassword() {
+    setMsg(null)
+    setForgotOpen(true)
   }
   return (
     <div className="grid h-screen overflow-hidden lg:grid-cols-[2fr_3fr]">
+      {forgotOpen && <ForgotPasswordFlow initialEmail={email} onClose={() => setForgotOpen(false)} />}
       {/* ── Columna izquierda: formulario (40%), ÚNICA con scroll ── */}
       {/* data-lenis-prevent es OBLIGATORIO: Lenis (scroll suave global) captura
           la rueda/trackpad para animar el scroll de la PÁGINA (que aquí mide

@@ -208,6 +208,42 @@ export async function sendAdminOtpEmail(to: string, code: string): Promise<boole
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
+// 1b. Código para restablecer contraseña (cliente) — desde NUESTRO dominio.
+// ═════════════════════════════════════════════════════════════════════════════
+export async function sendPasswordResetCode(to: string, code: string): Promise<boolean> {
+  const transport = createTransport()
+  if (!transport) {
+    console.warn("[mailer] SMTP not configured — no se pudo enviar el código de contraseña")
+    return false
+  }
+
+  const content = `
+    <div style="text-align:center;">
+      ${kicker("Restablecer contrase&ntilde;a")}
+      ${title("Tu c&oacute;digo de seguridad")}
+      ${para("Escr&iacute;belo en la p&aacute;gina para crear una nueva contrase&ntilde;a. Vence en 10 minutos.", 26)}
+      <div style="display:inline-block;border:1px solid ${C.line};border-radius:16px;padding:20px 38px;">
+        <span style="font-family:'Courier New',monospace;font-size:40px;letter-spacing:.35em;color:${C.ink};">${code}</span>
+      </div>
+      <p style="margin:26px 0 0;font-family:Arial,sans-serif;font-size:12px;color:${C.faint};">Si no pediste cambiar tu contrase&ntilde;a, ignora este correo: tu cuenta sigue segura.</p>
+    </div>`
+
+  try {
+    await transport.sendMail({
+      from: FROM,
+      to,
+      subject: `${code} es tu código para cambiar tu contraseña — Cliché`,
+      text: `Tu código para restablecer tu contraseña en Cliché es: ${code} (vence en 10 minutos). Si no lo pediste, ignora este correo.`,
+      html: shell(content, "Solicitud de cambio de contrase&ntilde;a en clichecolombia.com."),
+    })
+    return true
+  } catch (err) {
+    console.error("[mailer] password reset code failed:", err)
+    return false
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
 // 2. Bienvenida + código de descuento — motivo: el código como regalo.
 // ═════════════════════════════════════════════════════════════════════════════
 export async function sendWelcomeEmail(to: string, discountCode: string): Promise<void> {
