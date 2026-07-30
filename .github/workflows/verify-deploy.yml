@@ -19,7 +19,10 @@ jobs:
       - name: Esperar a que producción sirva este commit
         run: |
           for i in $(seq 1 40); do
-            sha=$(curl -s https://www.clichecolombia.com/api/health | jq -r '.sha // empty')
+            # `|| true`: mientras el deploy no está listo, /api/health puede devolver
+            # HTML (404) y jq falla — eso NO debe abortar el job (bash -e), solo
+            # contar como intento fallido y seguir esperando.
+            sha=$(curl -s https://www.clichecolombia.com/api/health | jq -r '.sha // empty' 2>/dev/null || true)
             echo "intento $i: producción=$sha esperado=$GITHUB_SHA"
             if [ "$sha" = "$GITHUB_SHA" ]; then
               echo "OK: producción ya corre este commit."
