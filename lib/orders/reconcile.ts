@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { findApprovedPayment } from "@/lib/mercadopago"
 import { confirmPaidOrder } from "@/lib/orders/confirm"
+import { sweepOrphanPayments, type OrphanSummary } from "@/lib/orders/orphan-payments"
 
 export type ReconcileSummary = {
   checked: number
@@ -51,4 +52,25 @@ export async function reconcilePendingOrders(db: SupabaseClient): Promise<Reconc
   }
 
   return { checked, confirmed, stillPending: checked - confirmed, confirmedRefs }
+}
+
+export type SafetyNetSummary = ReconcileSummary & { orphans: OrphanSummary }
+
+/**
+ * Red de seguridad COMPLETA de pagos, en ambos sentidos:
+ *  - ida (BD→MP): confirma pedidos pending cuyo pago sí está aprobado;
+ *  - inversa (MP→BD): registra pagos aprobados que no tienen pedido local
+ *    (links de pago manuales, canales viejos) para que se vean en el panel
+ *    y lleguen por correo a la admin. Nada de dinero queda invisible.
+ * La usan el cron horario, la reconciliación oportunista y el botón del panel.
+ */
+export async function runPaymentSafetyNet(db: SupabaseClient): Promise<SafetyNetSummary> {
+  const summary = await reconcilePendingOrders(db)
+  let orphans: OrphanSummary = { scanned: 0, registered: [] }
+  try {
+    orphans = await sweepOrphanPayments(db)
+  } catch (err) {
+    console.error("[reconcile] barrido inverso falló:", err)
+  }
+  return { ...summary, orphans }
 }

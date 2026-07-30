@@ -1,6 +1,6 @@
 import { after } from "next/server"
 import { createServerClient } from "@/lib/supabase"
-import { reconcilePendingOrders } from "@/lib/orders/reconcile"
+import { runPaymentSafetyNet } from "@/lib/orders/reconcile"
 
 /**
  * Reconciliación OPORTUNISTA de pagos, a caballo del tráfico normal.
@@ -34,7 +34,7 @@ export function scheduleOpportunisticReconcile(): void {
           .select("key")
         if (!won || won.length === 0) return // ya corrió hace poco (u otra instancia ganó)
 
-        const summary = await reconcilePendingOrders(db)
+        const summary = await runPaymentSafetyNet(db)
         if (summary.confirmed > 0) {
           // Señal fuerte en logs: el webhook perdió pagos y el respaldo los rescató.
           console.error(

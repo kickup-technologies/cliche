@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase"
-import { reconcilePendingOrders } from "@/lib/orders/reconcile"
+import { runPaymentSafetyNet } from "@/lib/orders/reconcile"
 
 /**
  * GET /api/cron/reconcile  — disparado por Vercel Cron (cada hora).
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const summary = await reconcilePendingOrders(createServerClient())
+    const summary = await runPaymentSafetyNet(createServerClient())
     if (summary.confirmed > 0) {
       // Señal visible en los logs de Vercel: el cron rescató ventas que el
       // webhook había perdido — conviene investigar por qué falló el webhook.

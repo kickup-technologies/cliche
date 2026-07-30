@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase"
 import { isAdmin } from "@/lib/admin-auth"
-import { reconcilePendingOrders } from "@/lib/orders/reconcile"
+import { runPaymentSafetyNet } from "@/lib/orders/reconcile"
 
 /**
  * POST /api/admin/orders/reconcile
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const summary = await reconcilePendingOrders(createServerClient())
+    const summary = await runPaymentSafetyNet(createServerClient())
     return NextResponse.json(summary)
   } catch (err) {
     console.error("[reconcile]", err)

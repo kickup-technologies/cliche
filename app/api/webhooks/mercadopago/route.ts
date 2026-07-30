@@ -3,6 +3,7 @@ import crypto from "crypto"
 import { MercadoPagoConfig, Payment } from "mercadopago"
 import { createServerClient } from "@/lib/supabase"
 import { confirmPaidOrder } from "@/lib/orders/confirm"
+import { registerOrphanPayment } from "@/lib/orders/orphan-payments"
 import { rateLimit } from "@/lib/rate-limit"
 
 /**
@@ -79,7 +80,15 @@ export async function POST(req: NextRequest) {
 
     const reference = payment.external_reference
     if (!reference) {
-      console.warn(`[mp webhook] pago aprobado ${dataId} sin external_reference — no se puede vincular a un pedido`)
+      // Sin referencia no hay pedido web posible (los del checkout SIEMPRE la
+      // llevan): es un pago externo (link manual de MP, QR, etc.). Se registra
+      // como pedido sintético + alerta admin para que no quede invisible.
+      console.warn(`[mp webhook] pago aprobado ${dataId} sin external_reference — se registra como pago externo`)
+      try {
+        await registerOrphanPayment(createServerClient(), payment)
+      } catch (err) {
+        console.error(`[mp webhook] no se pudo registrar pago externo ${dataId}:`, err)
+      }
       return NextResponse.json({ received: true })
     }
 
@@ -92,6 +101,17 @@ export async function POST(req: NextRequest) {
       { paidAmount: typeof payment.transaction_amount === "number" ? payment.transaction_amount : null },
     )
     console.log(`[mp webhook] pago ${dataId} aprobado — pedido ${reference}: ${result.status}`)
+
+    // Pago aprobado SIN pedido en la BD (link de pago manual, canal externo,
+    // pedido borrado): registrarlo YA como pedido sintético + alerta admin,
+    // para que el dinero jamás quede invisible.
+    if (result.status === "not_found") {
+      try {
+        await registerOrphanPayment(supabase, payment)
+      } catch (err) {
+        console.error(`[mp webhook] no se pudo registrar pago huérfano ${dataId}:`, err)
+      }
+    }
 
     return NextResponse.json({ received: true })
   } catch (err) {

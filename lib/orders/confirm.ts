@@ -157,7 +157,11 @@ export async function confirmPaidOrder(
         discountCode: order.discount_code || null,
         discountAmount: order.discount_amount || 0,
       })
-    } catch { /* no bloquear */ }
+    } catch (err) {
+      // No bloquear, pero SÍ dejar rastro: un correo de confirmación perdido
+      // en silencio es un cliente que pagó y cree que no pasó nada.
+      console.error(`[confirm] correo de confirmación falló (${reference}):`, err)
+    }
   }
 
   // 5b. Purchase server-side a la Conversions API de Meta: garantiza la
@@ -185,7 +189,11 @@ export async function confirmPaidOrder(
       shipping_address: order.shipping_address || null,
       items: order.items || [],
     })
-  } catch { /* no bloquear */ }
+  } catch (err) {
+    // No bloquear, pero dejar rastro: si la alerta a la admin falla, el pedido
+    // solo se ve entrando al panel — exactamente lo que queremos evitar.
+    console.error(`[confirm] alerta admin falló (${reference}):`, err)
+  }
 
   return { status: "confirmed", reference }
 }
