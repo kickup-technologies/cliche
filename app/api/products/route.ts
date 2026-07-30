@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { CATALOG_AS_PRODUCTS } from "@/lib/catalog-data"
+import { scheduleOpportunisticReconcile } from "@/lib/orders/auto-reconcile"
 
 export async function GET() {
+  // Red de seguridad de pagos: aprovecha el tráfico del catálogo para
+  // reconciliar pagos perdidos en segundo plano (máx. 1 vez cada 30 min).
+  scheduleOpportunisticReconcile()
+
   // Sin credenciales reales (local) → catálogo directo, sin esperar timeout.
   if (!isSupabaseConfigured) {
     return NextResponse.json(CATALOG_AS_PRODUCTS, {

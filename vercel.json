@@ -1,10 +1,6 @@
 {
   "crons": [
     {
-      "path": "/api/cron/reconcile",
-      "schedule": "0 * * * *"
-    },
-    {
       "path": "/api/abandoned-cart",
       "schedule": "0 15 * * *"
     },

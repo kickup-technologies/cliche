@@ -1,0 +1,30 @@
+# Red de seguridad de pagos — cron HORARIO gratuito vía GitHub Actions.
+#
+# El plan Hobby de Vercel solo permite crons diarios; este workflow llama cada
+# hora a /api/cron/reconcile (protegido por CRON_SECRET, secreto del repo) para
+# confirmar cualquier pedido cuyo pago esté aprobado en Mercado Pago pero que
+# el webhook no haya confirmado. Idempotente: si no hay nada que rescatar, no
+# hace nada.
+#
+# OJO: GitHub desactiva los schedules tras 60 días sin actividad en el repo.
+# Si el repo entra en pausa larga, reactivarlo en la pestaña Actions.
+name: Reconciliar pagos (respaldo del webhook)
+
+on:
+  schedule:
+    - cron: "10 * * * *" # cada hora (min 10, los ceros exactos van con retraso en GH)
+  workflow_dispatch: {}
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Llamar /api/cron/reconcile
+        run: |
+          code=$(curl -s -o /tmp/out.json -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://www.clichecolombia.com/api/cron/reconcile)
+          echo "HTTP $code"
+          cat /tmp/out.json
+          test "$code" = "200"
