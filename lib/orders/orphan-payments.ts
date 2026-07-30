@@ -31,6 +31,7 @@ export type MpPaymentLike = {
   transaction_amount?: number
   payment_method_id?: string
   payer?: { email?: string | null; first_name?: string | null; last_name?: string | null; phone?: { number?: string | null } | null } | null
+  metadata?: Record<string, unknown> | null
 }
 
 export type OrphanSummary = { scanned: number; registered: string[] }
@@ -45,6 +46,18 @@ export async function registerOrphanPayment(
   p: MpPaymentLike,
 ): Promise<string | null> {
   if (!p.id || p.status !== "approved") return null
+
+  // La cuenta de Mercado Pago es COMPARTIDA con "Bienestar" (otro negocio del
+  // mismo dueño, tienda Shopify bienestarbycliche.com). Sus ventas llegan con
+  // metadata.platform = "Shopify" y tienen su propio panel/operación allá:
+  // registrarlas aquí mezclaría las ventas de los dos negocios en el panel de
+  // Cliché. Se omiten (confirmado con el pago $74.000 del 2026-07-20).
+  const platform = p.metadata?.platform
+  if (typeof platform === "string" && platform.toLowerCase() === "shopify") {
+    console.log(`[orphan-payments] pago ${p.id} es de Shopify/Bienestar — se omite (otro negocio)`)
+    return null
+  }
+
   const syntheticRef = `mp_${p.id}`
   const externalRef = p.external_reference || null
 
