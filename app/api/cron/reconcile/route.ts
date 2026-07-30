@@ -33,7 +33,11 @@ export async function GET(req: NextRequest) {
       // webhook había perdido — conviene investigar por qué falló el webhook.
       console.error(`[cron reconcile] RESCATE: ${summary.confirmed} pedido(s) pagados sin confirmar:`, summary.confirmedRefs.join(", "))
     }
-    return NextResponse.json(summary)
+    // Fallos consultando MP (token inválido, API caída) NO pueden pasar por
+    // "todo bien": 500 → el workflow horario de GitHub se pone rojo → correo
+    // al dueño del repo. Sin esto, un token roto dejaría el sistema ciego con
+    // apariencia de salud (checked N, confirmed 0).
+    return NextResponse.json(summary, { status: summary.errors > 0 ? 500 : 200 })
   } catch (err) {
     console.error("[cron reconcile]", err)
     return NextResponse.json({ error: "Error reconciliando" }, { status: 500 })

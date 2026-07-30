@@ -32,7 +32,21 @@ export function scheduleOpportunisticReconcile(): void {
           .eq("key", SETTINGS_KEY)
           .lt("value", cutoff)
           .select("key")
-        if (!won || won.length === 0) return // ya corrió hace poco (u otra instancia ganó)
+        if (!won || won.length === 0) {
+          // O corrió hace poco (lo normal), o la fila de control NO existe
+          // (borrada por error) — en ese caso, sin esto, la capa quedaría
+          // muerta para siempre en silencio. Se autorrepara recreándola.
+          const { data: row } = await db
+            .from("site_settings")
+            .select("key")
+            .eq("key", SETTINGS_KEY)
+            .maybeSingle()
+          if (!row) {
+            await db.from("site_settings").insert({ key: SETTINGS_KEY, value: "1970-01-01T00:00:00.000Z" })
+            console.warn("[auto-reconcile] fila de control recreada — reconciliará en la próxima visita")
+          }
+          return
+        }
 
         const summary = await runPaymentSafetyNet(db)
         if (summary.confirmed > 0) {

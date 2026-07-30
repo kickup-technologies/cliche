@@ -8,6 +8,9 @@ export type ReconcileSummary = {
   confirmed: number
   stillPending: number
   confirmedRefs: string[]
+  /** Consultas a MP que fallaron (token inválido, API caída). Si errors > 0,
+   *  el cron responde 500 → el workflow de GitHub se pone rojo → correo. */
+  errors: number
 }
 
 /**
@@ -32,6 +35,7 @@ export async function reconcilePendingOrders(db: SupabaseClient): Promise<Reconc
 
   let checked = 0
   let confirmed = 0
+  let errors = 0
   const confirmedRefs: string[] = []
 
   for (const o of pendings ?? []) {
@@ -47,11 +51,12 @@ export async function reconcilePendingOrders(db: SupabaseClient): Promise<Reconc
         confirmedRefs.push(reference)
       }
     } catch (e) {
+      errors++
       console.error(`[reconcile] error con ${reference}:`, e)
     }
   }
 
-  return { checked, confirmed, stillPending: checked - confirmed, confirmedRefs }
+  return { checked, confirmed, stillPending: checked - confirmed, confirmedRefs, errors }
 }
 
 export type SafetyNetSummary = ReconcileSummary & { orphans: OrphanSummary }
@@ -70,6 +75,9 @@ export async function runPaymentSafetyNet(db: SupabaseClient): Promise<SafetyNet
   try {
     orphans = await sweepOrphanPayments(db)
   } catch (err) {
+    // Un barrido caído también es señal de alarma (token MP roto, API caída):
+    // se suma a errors para que el cron responda 500 y GitHub avise.
+    summary.errors++
     console.error("[reconcile] barrido inverso falló:", err)
   }
   return { ...summary, orphans }
