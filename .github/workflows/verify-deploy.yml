@@ -1,0 +1,31 @@
+# Verifica que cada push a main REALMENTE llegue a producción.
+#
+# Vercel puede rechazar un deploy sin que el push falle (ej. 2026-07-30: un
+# cron horario en vercel.json, inválido en plan Hobby, dejó producción
+# congelada 2 commits atrás sin aviso). Este workflow consulta /api/health
+# hasta que producción sirva el commit recién pusheado; si en ~13 min no
+# llega, el workflow FALLA y GitHub notifica por correo al dueño del repo.
+name: Verificar deploy en producción
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Esperar a que producción sirva este commit
+        run: |
+          for i in $(seq 1 40); do
+            sha=$(curl -s https://www.clichecolombia.com/api/health | jq -r '.sha // empty')
+            echo "intento $i: producción=$sha esperado=$GITHUB_SHA"
+            if [ "$sha" = "$GITHUB_SHA" ]; then
+              echo "OK: producción ya corre este commit."
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "::error::Producción NO desplegó el commit $GITHUB_SHA. Revisa si Vercel rechazó el build (vercel.json inválido, límites del plan, integración Git)."
+          exit 1
