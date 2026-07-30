@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter, Playfair_Display } from 'next/font/google'
+import { siteUrl } from '@/lib/site-url'
 import { Analytics } from '@vercel/analytics/next'
 import { AuthProvider } from '@/context/auth-context'
 import { CartProvider } from '@/context/cart-context'
@@ -32,7 +33,7 @@ const playfair = Playfair_Display({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://clichecolombia.com'),
+  metadataBase: new URL(siteUrl()),
   title: {
     default: 'Cliché Colombia — Aromas que Transforman tu Espacio',
     template: '%s | Cliché Colombia',

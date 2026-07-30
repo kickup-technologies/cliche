@@ -1,8 +1,9 @@
 import { MetadataRoute } from "next"
 import { supabase } from "@/lib/supabase"
+import { siteUrl } from "@/lib/site-url"
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://clichecolombia.com"
+  const baseUrl = siteUrl()
 
   const { data: products } = await supabase
     .from("products")

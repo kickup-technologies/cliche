@@ -21,6 +21,7 @@
 import nodemailer from "nodemailer"
 import { createServerClient } from "@/lib/supabase"
 import { carrierName, trackingUrl } from "@/lib/carriers"
+import { siteUrl } from "@/lib/site-url"
 
 /**
  * Host para URLs dentro de un CORREO. El apex clichecolombia.com responde
@@ -30,8 +31,7 @@ import { carrierName, trackingUrl } from "@/lib/carriers"
  * así el logo se ve como imagen normal, NO como archivo adjunto.
  */
 function emailHost(): string {
-  const base = process.env.NEXT_PUBLIC_APP_URL || "https://clichecolombia.com"
-  return base.replace("://clichecolombia.com", "://www.clichecolombia.com").replace(/\/$/, "")
+  return siteUrl()
 }
 
 /**

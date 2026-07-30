@@ -14,6 +14,7 @@
  */
 
 import { sendCAPIEvents, hashValue, normalizePhone, type CAPIUserData } from "@/lib/meta-capi"
+import { siteUrl } from "@/lib/site-url"
 
 type OrderItem = {
   product_id?: string
@@ -53,7 +54,7 @@ export async function sendPurchaseCAPI(order: PurchaseOrder): Promise<void> {
       .filter((id): id is string => typeof id === "string" && id.length > 0)
     const num_items = items.reduce((s, i) => s + (Number(i.quantity) || 1), 0)
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://clichecolombia.com"
+    const appUrl = siteUrl()
 
     await sendCAPIEvents([
       {

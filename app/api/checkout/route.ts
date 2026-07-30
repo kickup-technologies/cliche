@@ -4,6 +4,7 @@ import { supabase, createServerClient } from "@/lib/supabase"
 import { getSupabaseServer } from "@/lib/supabase/server"
 import { rateLimit } from "@/lib/rate-limit"
 import { parseVariantId, TIER_BY_ID, SHIPPING_COST, parseFreeShippingThreshold } from "@/lib/pricing"
+import { siteUrl } from "@/lib/site-url"
 
 type IncomingItem = { product_id: string; quantity: number; name?: string }
 type IncomingPack = {
@@ -28,7 +29,9 @@ export async function POST(req: NextRequest) {
     }
 
     const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://clichecolombia.com"
+    // CRÍTICO: URL canónica (www). Con el apex, la notification_url del webhook
+    // de Mercado Pago recibía un 308 y NINGÚN pago asíncrono se confirmaba.
+    const appUrl = siteUrl()
 
     if (!accessToken) {
       return NextResponse.json({ error: "Configuración de pago incompleta" }, { status: 500 })
