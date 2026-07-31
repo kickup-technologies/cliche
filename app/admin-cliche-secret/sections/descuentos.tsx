@@ -59,7 +59,7 @@ export function DescuentosSection() {
     e.preventDefault()
     setError("")
     const code = form.code.toUpperCase().trim()
-    if (!code) { setError("Escribe un código (ej. BIENVENIDA10).") ; return }
+    if (!code) { setError("Escribe un código (ej. AROMAS10).") ; return }
     if (!form.value || Number(form.value) <= 0) { setError("El valor debe ser mayor a 0."); return }
     setSaving(true)
     try {
@@ -128,7 +128,7 @@ export function DescuentosSection() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
           <div className="lg:col-span-1">
             <label className="block text-xs font-medium text-[#6b5a54] mb-1">Código</label>
-            <input className={`${inputCls} uppercase font-mono`} placeholder="BIENVENIDA10" value={form.code}
+            <input className={`${inputCls} uppercase font-mono`} placeholder="AROMAS10" value={form.code}
               onChange={e => setForm({ ...form, code: e.target.value.toUpperCase() })} />
           </div>
           <div>
@@ -170,7 +170,7 @@ export function DescuentosSection() {
           <div className="rounded-xl border border-dashed border-[#e7dcd6] bg-[#faf7f5] p-6 text-center">
             <Ticket className="w-6 h-6 text-[#c9b8b0] mx-auto mb-2" />
             <p className="text-sm font-medium text-[#6b5a54]">Aún no hay códigos</p>
-            <p className="text-xs text-[#9e8a84] mt-1">Crea el primero arriba — por ejemplo <strong>BIENVENIDA10</strong> con 10%.</p>
+            <p className="text-xs text-[#9e8a84] mt-1">Crea el primero arriba — por ejemplo <strong>AROMAS10</strong> con 10%.</p>
           </div>
         ) : (
           <div className="space-y-2">

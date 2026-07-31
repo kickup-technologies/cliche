@@ -68,7 +68,7 @@ const GROUPS: Group[] = [
     fields: [
       { key: "cta_title", label: "Empresas · Título", placeholder: "¿Tienes una marca? Creamos tu identidad olfativa", area: true },
       { key: "cta_subtitle", label: "Empresas · Subtítulo", placeholder: "Diseñamos aromas exclusivos...", area: true },
-      { key: "newsletter_subtitle", label: "Newsletter · Subtítulo", placeholder: "Suscríbete y recibe tu código...", area: true },
+      { key: "newsletter_subtitle", label: "Newsletter · Subtítulo", placeholder: "Suscríbete y recibe ideas de marketing olfativo...", area: true },
     ],
   },
   {
@@ -77,7 +77,7 @@ const GROUPS: Group[] = [
     icon: Tag,
     desc: "Código y porcentaje de la oferta",
     fields: [
-      { key: "discount_code", label: "Código de descuento", placeholder: "BIENVENIDA10" },
+      { key: "discount_code", label: "Código de descuento (vacío = no se promociona)", placeholder: "(sin código)" },
       { key: "discount_percentage", label: "Porcentaje (%)", placeholder: "10", type: "number" },
     ],
   },
@@ -150,7 +150,7 @@ export function PersonalizarSection({ settings, onSettingsUpdate }: Personalizar
     newsletter_subtitle: local.newsletter_subtitle || "",
     announcement_text: local.announcement_text || "",
     free_shipping_threshold: Number(local.free_shipping_threshold || 300000),
-    discount_code: local.discount_code || "BIENVENIDA10",
+    discount_code: local.discount_code || "",
     discount_percentage: Number(local.discount_percentage || 10),
     whatsapp_number: local.whatsapp_number || "",
     whatsapp_message: local.whatsapp_message || "",

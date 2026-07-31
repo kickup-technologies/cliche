@@ -244,9 +244,10 @@ export async function sendPasswordResetCode(to: string, code: string): Promise<b
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// 2. Bienvenida + código de descuento — motivo: el código como regalo.
+// 2. Bienvenida — motivo: dar la bienvenida a la comunidad, sin descuento.
+//    (El código de bienvenida se eliminó el 2026-07-30 por decisión del negocio.)
 // ═════════════════════════════════════════════════════════════════════════════
-export async function sendWelcomeEmail(to: string, discountCode: string): Promise<void> {
+export async function sendWelcomeEmail(to: string): Promise<void> {
   const transport = createTransport()
   if (!transport) {
     console.warn("[mailer] SMTP not configured — skipping welcome email")
@@ -257,12 +258,7 @@ export async function sendWelcomeEmail(to: string, discountCode: string): Promis
     <div style="text-align:center;">
       ${kicker("Te damos la bienvenida")}
       ${title("Deja que tu historia comience<br/>con nuestro aroma.")}
-      ${para("Gracias por unirte a Clich&eacute;. Cada espacio guarda una historia — y la tuya merece un aroma propio. Este es tu regalo de bienvenida, listo para tu primera compra:", 28)}
-      <div style="background:${C.bg};border:1px solid ${C.accent};border-radius:16px;padding:24px;margin-bottom:10px;">
-        <p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:${C.faint};">Tu c&oacute;digo de descuento</p>
-        <p style="margin:0;font-family:'Courier New',monospace;font-size:30px;font-weight:700;letter-spacing:.14em;color:${C.ink};">${discountCode}</p>
-      </div>
-      <p style="margin:0 0 30px;font-family:Arial,sans-serif;font-size:12px;color:${C.faint};">Inicia sesi&oacute;n y apl&iacute;calo en tu carrito, antes de pagar.</p>
+      ${para("Gracias por unirte a Clich&eacute;. Cada espacio guarda una historia — y la tuya merece un aroma propio. Desde hoy recibir&aacute;s ideas de marketing olfativo, novedades de la casa y acceso a los lanzamientos antes que nadie.", 28)}
       ${button(`${appUrl()}/catalogo`, "Descubrir los aromas")}
       ${hr}
       <p style="margin:0;font-family:Arial,sans-serif;font-size:12px;line-height:1.9;color:${C.faint};">
@@ -274,7 +270,7 @@ export async function sendWelcomeEmail(to: string, discountCode: string): Promis
     await transport.sendMail({
       from: FROM,
       to,
-      subject: `Tu código ${discountCode} está listo — Cliché Aromas`,
+      subject: "Te damos la bienvenida — Cliché Aromas",
       html: shell(content, "Recibiste este correo porque te suscribiste en clichecolombia.com."),    })
     console.log("[mailer] Welcome email sent")
   } catch (err) {

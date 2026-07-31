@@ -37,7 +37,7 @@ import { CustomPackCTA } from "@/components/editorial/custom-pack-cta"
  *  RIESGO    11. Garantías — reversión de riesgo
  *  OBJECIÓN  12. FAQ acordeón
  *  B2B       13. Banda identidad olfativa empresas
- *  CAPTURA   14. Newsletter con gancho de 10% off
+ *  CAPTURA   14. Newsletter (gancho de contenido; sin descuento desde 2026-07-30)
  */
 export default function Home() {
   return (

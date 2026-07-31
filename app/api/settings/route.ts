@@ -29,7 +29,9 @@ const PUBLIC_KEYS = [
 
 const DEFAULTS = {
   discount_percentage: 10,
-  discount_code: 'BIENVENIDA10',
+  // Sin código de bienvenida por decisión del negocio (2026-07-30). Vacío =
+  // ni el bot de WhatsApp ni ninguna vista lo promociona.
+  discount_code: '',
   announcement_text: '',
   free_shipping_threshold: 300000,
   whatsapp_number: '',
@@ -45,7 +47,7 @@ const DEFAULTS = {
   featured_subtitle: 'Los favoritos de nuestra comunidad',
   cta_title: '¿Tienes una marca? Creamos tu identidad olfativa',
   cta_subtitle: 'Diseñamos aromas exclusivos para negocios que quieren diferenciarse. Hoteles, spas, tiendas y marcas deportivas ya confían en nosotros.',
-  newsletter_subtitle: 'Suscríbete y recibe tu código de descuento al instante, más tips de aromaterapia y lanzamientos exclusivos.',
+  newsletter_subtitle: 'Suscríbete y recibe ideas de marketing olfativo, tips de aromaterapia y lanzamientos exclusivos.',
   urgency_config: URGENCY_DEFAULTS,
 }
 

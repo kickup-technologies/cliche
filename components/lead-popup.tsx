@@ -3,14 +3,16 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
-import { X, CheckCircle, Copy, Leaf, Heart, Rabbit, User } from "lucide-react"
+import { X, CheckCircle, Leaf, Heart, Rabbit, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useCart } from "@/context/cart-context"
 import { useCAPI } from "@/lib/use-capi"
 
 /**
- * LeadPopup — captura de correo a cambio de un código real (BIENVENIDA10).
+ * LeadPopup — captura de correo para el newsletter (SIN código de descuento:
+ * se eliminó el 2026-07-30 por decisión del negocio). El gancho ahora es
+ * contenido: ideas de marketing olfativo y acceso anticipado a lanzamientos.
  *
  * Diseño: tarjeta VERTICAL con la foto de MAHAI de fondo a sangre completa y el
  * texto superpuesto sobre la zona crema (izquierda). Optimizado para móvil
@@ -22,7 +24,6 @@ import { useCAPI } from "@/lib/use-capi"
  */
 const SESSION_KEY = "cliche_lead_seen"   // por sesión
 const SUB_KEY = "cliche_subscribed"      // persistente (no volver a mostrar)
-const FALLBACK_CODE = "BIENVENIDA10"
 
 const CREMA = "#FAF8F5"
 const CAFE = "#2D1A14"
@@ -47,8 +48,6 @@ export function LeadPopup() {
   const [email, setEmail] = useState("")
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [copied, setCopied] = useState(false)
-  const [code, setCode] = useState(FALLBACK_CODE)
   const { items } = useCart()
   const { track } = useCAPI()
   const armed = useRef(false)
@@ -119,8 +118,7 @@ export function LeadPopup() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, source: "popup" }),
       })
-      const data = await res.json().catch(() => ({}))
-      if (data?.discount_code) setCode(data.discount_code)
+      await res.json().catch(() => ({}))
       setSubmitted(true)
       try { localStorage.setItem(SUB_KEY, "1") } catch {}
       track({ event_name: "Lead", custom_data: { content_name: "lead_popup" }, user_data: { raw_email: email } })
@@ -130,10 +128,6 @@ export function LeadPopup() {
     } finally {
       setLoading(false)
     }
-  }
-
-  const copy = () => {
-    try { navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 1800) } catch {}
   }
 
   if (!isOpen) return null
@@ -178,8 +172,8 @@ export function LeadPopup() {
               </h3>
 
               <p className="mt-3 text-[13px] leading-relaxed sm:text-sm" style={{ color: `${CAFE}B0` }}>
-                Suscríbete y recibe un <span className="font-bold" style={{ color: TERRA }}>10% OFF</span> en el primer
-                pedido de tu marca, además de ideas de marketing olfativo y acceso a los lanzamientos antes que nadie.
+                Suscríbete y recibe <span className="font-bold" style={{ color: TERRA }}>ideas de marketing olfativo</span>,
+                novedades de la casa y acceso a los lanzamientos antes que nadie.
               </p>
 
               <form onSubmit={submit} className="mt-5 space-y-2.5">
@@ -198,7 +192,7 @@ export function LeadPopup() {
                   className="h-11 w-full rounded-xl text-sm font-bold tracking-wide"
                   style={{ backgroundColor: TERRA, color: CREMA }}
                 >
-                  {loading ? "Enviando…" : "Quiero mi 10% OFF"}
+                  {loading ? "Enviando…" : "Suscribirme"}
                 </Button>
               </form>
 
@@ -222,7 +216,7 @@ export function LeadPopup() {
                   ))}
                 </div>
                 <p className="text-[10.5px] leading-tight" style={{ color: `${CAFE}99` }}>
-                  Únete a las marcas y negocios que eligen consciencia y bienestar. El código se aplica <span className="font-semibold" style={{ color: CAFE }}>iniciando sesión</span> en tu carrito.
+                  Únete a las marcas y negocios que eligen consciencia y bienestar.
                 </p>
               </div>
 
@@ -235,17 +229,11 @@ export function LeadPopup() {
               <div className="mb-4 flex h-13 w-13 items-center justify-center rounded-full bg-green-100" style={{ height: 52, width: 52 }}>
                 <CheckCircle className="h-7 w-7 text-green-600" />
               </div>
-              <h3 className="font-serif text-3xl font-medium leading-tight" style={{ color: CAFE }}>¡Listo! Te llegó por correo</h3>
-              <p className="mt-2 text-sm" style={{ color: `${CAFE}99` }}>Usa este código en tu primera compra:</p>
-              <button
-                onClick={copy}
-                className="mt-4 flex items-center gap-3 rounded-xl border px-5 py-3.5 transition-colors"
-                style={{ borderColor: `${TERRA}55`, backgroundColor: `${TERRA}14` }}
-              >
-                <span className="font-mono text-2xl font-bold tracking-widest" style={{ color: TERRA }}>{code}</span>
-                {copied ? <CheckCircle className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" style={{ color: `${TERRA}AA` }} />}
-              </button>
-              <Button onClick={close} className="mt-4 h-11 rounded-xl px-6 font-bold" style={{ backgroundColor: CAFE, color: CREMA }}>
+              <h3 className="font-serif text-3xl font-medium leading-tight" style={{ color: CAFE }}>¡Bienvenido a Cliché!</h3>
+              <p className="mt-2 text-sm" style={{ color: `${CAFE}99` }}>
+                Ya haces parte de la casa. Te llegarán ideas de marketing olfativo y los lanzamientos antes que nadie.
+              </p>
+              <Button onClick={close} className="mt-5 h-11 rounded-xl px-6 font-bold" style={{ backgroundColor: CAFE, color: CREMA }}>
                 Empezar a comprar
               </Button>
             </div>

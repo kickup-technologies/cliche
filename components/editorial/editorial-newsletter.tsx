@@ -35,7 +35,7 @@ export function EditorialNewsletter() {
       })
       const data = await res.json().catch(() => ({}))
       if (data?.alreadySubscribed) {
-        setMsg({ type: "info", text: "Este correo ya está suscrito. No te preocupes, ya tienes tu código 🌿" })
+        setMsg({ type: "info", text: "Este correo ya está suscrito 🌿" })
         return
       }
       if (!res.ok || !data?.success) {
@@ -58,16 +58,16 @@ export function EditorialNewsletter() {
           Para marcas y negocios
         </p>
         <h2 className="font-serif text-3xl font-medium text-foreground md:text-4xl">
-          10% off en el primer pedido de tu marca
+          El aroma que tu marca merece
         </h2>
         <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
-          Suscríbete y recibe tu código de bienvenida, ideas de marketing olfativo
+          Suscríbete y recibe ideas de marketing olfativo, novedades de la casa
           y los lanzamientos antes que nadie.
         </p>
 
         {sent ? (
           <p className="mt-8 text-sm font-medium text-primary">
-            ¡Listo! Revisa tu correo: tu código de bienvenida va en camino.
+            ¡Listo! Ya haces parte de Cliché. Nos vemos en tu correo.
           </p>
         ) : (
           <>
@@ -117,9 +117,9 @@ export function EditorialNewsletter() {
               <X className="h-4 w-4" />
             </button>
             <p className="text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-[#A67163]">Un paso más</p>
-            <h3 className="mt-2 font-serif text-2xl font-medium text-[#2D1A14]">Crea tu cuenta para recibir tu código</h3>
+            <h3 className="mt-2 font-serif text-2xl font-medium text-[#2D1A14]">Crea tu cuenta para suscribirte</h3>
             <p className="mt-3 text-sm leading-relaxed text-[#2D1A14]/60">
-              Tu código de bienvenida queda ligado a tu cuenta, así solo tú puedes usarlo. Inicia sesión o crea una en segundos.
+              La suscripción queda ligada a tu cuenta. Inicia sesión o crea una en segundos.
             </p>
             <div className="mt-7 flex flex-col gap-3">
               <Link

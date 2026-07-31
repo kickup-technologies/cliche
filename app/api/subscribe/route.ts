@@ -33,27 +33,22 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // Código de descuento REAL (debe existir en la tabla discount_codes para que
-    // funcione en el checkout). Único código de bienvenida vigente: 10%.
-    // (BIENVENIDA20 se eliminó el 2026-07-14 por decisión del negocio.)
-    const discountCode = "BIENVENIDA10"
-
-    // Guardar en Supabase
+    // Sin código de bienvenida: se eliminó el 2026-07-30 por decisión del
+    // negocio (antes BIENVENIDA10; BIENVENIDA20 ya se había quitado el
+    // 2026-07-14). La suscripción ahora ofrece contenido y acceso anticipado.
     const { error } = await supabase.from("subscribers").insert({
       email,
       source,
-      discount_code: discountCode,
     })
 
     if (error) throw error
 
-    // Enviar email de bienvenida con código
-    await sendWelcomeEmail(email, discountCode)
+    // Correo de bienvenida (sin código de descuento)
+    await sendWelcomeEmail(email)
 
     return NextResponse.json({
       success: true,
       message: "¡Suscrito exitosamente!",
-      discount_code: discountCode,
     })
   } catch (err) {
     console.error("Subscribe error:", err)
