@@ -68,6 +68,19 @@ function GraciasContent() {
 
   useEffect(() => {
     if (isFailed) {
+      // Rastro permanente + alerta admin: el intento fallido queda registrado
+      // en la BD y llega un correo con los datos del cliente para rescatar la
+      // venta (los logs de Vercel solo viven 1 h; esto no se pierde). El guard
+      // de sessionStorage evita repetir el POST al recargar; el servidor además
+      // es idempotente por pedido.
+      if (sessionId && !sessionStorage.getItem(`payfail_${sessionId}`)) {
+        sessionStorage.setItem(`payfail_${sessionId}`, "1")
+        fetch("/api/orders/payment-failed", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reference: sessionId }),
+        }).catch(() => {})
+      }
       setLoading(false)
       return
     }
@@ -197,15 +210,30 @@ function GraciasContent() {
           </div>
           <h1 className="font-serif text-3xl font-light text-[#2D1A14] mb-3">Pago no procesado</h1>
           <p className="text-[#2D1A14]/50 text-sm leading-relaxed mb-8">
-            Tu pago no pudo completarse. No se realizó ningún cobro. Puedes intentarlo de nuevo con otro método de pago.
+            Tu pago no pudo completarse. No se realizó ningún cobro. Puedes intentarlo de nuevo —
+            PSE y el botón Bancolombia suelen aprobar sin problema.
           </p>
-          <button
-            onClick={() => router.push("/checkout")}
-            className="inline-flex items-center gap-2 bg-[#A67163] hover:bg-[#8B5E52] text-white font-semibold px-8 py-3.5 rounded-xl transition-colors"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Intentar de nuevo
-          </button>
+          <div className="flex flex-col gap-3 items-center">
+            <button
+              onClick={() => router.push("/checkout")}
+              className="w-full inline-flex items-center justify-center gap-2 bg-[#A67163] hover:bg-[#8B5E52] text-white font-semibold px-8 py-3.5 rounded-xl transition-colors"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Intentar de nuevo
+            </button>
+            {/* Rescate humano: si la pasarela no deja pagar, que el cliente no
+                se vaya en silencio — un WhatsApp con la referencia lista. */}
+            <a
+              href={`https://wa.me/573194565463?text=${encodeURIComponent(
+                `Hola, intenté pagar mi pedido${sessionId ? ` #${sessionId.slice(-8).toUpperCase()}` : ""} en la tienda y el pago no pasó. ¿Me ayudan a completarlo?`
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full inline-flex items-center justify-center gap-2 border border-[#2D1A14]/15 hover:border-[#2D1A14]/40 text-[#2D1A14] font-medium px-8 py-3.5 rounded-xl transition-colors text-sm"
+            >
+              ¿Problemas con el pago? Escríbenos por WhatsApp
+            </a>
+          </div>
         </div>
       </main>
     )

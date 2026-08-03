@@ -163,6 +163,13 @@ export default function CheckoutPage() {
       setError("Ingresa un correo electrónico válido.")
       return
     }
+    // Cédula obligatoria: Mercado Pago la cruza con el banco emisor y sin ella
+    // su antifraude bloquea pagos de clientes reales (auditoría 2026-08-03:
+    // 3 de 4 intentos fallidos iban sin cédula). Además se usa para la factura.
+    if (customerIdNumber.replace(/\D/g, "").length < 5) {
+      setError("Ingresa tu cédula o NIT: el banco la necesita para aprobar el pago.")
+      return
+    }
     if (!acceptedPolicies) {
       setError("Debes autorizar el tratamiento de tus datos personales y aceptar los Términos para continuar.")
       return
@@ -391,15 +398,16 @@ export default function CheckoutPage() {
               />
             </div>
 
-            {/* Cédula / NIT — opcional, para factura electrónica */}
-            <div className="flex border border-[#2D1A14]/10 hover:border-[#2D1A14]/20 transition-colors duration-200">
+            {/* Cédula / NIT — OBLIGATORIA: el banco la cruza al aprobar el pago
+                (antifraude de Mercado Pago) y se usa para la factura. */}
+            <div className="flex border border-[#2D1A14]/15 hover:border-[#2D1A14]/30 focus-within:border-[#A67163]/70 transition-colors duration-200">
               <input
                 type="text"
                 inputMode="numeric"
-                placeholder="Cédula o NIT (para tu factura, opcional)"
+                placeholder="Cédula o NIT (el banco la pide para aprobar tu pago) *"
                 value={customerIdNumber}
                 onChange={(e) => setCustomerIdNumber(e.target.value.replace(/[^0-9.-]/g, ""))}
-                className="flex-1 px-4 py-3 text-sm bg-transparent text-[#2D1A14] placeholder:text-[#2D1A14]/20 outline-none font-light"
+                className="flex-1 px-4 py-3 text-sm bg-transparent text-[#2D1A14] placeholder:text-[#2D1A14]/25 outline-none font-light"
               />
             </div>
 

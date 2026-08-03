@@ -543,6 +543,63 @@ export async function sendReviewRequestEmail(
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
+// 6.5 Alerta de PAGO FALLIDO → admin — motivo: rescatar la venta llamando al
+// cliente. Nació de la auditoría 2026-08-03: 4 clientes reales intentaron pagar
+// y quedaron invisibles (MP no registró ni un intento y nadie se enteró).
+// ═════════════════════════════════════════════════════════════════════════════
+export async function sendPaymentFailedAlert(order: {
+  reference: string
+  total: number
+  customer_name: string | null
+  customer_email: string | null
+  customer_phone: string | null
+}): Promise<void> {
+  const transport = createTransport()
+  const adminEmail = process.env.ADMIN_EMAIL || process.env.SMTP_USER
+  if (!transport || !adminEmail) {
+    console.warn("[mailer] Payment-failed alert skipped — SMTP or ADMIN_EMAIL not configured")
+    return
+  }
+
+  const orderId = order.reference.slice(-8).toUpperCase()
+  const row = (label: string, value: string) => `
+    <tr>
+      <td style="padding:9px 0;border-bottom:1px solid ${C.line};font-family:Arial,sans-serif;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:${C.faint};white-space:nowrap;padding-right:18px;">${label}</td>
+      <td align="right" style="padding:9px 0;border-bottom:1px solid ${C.line};font-family:Georgia,serif;font-size:14px;color:${C.ink};">${value}</td>
+    </tr>`
+
+  const content = `
+    <div style="text-align:center;">
+      ${kicker("Pago fallido — cliente por rescatar")}
+      <p style="margin:0 0 4px;font-family:Georgia,serif;font-size:34px;color:${C.ink};">${fmtCOP(order.total)}</p>
+      <p style="margin:0 0 6px;font-family:'Courier New',monospace;font-size:13px;color:${C.faint};">#${orderId}</p>
+    </div>
+    ${hr}
+    <p style="margin:0 0 18px;font-family:Georgia,serif;font-size:14px;line-height:1.6;color:${C.sub};text-align:center;">
+      Este cliente llen&oacute; todos sus datos e intent&oacute; pagar, pero Mercado Pago no proces&oacute; el pago.
+      Una llamada o un WhatsApp a tiempo suele recuperar la venta.
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0">
+      ${row("Cliente", order.customer_name ?? "—")}
+      ${row("Email", order.customer_email ?? "—")}
+      ${row("Celular", order.customer_phone ?? "—")}
+    </table>
+    <div style="height:30px;"></div>
+    ${order.customer_phone ? button(`https://wa.me/57${order.customer_phone.replace(/\D/g, "").replace(/^57/, "")}`, "Escribirle por WhatsApp") : button(`${appUrl()}/admin-cliche-secret`, "Abrir el panel")}`
+
+  try {
+    await transport.sendMail({
+      from: FROM,
+      to: adminEmail,
+      subject: `⚠️ Pago fallido #${orderId} — ${fmtCOP(order.total)} — ${order.customer_name ?? order.customer_email ?? "Cliente"} (llámalo)`,
+      html: shell(content, "Generado al volver el cliente de Mercado Pago con el pago fallido."),    })
+    console.log("[mailer] Payment-failed alert sent for", orderId)
+  } catch (err) {
+    console.error("[mailer] Payment-failed alert failed:", err)
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
 // 7. Alerta de pedido nuevo → admin — motivo: ficha operativa compacta.
 // ═════════════════════════════════════════════════════════════════════════════
 export async function sendAdminOrderAlert(order: {
