@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { sendOrderConfirmation, sendAdminOrderAlert } from "@/lib/mailer"
+import { sendOrderConfirmation, sendAdminOrderAlert, sendStockAlertEmail } from "@/lib/mailer"
 import { sendPurchaseCAPI } from "@/lib/capi-server"
 
 export type ConfirmResult =
@@ -75,6 +75,9 @@ export async function confirmPaidOrder(
   //    en try/catch: un error transitorio del RPC no debe abortar los correos ni
   //    la alerta de pedido (el pago ya ocurrió).
   const oversold: Array<{ product_id: string; qty: number }> = []
+  // decrement_stock devuelve el stock RESULTANTE: 0 = esta venta agotó el
+  // producto → hay que avisarle al dueño para que reponga.
+  const outOfStock: Array<{ product_id: string }> = []
   const decrement = async (product_id: string, qty: number) => {
     if (!product_id || qty <= 0) return
     const { data: result, error } = await db.rpc("decrement_stock", {
@@ -83,6 +86,7 @@ export async function confirmPaidOrder(
     })
     if (error) throw error
     if (typeof result === "number" && result < 0) oversold.push({ product_id, qty })
+    if (result === 0) outOfStock.push({ product_id })
   }
   try {
     for (const item of order.items || []) {
@@ -109,6 +113,21 @@ export async function confirmPaidOrder(
       `[OVERSELL] Pedido ${reference} confirmado con stock insuficiente:`,
       JSON.stringify(oversold),
     )
+  }
+  // Correo al dueño si algo se agotó o se sobrevendió — nunca bloquea el flujo.
+  if (outOfStock.length > 0 || oversold.length > 0) {
+    try {
+      const ids = [...new Set([...outOfStock, ...oversold].map((p) => p.product_id))]
+      const { data: prods } = await db.from("products").select("id, name").in("id", ids)
+      const nameOf = (id: string) => prods?.find((p) => p.id === id)?.name || id
+      await sendStockAlertEmail({
+        reference,
+        outOfStock: outOfStock.map((p) => ({ product_id: p.product_id, name: nameOf(p.product_id) })),
+        oversold: oversold.map((p) => ({ product_id: p.product_id, name: nameOf(p.product_id), qty: p.qty })),
+      })
+    } catch (err) {
+      console.error(`[confirm] alerta de stock falló (${reference}):`, err)
+    }
   }
 
   // 3. Registrar uso del código de descuento.

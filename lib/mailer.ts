@@ -666,3 +666,61 @@ export async function sendAdminOrderAlert(order: {
     console.error("[mailer] Admin alert failed:", err)
   }
 }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 8. Alerta de inventario → admin — motivo: el dueño debe enterarse en el acto
+//    cuando un producto se agota (stock 0) o se sobrevendió (pagos concurrentes
+//    de la última unidad), sin tener que entrar al panel.
+// ═════════════════════════════════════════════════════════════════════════════
+export async function sendStockAlertEmail(alert: {
+  reference: string
+  outOfStock: Array<{ name: string; product_id: string }>
+  oversold: Array<{ name: string; product_id: string; qty: number }>
+}): Promise<void> {
+  const transport = createTransport()
+  const adminEmail = process.env.ADMIN_EMAIL || process.env.SMTP_USER
+  if (!transport || !adminEmail) {
+    console.warn("[mailer] Stock alert skipped — SMTP or ADMIN_EMAIL not configured")
+    return
+  }
+  if (alert.outOfStock.length === 0 && alert.oversold.length === 0) return
+
+  const orderId = alert.reference.slice(-8).toUpperCase()
+  const li = (text: string) => `
+    <tr>
+      <td style="padding:9px 0;border-bottom:1px solid ${C.line};font-family:Georgia,serif;font-size:14px;color:${C.ink};">${text}</td>
+    </tr>`
+
+  const outRows = alert.outOfStock.map((p) => li(`${p.name} — <strong>agotado (0 unidades)</strong>`)).join("")
+  const overRows = alert.oversold.map((p) => li(`${p.name} — ⚠️ se vendieron ${p.qty} unidad(es) SIN stock suficiente (revisar inventario real)`)).join("")
+
+  const content = `
+    <div style="text-align:center;">
+      ${kicker("Alerta de inventario")}
+      <p style="margin:0 0 4px;font-family:Georgia,serif;font-size:26px;color:${C.ink};">Productos por reponer</p>
+      <p style="margin:0 0 6px;font-family:'Courier New',monospace;font-size:13px;color:${C.faint};">Pedido #${orderId}</p>
+    </div>
+    ${hr}
+    <p style="margin:0 0 18px;font-family:Georgia,serif;font-size:14px;line-height:1.6;color:${C.sub};text-align:center;">
+      Con la venta del pedido #${orderId} estos productos quedaron sin unidades disponibles.
+      Mientras est&eacute;n en 0 no se pueden comprar en la tienda.
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0">
+      ${outRows}
+      ${overRows}
+    </table>
+    <div style="height:30px;"></div>
+    ${button(`${appUrl()}/admin-cliche-secret`, "Reponer stock en el panel")}`
+
+  try {
+    await transport.sendMail({
+      from: FROM,
+      to: adminEmail,
+      subject: `📦 Stock agotado — ${[...alert.outOfStock, ...alert.oversold].map((p) => p.name).join(", ").slice(0, 80)}`,
+      html: shell(content, "Generado autom&aacute;ticamente al descontar inventario de un pedido pagado."),
+    })
+    console.log("[mailer] Stock alert sent for", orderId)
+  } catch (err) {
+    console.error("[mailer] Stock alert failed:", err)
+  }
+}
