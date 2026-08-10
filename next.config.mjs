@@ -89,6 +89,11 @@ const nextConfig = {
     return [
       { source: "/politica-privacidad", destination: "/privacidad", permanent: true },
       { source: "/terminos-condiciones", destination: "/terminos", permanent: true },
+      // /productos sin slug no existe como página (las fichas viven en
+      // /productos/[slug]) y daba un 404: es una URL que la gente teclea o
+      // adivina, así que mejor llevarla al catálogo. El redirect es exacto y
+      // no toca las fichas.
+      { source: "/productos", destination: "/catalogo", permanent: true },
     ]
   },
 }
