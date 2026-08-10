@@ -23,6 +23,7 @@ import { DescuentosSection } from "./sections/descuentos"
 import { AsistenteSection } from "./sections/asistente"
 import { ClientesSection } from "./sections/clientes"
 import { SeoSection } from "./sections/seo"
+import { ChatAyuda } from "./components/chat-ayuda"
 
 type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "heatmaps" | "pedidos" | "clientes" | "descuentos" | "inventario" | "seo" | "asistente"
 
@@ -429,6 +430,9 @@ export default function AdminPage() {
           )}
         </main>
       </div>
+
+      {/* Ayuda con IA: burbuja flotante, disponible en todas las secciones */}
+      <ChatAyuda />
     </div>
   )
 }
