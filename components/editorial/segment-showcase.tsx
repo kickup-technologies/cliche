@@ -169,7 +169,7 @@ function Category({ seg, i, pool }: { seg: Segment; i: number; pool: Product[] }
                     hasta 2 MB y esta tarjeta mide máx. 260px — Next sirve
                     AVIF/WebP redimensionado y cacheado en el edge */}
                 <Image
-                  src={p.image_url || "/placeholder-product.jpg"}
+                  src={p.image_url || "/placeholder.jpg"}
                   alt={p.name}
                   fill
                   sizes="(max-width: 1024px) 50vw, 260px"

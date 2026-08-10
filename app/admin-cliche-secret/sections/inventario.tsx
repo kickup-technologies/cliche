@@ -165,13 +165,15 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
             onClick={() => openEdit(product)}
             role="button"
             tabIndex={0}
-            onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openEdit(product) } }}
+            /* Solo el cuadro abre el editor: si el foco está en un control
+               rápido (stock, visible/oculto), Enter/Espacio son suyos. */
+            onKeyDown={e => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openEdit(product) } }}
             className="group text-left flex flex-col bg-white rounded-2xl border border-[#2D1A14]/8 overflow-hidden hover:border-[#A67163]/40 hover:shadow-[0_18px_40px_-26px_rgba(45,26,20,0.45)] transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#A67163]/40"
           >
             <div className="relative aspect-[4/5] w-full bg-[#FAF8F5] overflow-hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={product.image_url || "/placeholder-product.jpg"}
+                src={product.image_url || "/placeholder.jpg"}
                 alt={product.name}
                 className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04] ${product.is_active ? "" : "opacity-40 grayscale"}`}
               />

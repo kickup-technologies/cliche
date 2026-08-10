@@ -108,7 +108,7 @@ export function ProductRecommendations({ product, fallback }: Props) {
                 <div className="aspect-square bg-muted/30 overflow-hidden">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={c.image_url || "/placeholder-product.jpg"}
+                    src={c.image_url || "/placeholder.jpg"}
                     alt={c.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />

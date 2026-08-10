@@ -62,6 +62,12 @@ export async function PUT(
       .select()
       .single()
 
+    if (error?.code === "23505") {
+      return NextResponse.json(
+        { error: "Ya existe otro producto con ese enlace. Cambia un poco el título." },
+        { status: 409 },
+      )
+    }
     if (error) throw error
 
     if (previousSlug && data?.slug && previousSlug !== data.slug) {

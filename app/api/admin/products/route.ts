@@ -63,6 +63,15 @@ export async function POST(req: NextRequest) {
 
     const db = createServerClient()
     const { data, error } = await db.from("products").insert(fields).select().single()
+    // El slug se genera solo a partir del título y la columna es UNIQUE: dos
+    // productos con el mismo título chocaban con un 500 mudo ("Error al crear
+    // el producto") y la dueña no sabía qué corregir.
+    if (error?.code === "23505") {
+      return NextResponse.json(
+        { error: "Ya existe un producto con ese título. Cámbialo un poco (por ejemplo, añade el tamaño o la variante)." },
+        { status: 409 },
+      )
+    }
     if (error) throw error
     revalidateProductPages(data?.slug)
     return NextResponse.json(data)
