@@ -1,5 +1,5 @@
 "use client"
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Plus, Pencil, Minus, RefreshCw, Save, X, AlertCircle, ToggleLeft, ToggleRight, Upload, ImageIcon, Trash2 } from "lucide-react"
 import { fmt } from "../types"
 import type { Product } from "@/lib/supabase"
@@ -42,6 +42,21 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
   const [modalError, setModalError] = useState("")
   const [uploadProgress, setUploadProgress] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  // Errores de los controles rápidos de la parrilla (stock, visible/oculto):
+  // antes fallaban en silencio y el número volvía atrás sin explicación.
+  const [gridError, setGridError] = useState("")
+  // Stock que la dueña ya pulsó pero que aún no confirmó el servidor. Sin esto,
+  // tres clics seguidos en "+" partían todos del mismo stock viejo y solo
+  // subía una unidad.
+  const [pendingStock, setPendingStock] = useState<Record<string, number>>({})
+  const stockTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
+
+  // Si se sale de la sección con una escritura de stock en cola, se cancela el
+  // temporizador (React avisaría de un setState sobre un componente muerto).
+  useEffect(() => {
+    const timers = stockTimers.current
+    return () => { Object.values(timers).forEach(clearTimeout) }
+  }, [])
 
   function openEdit(product: Product) {
     setModalError("")
@@ -127,14 +142,55 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
     } finally { setDeleting(false) }
   }
 
-  async function updateStock(id: string, stock: number) {
-    await adminFetch(`/api/admin/products/${id}`, { method: "PUT", body: JSON.stringify({ stock }) })
-    await onRefresh()
+  /** Mensaje de error de una respuesta del API (o "" si todo fue bien). */
+  async function errorOf(res: Response): Promise<string> {
+    if (res.ok) return ""
+    if (res.status === 401) return "La sesión del panel expiró. Vuelve a entrar."
+    const { error } = await res.json().catch(() => ({ error: "" }))
+    return error || "No se pudo guardar el cambio"
+  }
+
+  /**
+   * Suma/resta unidades al stock. El número se actualiza al instante y la
+   * escritura se agrupa: si la dueña pulsa "+" cinco veces, se guarda una sola
+   * vez el valor final (y ninguna pulsación se pierde).
+   */
+  function bumpStock(product: Product, delta: number) {
+    const id = product.id
+    const current = pendingStock[id] ?? product.stock
+    const next = Math.max(0, current + delta)
+    setPendingStock(prev => ({ ...prev, [id]: next }))
+    setGridError("")
+
+    clearTimeout(stockTimers.current[id])
+    stockTimers.current[id] = setTimeout(async () => {
+      delete stockTimers.current[id]
+      try {
+        const res = await adminFetch(`/api/admin/products/${id}`, { method: "PUT", body: JSON.stringify({ stock: next }) })
+        const msg = await errorOf(res)
+        if (msg) setGridError(msg)
+        await onRefresh()
+      } catch {
+        setGridError("Error de conexión al guardar el stock")
+      } finally {
+        // Solo se suelta el valor optimista si no llegaron más clics entretanto.
+        if (!stockTimers.current[id]) {
+          setPendingStock(prev => { const n = { ...prev }; delete n[id]; return n })
+        }
+      }
+    }, 500)
   }
 
   async function toggleProduct(id: string, is_active: boolean) {
-    await adminFetch(`/api/admin/products/${id}`, { method: "PUT", body: JSON.stringify({ is_active }) })
-    await onRefresh()
+    setGridError("")
+    try {
+      const res = await adminFetch(`/api/admin/products/${id}`, { method: "PUT", body: JSON.stringify({ is_active }) })
+      const msg = await errorOf(res)
+      if (msg) setGridError(msg)
+      await onRefresh()
+    } catch {
+      setGridError("Error de conexión al cambiar la visibilidad")
+    }
   }
 
   const modalImages = imagesOf(modal.product)
@@ -156,10 +212,20 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
         </button>
       </div>
 
+      {gridError && (
+        <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" /> {gridError}
+        </div>
+      )}
+
       {/* Parrilla igual a la página de ventas: cada cuadro es el producto tal
           como lo ve el cliente. Un clic en el cuadro abre el editor. */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-        {products.map(product => (
+        {products.map(product => {
+          // Stock que se le muestra a la dueña: el que ya pulsó, aunque el
+          // servidor todavía no haya confirmado.
+          const stock = pendingStock[product.id] ?? product.stock
+          return (
           <div
             key={product.id}
             onClick={() => openEdit(product)}
@@ -181,9 +247,9 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
                 {!product.is_active && (
                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#2D1A14]/80 text-white">Oculto</span>
                 )}
-                {product.stock === 0 ? (
+                {stock === 0 ? (
                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-600 text-white">Agotado</span>
-                ) : product.stock <= 5 ? (
+                ) : stock <= 5 ? (
                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500 text-white">Stock bajo</span>
                 ) : null}
               </div>
@@ -202,17 +268,18 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
               <div className="mt-auto flex items-center justify-between gap-2" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center gap-1">
                   <button
-                    onClick={() => updateStock(product.id, Math.max(0, product.stock - 1))}
-                    className="w-7 h-7 rounded-lg border border-[#2D1A14]/15 hover:bg-[#FAF8F5] flex items-center justify-center"
+                    onClick={() => bumpStock(product, -1)}
+                    disabled={stock === 0}
+                    className="w-7 h-7 rounded-lg border border-[#2D1A14]/15 hover:bg-[#FAF8F5] flex items-center justify-center disabled:opacity-40"
                     title="Quitar una unidad"
                   >
                     <Minus className="w-3 h-3 text-[#2D1A14]" />
                   </button>
-                  <span className={`w-7 text-center font-bold text-sm ${product.stock <= 5 ? "text-red-500" : "text-[#2D1A14]"}`}>
-                    {product.stock}
+                  <span className={`w-7 text-center font-bold text-sm ${stock <= 5 ? "text-red-500" : "text-[#2D1A14]"}`}>
+                    {stock}
                   </span>
                   <button
-                    onClick={() => updateStock(product.id, product.stock + 1)}
+                    onClick={() => bumpStock(product, 1)}
                     className="w-7 h-7 rounded-lg border border-[#2D1A14]/15 hover:bg-[#FAF8F5] flex items-center justify-center"
                     title="Agregar una unidad"
                   >
@@ -230,7 +297,8 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
               </div>
             </div>
           </div>
-        ))}
+          )
+        })}
 
         {/* Cuadro "Añadir": abre la misma ficha, en blanco. */}
         <button

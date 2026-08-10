@@ -213,6 +213,15 @@ export function ProductDetail({ product, related }: Props) {
 
   const catalogItem = getCatalogProduct(product.slug)
   const notes = NOTES_MAP[product.slug] || catalogItem?.notes || []
+  /**
+   * Descripción que se muestra al cliente. MANDA la de la base de datos: es la
+   * que la dueña edita desde el panel admin (Inventario → producto), y antes
+   * quedaba pisada por los textos quemados en el código (catálogo local y
+   * VALUE_MAP), así que editar la descripción no cambiaba nada en la tienda.
+   * Los textos del código quedan solo como respaldo para productos sin
+   * descripción propia (o cuando Supabase no está disponible).
+   */
+  const descripcion = product.description?.trim() || catalogItem?.description || VALUE_MAP[product.slug] || ""
   const isKit = product.slug.startsWith("kit-")
   const savings = product.original_price ? product.original_price - product.price : 0
 
@@ -565,7 +574,7 @@ export function ProductDetail({ product, related }: Props) {
                 <p className="font-serif text-lg text-foreground leading-snug">{product.description_title}</p>
               )}
               <p className="text-[15px] text-muted-foreground leading-[1.75]">
-                {catalogItem?.description || VALUE_MAP[product.slug] || product.description}
+                {descripcion}
               </p>
 
               {/* ¿Para quién es este aroma? — mercado recomendado del catálogo */}
@@ -688,7 +697,7 @@ export function ProductDetail({ product, related }: Props) {
                     {product.description_title && (
                       <p className="font-serif text-lg text-foreground mb-2">{product.description_title}</p>
                     )}
-                    <p className="text-base leading-relaxed mb-4">{catalogItem?.description || VALUE_MAP[product.slug] || product.description}</p>
+                    <p className="text-base leading-relaxed mb-4">{descripcion}</p>
                     {isKit && (
                       <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 mt-4 flex gap-3">
                         <Gift className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
