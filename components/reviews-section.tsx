@@ -12,7 +12,10 @@ import type { Review } from "@/lib/supabase"
 import { seededReviews } from "@/lib/seed-reviews"
 
 const MAX_FILES = 6
-const MAX_SIZE_MB = 50
+// Vercel corta el cuerpo de la petición en ~4.5 MB, así que prometer más sería
+// mentirle al visitante: esperaría la subida completa solo para ver un error.
+// Cada archivo viaja en su propia petición para que el tope sea POR archivo.
+const MAX_SIZE_MB = 4
 
 interface Props {
   productId: string
@@ -365,15 +368,21 @@ export function ReviewsSection({ productId, productName, productImage }: Props) 
     setUploadError("")
 
     try {
-      let media_urls: string[] = []
-      if (mediaFiles.length > 0) {
+      // Un archivo por petición: todos juntos superarían el límite de ~4.5 MB
+      // que la plataforma impone al cuerpo de la petición. Y si alguno falla,
+      // se avisa y NO se publica la reseña sin sus fotos en silencio.
+      const media_urls: string[] = []
+      for (const f of mediaFiles) {
         const fd = new FormData()
-        mediaFiles.forEach((f) => fd.append("files", f))
+        fd.append("files", f)
         const upRes = await fetch("/api/reviews/upload", { method: "POST", body: fd })
-        if (upRes.ok) {
-          const upData = await upRes.json()
-          media_urls = upData.urls ?? []
+        if (!upRes.ok) {
+          const err = await upRes.json().catch(() => ({ error: "" }))
+          setUploadError(err.error || `No se pudo subir "${f.name}". Quítalo o intenta de nuevo.`)
+          return
         }
+        const upData = await upRes.json()
+        media_urls.push(...(upData.urls ?? []))
       }
 
       const res = await fetch("/api/reviews", {
@@ -530,7 +539,7 @@ export function ReviewsSection({ productId, productName, productImage }: Props) 
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
+              accept="image/jpeg,image/png,image/webp,image/gif,image/avif,video/mp4,video/webm,video/quicktime"
               multiple
               className="hidden"
               onChange={(e) => handleFiles(e.target.files)}

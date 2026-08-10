@@ -98,10 +98,10 @@ function SeoEditor({
   dirtyRef.current = dirty
 
   // Si llega otra carga del servidor, refrescar el editor — pero SOLO si no hay
-  // cambios sin guardar. El editor abre solo mientras la carga inicial sigue en
-  // camino: si la dueña ya empezó a escribir, la respuesta que llega después no
-  // puede pisarle el borrador. (Recargar sí descarta, pero pregunta antes y
-  // remonta el editor con reloadKey, así que no pasa por aquí.)
+  // cambios sin guardar. (Hoy el editor ya no se monta durante la carga inicial,
+  // así que este guard es un cinturón de seguridad para cualquier refresco
+  // futuro. Recargar sí descarta, pero pregunta antes y remonta el editor con
+  // reloadKey, así que no pasa por aquí.)
   useEffect(() => {
     if (dirtyRef.current) return
     setDraft({ title: saved?.title || "", description: saved?.description || "" })
@@ -431,11 +431,16 @@ export function SeoSection({ products }: { products: Product[] }) {
                 )}
                 <span className="text-xs text-[#2D1A14]/40">{open ? "Cerrar" : "Editar"}</span>
               </button>
-              {open && (
+              {/* El editor NO se monta hasta que termine la carga: si se abriera
+                  antes con los campos vacíos, la dueña podría escribir encima de
+                  un SEO guardado que aún no llegó y, al guardar, borrarlo. */}
+              {open && (loading ? (
+                <p className="mt-4 text-sm text-[#2D1A14]/40">Cargando lo guardado…</p>
+              ) : (
                 <div className="mt-4">
                   <SeoEditor key={reloadKey} entry={entry} saved={rows[entry.path]} onSaved={handleSaved} onDirty={setOpenDirty} />
                 </div>
-              )}
+              ))}
             </div>
           )
         })}

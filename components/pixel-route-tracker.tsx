@@ -33,10 +33,16 @@ export function PixelRouteTracker() {
     }
 
     // GA4: page_view por evento (repetir gtag('config') duplicaría métricas).
+    // OJO: gtag.js de GA4 NO entiende `page_path` (eso era de Universal
+    // Analytics); sin `page_location` el evento hereda la URL de aterrizaje y
+    // todas las vistas contarían para la primera página.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const gtag = (window as any).gtag
     if (!(consent && !consent.analytics) && typeof gtag === "function") {
-      gtag("event", "page_view", { page_path: pathname })
+      gtag("event", "page_view", {
+        page_location: window.location.href,
+        page_title: document.title,
+      })
     }
   }, [pathname])
 

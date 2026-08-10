@@ -28,8 +28,9 @@ const TYPE_EXT: Record<string, string> = {
 }
 
 export async function POST(req: NextRequest) {
-  // Anti-abuso: máx. 10 subidas por IP cada 10 minutos
-  const limited = rateLimit(req, { id: "reviews-upload", limit: 10, windowMs: 10 * 60_000 })
+  // Anti-abuso: el cliente sube UN archivo por petición (límite de cuerpo de
+  // Vercel), así que 24 peticiones ≈ 4 reseñas con fotos cada 10 minutos.
+  const limited = rateLimit(req, { id: "reviews-upload", limit: 24, windowMs: 10 * 60_000 })
   if (limited) return limited
 
   try {
