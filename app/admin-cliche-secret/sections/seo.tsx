@@ -303,7 +303,15 @@ export function SeoSection({ products }: { products: Product[] }) {
   const productEntries: Entry[] = useMemo(() => {
     const q = query.trim().toLowerCase()
     return products
-      .filter((p) => !q || p.name.toLowerCase().includes(q) || p.slug.toLowerCase().includes(q))
+      // El producto que se está editando con cambios sin guardar no se filtra
+      // nunca: si el buscador lo sacara de la lista, el editor desaparecería
+      // y se perdería lo escrito sin preguntar.
+      .filter((p) =>
+        !q ||
+        p.name.toLowerCase().includes(q) ||
+        p.slug.toLowerCase().includes(q) ||
+        (openDirty && productSeoPath(p.slug) === openPath),
+      )
       .map((p) => ({
         path: productSeoPath(p.slug),
         label: p.name,
@@ -311,7 +319,7 @@ export function SeoSection({ products }: { products: Product[] }) {
         defaultTitle: p.name,
         defaultDescription: p.description || `${p.name} — Cliché Colombia`,
       }))
-  }, [products, query])
+  }, [products, query, openDirty, openPath])
 
   const entries = tab === "paginas" ? pageEntries : productEntries
   const personalizados = Object.keys(rows).length
@@ -353,8 +361,15 @@ export function SeoSection({ products }: { products: Product[] }) {
         >
           <Package className="w-4 h-4" /> Productos ({products.length})
         </button>
+        {/* Recargar pisa el borrador con lo guardado en el servidor: si hay
+            cambios sin guardar, se pregunta antes (igual que al cambiar de
+            pestaña o cerrar la tarjeta). */}
         <button
-          onClick={load}
+          onClick={() => {
+            if (openDirty && !confirm("Tienes cambios sin guardar en el editor abierto. ¿Recargar y perderlos?")) return
+            setOpenDirty(false)
+            load()
+          }}
           className="ml-auto inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[#2D1A14]/15 text-sm text-[#2D1A14]/60 hover:bg-[#2D1A14]/5 transition-colors"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Recargar
