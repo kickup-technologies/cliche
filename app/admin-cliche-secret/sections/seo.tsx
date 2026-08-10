@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Search, RefreshCw, Save, Wand2, Check, AlertCircle, Globe, Package } from "lucide-react"
 import type { Product } from "@/lib/supabase"
 import { adminFetch } from "@/lib/admin-client"
@@ -93,13 +93,20 @@ function SeoEditor({
   const [status, setStatus] = useState<"idle" | "ok" | "error">("idle")
   const [error, setError] = useState("")
 
-  // Si llega otra carga del servidor, refrescar lo que no se está editando.
+  const dirty = draft.title !== initial.title || draft.description !== initial.description
+  const dirtyRef = useRef(dirty)
+  dirtyRef.current = dirty
+
+  // Si llega otra carga del servidor, refrescar el editor — pero SOLO si no hay
+  // cambios sin guardar. El editor abre solo mientras la carga inicial sigue en
+  // camino: si la dueña ya empezó a escribir, la respuesta que llega después no
+  // puede pisarle el borrador. (Recargar sí descarta, pero pregunta antes y
+  // remonta el editor con reloadKey, así que no pasa por aquí.)
   useEffect(() => {
+    if (dirtyRef.current) return
     setDraft({ title: saved?.title || "", description: saved?.description || "" })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saved?.title, saved?.description])
-
-  const dirty = draft.title !== initial.title || draft.description !== initial.description
 
   // El padre necesita saberlo ANTES de colapsar la tarjeta o cambiar de
   // pestaña: si no, un clic descartaba lo escrito sin preguntar.

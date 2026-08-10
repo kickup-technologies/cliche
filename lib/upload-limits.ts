@@ -32,6 +32,14 @@ export const ALLOWED_IMAGE_TYPES = [
 export const IMAGE_ACCEPT = ".jpg,.jpeg,.png,.webp,.gif,.avif,image/jpeg,image/png,image/webp,image/gif,image/avif"
 
 /**
+ * Los formatos aceptados, escritos para la dueña. Vive junto a
+ * ALLOWED_IMAGE_TYPES para que el aviso del panel y lo que de verdad acepta el
+ * servidor no se vuelvan a desincronizar (el panel decía «JPG, PNG o WebP»
+ * pero GIF y AVIF también entraban).
+ */
+export const IMAGE_FORMATS_TEXTO = "JPG, PNG, WebP, GIF o AVIF"
+
+/**
  * ¿Es una foto de iPhone en HEIC/HEIF? Es el caso más común de subida fallida:
  * el celular las guarda así por defecto y ningún navegador las muestra, así que
  * merece un mensaje que explique cómo resolverlo en vez de un "no se pudo".
@@ -50,7 +58,7 @@ export function imageProblem(file: { name: string; type: string; size: number })
     return `${nombre} es una foto de iPhone (formato HEIC) y los navegadores no la muestran. Solución rápida: envíatela por WhatsApp y sube la que llega, o cambia en el iPhone Ajustes → Cámara → Formatos → «Más compatible».`
   }
   if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-    return `${nombre} no es una imagen que la tienda pueda mostrar. Usa JPG, PNG o WebP.`
+    return `${nombre} no es una imagen que la tienda pueda mostrar. Usa ${IMAGE_FORMATS_TEXTO}.`
   }
   if (file.size > MAX_IMAGE_BYTES) {
     const mb = (file.size / (1024 * 1024)).toFixed(1)

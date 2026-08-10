@@ -5,7 +5,7 @@ import { fmt } from "../types"
 import type { Product } from "@/lib/supabase"
 import { adminFetch } from "@/lib/admin-client"
 import { PRODUCT_PLACEHOLDER } from "@/lib/placeholder"
-import { IMAGE_ACCEPT, MAX_IMAGE_MB } from "@/lib/upload-limits"
+import { IMAGE_ACCEPT, IMAGE_FORMATS_TEXTO, MAX_IMAGE_MB } from "@/lib/upload-limits"
 import { subirImagen } from "@/lib/admin-upload"
 import { Ayuda } from "../components/ayuda"
 
@@ -436,7 +436,7 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
                   <ImageIcon className="w-3.5 h-3.5 flex-shrink-0 mt-px" />
                   <span>
                     {modalImages.length === 0 && "Sube una o varias fotos. La primera será la principal. "}
-                    Formatos JPG, PNG o WebP, hasta {MAX_IMAGE_MB} MB cada una.
+                    Formatos {IMAGE_FORMATS_TEXTO}, hasta {MAX_IMAGE_MB} MB cada una.
                   </span>
                 </p>
               </div>

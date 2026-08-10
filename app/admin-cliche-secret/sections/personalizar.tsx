@@ -6,7 +6,7 @@ import {
   Tag, Zap, ChevronDown, MousePointerClick,
 } from "lucide-react"
 import { adminFetch } from "@/lib/admin-client"
-import { IMAGE_ACCEPT, MAX_IMAGE_MB } from "@/lib/upload-limits"
+import { IMAGE_ACCEPT, IMAGE_FORMATS_TEXTO, MAX_IMAGE_MB } from "@/lib/upload-limits"
 import { subirImagen } from "@/lib/admin-upload"
 
 interface PersonalizarSectionProps {
@@ -399,7 +399,7 @@ export function PersonalizarSection({ settings, onSettingsUpdate }: Personalizar
                         {/* Decirlo antes evita el viaje en vano: la foto pesada
                             se rechaza igual, pero después de esperar la subida. */}
                         <p className="text-[10px] text-[#2D1A14]/40">
-                          Formatos JPG, PNG o WebP, hasta {MAX_IMAGE_MB} MB cada una.
+                          Formatos {IMAGE_FORMATS_TEXTO}, hasta {MAX_IMAGE_MB} MB cada una.
                         </p>
                       </div>
                     )}
