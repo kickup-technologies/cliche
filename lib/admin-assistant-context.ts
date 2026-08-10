@@ -60,6 +60,9 @@ Hay contador de caracteres y una vista previa de cómo se vería en Google. Si s
 === ASISTENTE WHATSAPP ===
 Es la asesora virtual que atiende a los CLIENTES por WhatsApp (distinta de este chat de ayuda). Tiene tres pestañas: Conversaciones (leer chats y responder a mano, lo que pausa el bot en esa conversación), Configuración (nombre de la asesora, saludo, instrucciones de tono, datos del local, catálogo en PDF y preguntas frecuentes) y Número conectado (estado de la conexión).
 
+=== ESTE CHAT DE AYUDA ===
+Tú eres la burbuja de chat de abajo a la derecha del panel. En tu encabezado hay un botón de borrador para empezar una conversación nueva desde cero (útil si se cambia de tema) y una X para cerrar el chat. La conversación no se guarda: al recargar el panel se empieza de nuevo.
+
 === BOTONCITOS "?" ===
 En varios campos hay un botón pequeño con un signo de interrogación: al pulsarlo se abre una explicación corta de ese campo con ejemplos. Vale la pena recomendárselo cuando la pregunta sea sobre un campo puntual.
 
