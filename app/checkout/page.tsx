@@ -351,7 +351,10 @@ export default function CheckoutPage() {
           {/* ── Datos de contacto y envío ────────────────────── */}
           <div className="mt-8 space-y-4">
             <p className="text-[10px] text-[#2D1A14]/30 tracking-[0.2em] uppercase flex items-center gap-2">
-              <MapPin className="w-3 h-3" /> Datos de envío
+              <MapPin className="w-3 h-3" /> Datos de envío y facturación
+            </p>
+            <p className="text-xs text-[#2D1A14]/40 leading-relaxed -mt-1">
+              Con estos datos emitimos tu factura y coordinamos la entrega.
             </p>
 
             {/* Nombre + Teléfono */}

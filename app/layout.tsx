@@ -77,6 +77,11 @@ export const metadata: Metadata = {
     },
   },
   generator: 'Next.js',
+  verification: {
+    // Search Console: la vía principal es el TXT en el DNS del registrador (Tucows);
+    // este meta tag cubre la verificación por prefijo de URL como respaldo.
+    google: 'DBqH5Qb6xEGLM-zpxjSrBeP_oD6blHDisLHRhWulfT8',
+  },
   icons: {
     icon: [
       { url: '/favicon-32.png', sizes: '32x32', type: 'image/png' },
