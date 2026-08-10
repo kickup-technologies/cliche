@@ -245,6 +245,11 @@ export function SeoSection({ products }: { products: Product[] }) {
   const [openPath, setOpenPath] = useState<string | null>(SEO_PAGES[0].path)
   // ¿El editor abierto tiene cambios sin guardar? (solo hay uno abierto a la vez)
   const [openDirty, setOpenDirty] = useState(false)
+  // Sube con cada "Recargar" para remontar el editor abierto: si el servidor
+  // devuelve exactamente lo mismo que ya había, el efecto de reset del editor
+  // no se dispara y el borrador descartado seguiría en pantalla con la
+  // protección de cambios sin guardar apagada.
+  const [reloadKey, setReloadKey] = useState(0)
 
   /** Cambia el editor abierto; si el actual tiene cambios sin guardar, pregunta
    *  primero. Devuelve false si la dueña decidió quedarse. */
@@ -370,6 +375,7 @@ export function SeoSection({ products }: { products: Product[] }) {
           onClick={() => {
             if (openDirty && !confirm("Tienes cambios sin guardar en el editor abierto. ¿Recargar y perderlos?")) return
             setOpenDirty(false)
+            setReloadKey((k) => k + 1)
             load()
           }}
           className="ml-auto inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[#2D1A14]/15 text-sm text-[#2D1A14]/60 hover:bg-[#2D1A14]/5 transition-colors"
@@ -420,7 +426,7 @@ export function SeoSection({ products }: { products: Product[] }) {
               </button>
               {open && (
                 <div className="mt-4">
-                  <SeoEditor entry={entry} saved={rows[entry.path]} onSaved={handleSaved} onDirty={setOpenDirty} />
+                  <SeoEditor key={reloadKey} entry={entry} saved={rows[entry.path]} onSaved={handleSaved} onDirty={setOpenDirty} />
                 </div>
               )}
             </div>
