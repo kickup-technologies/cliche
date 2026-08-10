@@ -30,8 +30,30 @@ function imagesOf(p: Partial<Product> | null): string[] {
   return p.image_url ? [p.image_url] : []
 }
 
+/**
+ * Huella de lo editable del producto en el popup. Sirve para saber si hay
+ * cambios sin guardar antes de cerrar (un clic fuera no debe tragarse una
+ * descripción recién escrita).
+ */
+function snapshot(p: Partial<Product> | null): string {
+  if (!p) return ""
+  return JSON.stringify({
+    name: p.name || "",
+    category: p.category || "",
+    price: p.price ?? 0,
+    original_price: p.original_price ?? null,
+    description: p.description || "",
+    description_title: p.description_title || "",
+    stock: p.stock ?? 0,
+    is_active: p.is_active ?? true,
+    images: imagesOf(p),
+  })
+}
+
 export function InventarioSection({ products, onRefresh }: { products: Product[]; onRefresh: () => Promise<void> }) {
   const [modal, setModal] = useState<{ open: boolean; product: Partial<Product> | null }>({ open: false, product: null })
+  // Huella del producto tal como se abrió: contra esto se compara al cerrar.
+  const originalRef = useRef("")
   const [modalSaving, setModalSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [modalError, setModalError] = useState("")
@@ -55,13 +77,22 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
 
   function openEdit(product: Product) {
     setModalError("")
+    originalRef.current = snapshot(product)
     setModal({ open: true, product: { ...product } })
   }
   function openNew() {
     setModalError("")
-    setModal({ open: true, product: { name: "", slug: "", price: 78000, original_price: null, description: "", category: "", image_urls: [], stock: 50, rating: 4.8, reviews: 0, is_active: true } })
+    const blank: Partial<Product> = { name: "", slug: "", price: 78000, original_price: null, description: "", category: "", image_urls: [], stock: 50, rating: 4.8, reviews: 0, is_active: true }
+    originalRef.current = snapshot(blank)
+    setModal({ open: true, product: blank })
   }
   function closeModal() { setModal({ open: false, product: null }); setModalError("") }
+  /** Cierre pedido por la dueña (clic fuera, ✕ o Cancelar): si hay cambios sin
+   *  guardar, se pregunta antes de descartarlos. */
+  function requestClose() {
+    if (snapshot(modal.product) !== originalRef.current && !confirm("Tienes cambios sin guardar. ¿Cerrar sin guardarlos?")) return
+    closeModal()
+  }
 
   function setField(key: string, value: string | number | boolean | string[] | null) {
     setModal(prev => ({ ...prev, product: { ...prev.product, [key]: value } }))
@@ -313,7 +344,7 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
 
       {/* Product Modal — formulario simple */}
       {modal.open && modal.product && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={closeModal}>
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={requestClose}>
           <div
             className="bg-white rounded-2xl border border-[#2D1A14]/10 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl"
             onClick={e => e.stopPropagation()}
@@ -322,7 +353,7 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
               <h3 className="font-serif font-bold text-[#2D1A14]">
                 {modal.product.id ? "Editar producto" : "Nuevo producto"}
               </h3>
-              <button onClick={closeModal} className="w-8 h-8 rounded-lg hover:bg-[#FAF8F5] flex items-center justify-center">
+              <button onClick={requestClose} className="w-8 h-8 rounded-lg hover:bg-[#FAF8F5] flex items-center justify-center">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -534,7 +565,7 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
               <div className="flex gap-3 pt-2">
                 <button
                   className="flex-1 h-11 rounded-xl border border-[#2D1A14]/15 text-sm font-semibold text-[#2D1A14] hover:bg-[#FAF8F5] transition-colors"
-                  onClick={closeModal}
+                  onClick={requestClose}
                   disabled={modalSaving || deleting}
                 >
                   Cancelar

@@ -79,10 +79,13 @@ function SeoEditor({
   entry,
   saved,
   onSaved,
+  onDirty,
 }: {
   entry: Entry
   saved: Draft | undefined
   onSaved: (path: string, draft: Draft) => void
+  /** Avisa al padre si hay cambios sin guardar (para no cerrarlos en silencio). */
+  onDirty?: (dirty: boolean) => void
 }) {
   const initial: Draft = { title: saved?.title || "", description: saved?.description || "" }
   const [draft, setDraft] = useState<Draft>(initial)
@@ -97,6 +100,13 @@ function SeoEditor({
   }, [saved?.title, saved?.description])
 
   const dirty = draft.title !== initial.title || draft.description !== initial.description
+
+  // El padre necesita saberlo ANTES de colapsar la tarjeta o cambiar de
+  // pestaña: si no, un clic descartaba lo escrito sin preguntar.
+  useEffect(() => {
+    onDirty?.(dirty)
+    return () => { onDirty?.(false) }
+  }, [dirty, onDirty])
 
   // Lo que realmente sale al mundo: lo escrito, o el texto por defecto.
   const effectiveTitle = (draft.title || entry.defaultTitle) + (entry.absoluteTitle ? "" : SEO_TITLE_SUFFIX)
@@ -233,6 +243,17 @@ export function SeoSection({ products }: { products: Product[] }) {
   const [loadError, setLoadError] = useState("")
   const [query, setQuery] = useState("")
   const [openPath, setOpenPath] = useState<string | null>(SEO_PAGES[0].path)
+  // ¿El editor abierto tiene cambios sin guardar? (solo hay uno abierto a la vez)
+  const [openDirty, setOpenDirty] = useState(false)
+
+  /** Cambia el editor abierto; si el actual tiene cambios sin guardar, pregunta
+   *  primero. Devuelve false si la dueña decidió quedarse. */
+  function changeOpen(next: string | null): boolean {
+    if (openDirty && !confirm("Tienes cambios sin guardar en el editor abierto. ¿Salir sin guardarlos?")) return false
+    setOpenDirty(false)
+    setOpenPath(next)
+    return true
+  }
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -317,7 +338,7 @@ export function SeoSection({ products }: { products: Product[] }) {
 
       <div className="flex items-center gap-2">
         <button
-          onClick={() => { setTab("paginas"); setOpenPath(SEO_PAGES[0].path) }}
+          onClick={() => { if (changeOpen(SEO_PAGES[0].path)) setTab("paginas") }}
           className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
             tab === "paginas" ? "bg-[#2D1A14] text-white" : "text-[#2D1A14]/60 hover:bg-[#2D1A14]/5"
           }`}
@@ -325,7 +346,7 @@ export function SeoSection({ products }: { products: Product[] }) {
           <Globe className="w-4 h-4" /> Páginas
         </button>
         <button
-          onClick={() => { setTab("productos"); setOpenPath(null) }}
+          onClick={() => { if (changeOpen(null)) setTab("productos") }}
           className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
             tab === "productos" ? "bg-[#2D1A14] text-white" : "text-[#2D1A14]/60 hover:bg-[#2D1A14]/5"
           }`}
@@ -362,7 +383,7 @@ export function SeoSection({ products }: { products: Product[] }) {
           return (
             <div key={entry.path} className="bg-white rounded-2xl border border-[#2D1A14]/10 p-4 sm:p-5">
               <button
-                onClick={() => setOpenPath(open ? null : entry.path)}
+                onClick={() => changeOpen(open ? null : entry.path)}
                 className="w-full flex items-center gap-3 text-left"
               >
                 <div className="flex-1 min-w-0">
@@ -382,7 +403,7 @@ export function SeoSection({ products }: { products: Product[] }) {
               </button>
               {open && (
                 <div className="mt-4">
-                  <SeoEditor entry={entry} saved={rows[entry.path]} onSaved={handleSaved} />
+                  <SeoEditor entry={entry} saved={rows[entry.path]} onSaved={handleSaved} onDirty={setOpenDirty} />
                 </div>
               )}
             </div>
