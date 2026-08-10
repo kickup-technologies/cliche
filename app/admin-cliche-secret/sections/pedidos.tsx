@@ -366,6 +366,12 @@ export function PedidosSection({
           <div className="divide-y divide-[#2D1A14]/6">
             {sorted.map(order => {
               const st = ORDER_STATUS_MAP[order.status] || { label: order.status, color: "text-[#2D1A14]/50", bg: "bg-[#2D1A14]/5", border: "border-[#2D1A14]/10" }
+              // Pedido pagado que lleva 3+ días sin despachar: aviso visible.
+              // (El caso real: un pedido estuvo 7 días en "preparación" y nadie
+              // lo notó hasta una auditoría manual.)
+              const diasSinDespachar = ["confirmed", "preparing", "paid"].includes(order.status)
+                ? Math.floor((Date.now() - new Date(order.created_at).getTime()) / 86_400_000)
+                : 0
               return (
                 <div
                   key={order.id}
@@ -380,6 +386,11 @@ export function PedidosSection({
                       <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${st.bg} ${st.color} ${st.border}`}>
                         {st.label}
                       </span>
+                      {diasSinDespachar >= 3 && (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-amber-50 text-amber-700 border-amber-200">
+                          ⏰ {diasSinDespachar} días sin despachar
+                        </span>
+                      )}
                     </div>
                     <p className="text-sm font-medium text-[#2D1A14]">
                       {order.customer_name || order.customer_email || "—"}
