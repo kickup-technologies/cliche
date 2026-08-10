@@ -50,6 +50,7 @@ import { ProductRecommendations } from "@/components/product-recommendations"
 import { recordView } from "@/lib/recently-viewed"
 import { useReviewStats } from "@/lib/use-review-stats"
 import { PRICE_TIERS, TIER_BY_ID, UNIT_PRICE, makeVariantId, tierSavings } from "@/lib/pricing"
+import { PRODUCT_PLACEHOLDER } from "@/lib/placeholder"
 
 interface Props {
   product: Product
@@ -833,7 +834,7 @@ export function ProductDetail({ product, related }: Props) {
           }}
         >
           <div className="hidden lg:block h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl bg-muted/30">
-            <img src={product.image_url || "/placeholder.jpg"} alt="" className="h-full w-full object-cover" />
+            <img src={product.image_url || PRODUCT_PLACEHOLDER} alt="" className="h-full w-full object-cover" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs text-muted-foreground truncate lg:font-serif lg:text-sm lg:text-foreground">{product.name}</p>

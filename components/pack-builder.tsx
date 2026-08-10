@@ -6,6 +6,7 @@ import { X, Plus, Minus, Check, Sparkles } from "lucide-react"
 import { useCart } from "@/context/cart-context"
 import { PRICE_TIERS, TIER_BY_ID, UNIT_PRICE, tierSavings, type PriceTier } from "@/lib/pricing"
 import type { Product } from "@/lib/supabase"
+import { PRODUCT_PLACEHOLDER } from "@/lib/placeholder"
 
 const CREMA = "#FAF8F5"
 const CAFE = "#2D1A14"
@@ -117,7 +118,7 @@ export function PackBuilder({
         product_id,
         quantity,
         name: p?.name ?? "Aroma",
-        image_url: p?.image_url ?? "/images/placeholder.jpg",
+        image_url: p?.image_url ?? PRODUCT_PLACEHOLDER,
       }
     })
     addPack(tier, components)
@@ -227,7 +228,7 @@ export function PackBuilder({
                       aria-label={`Añadir ${p.name}`}
                     >
                       <Image
-                        src={p.image_url || "/images/placeholder.jpg"}
+                        src={p.image_url || PRODUCT_PLACEHOLDER}
                         alt={p.name}
                         fill
                         sizes="(max-width:640px) 45vw, 200px"

@@ -4,6 +4,7 @@ import { Plus, Pencil, Minus, RefreshCw, Save, X, AlertCircle, ToggleLeft, Toggl
 import { fmt } from "../types"
 import type { Product } from "@/lib/supabase"
 import { adminFetch } from "@/lib/admin-client"
+import { PRODUCT_PLACEHOLDER } from "@/lib/placeholder"
 
 // Categorías (familias olfativas) que el admin asigna al producto. Deben
 // coincidir con las del catálogo (app/catalogo/page.tsx → FAMILIES).
@@ -239,7 +240,7 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
             <div className="relative aspect-[4/5] w-full bg-[#FAF8F5] overflow-hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={product.image_url || "/placeholder.jpg"}
+                src={product.image_url || PRODUCT_PLACEHOLDER}
                 alt={product.name}
                 className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04] ${product.is_active ? "" : "opacity-40 grayscale"}`}
               />

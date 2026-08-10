@@ -8,6 +8,7 @@ import { useCart } from "@/context/cart-context"
 import { useSiteSettings } from "@/lib/use-site-settings"
 import { parseFreeShippingThreshold } from "@/lib/pricing"
 import type { Product } from "@/lib/supabase"
+import { PRODUCT_PLACEHOLDER } from "@/lib/placeholder"
 
 // Paleta de marca (fiel al landing / checkout)
 const CREAM = "#FAF8F5"
@@ -126,7 +127,7 @@ export function CartDrawer() {
                 >
                   <div className="w-[76px] h-[76px] flex-shrink-0 overflow-hidden" style={{ background: `${BROWN}08` }}>
                     <Image
-                      src={product.image_url || "/images/placeholder.jpg"}
+                      src={product.image_url || PRODUCT_PLACEHOLDER}
                       alt={product.name}
                       width={76}
                       height={76}
@@ -201,7 +202,7 @@ export function CartDrawer() {
                     {recommendations.map((rec) => (
                       <div key={rec.id} className="flex items-center gap-3">
                         <div className="w-11 h-11 flex-shrink-0 overflow-hidden" style={{ background: `${BROWN}08` }}>
-                          <Image src={rec.image_url || "/images/placeholder.jpg"} alt={rec.name} width={44} height={44} className="w-full h-full object-cover" />
+                          <Image src={rec.image_url || PRODUCT_PLACEHOLDER} alt={rec.name} width={44} height={44} className="w-full h-full object-cover" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-serif text-[13px] leading-tight truncate" style={{ color: BROWN }}>{rec.name}</p>

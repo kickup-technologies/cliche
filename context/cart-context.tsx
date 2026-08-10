@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 import type { Product } from "@/lib/supabase"
 import { useCAPI } from "@/lib/use-capi"
 import type { PriceTier } from "@/lib/pricing"
+import { PRODUCT_PLACEHOLDER } from "@/lib/placeholder"
 
 /** Componente de un kit personalizado: un aroma concreto y cuántos frascos. */
 export interface PackComponent {
@@ -112,7 +113,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       price: tier.price,
       original_price: tier.units * 78000,
       description: aromaNames.join(" · "),
-      image_url: components[0]?.image_url || "/images/placeholder.jpg",
+      image_url: components[0]?.image_url || PRODUCT_PLACEHOLDER,
       image_urls: [],
       badge: "Personalizado",
       badge_color: null,

@@ -14,6 +14,7 @@ import { Footer } from "@/components/footer"
 import { SplitText } from "@/components/editorial/split-text"
 import { QuickView } from "@/components/editorial/quick-view"
 import type { Product } from "@/lib/supabase"
+import { PRODUCT_PLACEHOLDER } from "@/lib/placeholder"
 
 function formatPrice(price: number) {
   return new Intl.NumberFormat("es-CO", {
@@ -80,7 +81,7 @@ function ProductCard({ product, onQuickView }: { product: Product; onQuickView: 
     <Link href={`/productos/${product.slug}`} className="group flex flex-col">
       <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl border border-border/40 bg-secondary/40 transition-all duration-500 group-hover:-translate-y-1 group-hover:border-border group-hover:shadow-[0_22px_50px_-28px_rgba(45,26,20,0.45)]">
         <Image
-          src={product.image_url || "/images/placeholder.jpg"}
+          src={product.image_url || PRODUCT_PLACEHOLDER}
           alt={product.name}
           fill
           sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"

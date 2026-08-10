@@ -7,6 +7,7 @@ import { X } from "lucide-react"
 import { useCart } from "@/context/cart-context"
 import { getCatalogProduct } from "@/lib/catalog-data"
 import type { Product } from "@/lib/supabase"
+import { PRODUCT_PLACEHOLDER } from "@/lib/placeholder"
 
 interface QuickViewProps {
   product: Product | null
@@ -75,7 +76,7 @@ export function QuickView({ product, onClose }: QuickViewProps) {
         {/* foto */}
         <div className="relative aspect-[3/4] bg-secondary md:aspect-auto md:min-h-[480px]">
           <Image
-            src={product.image_url || "/images/placeholder.jpg"}
+            src={product.image_url || PRODUCT_PLACEHOLDER}
             alt={product.name}
             fill
             sizes="(max-width: 768px) 100vw, 50vw"

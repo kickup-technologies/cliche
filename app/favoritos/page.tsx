@@ -10,6 +10,7 @@ import { useCart } from "@/context/cart-context"
 import { Header } from "@/components/header"
 import { AnnouncementBar } from "@/components/announcement-bar"
 import type { Product } from "@/lib/supabase"
+import { PRODUCT_PLACEHOLDER } from "@/lib/placeholder"
 
 function formatPrice(price: number) {
   return new Intl.NumberFormat("es-CO", {
@@ -35,7 +36,7 @@ function FavoriteCard({ product }: { product: Product }) {
       <div className="relative aspect-square bg-muted overflow-hidden">
         <Link href={`/productos/${product.slug}`}>
           <Image
-            src={product.image_url || "/images/placeholder.jpg"}
+            src={product.image_url || PRODUCT_PLACEHOLDER}
             alt={product.name}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"

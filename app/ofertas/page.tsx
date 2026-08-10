@@ -10,6 +10,7 @@ import { AnnouncementBar } from "@/components/announcement-bar"
 import { useCart } from "@/context/cart-context"
 import { useFavorites } from "@/context/favorites-context"
 import type { Product } from "@/lib/supabase"
+import { PRODUCT_PLACEHOLDER } from "@/lib/placeholder"
 
 function formatPrice(n: number) {
   return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(n)
@@ -87,7 +88,7 @@ function OfferRow({ product, index }: { product: Product; index: number }) {
       <div className="relative w-full lg:w-1/2 min-h-[50vh] lg:min-h-screen overflow-hidden bg-[#F5EDE9] flex items-center justify-center">
         <div className="relative w-[55%] max-w-xs aspect-[3/4] transition-transform duration-700 hover:scale-105">
           <Image
-            src={product.image_url || "/images/placeholder.jpg"}
+            src={product.image_url || PRODUCT_PLACEHOLDER}
             alt={product.name}
             fill
             className="object-contain drop-shadow-2xl"

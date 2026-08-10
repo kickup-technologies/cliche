@@ -6,6 +6,7 @@ import { useCart } from "@/context/cart-context"
 import { useRecentlyViewed } from "@/lib/recently-viewed"
 import { recommend } from "@/lib/recommend"
 import type { Product } from "@/lib/supabase"
+import { PRODUCT_PLACEHOLDER } from "@/lib/placeholder"
 
 interface Props {
   product: Product
@@ -108,7 +109,7 @@ export function ProductRecommendations({ product, fallback }: Props) {
                 <div className="aspect-square bg-muted/30 overflow-hidden">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={c.image_url || "/placeholder.jpg"}
+                    src={c.image_url || PRODUCT_PLACEHOLDER}
                     alt={c.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
