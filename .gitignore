@@ -21,6 +21,9 @@ node_modules
 tsconfig.tsbuildinfo
 next-env.d.ts
 
+# Candado del ciclo automático de mejoras (nunca se versiona)
+.claude-loop.lock
+
 # Dev server logs (no versionar)
 dev-server.log
 *.log

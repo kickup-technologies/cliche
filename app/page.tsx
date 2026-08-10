@@ -1,3 +1,5 @@
+import type { Metadata } from "next"
+import { getSeoOverride, SEO_PAGES } from "@/lib/seo"
 import { Header } from "@/components/header"
 import { AnnouncementBar } from "@/components/announcement-bar"
 import { Footer } from "@/components/footer"
@@ -39,6 +41,40 @@ import { CustomPackCTA } from "@/components/editorial/custom-pack-cta"
  *  B2B       13. Banda identidad olfativa empresas
  *  CAPTURA   14. Newsletter (gancho de contenido; sin descuento desde 2026-07-30)
  */
+// ISR: la portada se regenera cada 5 min, así el SEO editado en el panel
+// admin entra sin necesidad de un deploy.
+export const revalidate = 300
+
+/**
+ * SEO de la portada. Por defecto manda el metadata del layout raíz; si la
+ * dueña escribió título/descripción en el panel admin (sección SEO), ese texto
+ * gana. `title.absolute` evita que se le pegue la plantilla "| Cliché Colombia".
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const override = await getSeoOverride("/")
+  if (!override.title && !override.description) return {}
+
+  const home = SEO_PAGES[0]
+  const title = override.title || home.title
+  const description = override.description || home.description
+  return {
+    title: { absolute: title },
+    description,
+    openGraph: {
+      type: "website",
+      locale: "es_CO",
+      url: "/",
+      siteName: "Cliché Colombia",
+      title,
+      description,
+      images: [
+        { url: "/og-image.jpg", width: 1200, height: 630, alt: "Cliché Colombia — Aromas Artesanales Colombianos" },
+      ],
+    },
+    twitter: { card: "summary_large_image", title, description, images: ["/og-image.jpg"] },
+  }
+}
+
 export default function Home() {
   return (
     <main className="min-h-screen">

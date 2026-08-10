@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react"
 import { supabase } from "@/lib/supabase"
 import {
   LayoutDashboard, TrendingUp, BarChart3, Star, ShoppingBag, Zap,
-  Package, Settings, Lock, RefreshCw, AlertCircle, Eye, LogOut, Menu, X, Paintbrush, Flame, Ticket, MessageCircle, Users,
+  Package, Settings, Lock, RefreshCw, AlertCircle, Eye, LogOut, Menu, X, Paintbrush, Flame, Ticket, MessageCircle, Users, Search,
 } from "lucide-react"
 import type { Product } from "@/lib/supabase"
 import { Order, PageView } from "./types"
@@ -22,8 +22,9 @@ import { HeatmapsSection } from "./sections/heatmaps"
 import { DescuentosSection } from "./sections/descuentos"
 import { AsistenteSection } from "./sections/asistente"
 import { ClientesSection } from "./sections/clientes"
+import { SeoSection } from "./sections/seo"
 
-type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "heatmaps" | "pedidos" | "clientes" | "descuentos" | "inventario" | "asistente"
+type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "heatmaps" | "pedidos" | "clientes" | "descuentos" | "inventario" | "seo" | "asistente"
 
 interface Setting { key: string; value: string }
 
@@ -47,6 +48,7 @@ const SIDEBAR = [
   ]},
   { section: "CONFIGURACIÓN", items: [
     { id: "inventario", label: "Inventario", icon: Package },
+    { id: "seo",        label: "SEO",        icon: Search },
   ]},
 ] as const
 
@@ -418,6 +420,9 @@ export default function AdminPage() {
           )}
           {activeSection === "inventario" && (
             <InventarioSection products={products} onRefresh={loadAll} />
+          )}
+          {activeSection === "seo" && (
+            <SeoSection products={products} />
           )}
           {activeSection === "asistente" && (
             <AsistenteSection />

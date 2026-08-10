@@ -2,6 +2,7 @@ import { notFound } from "next/navigation"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { ProductDetail } from "@/components/product-detail"
 import { CATALOG_AS_PRODUCTS, getCatalogProduct } from "@/lib/catalog-data"
+import { withSeoOverride, productSeoPath } from "@/lib/seo"
 import type { Metadata } from "next"
 
 // ISR: páginas estáticas servidas desde CDN, regeneradas cada 5 min. Escala a
@@ -40,7 +41,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const product = dbProduct || getCatalogProduct(slug)
   if (!product) return { title: "Producto no encontrado" }
 
-  return {
+  // SEO por defecto del producto; el panel admin (sección SEO) puede
+  // sobrescribir título y descripción para esta ficha.
+  return withSeoOverride(productSeoPath(slug), {
     title: product.name,
     description: product.description || `${product.name} — Cliché Colombia`,
     openGraph: {
@@ -48,7 +51,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: product.description || "",
       images: product.image_url ? [{ url: product.image_url }] : [],
     },
-  }
+  })
 }
 
 export default async function ProductPage({ params }: Props) {

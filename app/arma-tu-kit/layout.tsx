@@ -1,8 +1,13 @@
 import type { Metadata } from "next"
+import { withSeoOverride } from "@/lib/seo"
 
 // La página /arma-tu-kit es un client component ("use client"), por lo que el
 // metadata SEO debe exportarse desde este layout (server component).
-export const metadata: Metadata = {
+// El texto de abajo es el POR DEFECTO: si la dueña escribió algo en el panel
+// admin (sección SEO), ese texto manda.
+export const revalidate = 300
+
+const BASE: Metadata = {
   title: "Arma tu Kit de Aromas Personalizado",
   description:
     "Crea tu kit de aromas a tu medida: elige tus esencias favoritas para el hogar y la ropa y ahorra con precios por combo. Aromas artesanales colombianos con envío a todo el país.",
@@ -24,6 +29,10 @@ export const metadata: Metadata = {
       },
     ],
   },
+}
+
+export function generateMetadata(): Promise<Metadata> {
+  return withSeoOverride("/arma-tu-kit", BASE)
 }
 
 export default function ArmaTuKitLayout({ children }: { children: React.ReactNode }) {
