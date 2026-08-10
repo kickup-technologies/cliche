@@ -319,6 +319,18 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
                 </div>
               </div>
 
+              {/* Título de la descripción (opcional) */}
+              <div>
+                <label className="text-xs font-semibold text-[#2D1A14]/50 uppercase tracking-wide mb-1.5 block">Título arriba de la descripción (opcional)</label>
+                <input
+                  type="text"
+                  value={modal.product.description_title || ""}
+                  onChange={e => setField("description_title", e.target.value || null)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-[#2D1A14]/15 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#A67163]/40"
+                  placeholder="Ej: Un aroma que abraza tu casa"
+                />
+              </div>
+
               {/* Descripción */}
               <div>
                 <label className="text-xs font-semibold text-[#2D1A14]/50 uppercase tracking-wide mb-1.5 block">Descripción</label>
@@ -329,6 +341,33 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
                   className="w-full px-3 py-2.5 rounded-xl border border-[#2D1A14]/15 bg-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#A67163]/40"
                   placeholder="Describe el aroma y para qué espacios es ideal…"
                 />
+              </div>
+
+              {/* Vista previa — réplica compacta de la ficha pública del producto.
+                  Nada se publica hasta pulsar Guardar. */}
+              <div>
+                <label className="text-xs font-semibold text-[#2D1A14]/50 uppercase tracking-wide mb-1.5 block">Así se verá en la tienda</label>
+                <div className="rounded-xl border border-[#2D1A14]/10 bg-[#FAF8F5] p-5 flex gap-4">
+                  {modalImages[0] ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={modalImages[0]} alt="Vista previa" className="w-24 h-24 object-contain bg-white rounded-lg flex-shrink-0" />
+                  ) : (
+                    <div className="w-24 h-24 rounded-lg bg-[#2D1A14]/5 flex items-center justify-center flex-shrink-0">
+                      <ImageIcon className="w-6 h-6 text-[#2D1A14]/20" />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="font-serif text-lg text-[#2D1A14] leading-snug truncate">{modal.product.name || "Nombre del producto"}</p>
+                    <p className="text-[#A67163] text-sm font-medium mt-0.5">{modal.product.price ? fmt(Number(modal.product.price)) : "$ —"}</p>
+                    {modal.product.description_title && (
+                      <p className="font-serif text-sm text-[#2D1A14] mt-2">{modal.product.description_title}</p>
+                    )}
+                    <p className="text-xs text-[#2D1A14]/55 leading-relaxed mt-1 line-clamp-3">
+                      {modal.product.description || "La descripción aparecerá aquí…"}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-[11px] text-[#2D1A14]/40 mt-1.5">Los cambios solo se publican al pulsar “Guardar cambios”.</p>
               </div>
 
               {/* Stock + Activo (compacto) */}

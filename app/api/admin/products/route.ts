@@ -5,7 +5,7 @@ import { isAdmin } from "@/lib/admin-auth"
 
 // Campos que el admin puede escribir (whitelist — nunca confiar en todo el body)
 export const PRODUCT_FIELDS = [
-  "name", "slug", "price", "original_price", "description", "image_url",
+  "name", "slug", "price", "original_price", "description", "description_title", "image_url",
   "image_urls", "category", "badge", "badge_color", "stock", "rating", "reviews", "is_active",
 ] as const
 

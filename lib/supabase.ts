@@ -31,6 +31,8 @@ export interface Product {
   price: number
   original_price: number | null
   description: string | null
+  // Título opcional que el admin puede mostrar arriba de la descripción
+  description_title?: string | null
   image_url: string
   image_urls: string[]
   category?: string | null

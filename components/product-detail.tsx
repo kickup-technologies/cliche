@@ -560,7 +560,10 @@ export function ProductDetail({ product, related }: Props) {
                 )
               })()}
 
-              {/* Description */}
+              {/* Description — con título opcional definido por el admin */}
+              {product.description_title && (
+                <p className="font-serif text-lg text-foreground leading-snug">{product.description_title}</p>
+              )}
               <p className="text-[15px] text-muted-foreground leading-[1.75]">
                 {catalogItem?.description || VALUE_MAP[product.slug] || product.description}
               </p>
@@ -682,6 +685,9 @@ export function ProductDetail({ product, related }: Props) {
                 Icon: Sparkles,
                 content: (
                   <div className="text-muted-foreground">
+                    {product.description_title && (
+                      <p className="font-serif text-lg text-foreground mb-2">{product.description_title}</p>
+                    )}
                     <p className="text-base leading-relaxed mb-4">{catalogItem?.description || VALUE_MAP[product.slug] || product.description}</p>
                     {isKit && (
                       <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 mt-4 flex gap-3">
