@@ -5,6 +5,7 @@ import { fmt } from "../types"
 import type { Product } from "@/lib/supabase"
 import { adminFetch } from "@/lib/admin-client"
 import { PRODUCT_PLACEHOLDER } from "@/lib/placeholder"
+import { imageProblem, IMAGE_ACCEPT, MAX_IMAGE_MB } from "@/lib/upload-limits"
 import { Ayuda } from "../components/ayuda"
 
 // Categorías (familias olfativas) que el admin asigna al producto. Deben
@@ -17,13 +18,32 @@ const CATEGORIES = [
   { value: "frescos", label: "Frescos" },
 ] as const
 
-async function uploadImage(file: File): Promise<string | null> {
+/**
+ * Sube una imagen y devuelve su URL, o el motivo exacto del fallo en español.
+ *
+ * Antes devolvía null y la dueña solo veía «No se pudo subir la imagen»: sin
+ * saber si la foto pesaba de más, si era un HEIC del iPhone o si se le había
+ * vencido la sesión. Ahora se revisa el archivo ANTES de subirlo (así no espera
+ * la subida entera de una foto de 9 MB para enterarse) y el mensaje dice qué
+ * hacer.
+ */
+async function uploadImage(file: File): Promise<{ url: string } | { error: string }> {
+  const problema = imageProblem(file)
+  if (problema) return { error: problema }
+
   const fd = new FormData()
   fd.append("file", file)
-  const res = await fetch("/api/admin/upload", { method: "POST", body: fd })
-  if (!res.ok) return null
-  const { url } = await res.json()
-  return url
+  try {
+    const res = await fetch("/api/admin/upload", { method: "POST", body: fd })
+    if (res.status === 401) return { error: "La sesión del panel expiró. Vuelve a entrar y sube la foto de nuevo." }
+    const data = (await res.json().catch(() => ({}))) as { url?: string; error?: string }
+    if (!res.ok || !data.url) {
+      return { error: data.error || `No se pudo subir «${file.name}». Intenta de nuevo.` }
+    }
+    return { url: data.url }
+  } catch {
+    return { error: `Se cortó la conexión al subir «${file.name}». Revisa tu internet e intenta otra vez.` }
+  }
 }
 
 function autoSlug(name: string) {
@@ -81,15 +101,21 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
     if (!files.length) return
     setUploadProgress(true); setModalError("")
     const uploaded: string[] = []
+    const fallos: string[] = []
     for (const f of files) {
-      const url = await uploadImage(f)
-      if (url) uploaded.push(url)
+      const r = await uploadImage(f)
+      if ("url" in r) uploaded.push(r.url)
+      else fallos.push(r.error)
     }
     setUploadProgress(false)
     if (fileRef.current) fileRef.current.value = ""
-    if (!uploaded.length) { setModalError("No se pudo subir la imagen"); return }
-    const all = [...imagesOf(modal.product), ...uploaded]
-    setModal(prev => ({ ...prev, product: { ...prev.product, image_urls: all, image_url: all[0] } }))
+    // Las que sí subieron se quedan; las que no, se explican una por una (antes
+    // los fallos parciales pasaban en silencio y faltaban fotos sin aviso).
+    if (uploaded.length) {
+      const all = [...imagesOf(modal.product), ...uploaded]
+      setModal(prev => ({ ...prev, product: { ...prev.product, image_urls: all, image_url: all[0] } }))
+    }
+    if (fallos.length) setModalError(fallos.join(" "))
   }
   function removeImage(idx: number) {
     const all = imagesOf(modal.product).filter((_, i) => i !== idx)
@@ -397,16 +423,18 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
                 <input
                   ref={fileRef}
                   type="file"
-                  accept="image/*"
+                  accept={IMAGE_ACCEPT}
                   multiple
                   onChange={handleFilesChange}
                   className="hidden"
                 />
-                {modalImages.length === 0 && (
-                  <p className="text-[11px] text-[#2D1A14]/40 mt-2 flex items-center gap-1.5">
-                    <ImageIcon className="w-3.5 h-3.5" /> Sube una o varias fotos. La primera será la principal.
-                  </p>
-                )}
+                <p className="text-[11px] text-[#2D1A14]/40 mt-2 flex items-start gap-1.5">
+                  <ImageIcon className="w-3.5 h-3.5 flex-shrink-0 mt-px" />
+                  <span>
+                    {modalImages.length === 0 && "Sube una o varias fotos. La primera será la principal. "}
+                    Formatos JPG, PNG o WebP, hasta {MAX_IMAGE_MB} MB cada una.
+                  </span>
+                </p>
               </div>
 
               {/* Precios */}

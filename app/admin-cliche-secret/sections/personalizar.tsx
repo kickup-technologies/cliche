@@ -6,6 +6,7 @@ import {
   Tag, Zap, ChevronDown, MousePointerClick,
 } from "lucide-react"
 import { adminFetch } from "@/lib/admin-client"
+import { imageProblem, IMAGE_ACCEPT } from "@/lib/upload-limits"
 
 interface PersonalizarSectionProps {
   settings: Record<string, string>
@@ -221,6 +222,10 @@ export function PersonalizarSection({ settings, onSettingsUpdate }: Personalizar
   }
 
   async function uploadImage(file: File, index: number) {
+    // Aviso inmediato si la foto no sirve (HEIC del iPhone, demasiado pesada):
+    // así no espera la subida entera para enterarse.
+    const problema = imageProblem(file)
+    if (problema) { alert(problema); return }
     setUploading(index)
     try {
       const fd = new FormData()
@@ -390,7 +395,7 @@ export function PersonalizarSection({ settings, onSettingsUpdate }: Personalizar
                               <button onClick={() => moveSlide(i, 1)} disabled={i === slides.length - 1} className="p-1.5 rounded-md hover:bg-[#2D1A14]/5 disabled:opacity-25" title="Bajar"><ArrowDown className="w-3.5 h-3.5 text-[#2D1A14]/55" /></button>
                               <label className="p-1.5 rounded-md hover:bg-[#2D1A14]/5 cursor-pointer" title="Reemplazar">
                                 {uploading === i ? <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#A67163]" /> : <Upload className="w-3.5 h-3.5 text-[#2D1A14]/55" />}
-                                <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f, i) }} />
+                                <input type="file" accept={IMAGE_ACCEPT} className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f, i) }} />
                               </label>
                               <button onClick={() => removeSlide(i)} className="p-1.5 rounded-md hover:bg-red-50" title="Eliminar"><Trash2 className="w-3.5 h-3.5 text-red-500" /></button>
                             </div>
@@ -399,7 +404,7 @@ export function PersonalizarSection({ settings, onSettingsUpdate }: Personalizar
                         <label className="flex items-center justify-center gap-2 w-full py-2 rounded-lg border border-dashed border-[#2D1A14]/20 text-xs font-semibold text-[#2D1A14]/55 hover:border-[#A67163] hover:text-[#A67163] cursor-pointer transition-colors">
                           {uploading === slides.length ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                           Añadir imagen
-                          <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f, slides.length) }} />
+                          <input type="file" accept={IMAGE_ACCEPT} className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f, slides.length) }} />
                         </label>
                       </div>
                     )}
