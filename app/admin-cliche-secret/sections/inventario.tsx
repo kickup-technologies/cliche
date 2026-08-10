@@ -5,7 +5,8 @@ import { fmt } from "../types"
 import type { Product } from "@/lib/supabase"
 import { adminFetch } from "@/lib/admin-client"
 import { PRODUCT_PLACEHOLDER } from "@/lib/placeholder"
-import { imageProblem, IMAGE_ACCEPT, MAX_IMAGE_MB } from "@/lib/upload-limits"
+import { IMAGE_ACCEPT, MAX_IMAGE_MB } from "@/lib/upload-limits"
+import { subirImagen } from "@/lib/admin-upload"
 import { Ayuda } from "../components/ayuda"
 
 // Categorías (familias olfativas) que el admin asigna al producto. Deben
@@ -17,34 +18,6 @@ const CATEGORIES = [
   { value: "dulces", label: "Dulces" },
   { value: "frescos", label: "Frescos" },
 ] as const
-
-/**
- * Sube una imagen y devuelve su URL, o el motivo exacto del fallo en español.
- *
- * Antes devolvía null y la dueña solo veía «No se pudo subir la imagen»: sin
- * saber si la foto pesaba de más, si era un HEIC del iPhone o si se le había
- * vencido la sesión. Ahora se revisa el archivo ANTES de subirlo (así no espera
- * la subida entera de una foto de 9 MB para enterarse) y el mensaje dice qué
- * hacer.
- */
-async function uploadImage(file: File): Promise<{ url: string } | { error: string }> {
-  const problema = imageProblem(file)
-  if (problema) return { error: problema }
-
-  const fd = new FormData()
-  fd.append("file", file)
-  try {
-    const res = await fetch("/api/admin/upload", { method: "POST", body: fd })
-    if (res.status === 401) return { error: "La sesión del panel expiró. Vuelve a entrar y sube la foto de nuevo." }
-    const data = (await res.json().catch(() => ({}))) as { url?: string; error?: string }
-    if (!res.ok || !data.url) {
-      return { error: data.error || `No se pudo subir «${file.name}». Intenta de nuevo.` }
-    }
-    return { url: data.url }
-  } catch {
-    return { error: `Se cortó la conexión al subir «${file.name}». Revisa tu internet e intenta otra vez.` }
-  }
-}
 
 function autoSlug(name: string) {
   return "aroma-" + name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
@@ -103,7 +76,7 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
     const uploaded: string[] = []
     const fallos: string[] = []
     for (const f of files) {
-      const r = await uploadImage(f)
+      const r = await subirImagen(f)
       if ("url" in r) uploaded.push(r.url)
       else fallos.push(r.error)
     }

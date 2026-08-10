@@ -7,7 +7,17 @@
  * la subida completa de una foto pesada.
  */
 
-export const MAX_IMAGE_BYTES = 5 * 1024 * 1024 // 5 MB
+/**
+ * Tope por foto: 4 MB.
+ *
+ * ⚠️ NO SUBIR ESTE NÚMERO POR ENCIMA DE ~4 MB ⚠️
+ * Vercel corta el cuerpo de la petición en 4.5 MB antes de que llegue a
+ * /api/admin/upload, y el envío multipart pesa un poco más que el archivo. Con
+ * el tope anterior (5 MB) una foto de 4.6 MB pasaba la revisión del panel y
+ * moría después en la plataforma, así que la dueña esperaba la subida entera
+ * para ver un error genérico que no explicaba nada.
+ */
+export const MAX_IMAGE_BYTES = 4 * 1024 * 1024 // 4 MB
 export const MAX_IMAGE_MB = MAX_IMAGE_BYTES / (1024 * 1024)
 
 export const ALLOWED_IMAGE_TYPES = [

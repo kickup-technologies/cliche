@@ -6,7 +6,8 @@ import {
   Tag, Zap, ChevronDown, MousePointerClick,
 } from "lucide-react"
 import { adminFetch } from "@/lib/admin-client"
-import { imageProblem, IMAGE_ACCEPT } from "@/lib/upload-limits"
+import { IMAGE_ACCEPT, MAX_IMAGE_MB } from "@/lib/upload-limits"
+import { subirImagen } from "@/lib/admin-upload"
 
 interface PersonalizarSectionProps {
   settings: Record<string, string>
@@ -222,28 +223,17 @@ export function PersonalizarSection({ settings, onSettingsUpdate }: Personalizar
   }
 
   async function uploadImage(file: File, index: number) {
-    // Aviso inmediato si la foto no sirve (HEIC del iPhone, demasiado pesada):
-    // así no espera la subida entera para enterarse.
-    const problema = imageProblem(file)
-    if (problema) { alert(problema); return }
     setUploading(index)
     try {
-      const fd = new FormData()
-      fd.append("file", file)
-      const res = await fetch("/api/admin/upload", {
-        method: "POST",
-        body: fd,
-      })
-      if (!res.ok) {
-        const { error } = await res.json().catch(() => ({ error: "" }))
-        alert(error || "No se pudo subir la imagen")
-        return
-      }
-      const { url } = await res.json()
+      // subirImagen revisa la foto ANTES de mandarla (HEIC del iPhone, pesada
+      // de más) y explica cualquier fallo con la solución, igual que en el
+      // inventario: los dos sitios del panel cuentan lo mismo.
+      const r = await subirImagen(file)
+      if ("error" in r) { alert(r.error); return }
       setSlides(prev => {
         const next = [...prev]
-        if (index < next.length) next[index] = url
-        else next.push(url)
+        if (index < next.length) next[index] = r.url
+        else next.push(r.url)
         return next
       })
       setDirty(true)
@@ -406,6 +396,11 @@ export function PersonalizarSection({ settings, onSettingsUpdate }: Personalizar
                           Añadir imagen
                           <input type="file" accept={IMAGE_ACCEPT} className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f, slides.length) }} />
                         </label>
+                        {/* Decirlo antes evita el viaje en vano: la foto pesada
+                            se rechaza igual, pero después de esperar la subida. */}
+                        <p className="text-[10px] text-[#2D1A14]/40">
+                          Formatos JPG, PNG o WebP, hasta {MAX_IMAGE_MB} MB cada una.
+                        </p>
                       </div>
                     )}
 
