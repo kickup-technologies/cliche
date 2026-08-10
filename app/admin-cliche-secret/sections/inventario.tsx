@@ -156,53 +156,89 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
         </button>
       </div>
 
-      {products.map(product => (
-        <div key={product.id} className="bg-white rounded-2xl border border-[#2D1A14]/8 p-4">
-          <div className="flex items-center gap-4">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={product.image_url || "/placeholder-product.jpg"}
-              alt={product.name}
-              className="w-14 h-14 object-contain rounded-xl bg-[#FAF8F5] p-1 flex-shrink-0"
-            />
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm text-[#2D1A14] truncate">{product.name}</p>
-              <p className="text-sm text-[#2D1A14]/60 mt-0.5">{fmt(product.price)}</p>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
-              <button
-                onClick={() => updateStock(product.id, Math.max(0, product.stock - 1))}
-                className="w-7 h-7 rounded-lg border border-[#2D1A14]/15 hover:bg-[#FAF8F5] flex items-center justify-center"
-              >
-                <Minus className="w-3 h-3 text-[#2D1A14]" />
-              </button>
-              <span className={`w-8 text-center font-bold text-sm ${product.stock <= 5 ? "text-red-500" : "text-[#2D1A14]"}`}>
-                {product.stock}
+      {/* Parrilla igual a la página de ventas: cada cuadro es el producto tal
+          como lo ve el cliente. Un clic en el cuadro abre el editor. */}
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+        {products.map(product => (
+          <div
+            key={product.id}
+            onClick={() => openEdit(product)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openEdit(product) } }}
+            className="group text-left flex flex-col bg-white rounded-2xl border border-[#2D1A14]/8 overflow-hidden hover:border-[#A67163]/40 hover:shadow-[0_18px_40px_-26px_rgba(45,26,20,0.45)] transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#A67163]/40"
+          >
+            <div className="relative aspect-[4/5] w-full bg-[#FAF8F5] overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={product.image_url || "/placeholder-product.jpg"}
+                alt={product.name}
+                className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04] ${product.is_active ? "" : "opacity-40 grayscale"}`}
+              />
+              <div className="absolute top-2 left-2 flex flex-col gap-1 items-start">
+                {!product.is_active && (
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#2D1A14]/80 text-white">Oculto</span>
+                )}
+                {product.stock === 0 ? (
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-600 text-white">Agotado</span>
+                ) : product.stock <= 5 ? (
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500 text-white">Stock bajo</span>
+                ) : null}
+              </div>
+              <span className="absolute top-2 right-2 w-7 h-7 rounded-lg bg-white/90 border border-[#2D1A14]/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <Pencil className="w-3.5 h-3.5 text-[#2D1A14]/60" />
               </span>
-              <button
-                onClick={() => updateStock(product.id, product.stock + 1)}
-                className="w-7 h-7 rounded-lg border border-[#2D1A14]/15 hover:bg-[#FAF8F5] flex items-center justify-center"
-              >
-                <Plus className="w-3 h-3 text-[#2D1A14]" />
-              </button>
-              <button
-                onClick={() => toggleProduct(product.id, !product.is_active)}
-                className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors ${product.is_active ? "bg-green-50 text-green-700 border-green-200" : "bg-[#2D1A14]/5 text-[#2D1A14]/40 border-[#2D1A14]/10"}`}
-              >
-                {product.is_active ? <ToggleRight className="w-3.5 h-3.5" /> : <ToggleLeft className="w-3.5 h-3.5" />}
-                {product.is_active ? "Activo" : "Oculto"}
-              </button>
-              <button
-                onClick={() => openEdit(product)}
-                className="w-8 h-8 rounded-lg border border-[#2D1A14]/15 hover:bg-[#FAF8F5] flex items-center justify-center transition-colors"
-                title="Editar"
-              >
-                <Pencil className="w-3.5 h-3.5 text-[#2D1A14]/50" />
-              </button>
+            </div>
+
+            <div className="p-3 flex flex-col gap-2 flex-1">
+              <div className="min-w-0">
+                <p className="font-semibold text-sm text-[#2D1A14] truncate">{product.name}</p>
+                <p className="text-sm text-[#A67163] mt-0.5">{fmt(product.price)}</p>
+              </div>
+
+              {/* Controles rápidos: no abren el editor. */}
+              <div className="mt-auto flex items-center justify-between gap-2" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => updateStock(product.id, Math.max(0, product.stock - 1))}
+                    className="w-7 h-7 rounded-lg border border-[#2D1A14]/15 hover:bg-[#FAF8F5] flex items-center justify-center"
+                    title="Quitar una unidad"
+                  >
+                    <Minus className="w-3 h-3 text-[#2D1A14]" />
+                  </button>
+                  <span className={`w-7 text-center font-bold text-sm ${product.stock <= 5 ? "text-red-500" : "text-[#2D1A14]"}`}>
+                    {product.stock}
+                  </span>
+                  <button
+                    onClick={() => updateStock(product.id, product.stock + 1)}
+                    className="w-7 h-7 rounded-lg border border-[#2D1A14]/15 hover:bg-[#FAF8F5] flex items-center justify-center"
+                    title="Agregar una unidad"
+                  >
+                    <Plus className="w-3 h-3 text-[#2D1A14]" />
+                  </button>
+                </div>
+                <button
+                  onClick={() => toggleProduct(product.id, !product.is_active)}
+                  className={`flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border transition-colors ${product.is_active ? "bg-green-50 text-green-700 border-green-200" : "bg-[#2D1A14]/5 text-[#2D1A14]/40 border-[#2D1A14]/10"}`}
+                  title={product.is_active ? "Ocultar de la tienda" : "Mostrar en la tienda"}
+                >
+                  {product.is_active ? <ToggleRight className="w-3.5 h-3.5" /> : <ToggleLeft className="w-3.5 h-3.5" />}
+                  {product.is_active ? "Activo" : "Oculto"}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        ))}
+
+        {/* Cuadro "Añadir": abre la misma ficha, en blanco. */}
+        <button
+          onClick={openNew}
+          className="flex flex-col items-center justify-center gap-2 min-h-[220px] rounded-2xl border-2 border-dashed border-[#2D1A14]/20 bg-white/50 text-[#2D1A14]/40 hover:border-[#A67163]/50 hover:text-[#A67163] hover:bg-white transition-colors"
+        >
+          <Plus className="w-7 h-7" />
+          <span className="text-sm font-semibold">Añadir producto</span>
+        </button>
+      </div>
 
       {/* Product Modal — formulario simple */}
       {modal.open && modal.product && (
