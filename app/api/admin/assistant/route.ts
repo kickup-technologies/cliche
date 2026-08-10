@@ -66,7 +66,15 @@ function parseMessages(raw: unknown): ChatMessage[] | null {
   }
   if (out.length === 0) return null
   if (out[out.length - 1].role !== "user") return null
-  return out.slice(-MAX_HISTORY)
+
+  // Al recortar el historial, el primer mensaje puede quedar siendo una
+  // respuesta del ayudante. Gemini rechaza una conversación que empieza así
+  // (400), y para el resto de proveedores tampoco aporta: se descartan esas
+  // respuestas sueltas del principio hasta que la charla arranque con una
+  // pregunta de la dueña.
+  const recortado = out.slice(-MAX_HISTORY)
+  const inicio = recortado.findIndex((m) => m.role === "user")
+  return recortado.slice(inicio)
 }
 
 /** Llama a Gemini con un modelo concreto. Devuelve el texto o lanza error. */

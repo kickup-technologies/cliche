@@ -14,7 +14,7 @@
  */
 
 import { useEffect, useRef, useState } from "react"
-import { MessageCircle, X, Send, RefreshCw, Sparkles } from "lucide-react"
+import { MessageCircle, X, Send, RefreshCw, Sparkles, Eraser } from "lucide-react"
 import { adminFetch } from "@/lib/admin-client"
 
 const BROWN = "#2D1A14"
@@ -23,6 +23,13 @@ const ACCENT = "#A67163"
 interface ChatMessage {
   role: "user" | "assistant"
   content: string
+  /**
+   * Aviso del panel (se cayó la conexión, no hay clave de IA…), no algo que el
+   * ayudante haya dicho de verdad. Se pinta distinto y NO se manda como parte
+   * de la conversación: si se mandara, la IA acabaría hablando de sus propias
+   * fallas en vez de responder la pregunta.
+   */
+  aviso?: boolean
 }
 
 const SALUDO: ChatMessage = {
@@ -77,19 +84,27 @@ export function ChatAyuda() {
     try {
       const res = await adminFetch("/api/admin/assistant", {
         method: "POST",
-        // El saludo inicial no se manda: no aporta y gasta cupo gratuito.
-        body: JSON.stringify({ messages: historial.filter((m) => m !== SALUDO) }),
+        // El saludo inicial y los avisos del panel no se mandan: no aportan a
+        // la conversación y gastan cupo gratuito.
+        body: JSON.stringify({ messages: historial.filter((m) => m !== SALUDO && !m.aviso) }),
       })
       const data = (await res.json().catch(() => ({}))) as { reply?: string; error?: string }
-      const reply =
-        data.reply ||
-        data.error ||
-        "No pude responder en este momento. Intenta de nuevo en un minuto."
-      setMessages((prev) => [...prev, { role: "assistant", content: reply }])
+      if (data.reply) {
+        setMessages((prev) => [...prev, { role: "assistant", content: data.reply as string }])
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            aviso: true,
+            content: data.error || "No pude responder en este momento. Intenta de nuevo en un minuto.",
+          },
+        ])
+      }
     } catch {
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: "Se cayó la conexión. Revisa tu internet e intenta otra vez." },
+        { role: "assistant", aviso: true, content: "Se cayó la conexión. Revisa tu internet e intenta otra vez." },
       ])
     } finally {
       setSending(false)
@@ -130,6 +145,19 @@ export function ChatAyuda() {
               <p className="text-sm font-semibold text-white leading-tight">Ayudante del panel</p>
               <p className="text-[11px] text-white/60 leading-tight">Pregúntame lo que sea</p>
             </div>
+            {/* Empezar de nuevo: si la charla se enredó (o se preguntó por otro
+                tema), se limpia sin tener que recargar el panel entero. */}
+            {messages.length > 1 && (
+              <button
+                onClick={() => { setMessages([SALUDO]); setInput(""); inputRef.current?.focus() }}
+                disabled={sending}
+                aria-label="Empezar una conversación nueva"
+                title="Empezar de nuevo"
+                className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/10 disabled:opacity-40"
+              >
+                <Eraser className="w-4 h-4 text-white/70" />
+              </button>
+            )}
             <button
               onClick={() => setOpen(false)}
               aria-label="Cerrar"
@@ -148,7 +176,9 @@ export function ChatAyuda() {
                   style={
                     m.role === "user"
                       ? { background: BROWN, color: "white", borderBottomRightRadius: 4 }
-                      : { background: "white", color: BROWN, border: `1px solid ${BROWN}12`, borderBottomLeftRadius: 4 }
+                      : m.aviso
+                        ? { background: "#FFF8EC", color: "#8A5A12", border: "1px solid #F2D6A2", borderBottomLeftRadius: 4 }
+                        : { background: "white", color: BROWN, border: `1px solid ${BROWN}12`, borderBottomLeftRadius: 4 }
                   }
                 >
                   {m.content}
