@@ -7,8 +7,10 @@
  * abre un chat compacto donde la dueña puede preguntar cualquier cosa: cómo usar
  * el panel, ideas de SEO, cómo redactar la descripción de un aroma…
  *
- * Habla con /api/admin/assistant (Google Gemini, capa gratuita). Si la clave no
- * está configurada, el chat lo dice con claridad en vez de fallar en silencio.
+ * Habla con /api/admin/assistant, que reusa la misma cadena de IA gratuita del
+ * asesor de WhatsApp. Las conversaciones no se cruzan: solo comparten motor.
+ * Si no hay proveedor configurado, el chat lo dice con claridad en vez de
+ * fallar en silencio.
  */
 
 import { useEffect, useRef, useState } from "react"

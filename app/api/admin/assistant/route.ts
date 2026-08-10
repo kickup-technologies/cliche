@@ -1,23 +1,32 @@
 import { NextRequest, NextResponse } from "next/server"
 import { isAdmin } from "@/lib/admin-auth"
 import { rateLimit } from "@/lib/rate-limit"
+import { botReply, hasAnyAIProvider, type AIMessage } from "@/lib/bot/ai"
+import { PANEL_CONTEXT } from "@/lib/admin-assistant-context"
 
 /**
  * Chat de ayuda del panel admin.
  *
  * Responde dudas de la dueña sobre cómo usar el panel, ideas de SEO, redactar
- * descripciones, etc. Usa Google Gemini en su capa GRATUITA (gemini-2.5-flash,
- * con gemini-2.0-flash como respaldo). La clave va SOLO por variable de
- * entorno: GEMINI_API_KEY. Sin clave, el chat lo dice con claridad.
+ * descripciones, etc.
+ *
+ * Usa la MISMA cadena de proveedores de IA que ya alimenta al asesor de
+ * WhatsApp (lib/bot/ai.ts: Groq, Cerebras, Together…), así no hay que
+ * configurar ni pagar nada nuevo. Las conversaciones NO se cruzan: el bot de
+ * WhatsApp y este chat comparten solo el "motor"; cada uno manda su propio
+ * system prompt y su propio historial, y nada se guarda entre los dos.
+ *
+ * Gemini queda como respaldo opcional: si existe GEMINI_API_KEY se intenta
+ * cuando la cadena principal falla. Ninguna clave vive en el código.
  */
 
 export const runtime = "nodejs"
 
-const MODELS = ["gemini-2.5-flash", "gemini-2.0-flash"]
+const GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash"]
 const MAX_HISTORY = 12
 const MAX_CHARS = 2000
 
-const SIN_CLAVE = "Todavía no tengo activada mi conexión de inteligencia artificial. Pídele a Andrés activar la clave gratuita de Gemini (GEMINI_API_KEY) y vuelvo a funcionar."
+const SIN_PROVEEDOR = "Todavía no tengo activada mi conexión de inteligencia artificial. Pídele a Andrés que revise la clave del asistente (la misma que usa el bot de WhatsApp) y vuelvo a funcionar."
 
 const SYSTEM_PROMPT = `Eres «Ayudante de Cliché», el asistente del panel de administración de la tienda Bienestar by Cliché (clichecolombia.com), una tienda colombiana de aromas y ambientadores para el hogar.
 
@@ -28,15 +37,11 @@ Hablas con la dueña de la tienda, que NO es técnica. Reglas de tu forma de res
 - Si te piden textos (títulos, descripciones, ideas), entrega el texto listo para copiar y pegar, sin explicaciones largas.
 - Si no sabes algo o depende de un cambio en el código, dilo claro y sugiere escribirle a Andrés (el programador).
 
-Qué hay en el panel (por si preguntan dónde está algo):
-- Resumen: cómo va la tienda hoy.
-- Ventas, Tráfico, Productos, Mapas de Calor: analíticas.
-- Pedidos: pedidos pagados, cambiar estado, guía y transportadora.
-- Clientes: base de clientes (CRM).
-- Códigos de descuento: crear y desactivar códigos. El descuento nunca aplica al costo de envío.
-- Inventario: crear, editar y eliminar productos, fotos, precios y stock.
-- SEO: meta título y meta descripción de cada página y de cada producto (lo que se ve en Google).
-- Asistente WhatsApp: la asesora virtual que responde por WhatsApp.
+Cuando pregunte CÓMO hacer algo del panel, respóndele con los pasos concretos: en qué sección del menú entrar, qué botón pulsar y qué campo llenar, con los nombres exactos que aparecen en pantalla. Usa únicamente lo que dice el manual de abajo; si algo no está ahí, di que no estás seguro y que le pregunte a Andrés, en vez de inventarte un botón que no existe.
+
+────────────── MANUAL DEL PANEL ──────────────
+${PANEL_CONTEXT}
+──────────────────────────────────────────────
 
 Consejos de SEO que puedes dar (nicho aromas para el hogar en Colombia):
 - Meta título: ~55 caracteres, lo importante primero, incluir el tipo de producto y a veces "Colombia".
@@ -106,9 +111,9 @@ export async function POST(req: NextRequest) {
   const limited = rateLimit(req, { id: "admin-assistant", limit: 20, windowMs: 60_000 })
   if (limited) return limited
 
-  const key = process.env.GEMINI_API_KEY
-  if (!key) {
-    return NextResponse.json({ error: SIN_CLAVE, needsKey: true }, { status: 503 })
+  const geminiKey = process.env.GEMINI_API_KEY
+  if (!hasAnyAIProvider() && !geminiKey) {
+    return NextResponse.json({ error: SIN_PROVEEDOR, needsKey: true }, { status: 503 })
   }
 
   let messages: ChatMessage[] | null = null
@@ -122,14 +127,30 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Escribe una pregunta para poder ayudarte." }, { status: 400 })
   }
 
-  let lastError = ""
-  for (const model of MODELS) {
+  // 1) Cadena principal: los mismos proveedores del asesor de WhatsApp.
+  if (hasAnyAIProvider()) {
     try {
-      const reply = await askGemini(model, key, messages)
+      const reply = await botReply({
+        system: SYSTEM_PROMPT,
+        messages: messages as AIMessage[],
+        maxOutputTokens: 700,
+        temperature: 0.7,
+      })
       return NextResponse.json({ reply })
     } catch (err) {
-      lastError = err instanceof Error ? err.message : String(err)
-      console.warn("[admin/assistant]", lastError)
+      console.warn("[admin/assistant] cadena principal:", err instanceof Error ? err.message : err)
+    }
+  }
+
+  // 2) Respaldo opcional: Gemini, solo si hay clave configurada.
+  if (geminiKey) {
+    for (const model of GEMINI_MODELS) {
+      try {
+        const reply = await askGemini(model, geminiKey, messages)
+        return NextResponse.json({ reply })
+      } catch (err) {
+        console.warn("[admin/assistant] gemini:", err instanceof Error ? err.message : err)
+      }
     }
   }
 
