@@ -17,6 +17,18 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 export const SEO_MAX_TITLE = 60
 export const SEO_MAX_DESCRIPTION = 160
 
+/**
+ * Sufijo que la plantilla del layout raíz (`%s | Cliché Colombia`) pega a
+ * TODOS los títulos menos al de la portada (que usa `title.absolute`). Cuenta
+ * para los 60 caracteres que muestra Google, así que hay que descontarlo.
+ */
+export const SEO_TITLE_SUFFIX = " | Cliché Colombia"
+
+/** Caracteres disponibles para el título escrito a mano en una ruta. */
+export function titleBudget(absoluteTitle = false): number {
+  return absoluteTitle ? SEO_MAX_TITLE : SEO_MAX_TITLE - SEO_TITLE_SUFFIX.length
+}
+
 export interface SeoRow {
   path: string
   title: string | null
@@ -135,9 +147,9 @@ export function suggestProductTitle(name: string): string {
   const base = (name || "").trim()
   if (!base) return ""
   // La plantilla del layout ya añade " | Cliché Colombia" al título, así que
-  // aquí no se repite la marca: se aprovechan los 60 caracteres en palabras
-  // que la gente sí busca.
-  return trimTo(`${base} — Aroma Artesanal para el Hogar`, SEO_MAX_TITLE)
+  // aquí no se repite la marca y se descuentan esos caracteres del presupuesto:
+  // lo escrito + el sufijo tiene que caber en los 60 que muestra Google.
+  return trimTo(`${base} — Aroma Artesanal para el Hogar`, titleBudget(false))
 }
 
 /** Meta descripción sugerida para un producto del catálogo. */
@@ -157,7 +169,8 @@ export function suggestPageSeo(path: string): SeoOverride {
   const page = SEO_PAGES.find((p) => p.path === path)
   if (!page) return {}
   return {
-    title: trimTo(page.title, SEO_MAX_TITLE),
+    // La portada usa title.absolute (sin sufijo); el resto lo recibe.
+    title: trimTo(page.title, titleBudget(path === "/")),
     description: trimTo(page.description, SEO_MAX_DESCRIPTION),
   }
 }

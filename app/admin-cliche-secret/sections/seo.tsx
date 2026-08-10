@@ -14,12 +14,11 @@ import {
   suggestProductDescription,
   seoLengthTone,
   trimTo,
+  SEO_TITLE_SUFFIX,
   type SeoRow,
 } from "@/lib/seo"
 
 const DOMAIN = "www.clichecolombia.com"
-/** Sufijo que Next añade a todos los títulos salvo el de la portada. */
-const TITLE_TEMPLATE_SUFFIX = " | Cliché Colombia"
 
 interface Entry {
   path: string
@@ -96,7 +95,7 @@ function SeoEditor({
   const dirty = draft.title !== initial.title || draft.description !== initial.description
 
   // Lo que realmente sale al mundo: lo escrito, o el texto por defecto.
-  const effectiveTitle = (draft.title || entry.defaultTitle) + (entry.absoluteTitle ? "" : TITLE_TEMPLATE_SUFFIX)
+  const effectiveTitle = (draft.title || entry.defaultTitle) + (entry.absoluteTitle ? "" : SEO_TITLE_SUFFIX)
   const effectiveDescription = draft.description || entry.defaultDescription
 
   function autogenerate() {
@@ -142,7 +141,10 @@ function SeoEditor({
       <div>
         <div className="flex items-center justify-between mb-1.5">
           <label className="text-xs font-semibold text-[#2D1A14]/70">Meta título</label>
-          <Counter value={draft.title || entry.defaultTitle} max={SEO_MAX_TITLE} />
+          {/* El contador mide el título REAL (con el sufijo de marca que se
+              añade solo), no lo tecleado: si no, marcaría verde un título que
+              Google ya está cortando. */}
+          <Counter value={effectiveTitle} max={SEO_MAX_TITLE} />
         </div>
         <input
           value={draft.title}
@@ -150,12 +152,17 @@ function SeoEditor({
           placeholder={entry.defaultTitle}
           className="w-full px-3 py-2.5 rounded-xl border border-[#2D1A14]/15 bg-[#FAF8F5] text-sm text-[#2D1A14] focus:outline-none focus:ring-2 focus:ring-[#A67163]/40"
         />
+        {!entry.absoluteTitle && (
+          <p className="text-[11px] text-[#2D1A14]/40 mt-1.5">
+            Al final se añade solo «{SEO_TITLE_SUFFIX.trim()}» ({SEO_TITLE_SUFFIX.length} caracteres), y eso ya está contado arriba.
+          </p>
+        )}
       </div>
 
       <div>
         <div className="flex items-center justify-between mb-1.5">
           <label className="text-xs font-semibold text-[#2D1A14]/70">Meta descripción</label>
-          <Counter value={draft.description || entry.defaultDescription} max={SEO_MAX_DESCRIPTION} />
+          <Counter value={effectiveDescription} max={SEO_MAX_DESCRIPTION} />
         </div>
         <textarea
           value={draft.description}
