@@ -3,6 +3,7 @@ import { Footer } from "@/components/footer"
 import { Metadata } from "next"
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/privacidad" },
   title: "Política de Privacidad | Cliché Aromas",
   description: "Política de tratamiento de datos personales de Cliché Aromas, conforme a la Ley 1581 de 2012 de Colombia.",
 }

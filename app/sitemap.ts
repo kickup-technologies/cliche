@@ -2,6 +2,15 @@ import { MetadataRoute } from "next"
 import { supabase } from "@/lib/supabase"
 import { siteUrl } from "@/lib/site-url"
 
+/**
+ * El sitemap se generaba UNA sola vez, en el build: un producto dado de alta
+ * desde el panel admin no aparecía en /sitemap.xml hasta el siguiente deploy,
+ * así que Google podía tardar semanas en descubrir la ficha nueva (o no
+ * descubrirla nunca). Con ISR se regenera cada hora; además, cada alta/edición
+ * /borrado de producto lo revalida al instante (ver revalidateProductPages).
+ */
+export const revalidate = 3600
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = siteUrl()
 

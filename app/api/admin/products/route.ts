@@ -27,6 +27,9 @@ export function revalidateProductPages(slug?: string | null) {
     revalidatePath("/catalogo")
     revalidatePath("/ofertas")
     if (slug) revalidatePath(`/productos/${slug}`)
+    // El sitemap lista las fichas activas: si no se purga, Google sigue viendo
+    // la lista vieja (sin el producto nuevo, o con el que se acaba de borrar).
+    revalidatePath("/sitemap.xml")
   } catch (e) {
     console.error("[products] revalidate falló:", e)
   }

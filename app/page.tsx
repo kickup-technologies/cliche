@@ -52,7 +52,11 @@ export const revalidate = 300
  */
 export async function generateMetadata(): Promise<Metadata> {
   const override = await getSeoOverride("/")
-  if (!override.title && !override.description) return {}
+  // Canónica explícita: la portada recibe tráfico con ?utm_source=… de los
+  // anuncios y sin esto Google puede indexar cada variante como una página
+  // distinta. Va también cuando no hay texto personalizado.
+  const alternates = { canonical: "/" }
+  if (!override.title && !override.description) return { alternates }
 
   const home = SEO_PAGES[0]
   const title = override.title || home.title
@@ -60,6 +64,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: { absolute: title },
     description,
+    alternates,
     openGraph: {
       type: "website",
       locale: "es_CO",

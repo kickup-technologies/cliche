@@ -3,6 +3,7 @@ import { Footer } from "@/components/footer"
 import { Metadata } from "next"
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/terminos" },
   title: "Términos y Condiciones | Cliché Aromas",
   description: "Términos y condiciones de uso, política de compras, envíos y devoluciones de Cliché Aromas Colombia.",
 }

@@ -46,6 +46,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return withSeoOverride(productSeoPath(slug), {
     title: product.name,
     description: product.description || `${product.name} — Cliché Colombia`,
+    // Canónica explícita: los enlaces de los anuncios llegan con ?utm_source=…
+    // y sin esto Google puede indexar cada variante como una página distinta
+    // (contenido duplicado que se reparte la autoridad de la ficha real).
+    alternates: { canonical: productSeoPath(slug) },
     openGraph: {
       title: product.name,
       description: product.description || "",
