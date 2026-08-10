@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { Search, RefreshCw, Save, Wand2, Check, AlertCircle, Globe, Package } from "lucide-react"
 import type { Product } from "@/lib/supabase"
 import { adminFetch } from "@/lib/admin-client"
+import { Ayuda } from "../components/ayuda"
 import {
   SEO_PAGES,
   SEO_MAX_TITLE,
@@ -55,9 +56,12 @@ function GooglePreview({ url, title, description }: { url: string; title: string
   const crumbs = url === "/" ? DOMAIN : `${DOMAIN} › ${url.replace(/^\//, "").split("/").join(" › ")}`
   return (
     <div className="rounded-xl border border-[#2D1A14]/10 bg-white p-4">
-      <p className="text-[10px] font-bold uppercase tracking-widest text-[#2D1A14]/30 mb-2">
+      {/* div y no <p>: el globo de ayuda lleva párrafos dentro y el navegador
+          rompería un <p> anidado (mismatch de hidratación). */}
+      <div className="text-[10px] font-bold uppercase tracking-widest text-[#2D1A14]/30 mb-2 flex items-center gap-1.5">
         Así se vería en Google
-      </p>
+        <Ayuda tema="vistaPreviaGoogle" align="left" />
+      </div>
       <p className="text-[13px] text-[#3C4043] leading-tight truncate">{crumbs}</p>
       <p className="text-[#1a0dab] text-[18px] leading-snug hover:underline cursor-default truncate">
         {trimTo(title, SEO_MAX_TITLE) || "Sin título"}
@@ -140,11 +144,17 @@ function SeoEditor({
     <div className="space-y-4 border-t border-[#2D1A14]/8 pt-4">
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <label className="text-xs font-semibold text-[#2D1A14]/70">Meta título</label>
+          <span className="flex items-center gap-1.5">
+            <label className="text-xs font-semibold text-[#2D1A14]/70">Meta título</label>
+            <Ayuda tema="metaTitulo" align="left" />
+          </span>
           {/* El contador mide el título REAL (con el sufijo de marca que se
               añade solo), no lo tecleado: si no, marcaría verde un título que
               Google ya está cortando. */}
-          <Counter value={effectiveTitle} max={SEO_MAX_TITLE} />
+          <span className="flex items-center gap-1.5">
+            <Counter value={effectiveTitle} max={SEO_MAX_TITLE} />
+            <Ayuda tema="contadorCaracteres" />
+          </span>
         </div>
         <input
           value={draft.title}
@@ -161,8 +171,14 @@ function SeoEditor({
 
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <label className="text-xs font-semibold text-[#2D1A14]/70">Meta descripción</label>
-          <Counter value={effectiveDescription} max={SEO_MAX_DESCRIPTION} />
+          <span className="flex items-center gap-1.5">
+            <label className="text-xs font-semibold text-[#2D1A14]/70">Meta descripción</label>
+            <Ayuda tema="metaDescripcion" align="left" />
+          </span>
+          <span className="flex items-center gap-1.5">
+            <Counter value={effectiveDescription} max={SEO_MAX_DESCRIPTION} />
+            <Ayuda tema="contadorCaracteres" />
+          </span>
         </div>
         <textarea
           value={draft.description}
@@ -182,6 +198,7 @@ function SeoEditor({
         >
           <Wand2 className="w-4 h-4" /> Generar sugerencia
         </button>
+        <Ayuda tema="generarSugerencia" align="left" />
         <button
           onClick={save}
           disabled={saving || !dirty}
@@ -281,7 +298,10 @@ export function SeoSection({ products }: { products: Product[] }) {
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="font-serif text-2xl font-bold text-[#2D1A14]">SEO</h2>
+        <h2 className="font-serif text-2xl font-bold text-[#2D1A14] flex items-center gap-2">
+          SEO
+          <Ayuda tema="seo" align="left" />
+        </h2>
         <p className="text-sm text-[#2D1A14]/50 mt-1">
           Meta título y meta descripción de cada página y producto: es el texto con el que apareces en Google.
           Si dejas un campo vacío se usa el texto por defecto. {personalizados > 0 && `Hoy tienes ${personalizados} personalizado${personalizados === 1 ? "" : "s"}.`}

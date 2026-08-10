@@ -5,6 +5,7 @@ import { fmt } from "../types"
 import type { Product } from "@/lib/supabase"
 import { adminFetch } from "@/lib/admin-client"
 import { PRODUCT_PLACEHOLDER } from "@/lib/placeholder"
+import { Ayuda } from "../components/ayuda"
 
 // Categorías (familias olfativas) que el admin asigna al producto. Deben
 // coincidir con las del catálogo (app/catalogo/page.tsx → FAMILIES).
@@ -330,7 +331,10 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
             <div className="p-6 space-y-5">
               {/* Título */}
               <div>
-                <label className="text-xs font-semibold text-[#2D1A14]/50 uppercase tracking-wide mb-1.5 block">Título del producto *</label>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <label className="text-xs font-semibold text-[#2D1A14]/50 uppercase tracking-wide">Título del producto *</label>
+                  <Ayuda tema="tituloProducto" align="left" />
+                </div>
                 <input
                   type="text"
                   value={modal.product.name || ""}
@@ -357,7 +361,10 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
 
               {/* Imágenes de referencia (varias) */}
               <div>
-                <label className="text-xs font-semibold text-[#2D1A14]/50 uppercase tracking-wide mb-1.5 block">Imágenes de referencia</label>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <label className="text-xs font-semibold text-[#2D1A14]/50 uppercase tracking-wide">Imágenes de referencia</label>
+                  <Ayuda tema="imagenesProducto" align="left" />
+                </div>
                 <div className="flex flex-wrap gap-2.5">
                   {modalImages.map((src, i) => (
                     <div key={src + i} className="relative w-20 h-20 rounded-xl border border-[#2D1A14]/15 bg-[#FAF8F5] overflow-hidden group">
@@ -415,7 +422,10 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-[#2D1A14]/50 uppercase tracking-wide mb-1.5 block">Antes (tachado)</label>
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <label className="text-xs font-semibold text-[#2D1A14]/50 uppercase tracking-wide">Antes (tachado)</label>
+                    <Ayuda tema="precioAntes" />
+                  </div>
                   <input
                     type="number"
                     value={modal.product.original_price ?? ""}
@@ -428,7 +438,10 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
 
               {/* Título de la descripción (opcional) */}
               <div>
-                <label className="text-xs font-semibold text-[#2D1A14]/50 uppercase tracking-wide mb-1.5 block">Título arriba de la descripción (opcional)</label>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <label className="text-xs font-semibold text-[#2D1A14]/50 uppercase tracking-wide">Título arriba de la descripción (opcional)</label>
+                  <Ayuda tema="tituloDescripcion" align="left" />
+                </div>
                 <input
                   type="text"
                   value={modal.product.description_title || ""}
@@ -440,7 +453,10 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
 
               {/* Descripción */}
               <div>
-                <label className="text-xs font-semibold text-[#2D1A14]/50 uppercase tracking-wide mb-1.5 block">Descripción</label>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <label className="text-xs font-semibold text-[#2D1A14]/50 uppercase tracking-wide">Descripción</label>
+                  <Ayuda tema="descripcionProducto" align="left" />
+                </div>
                 <textarea
                   rows={3}
                   value={modal.product.description || ""}
@@ -480,7 +496,10 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
               {/* Stock + Activo (compacto) */}
               <div className="grid grid-cols-2 gap-3 items-end">
                 <div>
-                  <label className="text-xs font-semibold text-[#2D1A14]/50 uppercase tracking-wide mb-1.5 block">Stock</label>
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <label className="text-xs font-semibold text-[#2D1A14]/50 uppercase tracking-wide">Stock</label>
+                    <Ayuda tema="stock" align="left" />
+                  </div>
                   <input
                     type="number"
                     value={modal.product.stock ?? ""}
@@ -489,15 +508,20 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
                     placeholder="50"
                   />
                 </div>
-                <label className="flex items-center gap-2.5 h-11 px-3 rounded-xl border border-[#2D1A14]/15 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={modal.product.is_active ?? true}
-                    onChange={e => setField("is_active", e.target.checked)}
-                    className="w-4 h-4 accent-[#A67163]"
-                  />
-                  <span className="text-sm text-[#2D1A14] font-medium">Visible en tienda</span>
-                </label>
+                {/* El «?» va FUERA del <label>: dentro, cualquier clic sobre él
+                    marcaría o desmarcaría la casilla sin querer. */}
+                <div className="flex items-center gap-2 h-11">
+                  <label className="flex-1 flex items-center gap-2.5 h-full px-3 rounded-xl border border-[#2D1A14]/15 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={modal.product.is_active ?? true}
+                      onChange={e => setField("is_active", e.target.checked)}
+                      className="w-4 h-4 accent-[#A67163]"
+                    />
+                    <span className="text-sm text-[#2D1A14] font-medium">Visible en tienda</span>
+                  </label>
+                  <Ayuda tema="visibleEnTienda" />
+                </div>
               </div>
 
               {modalError && (
