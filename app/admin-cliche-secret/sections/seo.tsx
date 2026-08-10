@@ -345,8 +345,10 @@ export function SeoSection({ products }: { products: Product[] }) {
       )}
 
       <div className="flex items-center gap-2">
+        {/* Pulsar la pestaña que ya está activa no hace nada: antes colapsaba
+            el editor abierto (y hasta preguntaba por cambios sin guardar). */}
         <button
-          onClick={() => { if (changeOpen(SEO_PAGES[0].path)) setTab("paginas") }}
+          onClick={() => { if (tab !== "paginas" && changeOpen(SEO_PAGES[0].path)) setTab("paginas") }}
           className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
             tab === "paginas" ? "bg-[#2D1A14] text-white" : "text-[#2D1A14]/60 hover:bg-[#2D1A14]/5"
           }`}
@@ -354,7 +356,7 @@ export function SeoSection({ products }: { products: Product[] }) {
           <Globe className="w-4 h-4" /> Páginas
         </button>
         <button
-          onClick={() => { if (changeOpen(null)) setTab("productos") }}
+          onClick={() => { if (tab !== "productos" && changeOpen(null)) setTab("productos") }}
           className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
             tab === "productos" ? "bg-[#2D1A14] text-white" : "text-[#2D1A14]/60 hover:bg-[#2D1A14]/5"
           }`}
