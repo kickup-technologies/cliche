@@ -56,11 +56,17 @@ function loadGA4() {
   const w = window as any
   if (w.__ga4Loaded) return
   w.__ga4Loaded = true
-  injectScript(`https://www.googletagmanager.com/gtag/js?id=${GA4_ID}`, "ga4-sdk")
   w.dataLayer = w.dataLayer || []
-  w.gtag = function (...args: unknown[]) { w.dataLayer.push(args) }
+  // OJO: gtag.js SOLO interpreta como comando lo que se empuja como objeto
+  // `arguments`. Con `(...args) => dataLayer.push(args)` se empuja un Array y
+  // Google lo descarta EN SILENCIO: el script cargaba, pero el `config` nunca
+  // se procesaba (ni cookie _ga ni un solo hit). Debe quedar como el snippet
+  // oficial: push(arguments) — no tocar la firma.
+  // eslint-disable-next-line prefer-rest-params
+  w.gtag = function gtag() { w.dataLayer.push(arguments) }
   w.gtag("js", new Date())
   w.gtag("config", GA4_ID)
+  injectScript(`https://www.googletagmanager.com/gtag/js?id=${GA4_ID}`, "ga4-sdk")
 }
 
 function loadTikTok() {
