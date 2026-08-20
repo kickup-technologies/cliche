@@ -115,6 +115,13 @@ export default function AdminPage() {
       }
       const who = await adminFetch("/api/admin/whoami").then((r) => r.json()).catch(() => null)
       if (who?.authenticated && who?.isAdminEmail) { setGate("otp"); return }
+      if (!who?.authenticated) {
+        // El login funcionó pero la verificación no respondió (red/transitorio):
+        // avisar y dejar reintentar, en vez de expulsar en silencio.
+        setAuthError("No se pudo verificar el acceso. Intenta de nuevo.")
+        return
+      }
+      // Sesión válida pero la cuenta NO es admin: fuera, sin pistas del panel.
       await getSupabaseBrowser().auth.signOut({ scope: "local" }).catch(() => {})
       window.location.replace("/")
     } catch {

@@ -11,17 +11,25 @@ import { isAdminEmail, isAdmin } from "@/lib/admin-auth"
  */
 export async function GET(req: NextRequest) {
   let authenticated = false
+  let sessionInvalid = false
   let email: string | null | undefined = null
   try {
     const supa = await getSupabaseServer()
-    const { data } = await supa.auth.getUser()
+    const { data, error } = await supa.auth.getUser()
     authenticated = !!data.user
     email = data.user?.email
+    // sessionInvalid: el rechazo es DEFINITIVO (sin cookie o token inválido,
+    // 400/401/403) y el cliente puede limpiar su sesión local con confianza.
+    // Un fallo transitorio (red/Supabase caído) NO debe cerrar sesiones válidas.
+    if (!authenticated) {
+      sessionInvalid = !error || [400, 401, 403].includes(error.status ?? 0)
+    }
   } catch {
-    // sin sesión / error → tratado como no autenticado
+    // error inesperado → tratado como transitorio: no invitar a purgar sesión
   }
   return NextResponse.json({
     authenticated,
+    sessionInvalid,
     isAdminEmail: isAdminEmail(email),
     unlocked: isAdmin(req),
   })

@@ -87,12 +87,13 @@ export function Header() {
   useEffect(() => {
     if (!user) { setIsAdminAcct(false); return }
     fetch("/api/gestion/whoami").then((r) => r.json())
-      .then(async (d: { authenticated?: boolean; isAdminEmail?: boolean }) => {
+      .then(async (d: { authenticated?: boolean; sessionInvalid?: boolean; isAdminEmail?: boolean }) => {
         setIsAdminAcct(!!d?.isAdminEmail)
-        if (d && d.authenticated === false) {
-          // El cliente cree tener sesión pero el servidor la rechaza: sesión
-          // fantasma. Se limpia localmente para que el usuario vea "iniciar
-          // sesión" en vez de un menú con nombre pero sin permisos reales.
+        if (d?.sessionInvalid) {
+          // El cliente cree tener sesión pero el servidor la rechazó de forma
+          // DEFINITIVA (token inválido, no un fallo de red): sesión fantasma.
+          // Se limpia localmente para que el usuario vea "iniciar sesión" en
+          // vez de un menú con nombre pero sin permisos reales.
           try { await getSupabaseBrowser().auth.signOut({ scope: "local" }) } catch { /* cookie ya inválida */ }
         }
       })

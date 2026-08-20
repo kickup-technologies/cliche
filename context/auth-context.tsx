@@ -19,8 +19,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const supabase = getSupabaseBrowser()
-    supabase.auth.getUser().then(async ({ data }: { data: { user: User | null } }) => {
-      if (!data.user) {
+    supabase.auth.getUser().then(async ({ data, error }: { data: { user: User | null }; error: { status?: number } | null }) => {
+      // Solo si el rechazo es DEFINITIVO (token inválido: 400/401/403). Un
+      // fallo transitorio (sin red, Supabase caído) NO debe tumbar la sesión.
+      if (!data.user && error && [400, 401, 403].includes(error.status ?? 0)) {
         // El servidor rechazó la sesión guardada (token de refresco muerto).
         // Sin esto, la cookie vieja queda mostrando una "sesión fantasma":
         // el menú saluda por nombre pero el servidor trata como anónimo.
