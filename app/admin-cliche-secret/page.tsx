@@ -94,7 +94,13 @@ export default function AdminPage() {
         if (!d.authenticated) { setGate("login"); return }
         window.location.replace("/")
       })
-      .catch(() => window.location.replace("/"))
+      .catch(() => {
+        // Fallo transitorio (red, respuesta no-JSON): no expulsar a la dueña
+        // a la tienda; se muestra el login con aviso para reintentar. La
+        // pantalla de login no revela nada del panel a un extraño.
+        setAuthError("No se pudo verificar el acceso. Recarga o intenta de nuevo.")
+        setGate("login")
+      })
   }, [])
 
   // Login propio del panel: entra con correo + contraseña y se re-verifica en

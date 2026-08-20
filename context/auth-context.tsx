@@ -20,18 +20,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const supabase = getSupabaseBrowser()
     supabase.auth.getUser().then(async ({ data, error }: { data: { user: User | null }; error: { status?: number } | null }) => {
-      // Solo si el rechazo es DEFINITIVO (token inválido: 400/401/403). Un
-      // fallo transitorio (sin red, Supabase caído) NO debe tumbar la sesión.
-      if (!data.user && error && [400, 401, 403].includes(error.status ?? 0)) {
-        // El servidor rechazó la sesión guardada (token de refresco muerto).
-        // Sin esto, la cookie vieja queda mostrando una "sesión fantasma":
-        // el menú saluda por nombre pero el servidor trata como anónimo.
-        const { data: s } = await supabase.auth.getSession()
-        if (s.session) {
-          try { await supabase.auth.signOut({ scope: "local" }) } catch { /* cookie ya inválida */ }
+      if (!data.user) {
+        try {
+          if (error && [400, 401, 403].includes(error.status ?? 0)) {
+            // Rechazo DEFINITIVO (token de refresco muerto): purgar la cookie
+            // vieja. Sin esto queda una "sesión fantasma": el menú saluda por
+            // nombre pero el servidor trata como anónimo.
+            const { data: s } = await supabase.auth.getSession()
+            if (s.session) {
+              try { await supabase.auth.signOut({ scope: "local" }) } catch { /* cookie ya inválida */ }
+            }
+            setUser(null)
+          } else {
+            // Fallo TRANSITORIO (sin red, Supabase caído): mostrar la sesión
+            // en caché en vez de "desloguear" visualmente a un usuario válido;
+            // TOKEN_REFRESHED/SIGNED_OUT posteriores la corrigen.
+            const { data: s } = await supabase.auth.getSession()
+            setUser(s.session?.user ?? null)
+          }
+        } catch {
+          setUser(null)
         }
+      } else {
+        setUser(data.user)
       }
-      setUser(data.user ?? null)
+      setLoading(false)
+    }).catch(async () => {
+      // Fallo raro (storage/LockManager, red caída a mitad): no dejar la app
+      // colgada en loading. Se muestra lo que haya en la sesión local en caché;
+      // los eventos posteriores (TOKEN_REFRESHED/SIGNED_OUT) la corrigen.
+      try {
+        const { data: s } = await supabase.auth.getSession()
+        setUser(s.session?.user ?? null)
+      } catch {
+        setUser(null)
+      }
       setLoading(false)
     })
     const { data: sub } = supabase.auth.onAuthStateChange((event: string, session: Session | null) => {

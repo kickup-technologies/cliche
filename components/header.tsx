@@ -86,8 +86,14 @@ export function Header() {
   const [isAdminAcct, setIsAdminAcct] = useState(false)
   useEffect(() => {
     if (!user) { setIsAdminAcct(false); return }
+    // Guarda anti-carrera: si el usuario cambia (login/logout) con el whoami
+    // en vuelo, la respuesta obsoleta se descarta — sin esto podía re-mostrar
+    // el acceso admin tras cerrar sesión o, peor, purgar una sesión NUEVA
+    // válida por el veredicto de la vieja.
+    let stale = false
     fetch("/api/gestion/whoami").then((r) => r.json())
       .then(async (d: { authenticated?: boolean; sessionInvalid?: boolean; isAdminEmail?: boolean }) => {
+        if (stale) return
         setIsAdminAcct(!!d?.isAdminEmail)
         if (d?.sessionInvalid) {
           // El cliente cree tener sesión pero el servidor la rechazó de forma
@@ -97,7 +103,8 @@ export function Header() {
           try { await getSupabaseBrowser().auth.signOut({ scope: "local" }) } catch { /* cookie ya inválida */ }
         }
       })
-      .catch(() => setIsAdminAcct(false))
+      .catch(() => { if (!stale) setIsAdminAcct(false) })
+    return () => { stale = true }
   }, [user])
   // Menú de cuenta: se abre al pasar el cursor (con retardo al salir para alcanzar el menú).
   const [accountOpen, setAccountOpen] = useState(false)
