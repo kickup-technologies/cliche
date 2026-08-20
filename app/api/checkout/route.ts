@@ -28,6 +28,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Carrito vacío" }, { status: 400 })
     }
 
+    // Datos de facturación/envío OBLIGATORIOS también en el servidor (el
+    // formulario ya los exige, pero sin esto una petición directa creaba
+    // pedidos sin nombre, cédula ni dirección — inservibles para facturar
+    // y despachar, y la cédula es la que MP cruza con el banco emisor).
+    if (typeof email !== "string" || !email.includes("@")) {
+      return NextResponse.json({ error: "Ingresa un correo electrónico válido." }, { status: 400 })
+    }
+    if (typeof customer_name !== "string" || !customer_name.trim()) {
+      return NextResponse.json({ error: "Falta el nombre completo." }, { status: 400 })
+    }
+    if (typeof customer_phone !== "string" || customer_phone.replace(/\D/g, "").length < 7) {
+      return NextResponse.json({ error: "Falta un teléfono válido." }, { status: 400 })
+    }
+    if (typeof customer_id_number !== "string" || customer_id_number.replace(/\D/g, "").length < 5) {
+      return NextResponse.json({ error: "Falta la cédula o NIT (el banco la necesita para aprobar el pago)." }, { status: 400 })
+    }
+    const addr = shipping_address as { address?: unknown; city?: unknown; department?: unknown } | null
+    if (
+      !addr ||
+      typeof addr.address !== "string" || !addr.address.trim() ||
+      typeof addr.city !== "string" || !addr.city.trim() ||
+      typeof addr.department !== "string" || !addr.department.trim()
+    ) {
+      return NextResponse.json({ error: "Falta la dirección de envío completa (dirección, ciudad y departamento)." }, { status: 400 })
+    }
+
     const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
     // CRÍTICO: URL canónica (www). Con el apex, la notification_url del webhook
     // de Mercado Pago recibía un 308 y NINGÚN pago asíncrono se confirmaba.
