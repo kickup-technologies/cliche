@@ -83,6 +83,15 @@ const nextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }]
   },
+  // Alias del API del panel SIN la palabra "admin" en la URL: extensiones de
+  // adblock/antivirus bloquean silenciosamente peticiones a rutas */admin/* y
+  // dejaban el panel invisible/inusable en navegadores con esos filtros
+  // (caso real: a la dueña solo le funcionaba en incógnito). El rewrite es
+  // interno del servidor: /api/admin/* sigue existiendo y la seguridad es la
+  // misma (la decide el handler, no la URL).
+  async rewrites() {
+    return [{ source: "/api/gestion/:path*", destination: "/api/admin/:path*" }]
+  },
   // Rutas legales antiguas/huérfanas → redirigen (301) a las canónicas que enlaza
   // el footer. Evita contenido duplicado en Google y enlaces externos rotos.
   async redirects() {

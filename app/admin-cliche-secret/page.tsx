@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 // supabase anon client only used for mutations (settings save, order status update)
 import { supabase } from "@/lib/supabase"
+import { getSupabaseBrowser } from "@/lib/supabase/client"
 import {
   LayoutDashboard, TrendingUp, BarChart3, Star, ShoppingBag, Zap,
   Package, Settings, Lock, RefreshCw, AlertCircle, Eye, LogOut, Menu, X, Paintbrush, Flame, Ticket, MessageCircle, Users, Search,
@@ -54,14 +55,17 @@ const SIDEBAR = [
 ] as const
 
 export default function AdminPage() {
-  // Acceso en 2 factores: sesión normal (cuenta de la dueña) + código OTP de
-  // 4 dígitos enviado a su correo. Cualquier otro visitante es devuelto a la
-  // tienda sin ver nada del panel.
-  const [gate, setGate] = useState<"checking" | "otp" | "unlocked">("checking")
+  // Acceso en 2 factores: sesión de una cuenta admin (login aquí mismo si no
+  // hay sesión) + código OTP de 6 dígitos enviado a su correo. Quién es admin
+  // lo deciden SOLO las envs ADMIN_EMAIL/ADMIN_EMAILS en el servidor. Una
+  // sesión de cuenta no-admin es devuelta a la tienda sin ver nada del panel.
+  const [gate, setGate] = useState<"checking" | "login" | "otp" | "unlocked">("checking")
   const [otpInput, setOtpInput] = useState("")
   const [otpSent, setOtpSent] = useState(false)
   const [authError, setAuthError] = useState("")
   const [authLoading, setAuthLoading] = useState(false)
+  const [loginEmail, setLoginEmail] = useState("")
+  const [loginPassword, setLoginPassword] = useState("")
   const authed = gate === "unlocked"
 
   const [activeSection, setActiveSection] = useState<SectionId>("resumen")
@@ -75,25 +79,56 @@ export default function AdminPage() {
   const [loadError, setLoadError] = useState<string | null>(null)
 
   // Al entrar: preguntar al servidor quién es el visitante.
-  //  - Sin sesión o con cuenta que NO es la admin → a la tienda (sin pistas).
-  //  - Cuenta admin sin desbloquear → pedir el código de 4 dígitos.
   //  - Cookie admin válida → panel.
+  //  - Cuenta admin sin desbloquear → pedir el código de 6 dígitos.
+  //  - Sin sesión → login AQUÍ MISMO (el panel no depende del menú de la
+  //    tienda ni de una sesión previa; el permiso lo decide solo el servidor
+  //    contra ADMIN_EMAIL/ADMIN_EMAILS).
+  //  - Sesión de una cuenta que NO es admin → a la tienda (sin pistas).
   useEffect(() => {
-    fetch("/api/admin/whoami")
+    adminFetch("/api/admin/whoami")
       .then((r) => r.json())
       .then((d: { authenticated: boolean; isAdminEmail: boolean; unlocked: boolean }) => {
         if (d.unlocked) { setGate("unlocked"); return }
         if (d.authenticated && d.isAdminEmail) { setGate("otp"); return }
+        if (!d.authenticated) { setGate("login"); return }
         window.location.replace("/")
       })
       .catch(() => window.location.replace("/"))
   }, [])
 
+  // Login propio del panel: entra con correo + contraseña y se re-verifica en
+  // el servidor. Si la cuenta no es admin, se cierra la sesión recién creada y
+  // se devuelve a la tienda (aquí no entra nadie que no esté en la lista).
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault()
+    setAuthLoading(true)
+    setAuthError("")
+    try {
+      const { error } = await getSupabaseBrowser().auth.signInWithPassword({
+        email: loginEmail.trim(),
+        password: loginPassword,
+      })
+      if (error) {
+        setAuthError(/confirm/i.test(error.message) ? "Verifica tu correo antes de iniciar sesión." : "Correo o contraseña incorrectos.")
+        return
+      }
+      const who = await adminFetch("/api/admin/whoami").then((r) => r.json()).catch(() => null)
+      if (who?.authenticated && who?.isAdminEmail) { setGate("otp"); return }
+      await getSupabaseBrowser().auth.signOut({ scope: "local" }).catch(() => {})
+      window.location.replace("/")
+    } catch {
+      setAuthError("Error de conexión")
+    } finally {
+      setAuthLoading(false)
+    }
+  }
+
   async function requestCode() {
     setAuthLoading(true)
     setAuthError("")
     try {
-      const res = await fetch("/api/admin/otp/request", { method: "POST" })
+      const res = await adminFetch("/api/admin/otp/request", { method: "POST" })
       if (!res.ok) {
         const { error } = await res.json().catch(() => ({ error: "" }))
         setAuthError(error || "No se pudo enviar el código")
@@ -113,7 +148,7 @@ export default function AdminPage() {
     setAuthLoading(true)
     setAuthError("")
     try {
-      const res = await fetch("/api/admin/otp/verify", {
+      const res = await adminFetch("/api/admin/otp/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: otpInput }),
@@ -132,7 +167,7 @@ export default function AdminPage() {
   }
 
   function handleLogout() {
-    fetch("/api/admin/logout", { method: "POST" }).finally(() => window.location.replace("/"))
+    adminFetch("/api/admin/logout", { method: "POST" }).finally(() => window.location.replace("/"))
   }
 
   const loadAll = useCallback(async () => {
@@ -194,6 +229,57 @@ export default function AdminPage() {
     )
   }
 
+  // ── INICIAR SESIÓN (1er factor, dentro del propio panel) ───────────────────
+  if (gate === "login") {
+    return (
+      <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center px-4">
+        <div className="w-full max-w-sm">
+          <div className="text-center mb-8">
+            <div className="w-14 h-14 bg-[#2D1A14] rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Lock className="w-6 h-6 text-white" />
+            </div>
+            <h1 className="font-serif text-2xl font-bold text-[#2D1A14]">Iniciar sesión</h1>
+            <p className="text-sm text-[#2D1A14]/50 mt-1">Acceso restringido</p>
+          </div>
+          <form onSubmit={handleLogin} className="bg-white rounded-2xl border border-[#2D1A14]/10 p-6 shadow-sm space-y-4">
+            <input
+              type="email"
+              autoComplete="email"
+              value={loginEmail}
+              onChange={e => setLoginEmail(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-[#2D1A14]/15 bg-[#FAF8F5] text-[#2D1A14] focus:outline-none focus:ring-2 focus:ring-[#A67163]/40"
+              placeholder="Correo"
+              autoFocus
+              required
+            />
+            <input
+              type="password"
+              autoComplete="current-password"
+              value={loginPassword}
+              onChange={e => setLoginPassword(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-[#2D1A14]/15 bg-[#FAF8F5] text-[#2D1A14] focus:outline-none focus:ring-2 focus:ring-[#A67163]/40"
+              placeholder="Contraseña"
+              required
+            />
+            <button
+              type="submit"
+              disabled={authLoading || !loginEmail || !loginPassword}
+              className="w-full h-12 rounded-xl bg-[#2D1A14] hover:bg-[#3D2A24] text-white font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+            >
+              {authLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
+              Continuar
+            </button>
+            {authError && (
+              <p className="text-xs text-red-600 flex items-center justify-center gap-1">
+                <AlertCircle className="w-3 h-3" /> {authError}
+              </p>
+            )}
+          </form>
+        </div>
+      </div>
+    )
+  }
+
   // ── CÓDIGO DE SEGURIDAD (2º factor) ────────────────────────────────────────
   if (gate === "otp") {
     return (
@@ -204,7 +290,7 @@ export default function AdminPage() {
               <Lock className="w-6 h-6 text-white" />
             </div>
             <h1 className="font-serif text-2xl font-bold text-[#2D1A14]">Código de seguridad</h1>
-            <p className="text-sm text-[#2D1A14]/50 mt-1">Panel admin · Bienestar by Cliché</p>
+            <p className="text-sm text-[#2D1A14]/50 mt-1">Panel admin · Cliché Colombia</p>
           </div>
           <div className="bg-white rounded-2xl border border-[#2D1A14]/10 p-6 shadow-sm space-y-4">
             {!otpSent ? (

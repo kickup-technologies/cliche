@@ -1087,7 +1087,7 @@ function AuthForm() {
         if (error) throw new Error(/confirm/i.test(error.message) ? "Verifica tu correo antes de iniciar sesión." : "Correo o contraseña incorrectos.")
         // Cuenta de administración → directo al panel (donde pedirá su código
         // de seguridad). Cuentas normales → a la tienda.
-        const who = await fetch("/api/admin/whoami").then((r) => r.json()).catch(() => null)
+        const who = await fetch("/api/gestion/whoami").then((r) => r.json()).catch(() => null)
         navigateWithCurtain(who?.isAdminEmail ? "/admin-cliche-secret" : "/"); return
       }
     } catch (err) { setMsg({ type: "err", text: err instanceof Error ? err.message : "Ocurrió un error." }) } finally { setLoading(false) }

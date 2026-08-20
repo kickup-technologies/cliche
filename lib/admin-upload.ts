@@ -26,7 +26,7 @@ export async function subirImagen(file: File): Promise<SubidaResultado> {
   fd.append("file", file)
 
   try {
-    const res = await fetch("/api/admin/upload", { method: "POST", body: fd })
+    const res = await fetch("/api/gestion/upload", { method: "POST", body: fd })
 
     if (res.status === 401) {
       return { error: "La sesión del panel expiró. Vuelve a entrar y sube la foto de nuevo." }

@@ -19,11 +19,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const supabase = getSupabaseBrowser()
-    supabase.auth.getUser().then(({ data }: { data: { user: User | null } }) => {
+    supabase.auth.getUser().then(async ({ data }: { data: { user: User | null } }) => {
+      if (!data.user) {
+        // El servidor rechazó la sesión guardada (token de refresco muerto).
+        // Sin esto, la cookie vieja queda mostrando una "sesión fantasma":
+        // el menú saluda por nombre pero el servidor trata como anónimo.
+        const { data: s } = await supabase.auth.getSession()
+        if (s.session) {
+          try { await supabase.auth.signOut({ scope: "local" }) } catch { /* cookie ya inválida */ }
+        }
+      }
       setUser(data.user ?? null)
       setLoading(false)
     })
-    const { data: sub } = supabase.auth.onAuthStateChange((_event: string, session: Session | null) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event: string, session: Session | null) => {
+      // INITIAL_SESSION viene de la caché local sin validar contra el servidor;
+      // la decisión inicial la toma getUser() (validado) arriba.
+      if (event === "INITIAL_SESSION") return
       setUser(session?.user ?? null)
       setLoading(false)
     })

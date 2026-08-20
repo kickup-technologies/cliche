@@ -86,8 +86,16 @@ export function Header() {
   const [isAdminAcct, setIsAdminAcct] = useState(false)
   useEffect(() => {
     if (!user) { setIsAdminAcct(false); return }
-    fetch("/api/admin/whoami").then((r) => r.json())
-      .then((d: { isAdminEmail?: boolean }) => setIsAdminAcct(!!d?.isAdminEmail))
+    fetch("/api/gestion/whoami").then((r) => r.json())
+      .then(async (d: { authenticated?: boolean; isAdminEmail?: boolean }) => {
+        setIsAdminAcct(!!d?.isAdminEmail)
+        if (d && d.authenticated === false) {
+          // El cliente cree tener sesión pero el servidor la rechaza: sesión
+          // fantasma. Se limpia localmente para que el usuario vea "iniciar
+          // sesión" en vez de un menú con nombre pero sin permisos reales.
+          try { await getSupabaseBrowser().auth.signOut({ scope: "local" }) } catch { /* cookie ya inválida */ }
+        }
+      })
       .catch(() => setIsAdminAcct(false))
   }, [user])
   // Menú de cuenta: se abre al pasar el cursor (con retardo al salir para alcanzar el menú).
