@@ -40,6 +40,14 @@ export async function GET(req: NextRequest) {
   })
 
   try {
+    // Detalle COMPLETO de un pago puntual (metadata, additional_info.items,
+    // description…): con los productos se sabe de qué tienda salió el pedido.
+    const id = req.nextUrl.searchParams.get("id")
+    if (id) {
+      const full = await payment.get({ id })
+      return NextResponse.json({ payment: full })
+    }
+
     // Últimos pagos de la cuenta, cualquier estado, más recientes primero.
     const recent = await payment.search({
       options: { sort: "date_created", criteria: "desc", limit: 50 },
