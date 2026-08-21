@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getSupabaseServer } from "@/lib/supabase/server"
 import { createServerClient } from "@/lib/supabase"
-import { isAdminEmail, sha256, signAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth"
+import { isAdminEmail, isAdminEmailAnywhere, sha256, signAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth"
 import { rateLimit } from "@/lib/rate-limit"
 
 /**
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   const supa = await getSupabaseServer()
   const { data } = await supa.auth.getUser()
   const user = data.user
-  if (!isAdminEmail(user?.email)) {
+  if (!(await isAdminEmailAnywhere(user?.email))) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 })
   }
 
@@ -55,7 +55,9 @@ export async function POST(req: NextRequest) {
 
   await db.from("admin_otps").update({ consumed: true }).eq("id", row.id)
 
-  const token = signAdminToken(email)
+  // Si el correo NO está en las envs, su autorización vino de la lista en BD:
+  // el token lleva el claim d:1 para que isAdmin() (sync) lo acepte sin BD.
+  const token = signAdminToken(email, undefined, !isAdminEmail(email))
   const res = NextResponse.json({ ok: true })
   res.cookies.set(ADMIN_COOKIE, token, {
     httpOnly: true,

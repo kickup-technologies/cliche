@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getSupabaseServer } from "@/lib/supabase/server"
-import { isAdminEmail, isAdmin } from "@/lib/admin-auth"
+import { isAdminEmailAnywhere, isAdmin } from "@/lib/admin-auth"
 
 /**
  * GET /api/admin/whoami — dice al panel en qué estado está el visitante:
  *  - authenticated: hay sesión de usuario
- *  - isAdminEmail:  esa sesión es la cuenta de la dueña (ADMIN_EMAIL)
+ *  - isAdminEmail:  esa sesión es una cuenta admin (envs o lista en BD)
  *  - unlocked:      ya pasó el código OTP (cookie admin válida)
  * No expone ADMIN_EMAIL ni datos sensibles.
  */
@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     authenticated,
     sessionInvalid,
-    isAdminEmail: isAdminEmail(email),
+    isAdminEmail: await isAdminEmailAnywhere(email),
     unlocked: isAdmin(req),
   })
 }

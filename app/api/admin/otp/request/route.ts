@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { randomInt } from "crypto"
 import { getSupabaseServer } from "@/lib/supabase/server"
 import { createServerClient } from "@/lib/supabase"
-import { isAdminEmail, sha256 } from "@/lib/admin-auth"
+import { isAdminEmailAnywhere, sha256 } from "@/lib/admin-auth"
 import { sendAdminOtpEmail } from "@/lib/mailer"
 import { rateLimit } from "@/lib/rate-limit"
 
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   const supa = await getSupabaseServer()
   const { data } = await supa.auth.getUser()
   const user = data.user
-  if (!isAdminEmail(user?.email)) {
+  if (!(await isAdminEmailAnywhere(user?.email))) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 })
   }
 
