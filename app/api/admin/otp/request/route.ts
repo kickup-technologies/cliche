@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { randomInt } from "crypto"
 import { getSupabaseServer } from "@/lib/supabase/server"
 import { createServerClient } from "@/lib/supabase"
-import { isAdminEmailAnywhere, sha256 } from "@/lib/admin-auth"
+import { isAdminEmail, isAdminEmailAnywhere, otpSkipEmails, sha256, signAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth"
 import { sendAdminOtpEmail } from "@/lib/mailer"
 import { rateLimit } from "@/lib/rate-limit"
 
@@ -24,6 +24,22 @@ export async function POST(req: NextRequest) {
 
   // El código se liga y se envía al correo del admin que tiene la sesión.
   const email = user!.email!.trim().toLowerCase()
+
+  // Correos exentos del 2º factor (site_settings.admin_otp_skip): se emite la
+  // cookie de acceso directamente, sin código. El panel recibe skipped:true y
+  // entra de una. Quitar el correo de esa fila reactiva el OTP sin deploy.
+  if ((await otpSkipEmails()).includes(email)) {
+    const token = signAdminToken(email, undefined, !isAdminEmail(email))
+    const res = NextResponse.json({ ok: true, skipped: true })
+    res.cookies.set(ADMIN_COOKIE, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 8 * 60 * 60,
+    })
+    return res
+  }
   const code = String(randomInt(100000, 1000000)) // 6 dígitos (100000–999999) → 1M combinaciones
 
   const db = createServerClient()

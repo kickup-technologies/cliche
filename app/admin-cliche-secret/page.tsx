@@ -88,8 +88,11 @@ export default function AdminPage() {
   useEffect(() => {
     adminFetch("/api/admin/whoami")
       .then((r) => r.json())
-      .then((d: { authenticated: boolean; isAdminEmail: boolean; unlocked: boolean }) => {
+      .then((d: { authenticated: boolean; isAdminEmail: boolean; otpSkip?: boolean; unlocked: boolean }) => {
         if (d.unlocked) { setGate("unlocked"); return }
+        // Admin exento del código (admin_otp_skip): desbloqueo automático —
+        // requestCode responde skipped y entra directo, sin pedir nada.
+        if (d.authenticated && d.isAdminEmail && d.otpSkip) { setGate("otp"); void requestCode(); return }
         if (d.authenticated && d.isAdminEmail) { setGate("otp"); return }
         if (!d.authenticated) { setGate("login"); return }
         window.location.replace("/")
@@ -120,6 +123,7 @@ export default function AdminPage() {
         return
       }
       const who = await adminFetch("/api/admin/whoami").then((r) => r.json()).catch(() => null)
+      if (who?.authenticated && who?.isAdminEmail && who?.otpSkip) { setGate("otp"); void requestCode(); return }
       if (who?.authenticated && who?.isAdminEmail) { setGate("otp"); return }
       if (!who?.authenticated) {
         // El login funcionó pero la verificación no respondió (red/transitorio):
@@ -147,6 +151,9 @@ export default function AdminPage() {
         setAuthError(error || "No se pudo enviar el código")
         return
       }
+      const data = (await res.json().catch(() => ({}))) as { skipped?: boolean }
+      // Correo exento del 2º factor: la cookie de acceso ya viene puesta.
+      if (data.skipped) { setGate("unlocked"); return }
       setOtpSent(true)
     } catch {
       setAuthError("Error de conexión")

@@ -70,6 +70,34 @@ export async function dbAdminEmails(): Promise<string[]> {
 }
 
 /**
+ * Correos admin EXENTOS del código OTP (site_settings, clave `admin_otp_skip`,
+ * lista separada por comas; solo legible por service_role, fuera de la
+ * allowlist pública). Un correo aquí sigue necesitando iniciar sesión con su
+ * cuenta y ser admin (envs o admin_emails_extra); solo se le omite el 2º
+ * factor. Quitar el correo de la fila reactiva el OTP sin deploy.
+ */
+let otpSkipCache: { list: string[]; at: number } | null = null
+export async function otpSkipEmails(): Promise<string[]> {
+  if (otpSkipCache && Date.now() - otpSkipCache.at < 60_000) return otpSkipCache.list
+  try {
+    const { data, error } = await createServerClient()
+      .from("site_settings")
+      .select("value")
+      .eq("key", "admin_otp_skip")
+      .maybeSingle()
+    if (error) return otpSkipCache?.list ?? []
+    const list = String(data?.value || "")
+      .split(",")
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean)
+    otpSkipCache = { list, at: Date.now() }
+    return list
+  } catch {
+    return otpSkipCache?.list ?? []
+  }
+}
+
+/**
  * ¿Correo admin según envs O según la lista de la BD? Es la comprobación que
  * usan whoami y el flujo OTP (los puntos donde se decide a quién se le emite
  * acceso). Exige que exista al menos un admin por envs (mismo fail-closed de
