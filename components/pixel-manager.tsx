@@ -18,7 +18,7 @@ import { getConsent } from "@/components/cookie-consent"
  * Analíticas → GA4 + Clarity
  */
 
-const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || "2074090273450880"
+const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || "1574258694440791"
 const GA4_ID = process.env.NEXT_PUBLIC_GA4_ID || "G-TLBP0W75MF"
 const TIKTOK_PIXEL_ID = process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID || ""
 const CLARITY_ID = process.env.NEXT_PUBLIC_CLARITY_ID || "x02j83u050"

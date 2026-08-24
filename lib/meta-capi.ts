@@ -1,6 +1,6 @@
 /**
  * Meta Conversions API — server-side helper
- * Pixel ID: 2074090273450880 | Dataset: Cliché Aromas
+ * Pixel ID: 1574258694440791 | Dataset: Cliché Aromas
  *
  * Advanced Matching: hashing de email/teléfono con SHA-256 según spec de Meta.
  * El hashing ocurre SIEMPRE en el servidor — el email/teléfono crudo nunca
@@ -9,7 +9,7 @@
 
 import crypto from 'crypto'
 
-const PIXEL_ID = '2074090273450880'
+const PIXEL_ID = '1574258694440791'
 // SECRETO: solo desde variable de entorno. Nunca hardcodear el token aquí
 // (queda en git y es robable). Si falta, los eventos CAPI se omiten en silencio.
 const CAPI_TOKEN = process.env.META_CAPI_TOKEN
