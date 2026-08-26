@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase"
 import { sendAbandonedCartEmail } from "@/lib/mailer"
 import { sendWhatsAppBotReply, getSessionStatus } from "@/lib/whatsapp"
 import { loadBotConfig } from "@/lib/bot/brain"
+import { normalizePhone } from "@/lib/meta-capi"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -70,6 +71,9 @@ export async function GET(req: NextRequest) {
     let emails = 0
     let whatsapps = 0
     const advisor = config.advisor_name || "Valentina"
+    // Cada WhatsApp "humano" tarda ~10-20s (pausas de tipeo). Tope por corrida
+    // para no chocar con maxDuration=60; lo que quede sale en la próxima hora.
+    const WA_MAX_PER_RUN = 3
 
     for (const order of orders) {
       const rawItems = (order.items as Array<{ product_id?: string; quantity?: number; name?: string; price?: number }>) || []
@@ -97,31 +101,35 @@ export async function GET(req: NextRequest) {
       }
 
       // ── WhatsApp ──
-      if (!order.recovery_wa_sent && order.customer_phone && waReady) {
+      if (!order.recovery_wa_sent && order.customer_phone && waReady && whatsapps < WA_MAX_PER_RUN) {
         try {
+          // MISMO formato de teléfono que usa el webhook (con indicativo 57):
+          // si el cliente responde, su mensaje cae en ESTE hilo del panel y no
+          // en un contacto duplicado.
+          const phone = normalizePhone(String(order.customer_phone))
+          if (!phone) continue
           const firstName = (order.customer_name as string | null)?.trim().split(/\s+/)[0] || ""
           const itemTxt = items.length === 1 ? `tu *${items[0].name}*` : `tu pedido con *${items[0].name}*${items.length > 2 ? " y más aromas" : ` y *${items[1].name}*`}`
           const link = resumeUrl || "https://www.clichecolombia.com/checkout"
           const msg = `¡Hola${firstName ? ` ${firstName}` : ""}! 🌿 Soy ${advisor}, de Cliché. Vi que dejaste ${itemTxt} casi listo — te lo guardé tal como lo armaste 😊\n\nPuedes terminar tu pedido aquí, en un par de clics: ${link}\n\nSi tienes alguna duda o quieres que te recomiende otro aroma, con todo gusto te ayudo por aquí.`
-          await sendWhatsAppBotReply(order.customer_phone, msg, config.wasender_api_key || undefined)
+          await sendWhatsAppBotReply(phone, msg, config.wasender_api_key || undefined)
           await sb.from("orders").update({ recovery_wa_sent: true }).eq("id", order.id)
           // Registrar en el panel (pestaña Conversaciones) como mensaje del asistente.
           await sb.from("wa_messages").insert({
-            contact_phone: String(order.customer_phone).replace(/\D/g, ""),
+            contact_phone: phone,
             direction: "out",
             role: "assistant",
             body: msg,
             session_phone: config.connected_phone || null,
           })
-          await sb.from("wa_contacts").upsert(
-            {
-              phone: String(order.customer_phone).replace(/\D/g, ""),
-              name: (order.customer_name as string | null) || null,
-              last_seen: new Date().toISOString(),
-              session_phone: config.connected_phone || null,
-            },
-            { onConflict: "phone" },
-          )
+          // Upsert del contacto SIN pisar el nombre existente con null.
+          const contactPatch: Record<string, unknown> = {
+            phone,
+            last_seen: new Date().toISOString(),
+            session_phone: config.connected_phone || null,
+          }
+          if (order.customer_name) contactPatch.name = order.customer_name
+          await sb.from("wa_contacts").upsert(contactPatch, { onConflict: "phone" })
           whatsapps++
         } catch (e) {
           console.error("[cart-recovery] whatsapp falló para", order.id, e)

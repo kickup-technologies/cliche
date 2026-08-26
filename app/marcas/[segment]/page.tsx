@@ -94,9 +94,10 @@ export default async function SegmentLanding({ params }: { params: Promise<{ seg
     <>
       <AnnouncementBar />
       <Header />
-      <main className="min-h-screen bg-[#FAF8F5]">
+      {/* pt-28: el Header es fixed — sin este espacio el hero queda debajo. */}
+      <main className="min-h-screen bg-[#FAF8F5] pt-28">
         {/* Hero */}
-        <section className="px-6 pt-14 pb-10 sm:pt-20 sm:pb-14 text-center max-w-3xl mx-auto">
+        <section className="px-6 pt-6 pb-10 sm:pt-10 sm:pb-14 text-center max-w-3xl mx-auto">
           <p className="text-[11px] font-medium uppercase tracking-[0.35em] text-[#A67163] mb-4">
             Marketing olfativo · Cliché Colombia
           </p>
