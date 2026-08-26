@@ -243,6 +243,21 @@ export interface BrainResult {
 }
 
 /**
+ * Convierte restos de Markdown a formato WhatsApp. El prompt ya lo prohíbe,
+ * pero los modelos a veces desobedecen ("**negrita**", títulos '#', viñetas
+ * '- ') y WhatsApp los muestra literales — se ve robótico. Determinístico >
+ * esperanza en el prompt.
+ */
+export function toWhatsAppFormat(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, "*$1*") // **negrita** md → *negrita* WhatsApp
+    .replace(/^#{1,6}\s+/gm, "") // títulos markdown
+    .replace(/^(\s*)[-*]\s+/gm, "$1• ") // viñetas - / * → •
+    .replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g, "$1: $2") // [texto](url) → texto: url
+    .trim()
+}
+
+/**
  * Genera la respuesta del asesor a partir del historial de la conversación.
  * `history` viene en orden cronológico (más antiguo primero).
  */
@@ -263,6 +278,6 @@ Es el PRIMER mensaje de este cliente: en tu primera respuesta preséntate breve 
 
   // Limita el historial para no inflar tokens (últimos 16 turnos).
   const trimmed = history.slice(-16)
-  const text = await botReply({ system, messages: trimmed })
+  const text = toWhatsAppFormat(await botReply({ system, messages: trimmed }))
   return { text, sendCatalogPdf }
 }
