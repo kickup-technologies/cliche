@@ -225,6 +225,10 @@ export async function POST(req: NextRequest) {
       }
 
       const result = await generateAdvisorReply(history, ctx)
+      // Segundo chequeo: si durante la generación de la IA (~5-15s) llegó otro
+      // mensaje del cliente, esta respuesta ya está desactualizada — se descarta
+      // y responde la corrida del mensaje más nuevo (una sola respuesta, al día).
+      if (await superseded()) return
       const catalogUrl = ctx.config.catalog_pdf_url || config.catalog_pdf_url
       console.log(`[WA] reply len=${result.text.length} sendCatalogPdf=${result.sendCatalogPdf} hasCatalogUrl=${!!catalogUrl}`)
       await sendWhatsAppBotReply(from, result.text, apiKey)
