@@ -203,8 +203,12 @@ export async function POST(req: NextRequest) {
       // Si no se pudo entender la media → pedir un textito con calidez.
       if (!userText) {
         const ask = "¡Hola! 🌿 Por aquí no me cargó bien tu mensaje. ¿Me cuentas en un textico qué aroma o para qué marca buscas?"
-        await sendWhatsAppBotReply(from, ask, apiKey)
-        await sb.from("wa_messages").insert({ contact_phone: from, direction: "out", role: "assistant", body: ask, session_phone: sessionPhone })
+        const askDelivered = await sendWhatsAppBotReply(from, ask, apiKey)
+        // Solo registrar lo que el cliente SÍ recibió: un rechazo guardado
+        // engañaría al panel y a la IA (creería que ya respondió).
+        if (askDelivered) {
+          await sb.from("wa_messages").insert({ contact_phone: from, direction: "out", role: "assistant", body: ask, session_phone: sessionPhone })
+        }
         return
       }
 
@@ -231,7 +235,17 @@ export async function POST(req: NextRequest) {
       if (await superseded()) return
       const catalogUrl = ctx.config.catalog_pdf_url || config.catalog_pdf_url
       console.log(`[WA] reply len=${result.text.length} sendCatalogPdf=${result.sendCatalogPdf} hasCatalogUrl=${!!catalogUrl}`)
-      await sendWhatsAppBotReply(from, result.text, apiKey)
+      const delivered = await sendWhatsAppBotReply(from, result.text, apiKey)
+      if (!delivered) {
+        // WaSender rechazó el envío: NO guardar la respuesta (el historial debe
+        // reflejar solo lo que el cliente recibió) y avisar al dueño.
+        console.error("[WA] WaSender rechazó la respuesta para", from)
+        await waNotifyAdmin(
+          `⚠️ WhatsApp no aceptó la respuesta del asistente para +${from}. El mensaje del cliente quedó en el panel — respóndele desde Conversaciones.`,
+          apiKey,
+        )
+        return
+      }
       await sb.from("wa_messages").insert({ contact_phone: from, direction: "out", role: "assistant", body: result.text, session_phone: sessionPhone })
 
       if (result.sendCatalogPdf && catalogUrl) {

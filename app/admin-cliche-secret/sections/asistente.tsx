@@ -392,7 +392,12 @@ function ConversacionesTab() {
     if (!selected || !reply.trim()) return
     setSending(true)
     try {
-      await adminFetch("/api/admin/bot/messages", { method: "POST", body: JSON.stringify({ phone: selected, text: reply.trim() }) })
+      const res = await adminFetch("/api/admin/bot/messages", { method: "POST", body: JSON.stringify({ phone: selected, text: reply.trim() }) })
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: null }))
+        alert(error || "No se pudo enviar el mensaje. Intenta de nuevo.")
+        return // conserva el texto escrito para reintentar
+      }
       setReply("")
       await loadMessages(selected)
       await loadConvos()

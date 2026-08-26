@@ -26,6 +26,10 @@ function providerChain(): Provider[] {
   return [
     { name: "groq", key: process.env.GROQ_API_KEY, url: "https://api.groq.com/openai/v1/chat/completions", model: "openai/gpt-oss-120b", extra: { reasoning_effort: "low" } },
     { name: "groq-qwen", key: process.env.GROQ_API_KEY, url: "https://api.groq.com/openai/v1/chat/completions", model: "qwen/qwen3.6-27b", extra: { reasoning_format: "hidden" } },
+    // Tercer bucket de rate limit en la MISMA cuenta gratuita: cada modelo de
+    // Groq tiene su propio límite de 8k tokens/min, así que 20b suma capacidad
+    // para picos de clientes simultáneos sin costo.
+    { name: "groq-20b", key: process.env.GROQ_API_KEY, url: "https://api.groq.com/openai/v1/chat/completions", model: "openai/gpt-oss-20b", extra: { reasoning_effort: "low" } },
     { name: "cerebras", key: process.env.CEREBRAS_API_KEY, url: "https://api.cerebras.ai/v1/chat/completions", model: "gpt-oss-120b" },
     { name: "together", key: process.env.TOGETHER_API_KEY, url: "https://api.together.xyz/v1/chat/completions", model: "openai/gpt-oss-120b" },
     { name: "openai", key: process.env.OPENAI_API_KEY, url: "https://api.openai.com/v1/chat/completions", model: "gpt-4.1-mini" },

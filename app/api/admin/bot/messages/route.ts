@@ -39,7 +39,12 @@ export async function POST(req: NextRequest) {
     if (!to || !text?.trim()) return NextResponse.json({ error: "faltan datos" }, { status: 400 })
     const sb = createServerClient()
     const config = await loadBotConfig()
-    await sendWhatsAppBotReply(to, text.trim(), config.wasender_api_key || undefined)
+    const delivered = await sendWhatsAppBotReply(to, text.trim(), config.wasender_api_key || undefined)
+    if (!delivered) {
+      // Que el panel se entere: sin esto la respuesta aparecía como enviada
+      // aunque WaSender la hubiera rechazado.
+      return NextResponse.json({ error: "WhatsApp no aceptó el mensaje. Revisa la conexión en «Número conectado» e intenta de nuevo." }, { status: 502 })
+    }
     await sb.from("wa_messages").insert({ contact_phone: to, direction: "out", role: "agent", body: text.trim(), session_phone: config.connected_phone || null })
     await sb.from("wa_contacts").update({ handoff: true, last_seen: new Date().toISOString() }).eq("phone", to)
     return NextResponse.json({ ok: true })
