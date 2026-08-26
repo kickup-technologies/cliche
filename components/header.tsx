@@ -66,7 +66,10 @@ export function Header() {
     pathname === "/checkout" ||
     pathname === "/catalogo" ||
     (pathname?.startsWith("/cuenta") ?? false) ||
-    (pathname?.startsWith("/pedido") ?? false)
+    (pathname?.startsWith("/pedido") ?? false) ||
+    // Landings de pauta: fondo crema — el modo transparente (letras blancas)
+    // dejaba el menú invisible.
+    (pathname?.startsWith("/marcas") ?? false)
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50)

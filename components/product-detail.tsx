@@ -202,6 +202,40 @@ export function ProductDetail({ product, related }: Props) {
     return () => clearTimeout(t)
   }, [])
 
+  // Cine diferido del render 3D: la página abre con la FOTO (carga
+  // instantánea, clave para el tráfico de pauta móvil) mientras el 3D se
+  // precarga en segundo plano. Pasados ≥5s Y con el modelo YA descargado, la
+  // vista pasa al render con su misma cinemática de caída — nunca se muestra
+  // un spinner ni un hueco. Si el cliente ya tocó la galería, no se le
+  // interrumpe. saveData/2G no cargan 3D jamás.
+  const galleryTouched = useRef(false)
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const hadPhoto = (Array.isArray(product.image_urls) && product.image_urls.some(Boolean)) || !!product.image_url
+    if (!hadPhoto) return // ya arrancó en 3D (sin foto), nada que diferir
+    const conn = (navigator as { connection?: { saveData?: boolean; effectiveType?: string } }).connection
+    if (conn && (conn.saveData === true || /2g/.test(conn.effectiveType || ""))) return
+    let cancelled = false
+    const modelUrl = PRODUCT_MODELS[product.slug.replace(/^aroma-/, "")]
+    const preload = Promise.all([
+      modelUrl ? import("@/components/meshy-viewer") : import("@/components/spray-bottle-3d"),
+      // Calienta la caché HTTP del GLB: al montar el visor, el modelo ya está local.
+      modelUrl ? fetch(modelUrl).then((r) => r.blob()).catch(() => null) : Promise.resolve(null),
+    ])
+    const minDelay = new Promise((r) => setTimeout(r, 5000))
+    Promise.all([preload, minDelay]).then(() => {
+      if (cancelled || galleryTouched.current) return
+      // Misma coreografía original: se oculta, monta el 3D (con assets ya en
+      // caché) y onReady dispara la caída desde el cielo. Respaldo de 4s por
+      // si el modelo falla, para no dejar la galería oculta.
+      setFell(false)
+      setSelectedImage(null)
+      setTimeout(() => setFell(true), 4000)
+    })
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const { track } = useCAPI()
 
   // ViewContent — dispara cuando se carga la página del producto.
@@ -372,7 +406,7 @@ export function ProductDetail({ product, related }: Props) {
                 >
                   {/* 3D render thumbnail */}
                   <button
-                    onClick={() => setSelectedImage(null)}
+                    onClick={() => { galleryTouched.current = true; setSelectedImage(null) }}
                     className={`flex-shrink-0 w-16 h-16 rounded-xl border-2 bg-muted/40 flex items-center justify-center transition-all ${
                       selectedImage === null ? "border-primary shadow-md" : "border-border hover:border-primary/50"
                     }`}
@@ -386,7 +420,7 @@ export function ProductDetail({ product, related }: Props) {
                     ? (galleryImages.length > 0 ? galleryImages : [product.image_url as string]).map((url, i) => (
                         <button
                           key={url}
-                          onClick={() => setSelectedImage(url)}
+                          onClick={() => { galleryTouched.current = true; setSelectedImage(url) }}
                           className={`flex-shrink-0 w-16 h-16 rounded-xl border-2 overflow-hidden transition-all ${
                             selectedImage === url ? "border-primary shadow-md" : "border-border hover:border-primary/50"
                           }`}
