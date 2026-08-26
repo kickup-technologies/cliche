@@ -87,6 +87,33 @@ export function AsistenteSection() {
     return () => { alive = false }
   }, [])
 
+  // Vigila la sesión mientras está conectada: si el número se desvincula, la
+  // sección vuelve sola a la pantalla de conexión. Se exigen 2 lecturas
+  // seguidas sin conexión para no expulsar por un fallo transitorio de red.
+  const offlineStrikes = useRef(0)
+  useEffect(() => {
+    if (conn !== "connected") return
+    offlineStrikes.current = 0
+    const t = setInterval(async () => {
+      try {
+        const { status, configured } = await adminFetch("/api/admin/bot/status").then((r) => r.json())
+        if (configured && status === "connected") {
+          offlineStrikes.current = 0
+        } else if (["disconnected", "logged_out", "expired", "need_scan"].includes(status) || !configured) {
+          // Desconexión confirmada por WaSenderAPI → volver a la pantalla de conexión.
+          setConn("offline")
+        } else {
+          // status null/desconocido (p. ej. WaSender no respondió): tolerar 2 veces.
+          offlineStrikes.current += 1
+          if (offlineStrikes.current >= 2) setConn("offline")
+        }
+      } catch {
+        /* error de red del navegador: no cambiar nada */
+      }
+    }, 20000)
+    return () => clearInterval(t)
+  }, [conn])
+
   // Interruptor maestro: apaga/enciende las respuestas automáticas sin tocar
   // la conexión de WhatsApp. Apagado, los mensajes se siguen guardando.
   async function toggleBot() {
