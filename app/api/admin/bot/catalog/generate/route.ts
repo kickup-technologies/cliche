@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { isAdmin } from "@/lib/admin-auth"
 import { createServerClient } from "@/lib/supabase"
-import { CATALOG } from "@/lib/catalog-data"
+import { CATALOG, getCatalogProduct, type CatalogProduct } from "@/lib/catalog-data"
+import type { Product } from "@/lib/supabase"
 import { CatalogDocument } from "@/lib/catalog-pdf"
 import { renderToBuffer } from "@react-pdf/renderer"
 
@@ -17,13 +18,18 @@ export async function POST(req: NextRequest) {
   try {
     const sb = createServerClient()
 
-    // Precios reales por slug (la tabla products manda sobre el catálogo local).
-    const { data: live } = await sb.from("products").select("slug, price, is_active")
-    const priceBySlug = new Map<string, number>()
-    ;(live || []).forEach((p: { slug: string; price: number; is_active: boolean }) => {
-      if (p.is_active) priceBySlug.set(p.slug, p.price)
+    // La tabla products manda (nombres, precios y qué aromas existen); el
+    // catálogo local aporta taglines, notas olfativas y "ideal para".
+    const { data: live } = await sb.from("products").select("*").eq("is_active", true).order("name")
+    const products: CatalogProduct[] = (live?.length ? (live as Product[]) : CATALOG).map((p) => {
+      const cat = getCatalogProduct(p.slug)
+      return {
+        ...p,
+        tagline: (p as CatalogProduct).tagline ?? cat?.tagline ?? "",
+        notes: (p as CatalogProduct).notes ?? cat?.notes ?? [],
+        recommendedFor: (p as CatalogProduct).recommendedFor ?? cat?.recommendedFor ?? "",
+      }
     })
-    const products = CATALOG.map((p) => ({ ...p, price: priceBySlug.get(p.slug) ?? p.price }))
 
     // Datos de contacto desde site_settings.
     const { data: setts } = await sb.from("site_settings").select("key, value")

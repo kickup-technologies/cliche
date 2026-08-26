@@ -224,5 +224,8 @@ export const CATALOG: CatalogProduct[] = [
 export const CATALOG_AS_PRODUCTS: Product[] = CATALOG
 
 export function getCatalogProduct(slug: string): CatalogProduct | undefined {
-  return CATALOG.find((p) => p.slug === slug)
+  // La tabla `products` usa slugs con prefijo "aroma-" (p. ej. "aroma-dulce-lana");
+  // este catálogo local no. Se aceptan ambas formas.
+  const norm = slug.replace(/^aroma-/, "")
+  return CATALOG.find((p) => p.slug === slug || p.slug === norm)
 }

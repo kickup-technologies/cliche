@@ -22,18 +22,32 @@ const cop = (n: number) => "$" + n.toLocaleString("es-CO")
 const MIME: Record<string, string> = { jpeg: "image/jpeg", jpg: "image/jpeg", png: "image/png" }
 
 function resolveImage(p: CatalogProduct): string | null {
-  const dir = path.join(process.cwd(), "public", "images", "products")
-  const givenExt = (p.image_url || "").split(".").pop()?.toLowerCase() || ""
-  const exts = [givenExt, "jpeg", "jpg", "png"].filter((e, i, a) => MIME[e] && a.indexOf(e) === i)
-  for (const ext of exts) {
-    const abs = path.join(dir, `${p.slug}.${ext}`)
+  const pub = path.join(process.cwd(), "public")
+  const dir = path.join(pub, "images", "products")
+  const candidates: string[] = []
+
+  // 1) La ruta exacta de image_url (los productos de la BD apuntan a /images/products/...).
+  if (p.image_url && !/^https?:/i.test(p.image_url)) {
+    const ext = p.image_url.split(".").pop()?.toLowerCase() || ""
+    if (MIME[ext]) candidates.push(path.join(pub, p.image_url.replace(/^\//, "")))
+  }
+  // 2) Por slug — la BD usa prefijo "aroma-" y los archivos locales no: probar ambos.
+  const norm = p.slug.replace(/^aroma-/, "")
+  for (const slug of [...new Set([p.slug, norm])]) {
+    for (const ext of ["jpeg", "jpg", "png"]) {
+      candidates.push(path.join(dir, `${slug}.${ext}`))
+    }
+  }
+
+  for (const abs of candidates) {
+    const ext = abs.split(".").pop()?.toLowerCase() || ""
     try {
-      if (fs.existsSync(abs)) {
+      if (MIME[ext] && fs.existsSync(abs)) {
         const b64 = fs.readFileSync(abs).toString("base64")
         return `data:${MIME[ext]};base64,${b64}`
       }
     } catch {
-      /* probar siguiente extensión */
+      /* probar siguiente candidato */
     }
   }
   return null
@@ -124,12 +138,12 @@ export function CatalogDocument({
   for (let i = 0; i < products.length; i += perPage) pages.push(products.slice(i, i + perPage))
 
   return (
-    <Document title="Catálogo Bienestar by Cliché" author="Bienestar by Cliché">
+    <Document title="Catálogo Cliché Colombia" author="Cliché Colombia">
       {/* Portada */}
       <Page size="A4">
         <View style={s.cover}>
           <Text style={s.coverKicker}>Marketing olfativo</Text>
-          <Text style={s.coverTitle}>Bienestar{"\n"}by Cliché</Text>
+          <Text style={s.coverTitle}>Cliché{"\n"}Colombia</Text>
           <Text style={s.coverScript}>Tu marca, ¿a qué huele?</Text>
           <View style={s.coverRule} />
           <Text style={s.coverMeta}>
@@ -145,15 +159,15 @@ export function CatalogDocument({
       {pages.map((chunk, idx) => (
         <Page key={idx} size="A4" style={s.page}>
           <View style={s.header}>
-            <Text style={s.headerBrand}>Bienestar by Cliché</Text>
+            <Text style={s.headerBrand}>Cliché Colombia</Text>
             <Text style={s.headerTag}>Catálogo de aromas</Text>
           </View>
           <View style={s.grid}>
             {chunk.map((p) => <ProductCard key={p.slug} p={p} />)}
           </View>
           <View style={s.footer} fixed>
-            <Text style={s.footerText}>{whatsapp ? `WhatsApp ${whatsapp}` : "Bienestar by Cliché"}</Text>
-            <Text style={s.footerText} render={({ pageNumber }) => `${web || "bienestar by cliché"}  ·  ${pageNumber}`} />
+            <Text style={s.footerText}>{whatsapp ? `WhatsApp ${whatsapp}` : "Cliché Colombia"}</Text>
+            <Text style={s.footerText} render={({ pageNumber }) => `${web || "clichecolombia.com"}  ·  ${pageNumber}`} />
           </View>
         </Page>
       ))}

@@ -28,7 +28,7 @@ const MAX_CHARS = 2000
 
 const SIN_PROVEEDOR = "Todavía no tengo activada mi conexión de inteligencia artificial. Pídele a Andrés que revise la clave del asistente (la misma que usa el bot de WhatsApp) y vuelvo a funcionar."
 
-const SYSTEM_PROMPT = `Eres «Ayudante de Cliché», el asistente del panel de administración de la tienda Bienestar by Cliché (clichecolombia.com), una tienda colombiana de aromas y ambientadores para el hogar.
+const SYSTEM_PROMPT = `Eres «Ayudante de Cliché», el asistente del panel de administración de la tienda Cliché Colombia (clichecolombia.com), una tienda colombiana de aromas y ambientadores para el hogar.
 
 Hablas con la dueña de la tienda, que NO es técnica. Reglas de tu forma de responder:
 - Siempre en español de Colombia, cercano y amable, tuteando.

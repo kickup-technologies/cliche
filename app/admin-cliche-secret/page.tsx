@@ -406,7 +406,7 @@ export default function AdminPage() {
             </div>
             <div>
               <p className="font-semibold text-[#2D1A14] text-sm leading-none">Panel Admin</p>
-              <p className="text-[10px] text-[#2D1A14]/40 mt-0.5">Bienestar by Cliché</p>
+              <p className="text-[10px] text-[#2D1A14]/40 mt-0.5">Cliché Colombia</p>
             </div>
           </div>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden w-7 h-7 rounded-lg hover:bg-[#FAF8F5] flex items-center justify-center">

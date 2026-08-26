@@ -56,7 +56,7 @@ export default function NosotrosPage() {
         {/* Hero */}
         <ImageTextOverlay
           image="/images/lifestyle-living.jpg"
-          eyebrow="Bienestar by Cliché"
+          eyebrow="Cliché Colombia"
           title="El aroma también cuenta tu historia"
           text="Somos una casa de marketing olfativo hecha en Colombia. Convertimos espacios en sensaciones y momentos en recuerdos."
           height="tall"

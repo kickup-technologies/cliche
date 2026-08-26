@@ -17,6 +17,7 @@ const EDITABLE = [
   "store_maps_url",
   "wasender_api_key",
   "wasender_webhook_secret",
+  "wasender_personal_token",
 ] as const
 
 export async function GET(req: NextRequest) {

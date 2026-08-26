@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
     let sent = 0
     let cancelled = 0
     const name = config.advisor_name || "Valentina"
-    const nudge = `Hola 🌿 soy ${name}, de Bienestar by Cliché. ¿Pudiste pensar en el aroma que buscabas? Con gusto te ayudo a elegir o te aparto el que más te haya gustado 😊`
+    const nudge = `Hola 🌿 soy ${name}, de Cliché. ¿Pudiste pensar en el aroma que buscabas? Con gusto te ayudo a elegir o te aparto el que más te haya gustado 😊`
 
     for (const f of due || []) {
       // ¿El contacto está en manos de un humano? → no molestar.

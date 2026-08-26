@@ -109,7 +109,7 @@ export function Guarantees() {
 
           {/* microtipografía vertical — borde derecho */}
           <span className="pointer-events-none absolute right-[2.4vw] top-1/2 z-10 origin-center -translate-y-1/2 rotate-90 text-[0.58rem] font-medium uppercase tracking-[0.5em] text-[#2D1A14]/30">
-            Bienestar · Cliché
+            Cliché · Colombia
           </span>
 
           {/* track */}

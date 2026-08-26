@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import {
   MessageCircle, Settings, Smartphone, RefreshCw, Send, Save, Upload, Plus, Trash2,
-  Bot, User, Pause, Play, FileText, CheckCircle2, AlertCircle, Power,
+  Bot, User, Pause, Play, FileText, CheckCircle2, AlertCircle, Power, QrCode,
 } from "lucide-react"
 import { adminFetch } from "@/lib/admin-client"
 
@@ -41,6 +41,7 @@ interface BotConfig {
   store_maps_url: string
   wasender_api_key: string | null
   wasender_webhook_secret: string | null
+  wasender_personal_token: string | null
 }
 interface Faq {
   id: string
@@ -65,14 +66,73 @@ function fmtTime(iso: string) {
 
 export function AsistenteSection() {
   const [tab, setTab] = useState<Tab>("conversaciones")
+  const [botEnabled, setBotEnabled] = useState<boolean | null>(null)
+  const [toggling, setToggling] = useState(false)
+
+  // Si el WhatsApp aún no está vinculado, abrir directo la pestaña de conexión.
+  useEffect(() => {
+    let alive = true
+    adminFetch("/api/admin/bot/status")
+      .then((r) => r.json())
+      .then(({ status, configured }) => {
+        if (alive && (!configured || status !== "connected")) setTab("conexion")
+      })
+      .catch(() => { /* noop */ })
+    adminFetch("/api/admin/bot/config")
+      .then((r) => r.json())
+      .then(({ config }) => { if (alive && config) setBotEnabled(!!config.bot_enabled) })
+      .catch(() => { /* noop */ })
+    return () => { alive = false }
+  }, [])
+
+  // Interruptor maestro: apaga/enciende las respuestas automáticas sin tocar
+  // la conexión de WhatsApp. Apagado, los mensajes se siguen guardando.
+  async function toggleBot() {
+    if (botEnabled === null || toggling) return
+    const next = !botEnabled
+    setToggling(true)
+    setBotEnabled(next)
+    try {
+      const res = await adminFetch("/api/admin/bot/config", { method: "POST", body: JSON.stringify({ bot_enabled: next }) })
+      if (!res.ok) setBotEnabled(!next)
+    } catch {
+      setBotEnabled(!next)
+    } finally { setToggling(false) }
+  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="font-serif text-2xl font-bold" style={{ color: BROWN }}>Asistente WhatsApp</h2>
-        <p className="text-sm mt-0.5" style={{ color: `${BROWN}80` }}>
-          Tu asesora virtual responde, recomienda y vende por WhatsApp — conectada al catálogo en vivo.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="font-serif text-2xl font-bold" style={{ color: BROWN }}>Asistente WhatsApp</h2>
+          <p className="text-sm mt-0.5" style={{ color: `${BROWN}80` }}>
+            Tu asesora virtual responde, recomienda y vende por WhatsApp — conectada al catálogo en vivo.
+          </p>
+        </div>
+        {botEnabled !== null && (
+          <button
+            onClick={toggleBot}
+            disabled={toggling}
+            className="flex items-center gap-3 px-4 py-2.5 rounded-2xl border transition-colors disabled:opacity-60"
+            style={botEnabled
+              ? { borderColor: "#16a34a40", background: "#f0fdf4" }
+              : { borderColor: `${BROWN}20`, background: "white" }}
+            title={botEnabled ? "Pulsa para apagar las respuestas automáticas" : "Pulsa para encender las respuestas automáticas"}
+          >
+            <Power className="w-4 h-4" style={{ color: botEnabled ? "#16a34a" : "#dc2626" }} />
+            <div className="text-left">
+              <p className="text-xs font-semibold leading-tight" style={{ color: BROWN }}>
+                {botEnabled ? "Asistente encendido" : "Asistente apagado"}
+              </p>
+              <p className="text-[10px] leading-tight" style={{ color: `${BROWN}60` }}>
+                {botEnabled ? "Responde automáticamente" : "Los mensajes se guardan, nadie recibe respuesta"}
+              </p>
+            </div>
+            <div className="relative w-11 h-6 rounded-full transition-colors flex-shrink-0" style={{ background: botEnabled ? "#16a34a" : `${BROWN}26` }}>
+              <div className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform" style={{ transform: botEnabled ? "translateX(20px)" : "none" }} />
+            </div>
+          </button>
+        )}
       </div>
 
       {/* Tabs */}
@@ -95,7 +155,7 @@ export function AsistenteSection() {
 
       {tab === "conversaciones" && <ConversacionesTab />}
       {tab === "configuracion" && <ConfiguracionTab />}
-      {tab === "conexion" && <ConexionTab />}
+      {tab === "conexion" && <ConexionTab onConnected={() => setTab("conversaciones")} />}
     </div>
   )
 }
@@ -451,13 +511,19 @@ const STATUS_LABEL: Record<string, { label: string; color: string; bg: string }>
   expired: { label: "Sesión expirada", color: "#dc2626", bg: "#fee2e2" },
 }
 
-function ConexionTab() {
+function ConexionTab({ onConnected }: { onConnected?: () => void }) {
   const [cfg, setCfg] = useState<BotConfig | null>(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [webhookUrl, setWebhookUrl] = useState("")
   const [status, setStatus] = useState<string | null>(null)
   const [checking, setChecking] = useState(false)
+  const [qr, setQr] = useState<string | null>(null)
+  const [qrLoading, setQrLoading] = useState(false)
+  const [qrError, setQrError] = useState<string | null>(null)
+  const [qrSession, setQrSession] = useState<{ id: number; name: string | null; phone_number: string | null } | null>(null)
+  const [justConnected, setJustConnected] = useState(false)
+  const [showAdvanced, setShowAdvanced] = useState(false)
 
   const checkStatus = useCallback(async () => {
     setChecking(true)
@@ -478,11 +544,60 @@ function ConexionTab() {
     try {
       await adminFetch("/api/admin/bot/config", {
         method: "POST",
-        body: JSON.stringify({ wasender_api_key: cfg.wasender_api_key, wasender_webhook_secret: cfg.wasender_webhook_secret }),
+        body: JSON.stringify({
+          wasender_api_key: cfg.wasender_api_key,
+          wasender_webhook_secret: cfg.wasender_webhook_secret,
+          wasender_personal_token: cfg.wasender_personal_token,
+        }),
       })
       setSaved(true); setTimeout(() => setSaved(false), 2500)
     } finally { setSaving(false) }
   }
+
+  const handleConnected = useCallback(() => {
+    setQr(null)
+    setStatus("connected")
+    setJustConnected(true)
+    // Deja ver la confirmación un momento y pasa directo a las conversaciones.
+    setTimeout(() => onConnected?.(), 1800)
+  }, [onConnected])
+
+  const fetchQr = useCallback(async () => {
+    setQrLoading(true)
+    setQrError(null)
+    try {
+      const res = await adminFetch("/api/admin/bot/qr", { method: "POST" })
+      const data = await res.json()
+      if (!res.ok) {
+        setQr(null)
+        setQrError(data.error || "No se pudo obtener el QR")
+        if (data.needToken) setShowAdvanced(true)
+        return
+      }
+      setQrSession(data.session || null)
+      if (data.status === "connected") {
+        handleConnected()
+        return
+      }
+      setQr(data.qr)
+    } catch {
+      setQr(null); setQrError("Error de red obteniendo el QR")
+    } finally { setQrLoading(false) }
+  }, [handleConnected])
+
+  // Mientras el QR está visible: renovarlo cada 30s (caducan rápido) y
+  // vigilar cada 4s si ya se escaneó para cerrar el flujo solo.
+  useEffect(() => {
+    if (!qr) return
+    const renew = setInterval(fetchQr, 30000)
+    const watch = setInterval(async () => {
+      try {
+        const { status } = await adminFetch("/api/admin/bot/status").then((r) => r.json())
+        if (status === "connected") handleConnected()
+      } catch { /* noop */ }
+    }, 4000)
+    return () => { clearInterval(renew); clearInterval(watch) }
+  }, [qr, fetchQr, handleConnected])
 
   if (!cfg) return <div className="p-6"><RefreshCw className="w-5 h-5 animate-spin" style={{ color: ACCENT }} /></div>
 
@@ -500,7 +615,7 @@ function ConexionTab() {
         </div>
         <div className="flex-1">
           <p className="font-semibold text-sm" style={{ color: BROWN }}>WhatsApp · {tone.label}</p>
-          <p className="text-xs" style={{ color: `${BROWN}60` }}>{status === "connected" ? "El bot puede enviar y recibir mensajes." : hasKey ? "Verifica el estado en vivo de la sesión." : "Pega la API key de la sesión de WaSenderAPI para activarlo."}</p>
+          <p className="text-xs" style={{ color: `${BROWN}60` }}>{status === "connected" ? "El bot puede enviar y recibir mensajes." : hasKey ? "Verifica el estado en vivo de la sesión." : "Pulsa «Conectar WhatsApp» y escanea el código con el celular de la tienda."}</p>
         </div>
         {hasKey && (
           <button onClick={checkStatus} disabled={checking} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border disabled:opacity-50" style={{ borderColor: `${BROWN}20`, color: BROWN }}>
@@ -509,30 +624,97 @@ function ConexionTab() {
         )}
       </div>
 
-      <div className="bg-white rounded-2xl border p-6 space-y-5" style={{ borderColor: `${BROWN}14` }}>
-        <div>
-          <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: `${BROWN}80` }}>API Key de la sesión (WaSenderAPI)</label>
-          <input className={inputCls} style={inputStyle} value={cfg.wasender_api_key || ""} onChange={(e) => setCfg({ ...cfg, wasender_api_key: e.target.value })} placeholder="wasender_..." />
+      {/* Confirmación al escanear */}
+      {justConnected && (
+        <div className="bg-white rounded-2xl border p-6 flex items-center gap-3" style={{ borderColor: "#16a34a40", background: "#f0fdf4" }}>
+          <CheckCircle2 className="w-6 h-6 flex-shrink-0" style={{ color: "#16a34a" }} />
+          <div>
+            <p className="text-sm font-semibold" style={{ color: "#166534" }}>¡WhatsApp conectado!</p>
+            <p className="text-xs" style={{ color: "#166534" }}>Abriendo las conversaciones del asistente…</p>
+          </div>
         </div>
-        <div>
-          <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: `${BROWN}80` }}>Webhook secret (opcional)</label>
-          <input className={inputCls} style={inputStyle} value={cfg.wasender_webhook_secret || ""} onChange={(e) => setCfg({ ...cfg, wasender_webhook_secret: e.target.value })} placeholder="opcional" />
-        </div>
-        <button onClick={save} disabled={saving} className="w-full h-11 rounded-xl text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50" style={{ background: BROWN }}>
-          {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-          {saved ? "Guardado" : "Guardar conexión"}
-        </button>
-      </div>
+      )}
 
-      <div className="rounded-2xl border p-5" style={{ borderColor: `${ACCENT}40`, background: `${ACCENT}10` }}>
-        <div className="flex items-center gap-2 mb-2"><AlertCircle className="w-4 h-4" style={{ color: ACCENT }} /><p className="text-sm font-semibold" style={{ color: BROWN }}>Cómo conectar el WhatsApp de Cliché</p></div>
-        <ol className="text-xs space-y-1.5 list-decimal pl-4" style={{ color: `${BROWN}90` }}>
-          <li>En <span className="font-mono">wasenderapi.com/dashboard</span>, conecta el número de Cliché escaneando el QR.</li>
-          <li>Copia la <b>API key</b> de esa sesión y pégala arriba.</li>
-          <li>En la configuración del webhook de esa sesión, pega esta URL:</li>
-        </ol>
-        <code className="block mt-2 px-3 py-2 rounded-lg text-[11px] break-all" style={{ background: "white", color: BROWN, border: `1px solid ${BROWN}14` }}>{webhookUrl}</code>
-        <p className="text-[11px] mt-2" style={{ color: `${BROWN}70` }}>Activa los eventos <b>messages.received</b> y <b>session.status</b>.</p>
+      {/* Vincular por QR */}
+      {status !== "connected" && (
+        <div className="bg-white rounded-2xl border p-6 space-y-4" style={{ borderColor: `${BROWN}14` }}>
+          <div className="flex items-center gap-2">
+            <QrCode className="w-4 h-4" style={{ color: ACCENT }} />
+            <h3 className="text-sm font-semibold" style={{ color: BROWN }}>Conectar el WhatsApp de la tienda</h3>
+          </div>
+          {qr ? (
+            <div className="flex flex-col items-center gap-3 py-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={qr} alt="Código QR para vincular WhatsApp" className="w-64 h-64 rounded-xl border" style={{ borderColor: `${BROWN}14` }} />
+              {qrSession && (
+                <p className="text-xs" style={{ color: `${BROWN}70` }}>
+                  Sesión: <b>{qrSession.name || `#${qrSession.id}`}</b>{qrSession.phone_number ? ` · ${qrSession.phone_number}` : ""}
+                </p>
+              )}
+              <div className="text-[11px] text-center space-y-1" style={{ color: `${BROWN}70` }}>
+                <p>En el celular con la SIM de la tienda: <b>WhatsApp → Ajustes → Dispositivos vinculados → Vincular dispositivo</b> y escanea este código.</p>
+                <p>El código se renueva solo. Al escanearlo, esta pantalla te llevará a las conversaciones.</p>
+              </div>
+              <button onClick={fetchQr} disabled={qrLoading} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border disabled:opacity-50" style={{ borderColor: `${BROWN}20`, color: BROWN }}>
+                <RefreshCw className={`w-3.5 h-3.5 ${qrLoading ? "animate-spin" : ""}`} /> Actualizar QR
+              </button>
+            </div>
+          ) : (
+            <>
+              <p className="text-xs" style={{ color: `${BROWN}60` }}>
+                Pulsa el botón, escanea el código con el celular del número de la tienda y listo — el asistente queda funcionando solo.
+              </p>
+              <button
+                onClick={fetchQr}
+                disabled={qrLoading}
+                className="flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-40"
+                style={{ background: ACCENT }}
+              >
+                {qrLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <QrCode className="w-4 h-4" />}
+                {qrLoading ? "Preparando código…" : "Conectar WhatsApp"}
+              </button>
+            </>
+          )}
+          {qrError && (
+            <p className="text-xs flex items-center gap-1.5" style={{ color: "#dc2626" }}><AlertCircle className="w-3.5 h-3.5" /> {qrError}</p>
+          )}
+        </div>
+      )}
+
+      {/* Configuración avanzada (solo para soporte técnico) */}
+      <div className="bg-white rounded-2xl border" style={{ borderColor: `${BROWN}14` }}>
+        <button
+          onClick={() => setShowAdvanced((v) => !v)}
+          className="w-full flex items-center justify-between px-6 py-4 text-left"
+        >
+          <span className="text-sm font-semibold" style={{ color: BROWN }}>Configuración avanzada</span>
+          <span className="text-xs" style={{ color: `${BROWN}60` }}>{showAdvanced ? "Ocultar" : "Mostrar"}</span>
+        </button>
+        {showAdvanced && (
+          <div className="px-6 pb-6 space-y-5">
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: `${BROWN}80` }}>Token personal (WaSenderAPI)</label>
+              <input className={inputCls} style={inputStyle} value={cfg.wasender_personal_token || ""} onChange={(e) => setCfg({ ...cfg, wasender_personal_token: e.target.value })} placeholder="Se crea en wasenderapi.com → API Tokens" />
+              <p className="text-[11px] mt-1" style={{ color: `${BROWN}60` }}>Permite generar el QR desde este panel. Se configura una sola vez.</p>
+            </div>
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: `${BROWN}80` }}>API Key de la sesión (WaSenderAPI)</label>
+              <input className={inputCls} style={inputStyle} value={cfg.wasender_api_key || ""} onChange={(e) => setCfg({ ...cfg, wasender_api_key: e.target.value })} placeholder="Se guarda sola al conectar por QR" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-widest mb-1.5 block" style={{ color: `${BROWN}80` }}>Webhook secret (opcional)</label>
+              <input className={inputCls} style={inputStyle} value={cfg.wasender_webhook_secret || ""} onChange={(e) => setCfg({ ...cfg, wasender_webhook_secret: e.target.value })} placeholder="Se guarda solo al conectar por QR" />
+            </div>
+            <div>
+              <p className="text-[11px] mb-1" style={{ color: `${BROWN}60` }}>Webhook del bot (se configura solo al conectar):</p>
+              <code className="block px-3 py-2 rounded-lg text-[11px] break-all" style={{ background: "#FAF8F5", color: BROWN, border: `1px solid ${BROWN}14` }}>{webhookUrl}</code>
+            </div>
+            <button onClick={save} disabled={saving} className="w-full h-11 rounded-xl text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50" style={{ background: BROWN }}>
+              {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+              {saved ? "Guardado" : "Guardar conexión"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

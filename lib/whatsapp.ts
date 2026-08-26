@@ -295,6 +295,102 @@ export async function getSessionStatus(apiKey?: string): Promise<string | null> 
   }
 }
 
+// ── Gestión de sesión vía Personal Access Token ───────────────────────────────
+// Estos endpoints NO usan la API key de la sesión sino el token personal de la
+// cuenta WaSenderAPI (wasenderapi.com/api-tokens). Permiten iniciar la
+// vinculación y obtener el QR sin pasar por el dashboard.
+
+export interface WasenderSession {
+  id: number
+  name: string | null
+  phone_number: string | null
+  status: string | null
+  api_key?: string | null
+  webhook_secret?: string | null
+}
+
+export async function listWasenderSessions(personalToken: string): Promise<WasenderSession[] | null> {
+  if (!personalToken) return null
+  try {
+    const res = await fetch(`${WASENDER_BASE}/api/whatsapp-sessions`, {
+      headers: { Authorization: `Bearer ${personalToken}` },
+      signal: AbortSignal.timeout(10000),
+      cache: "no-store",
+    })
+    if (!res.ok) return null
+    const data = await res.json().catch(() => null)
+    return (data?.data ?? null) as WasenderSession[] | null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Actualiza la sesión (p. ej. webhook). La respuesta incluye api_key y
+ * webhook_secret, lo que permite auto-guardar las credenciales del bot.
+ */
+export async function updateWasenderSession(
+  personalToken: string,
+  sessionId: number,
+  patch: Record<string, unknown>,
+): Promise<WasenderSession | null> {
+  if (!personalToken) return null
+  try {
+    const res = await fetch(`${WASENDER_BASE}/api/whatsapp-sessions/${sessionId}`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${personalToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+      signal: AbortSignal.timeout(15000),
+    })
+    if (!res.ok) return null
+    const data = await res.json().catch(() => null)
+    return (data?.data ?? null) as WasenderSession | null
+  } catch {
+    return null
+  }
+}
+
+/** Inicia la vinculación por QR. Devuelve el estado y, si aplica, el QR string. */
+export async function connectWasenderSession(
+  personalToken: string,
+  sessionId: number,
+): Promise<{ status: string | null; qrCode: string | null } | null> {
+  if (!personalToken) return null
+  try {
+    const res = await fetch(`${WASENDER_BASE}/api/whatsapp-sessions/${sessionId}/connect`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${personalToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ linkMethod: "qr" }),
+      signal: AbortSignal.timeout(20000),
+    })
+    const data = await res.json().catch(() => null)
+    if (!res.ok) return { status: (data?.message as string) ?? null, qrCode: null }
+    return {
+      status: (data?.data?.status ?? null) as string | null,
+      qrCode: (data?.data?.qrCode ?? null) as string | null,
+    }
+  } catch {
+    return null
+  }
+}
+
+/** Obtiene el QR string de una sesión ya inicializada (connect previo). */
+export async function getWasenderSessionQr(personalToken: string, sessionId: number): Promise<string | null> {
+  if (!personalToken) return null
+  try {
+    const res = await fetch(`${WASENDER_BASE}/api/whatsapp-sessions/${sessionId}/qrcode`, {
+      headers: { Authorization: `Bearer ${personalToken}` },
+      signal: AbortSignal.timeout(15000),
+      cache: "no-store",
+    })
+    if (!res.ok) return null
+    const data = await res.json().catch(() => null)
+    return (data?.data?.qrCode ?? null) as string | null
+  } catch {
+    return null
+  }
+}
+
 /** Notifica al admin (número del dueño) — usa la key/ env por defecto. */
 export async function waNotifyAdmin(text: string, apiKey?: string): Promise<void> {
   const admin = process.env.ADMIN_WHATSAPP
