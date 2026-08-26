@@ -253,7 +253,7 @@ export function ProductDetail({ product, related }: Props) {
       // Calienta la caché HTTP del GLB: al montar el visor, el modelo ya está local.
       modelUrl ? fetch(modelUrl).then((r) => r.blob()).catch(() => null) : Promise.resolve(null),
     ])
-    const minDelay = new Promise((r) => setTimeout(r, 5000))
+    const minDelay = new Promise((r) => setTimeout(r, 3500))
     Promise.all([preload, minDelay]).then(() => {
       if (cancelled || galleryTouched.current) return
       // Monta el visor oculto sobre la foto; su onReady dispara la caída.
@@ -401,7 +401,16 @@ export function ProductDetail({ product, related }: Props) {
        el render cayendo encima — solo se mueve el frasco, nada más. */
                     <>
                       {introPhase !== "3d" && introPhoto && (
-                        <div className="relative aspect-square rounded-3xl overflow-hidden bg-muted/20">
+                        <div
+                          className="relative aspect-square rounded-3xl overflow-hidden bg-muted/20"
+                          style={{
+                            // Vanish rápido: apenas el render empieza a caer, la foto
+                            // se desvanece con un leve encogimiento.
+                            opacity: renderDropped ? 0 : 1,
+                            transform: renderDropped ? "scale(0.94)" : "scale(1)",
+                            transition: "opacity 350ms ease, transform 350ms ease",
+                          }}
+                        >
                           <Image
                             src={introPhoto}
                             alt={product.name}
