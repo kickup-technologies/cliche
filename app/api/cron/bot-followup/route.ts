@@ -52,9 +52,9 @@ export async function GET(req: NextRequest) {
       .eq("status", "pending")
       .eq("session_phone", config.connected_phone)
       .lte("run_at", now)
-      // Anti-ban: máx. 4 follow-ups por corrida, con pausas — nada de ráfagas.
-      // Los que no alcancen salen en la siguiente corrida.
-      .limit(4)
+      // Anti-ban: máx. 3 follow-ups por corrida, con pausas — nada de ráfagas.
+      // Los que no alcancen salen en la corrida de la siguiente hora.
+      .limit(3)
 
     let sent = 0
     let cancelled = 0
@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
         `¡Hola! 😊 Te habla ${name}, de Cliché. Me quedé pensando en el aroma que buscabas — si quieres te doy mi recomendación o te lo aparto sin compromiso 🌿`,
         `Hola, soy ${name} 🌿 ¿Cómo vas con la elección del aroma? Si te quedaron dudas de precios o notas, me dices y te ayudo a decidir 😊`,
       ])
-      if (sent > 0) await jitter()
+      if (sent > 0) await jitter(4000, 9000)
       await sendWhatsAppBotReply(f.contact_phone, nudge, config.wasender_api_key || undefined)
       await sb.from("wa_messages").insert({ contact_phone: f.contact_phone, direction: "out", role: "assistant", body: nudge, session_phone: config.connected_phone })
       await sb.from("wa_followups").update({ status: "sent" }).eq("id", f.id)

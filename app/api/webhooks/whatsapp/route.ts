@@ -154,7 +154,13 @@ export async function POST(req: NextRequest) {
       // llegó un mensaje MÁS NUEVO de este contacto, esta corrida se retira:
       // la corrida del último mensaje responde UNA vez con todo el contexto.
       await new Promise((r) => setTimeout(r, 6000))
-      if (inboundRow?.id && inboundRow.created_at) {
+      // ¿Llegó un mensaje MÁS NUEVO de este contacto durante la espera? Esta
+      // corrida cede el turno de RESPONDER (la del último mensaje contesta una
+      // sola vez con todo el contexto) — pero OJO: la transcripción/descripción
+      // de la media de ESTE mensaje sí se hace abajo antes de retirarse, para
+      // que el historial no quede con "(mensaje multimedia)" sin contenido.
+      const superseded = async (): Promise<boolean> => {
+        if (!inboundRow?.id || !inboundRow.created_at) return false
         const { data: newer } = await sb
           .from("wa_messages")
           .select("id")
@@ -164,7 +170,7 @@ export async function POST(req: NextRequest) {
           .neq("id", inboundRow.id)
           .limit(1)
           .maybeSingle()
-        if (newer) return
+        return !!newer
       }
       // Texto efectivo del cliente: el texto/caption, o el resultado de procesar
       // una nota de voz (transcripción) o una imagen (descripción de visión).
@@ -189,6 +195,10 @@ export async function POST(req: NextRequest) {
           }
         }
       }
+
+      // Media ya procesada y guardada: si otra corrida más nueva va a responder,
+      // esta se retira SIN enviar nada (anti-ráfaga / anti-ban).
+      if (await superseded()) return
 
       // Si no se pudo entender la media → pedir un textito con calidez.
       if (!userText) {

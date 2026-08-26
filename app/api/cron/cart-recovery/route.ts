@@ -87,9 +87,10 @@ export async function GET(req: NextRequest) {
     let emails = 0
     let whatsapps = 0
     const advisor = config.advisor_name || "Valentina"
-    // Cada WhatsApp "humano" tarda ~10-20s (pausas de tipeo). Tope por corrida
-    // para no chocar con maxDuration=60; lo que quede sale en la próxima hora.
-    const WA_MAX_PER_RUN = 3
+    // Cada WhatsApp "humano" tarda ~15-20s (tipeo simulado + jitter). Tope de 2
+    // por corrida para caber holgado en maxDuration=60 junto con las consultas
+    // a MP; lo que quede sale en la próxima hora (cadencia horaria).
+    const WA_MAX_PER_RUN = 2
 
     for (const order of orders) {
       const rawItems = (order.items as Array<{ product_id?: string; quantity?: number; name?: string; price?: number }>) || []
@@ -102,6 +103,13 @@ export async function GET(req: NextRequest) {
         items.push({ name, price, image_url: p?.image_url || undefined, product_id: it.product_id })
       }
       if (items.length === 0) continue
+
+      // ¿Hay algo que enviar para este pedido? Si no (p. ej. correo ya enviado
+      // y sin teléfono), saltar SIN gastar la consulta a Mercado Pago — de lo
+      // contrario ese pedido consultaría MP cada hora durante toda la ventana.
+      const wantEmail = !order.abandoned_email_sent && !!order.customer_email
+      const wantWa = !order.recovery_wa_sent && !!order.customer_phone && waReady && whatsapps < WA_MAX_PER_RUN
+      if (!wantEmail && !wantWa) continue
 
       // ── Guarda anti-vergüenza: ¿de verdad NO ha pagado? ──
       // Si el webhook de MP se cayó (pasó el 28-jul), un pedido PAGADO puede
@@ -153,7 +161,7 @@ export async function GET(req: NextRequest) {
             `${hola} 😊 Te habla ${advisor}, de Cliché. Noté que ${itemTxt} se quedó en el carrito — te lo dejé guardado tal cual.\n\nSi quieres completarlo, es un momentico por aquí: ${link}\n\nCualquier duda sobre el aroma o el envío, me dices y te ayudo 🌿`,
           ])
           // Pausa aleatoria entre envíos proactivos (además del tipeo simulado).
-          if (whatsapps > 0) await jitter()
+          if (whatsapps > 0) await jitter(4000, 9000)
           await sendWhatsAppBotReply(phone, msg, config.wasender_api_key || undefined)
           await sb.from("orders").update({ recovery_wa_sent: true }).eq("id", order.id)
           // Registrar en el panel (pestaña Conversaciones) como mensaje del asistente.
