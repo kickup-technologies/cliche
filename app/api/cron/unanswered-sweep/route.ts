@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase"
-import { sendWhatsAppBotReply, getSessionStatus } from "@/lib/whatsapp"
+import { sendWhatsAppBotReply, sendWhatsAppDocument, getSessionStatus } from "@/lib/whatsapp"
 import { loadBotConfig, loadBotContext, generateAdvisorReply } from "@/lib/bot/brain"
 import type { AIMessage } from "@/lib/bot/ai"
 
@@ -57,9 +57,11 @@ export async function GET(req: NextRequest) {
       if (!lastByContact.has(m.contact_phone)) lastByContact.set(m.contact_phone, m)
     }
     // Candidatos: último mensaje ENTRANTE y con >3 min sin respuesta (si un
-    // webhook legítimo siguiera procesándolo, ya habría terminado).
+    // webhook legítimo siguiera procesándolo, ya habría terminado). El que
+    // lleva MÁS tiempo esperando va primero — justicia de cola.
     const candidates = [...lastByContact.entries()]
       .filter(([, m]) => m.direction === "in" && m.created_at < threeMinAgo)
+      .sort((a, b) => a[1].created_at.localeCompare(b[1].created_at))
       .map(([phone]) => phone)
       .slice(0, 2)
 
@@ -88,16 +90,18 @@ export async function GET(req: NextRequest) {
         }))
         const result = await generateAdvisorReply(history, ctx)
 
-        // ¿Alguien (bot de otra corrida o humano) respondió mientras generaba?
-        const { data: newerOut } = await sb
+        // ¿Pasó ALGO en la conversación mientras la IA generaba? Una respuesta
+        // (bot/humano) hace innecesario este envío; un mensaje NUEVO del
+        // cliente significa que el webhook ya va a responder con más contexto —
+        // en ambos casos, abortar para no duplicar.
+        const { data: newer } = await sb
           .from("wa_messages")
           .select("id")
           .eq("contact_phone", phone)
-          .eq("direction", "out")
           .gt("created_at", lastInboundAt)
           .limit(1)
           .maybeSingle()
-        if (newerOut) continue
+        if (newer) continue
 
         const delivered = await sendWhatsAppBotReply(phone, result.text, config.wasender_api_key || undefined)
         if (!delivered) continue
@@ -108,6 +112,21 @@ export async function GET(req: NextRequest) {
           body: result.text,
           session_phone: config.connected_phone,
         })
+        // Si el mensaje pendiente pedía el catálogo, cumplir la promesa del
+        // texto ("te lo paso 👇") adjuntando el PDF, igual que el webhook.
+        const catalogUrl = ctx.config.catalog_pdf_url || config.catalog_pdf_url
+        if (result.sendCatalogPdf && catalogUrl) {
+          await sendWhatsAppDocument(phone, catalogUrl, "Catalogo-Cliche.pdf", "Aquí tienes nuestro catálogo completo 🌿", config.wasender_api_key || undefined)
+          await sb.from("wa_messages").insert({
+            contact_phone: phone,
+            direction: "out",
+            role: "assistant",
+            body: "📎 Catálogo enviado",
+            media_url: catalogUrl,
+            media_type: "document",
+            session_phone: config.connected_phone,
+          })
+        }
         answered++
       } catch (e) {
         // IA aún saturada u otro fallo: el contacto sigue pendiente y la
