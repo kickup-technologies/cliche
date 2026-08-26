@@ -73,9 +73,13 @@ export async function botReply(opts: {
         if (res.status === 429 && attempt === 0) {
           const bodyText = await res.text().catch(() => "")
           const retryHeader = Number(res.headers.get("retry-after"))
-          const retryMsg = Number(/try again in (\d+(?:\.\d+)?)s/.exec(bodyText)?.[1])
+          // Groq usa "try again in 18.3s" en carga normal y "try again in
+          // 1m32.5s" bajo ráfaga — el formato con minutos rompía el parseo y
+          // el reintento nunca se activaba (visto en prueba de carga 10x).
+          const m = /try again in (?:(\d+)m)?(\d+(?:\.\d+)?)s/.exec(bodyText)
+          const retryMsg = m ? Number(m[1] || 0) * 60 + Number(m[2]) : NaN
           const waitSec = Number.isFinite(retryHeader) && retryHeader > 0 ? retryHeader : retryMsg
-          if (Number.isFinite(waitSec) && waitSec > 0 && waitSec <= 25) {
+          if (Number.isFinite(waitSec) && waitSec > 0 && waitSec <= 45) {
             console.warn(`[bot-ai] ${p.name} 429 — reintenta en ${waitSec}s`)
             await new Promise((r) => setTimeout(r, (waitSec + 1) * 1000))
             continue

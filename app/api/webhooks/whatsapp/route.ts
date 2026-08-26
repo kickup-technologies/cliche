@@ -9,7 +9,9 @@ import type { AIMessage } from "@/lib/bot/ai"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
-export const maxDuration = 60
+// 120s: debounce (6-12s) + posible espera de rate limit (hasta 45s) + tipeo
+// simulado deben caber sin cortar la corrida a la mitad.
+export const maxDuration = 120
 
 // ── Webhook de WhatsApp (WaSenderAPI) — single-tenant para Cliché ─────────────
 // Apuntar el webhook de la sesión en wasenderapi.com a:
@@ -160,7 +162,10 @@ export async function POST(req: NextRequest) {
       // separado se ve robótico y triplica los envíos. Espera breve y, si ya
       // llegó un mensaje MÁS NUEVO de este contacto, esta corrida se retira:
       // la corrida del último mensaje responde UNA vez con todo el contexto.
-      await new Promise((r) => setTimeout(r, 6000))
+      // 6s de debounce + 0-6s ALEATORIOS: si 10 clientes escriben en el mismo
+      // segundo, el escalonamiento reparte las llamadas a la IA dentro de la
+      // ventana del rate limit en vez de estrellarlas todas al mismo instante.
+      await new Promise((r) => setTimeout(r, 6000 + Math.random() * 6000))
       // ¿Llegó un mensaje MÁS NUEVO de este contacto durante la espera? Esta
       // corrida cede el turno de RESPONDER (la del último mensaje contesta una
       // sola vez con todo el contexto) — pero OJO: la transcripción/descripción

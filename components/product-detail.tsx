@@ -155,14 +155,20 @@ export function ProductDetail({ product, related }: Props) {
     const t = setInterval(tick, 1000)
     return () => clearInterval(t)
   }, [pUrg])
-  // Gallery: null = show 3D render, string = show that photo URL.
-  // Por VELOCIDAD (móvil/pauta), la vista inicial es la FOTO del producto:
-  // carga instantánea con next/image. El 3D (three.js + GLB, varios MB) solo
-  // se descarga cuando el cliente toca la miniatura "Vista 3D".
-  const [selectedImage, setSelectedImage] = useState<string | null>(() => {
-    const first = Array.isArray(product.image_urls) ? product.image_urls.find(Boolean) : null
-    return first || product.image_url || null
-  })
+  // Gallery: null = vista principal (intro/3D), string = foto elegida por el cliente.
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
+
+  // ── Cine diferido del 3D ─────────────────────────────────────────────────
+  // La ficha abre con la FOTO del producto en el MISMO recuadro del visor
+  // (cuadrado, contenida — carga instantánea, clave para pauta móvil).
+  // El 3D se precarga en silencio y, listo el modelo (+5s mínimo), el frasco
+  // CAE sobre la foto con la cinemática original — solo cae el render, el
+  // resto de la página no se mueve ni parpadea.
+  const introPhoto: string | null =
+    (Array.isArray(product.image_urls) ? product.image_urls.find(Boolean) : null) || product.image_url || null
+  const [introPhase, setIntroPhase] = useState<"foto" | "caida" | "3d">(introPhoto ? "foto" : "3d")
+  // Transform del visor: false = esperando arriba del cielo; true = cayó.
+  const [renderDropped, setRenderDropped] = useState(!introPhoto)
   // (El countdown 24h de urgencia se eliminó junto con la prueba social falsa;
   // su interval re-renderizaba toda la página —con canvas 3D incluido— cada
   // segundo sin que ningún JSX lo mostrara.)
@@ -196,23 +202,48 @@ export function ProductDetail({ product, related }: Props) {
     const hasPhoto = (Array.isArray(product.image_urls) && product.image_urls.some(Boolean)) || !!product.image_url
     return hasPhoto
   })
-  const handleModelReady = () => requestAnimationFrame(() => setFell(true))
+  const handleModelReady = () => {
+    const drop = () => {
+      setFell(true) // productos SIN foto: la columna entra con la caída original
+      setRenderDropped(true) // productos CON foto: cae SOLO el render, sobre la foto
+    }
+    // RAF garantiza un frame pintado con el visor "en el cielo" antes de la
+    // transición; el setTimeout es respaldo por si RAF no corre (tab oculta).
+    requestAnimationFrame(drop)
+    setTimeout(drop, 150)
+    // Terminada la caída (1800ms), la foto de intro se retira por debajo.
+    setTimeout(() => setIntroPhase("3d"), 2000)
+  }
   useEffect(() => {
     const t = setTimeout(() => setFell(true), 2500)
     return () => clearTimeout(t)
   }, [])
 
-  // Cine diferido del render 3D: la página abre con la FOTO (carga
-  // instantánea, clave para el tráfico de pauta móvil) mientras el 3D se
-  // precarga en segundo plano. Pasados ≥5s Y con el modelo YA descargado, la
-  // vista pasa al render con su misma cinemática de caída — nunca se muestra
-  // un spinner ni un hueco. Si el cliente ya tocó la galería, no se le
-  // interrumpe. saveData/2G no cargan 3D jamás.
+  // Red de seguridad de la caída: si el visor montó (fase "caida") pero su
+  // onReady nunca llegó (modelo corrupto, WebGL bloqueado), a los 7s se fuerza
+  // el aterrizaje para no dejar el frasco colgado en el cielo con la foto
+  // debajo para siempre.
+  useEffect(() => {
+    if (introPhase !== "caida") return
+    const t = setTimeout(() => {
+      setRenderDropped(true)
+      setIntroPhase("3d")
+    }, 7000)
+    return () => clearTimeout(t)
+  }, [introPhase])
+
+  // Entrar a una ficha SIEMPRE arranca desde arriba (el smooth-scroll podía
+  // conservar la posición de la página anterior y la ficha "nacía" a la mitad).
+  useEffect(() => {
+    try { window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior }) } catch { window.scrollTo(0, 0) }
+  }, [])
+
+  // Precarga silenciosa del 3D y disparo de la caída: ≥5s Y modelo descargado.
+  // Si el cliente ya tocó la galería, no se le interrumpe. saveData/2G jamás
+  // cargan 3D (la foto se queda — igual que si el modelo falla).
   const galleryTouched = useRef(false)
   useEffect(() => {
-    if (typeof window === "undefined") return
-    const hadPhoto = (Array.isArray(product.image_urls) && product.image_urls.some(Boolean)) || !!product.image_url
-    if (!hadPhoto) return // ya arrancó en 3D (sin foto), nada que diferir
+    if (typeof window === "undefined" || !introPhoto) return
     const conn = (navigator as { connection?: { saveData?: boolean; effectiveType?: string } }).connection
     if (conn && (conn.saveData === true || /2g/.test(conn.effectiveType || ""))) return
     let cancelled = false
@@ -225,12 +256,8 @@ export function ProductDetail({ product, related }: Props) {
     const minDelay = new Promise((r) => setTimeout(r, 5000))
     Promise.all([preload, minDelay]).then(() => {
       if (cancelled || galleryTouched.current) return
-      // Misma coreografía original: se oculta, monta el 3D (con assets ya en
-      // caché) y onReady dispara la caída desde el cielo. Respaldo de 4s por
-      // si el modelo falla, para no dejar la galería oculta.
-      setFell(false)
-      setSelectedImage(null)
-      setTimeout(() => setFell(true), 4000)
+      // Monta el visor oculto sobre la foto; su onReady dispara la caída.
+      setIntroPhase("caida")
     })
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -369,12 +396,36 @@ export function ProductDetail({ product, related }: Props) {
                       )}
                     </div>
                   ) : (
-    /* 3D render — modelo real (Meshy) si existe, si no el genérico */
+    /* Vista principal: foto de intro (mismo recuadro cuadrado del visor) y/o
+       render 3D. En la fase "caida" AMBOS conviven: la foto quieta debajo y
+       el render cayendo encima — solo se mueve el frasco, nada más. */
                     <>
-                      {PRODUCT_MODELS[product.slug.replace(/^aroma-/, "")] ? (
-                        <MeshyViewer url={PRODUCT_MODELS[product.slug.replace(/^aroma-/, "")]} onReady={handleModelReady} />
-                      ) : (
-                        <SprayBottle3D transparent zTilt={0} onReady={handleModelReady} labelPhoto={product.image_url || undefined} flatLabel={`/labels/${product.slug}.png`} />
+                      {introPhase !== "3d" && introPhoto && (
+                        <div className="relative aspect-square rounded-3xl overflow-hidden bg-muted/20">
+                          <Image
+                            src={introPhoto}
+                            alt={product.name}
+                            fill
+                            priority
+                            className="object-contain p-6"
+                            sizes="(max-width: 1024px) 100vw, 50vw"
+                          />
+                        </div>
+                      )}
+                      {(introPhase !== "foto" || !introPhoto) && (
+                        <div
+                          className={introPhase === "caida" && introPhoto ? "absolute inset-0" : ""}
+                          style={{
+                            transform: renderDropped ? "translateY(0)" : "translateY(-110vh)",
+                            transition: "transform 1800ms cubic-bezier(0.0, 0.0, 0.2, 1)",
+                          }}
+                        >
+                          {PRODUCT_MODELS[product.slug.replace(/^aroma-/, "")] ? (
+                            <MeshyViewer url={PRODUCT_MODELS[product.slug.replace(/^aroma-/, "")]} onReady={handleModelReady} />
+                          ) : (
+                            <SprayBottle3D transparent zTilt={0} onReady={handleModelReady} labelPhoto={product.image_url || undefined} flatLabel={`/labels/${product.slug}.png`} />
+                          )}
+                        </div>
                       )}
                       {product.badge && (
                         <div className="absolute top-4 left-4">
@@ -406,7 +457,7 @@ export function ProductDetail({ product, related }: Props) {
                 >
                   {/* 3D render thumbnail */}
                   <button
-                    onClick={() => { galleryTouched.current = true; setSelectedImage(null) }}
+                    onClick={() => { galleryTouched.current = true; setSelectedImage(null); setIntroPhase((p) => (p === "foto" ? "caida" : p)) }}
                     className={`flex-shrink-0 w-16 h-16 rounded-xl border-2 bg-muted/40 flex items-center justify-center transition-all ${
                       selectedImage === null ? "border-primary shadow-md" : "border-border hover:border-primary/50"
                     }`}
