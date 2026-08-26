@@ -45,7 +45,10 @@ export async function describeImage(imageUrl: string, caption = ""): Promise<str
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "meta-llama/llama-4-scout-17b-16e-instruct",
+        // Groq retiró los Llama de visión (2026); qwen3.6 es el multimodal vigente.
+        // reasoning_format hidden = sin bloques <think> en la respuesta.
+        model: "qwen/qwen3.6-27b",
+        reasoning_format: "hidden",
         messages: [
           {
             role: "user",
@@ -59,7 +62,8 @@ export async function describeImage(imageUrl: string, caption = ""): Promise<str
             ],
           },
         ],
-        max_tokens: 250,
+        // El presupuesto incluye el razonamiento oculto del modelo: corto se queda sin respuesta.
+        max_tokens: 1500,
         temperature: 0.2,
       }),
       signal: AbortSignal.timeout(30000),
