@@ -263,6 +263,15 @@ export async function POST(req: NextRequest) {
       }
     } catch (e) {
       console.error("[WA] error generando respuesta:", e)
+      // El cliente escribió y NADIE va a responderle (IA caída / rate limit
+      // agotado): avisar al dueño para que lo atienda desde el panel. El
+      // mensaje ya quedó guardado y en no-leídos; esto añade el aviso activo.
+      try {
+        await waNotifyAdmin(
+          `⚠️ El asistente no pudo responder a +${from} (falla de IA). El mensaje quedó en el panel — respóndele desde Conversaciones.`,
+          apiKey,
+        )
+      } catch { /* best-effort */ }
     }
   })
 

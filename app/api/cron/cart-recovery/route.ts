@@ -162,7 +162,13 @@ export async function GET(req: NextRequest) {
           ])
           // Pausa aleatoria entre envíos proactivos (además del tipeo simulado).
           if (whatsapps > 0) await jitter(4000, 9000)
-          await sendWhatsAppBotReply(phone, msg, config.wasender_api_key || undefined)
+          const delivered = await sendWhatsAppBotReply(phone, msg, config.wasender_api_key || undefined)
+          if (!delivered) {
+            // WaSender lo rechazó: NO marcar enviado — se reintenta la próxima
+            // hora dentro de la ventana de 24h.
+            console.error("[cart-recovery] WaSender rechazó el envío para", order.id)
+            continue
+          }
           await sb.from("orders").update({ recovery_wa_sent: true }).eq("id", order.id)
           // Registrar en el panel (pestaña Conversaciones) como mensaje del asistente.
           await sb.from("wa_messages").insert({

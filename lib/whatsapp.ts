@@ -142,17 +142,23 @@ export async function sendWhatsApp(to: string, text: string, apiKey?: string): P
 /**
  * Envío "humano": espera proporcional a la longitud y parte mensajes largos en
  * trozos con pausas. Muestra el indicador "escribiendo…" entre trozos.
+ * Devuelve true si AL MENOS un trozo llegó — los flujos proactivos (recovery,
+ * follow-ups) solo marcan "enviado" cuando es true; antes un rechazo de
+ * WaSender se daba por enviado y el mensaje se perdía en silencio.
  */
-export async function sendWhatsAppBotReply(to: string, text: string, apiKey?: string): Promise<void> {
-  if (!text.trim()) return
+export async function sendWhatsAppBotReply(to: string, text: string, apiKey?: string): Promise<boolean> {
+  if (!text.trim()) return false
   const chunks = chunkMessage(text)
+  let delivered = false
   for (let i = 0; i < chunks.length; i++) {
     await sendPresenceUpdate(to, "typing", apiKey)
     await sleep(typingDelay(chunks[i]))
-    await sendWhatsApp(to, chunks[i], apiKey)
+    const ok = await sendWhatsApp(to, chunks[i], apiKey)
+    delivered = delivered || ok
     if (i < chunks.length - 1) await sleep(800 + Math.random() * 400)
   }
   await sendPresenceUpdate(to, "paused", apiKey)
+  return delivered
 }
 
 export async function sendWhatsAppImage(to: string, imageUrl: string, caption = "", apiKey?: string): Promise<void> {

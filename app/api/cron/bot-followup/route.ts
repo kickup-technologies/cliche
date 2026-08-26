@@ -86,7 +86,13 @@ export async function GET(req: NextRequest) {
         `Hola, soy ${name} 🌿 ¿Cómo vas con la elección del aroma? Si te quedaron dudas de precios o notas, me dices y te ayudo a decidir 😊`,
       ])
       if (sent > 0) await jitter(4000, 9000)
-      await sendWhatsAppBotReply(f.contact_phone, nudge, config.wasender_api_key || undefined)
+      const delivered = await sendWhatsAppBotReply(f.contact_phone, nudge, config.wasender_api_key || undefined)
+      if (!delivered) {
+        // Rechazado por WaSender: se marca failed (sin reintentos infinitos a
+        // un número inválido) y queda visible en la tabla para diagnóstico.
+        await sb.from("wa_followups").update({ status: "failed" }).eq("id", f.id)
+        continue
+      }
       await sb.from("wa_messages").insert({ contact_phone: f.contact_phone, direction: "out", role: "assistant", body: nudge, session_phone: config.connected_phone })
       await sb.from("wa_followups").update({ status: "sent" }).eq("id", f.id)
       sent++
