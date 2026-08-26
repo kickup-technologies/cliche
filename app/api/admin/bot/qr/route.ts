@@ -95,6 +95,15 @@ export async function POST(req: NextRequest) {
     const status = conn?.status ?? null
 
     if (typeof status === "string" && status.toLowerCase() === "connected") {
+      // Ya vinculada: persistir el número conectado para el filtro de conversaciones.
+      const phone = session.phone_number?.replace(/\D/g, "") || null
+      if (phone) {
+        const sb = createServerClient()
+        await sb
+          .from("wa_bot_config")
+          .upsert({ id: 1, connected_phone: phone, updated_at: new Date().toISOString() }, { onConflict: "id" })
+          .then(undefined, () => {})
+      }
       return NextResponse.json({ status: "connected", qr: null, session: publicSession(session) })
     }
 

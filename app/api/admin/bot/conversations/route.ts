@@ -1,17 +1,25 @@
 import { NextRequest, NextResponse } from "next/server"
 import { isAdmin } from "@/lib/admin-auth"
 import { createServerClient } from "@/lib/supabase"
+import { loadBotConfig } from "@/lib/bot/brain"
 
 export const dynamic = "force-dynamic"
 
-// Lista de conversaciones: contactos + último mensaje + no leídos.
+// Lista de conversaciones del número CONECTADO ACTUALMENTE: contactos + último
+// mensaje + no leídos. Sin número vinculado no hay conversaciones; al conectar
+// otro número, las de la conexión anterior quedan fuera (session_phone).
 export async function GET(req: NextRequest) {
   if (!isAdmin(req)) return NextResponse.json({ error: "no autorizado" }, { status: 401 })
   try {
     const sb = createServerClient()
+    const config = await loadBotConfig()
+    const sessionPhone = config.connected_phone
+    if (!sessionPhone) return NextResponse.json({ conversations: [] })
+
     const { data: contacts } = await sb
       .from("wa_contacts")
       .select("phone, name, profile_pic_url, handoff, unread, last_seen")
+      .eq("session_phone", sessionPhone)
       .order("last_seen", { ascending: false })
       .limit(100)
 
@@ -19,6 +27,7 @@ export async function GET(req: NextRequest) {
     const { data: recent } = await sb
       .from("wa_messages")
       .select("contact_phone, body, direction, created_at")
+      .eq("session_phone", sessionPhone)
       .order("created_at", { ascending: false })
       .limit(400)
 

@@ -68,16 +68,18 @@ export function AsistenteSection() {
   const [tab, setTab] = useState<Tab>("conversaciones")
   const [botEnabled, setBotEnabled] = useState<boolean | null>(null)
   const [toggling, setToggling] = useState(false)
+  // Estado de la vinculación: sin número conectado, la sección completa se
+  // reemplaza por la pantalla de conexión (ConnectGate).
+  const [conn, setConn] = useState<"loading" | "connected" | "offline">("loading")
 
-  // Si el WhatsApp aún no está vinculado, abrir directo la pestaña de conexión.
   useEffect(() => {
     let alive = true
     adminFetch("/api/admin/bot/status")
       .then((r) => r.json())
       .then(({ status, configured }) => {
-        if (alive && (!configured || status !== "connected")) setTab("conexion")
+        if (alive) setConn(configured && status === "connected" ? "connected" : "offline")
       })
-      .catch(() => { /* noop */ })
+      .catch(() => { if (alive) setConn("offline") })
     adminFetch("/api/admin/bot/config")
       .then((r) => r.json())
       .then(({ config }) => { if (alive && config) setBotEnabled(!!config.bot_enabled) })
@@ -98,6 +100,28 @@ export function AsistenteSection() {
     } catch {
       setBotEnabled(!next)
     } finally { setToggling(false) }
+  }
+
+  if (conn === "loading") {
+    return (
+      <div className="p-10 flex items-center justify-center">
+        <RefreshCw className="w-6 h-6 animate-spin" style={{ color: ACCENT }} />
+      </div>
+    )
+  }
+
+  if (conn === "offline") {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="font-serif text-2xl font-bold" style={{ color: BROWN }}>Asistente WhatsApp</h2>
+          <p className="text-sm mt-0.5" style={{ color: `${BROWN}80` }}>
+            Tu asesora virtual responde, recomienda y vende por WhatsApp — conectada al catálogo en vivo.
+          </p>
+        </div>
+        <ConnectGate onConnected={() => { setConn("connected"); setTab("conversaciones") }} />
+      </div>
+    )
   }
 
   return (
@@ -156,6 +180,146 @@ export function AsistenteSection() {
       {tab === "conversaciones" && <ConversacionesTab />}
       {tab === "configuracion" && <ConfiguracionTab />}
       {tab === "conexion" && <ConexionTab onConnected={() => setTab("conversaciones")} />}
+    </div>
+  )
+}
+
+// ── Pantalla de conexión (sin número vinculado) ────────────────────────────────
+// Reemplaza toda la sección hasta que el WhatsApp de la tienda quede conectado:
+// mensaje profesional → botón → QR → confirmación → interfaz completa.
+function ConnectGate({ onConnected }: { onConnected: () => void }) {
+  const [qr, setQr] = useState<string | null>(null)
+  const [qrLoading, setQrLoading] = useState(false)
+  const [qrError, setQrError] = useState<string | null>(null)
+  const [qrSession, setQrSession] = useState<{ id: number; name: string | null; phone_number: string | null } | null>(null)
+  const [justConnected, setJustConnected] = useState(false)
+  const [needToken, setNeedToken] = useState(false)
+  const [token, setToken] = useState("")
+  const [savingToken, setSavingToken] = useState(false)
+
+  const handleConnected = useCallback(() => {
+    setQr(null)
+    setJustConnected(true)
+    setTimeout(onConnected, 1800)
+  }, [onConnected])
+
+  const fetchQr = useCallback(async () => {
+    setQrLoading(true)
+    setQrError(null)
+    try {
+      const res = await adminFetch("/api/admin/bot/qr", { method: "POST" })
+      const data = await res.json()
+      if (!res.ok) {
+        setQr(null)
+        setQrError(data.error || "No se pudo obtener el código QR")
+        if (data.needToken) setNeedToken(true)
+        return
+      }
+      setQrSession(data.session || null)
+      if (data.status === "connected") { handleConnected(); return }
+      setQr(data.qr)
+    } catch {
+      setQr(null); setQrError("Error de red obteniendo el código QR")
+    } finally { setQrLoading(false) }
+  }, [handleConnected])
+
+  // QR visible: renovarlo cada 30s y vigilar cada 4s si ya fue escaneado.
+  useEffect(() => {
+    if (!qr) return
+    const renew = setInterval(fetchQr, 30000)
+    const watch = setInterval(async () => {
+      try {
+        const { status } = await adminFetch("/api/admin/bot/status").then((r) => r.json())
+        if (status === "connected") handleConnected()
+      } catch { /* noop */ }
+    }, 4000)
+    return () => { clearInterval(renew); clearInterval(watch) }
+  }, [qr, fetchQr, handleConnected])
+
+  async function saveToken() {
+    if (!token.trim()) return
+    setSavingToken(true)
+    try {
+      await adminFetch("/api/admin/bot/config", { method: "POST", body: JSON.stringify({ wasender_personal_token: token.trim() }) })
+      setNeedToken(false)
+      setQrError(null)
+      await fetchQr()
+    } finally { setSavingToken(false) }
+  }
+
+  if (justConnected) {
+    return (
+      <div className="bg-white rounded-2xl border p-10 flex flex-col items-center text-center gap-3" style={{ borderColor: "#16a34a40", background: "#f0fdf4" }}>
+        <CheckCircle2 className="w-10 h-10" style={{ color: "#16a34a" }} />
+        <p className="font-serif text-xl font-bold" style={{ color: "#166534" }}>¡WhatsApp conectado!</p>
+        <p className="text-sm" style={{ color: "#166534" }}>Tu asistente ya está en línea. Abriendo las conversaciones…</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border p-8 sm:p-12 flex flex-col items-center text-center" style={{ borderColor: `${BROWN}14` }}>
+      {!qr ? (
+        <>
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5" style={{ background: `${ACCENT}1a` }}>
+            <Smartphone className="w-8 h-8" style={{ color: ACCENT }} />
+          </div>
+          <h3 className="font-serif text-xl font-bold mb-2" style={{ color: BROWN }}>Conecta el WhatsApp de tu tienda</h3>
+          <p className="text-sm max-w-md mb-6" style={{ color: `${BROWN}70` }}>
+            Vincula el número de la tienda para activar a tu asesora virtual: atiende, recomienda
+            y vende por ti las 24 horas, conectada al catálogo y los precios en vivo.
+          </p>
+          <button
+            onClick={fetchQr}
+            disabled={qrLoading}
+            className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-40"
+            style={{ background: BROWN }}
+          >
+            {qrLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <QrCode className="w-4 h-4" />}
+            {qrLoading ? "Preparando código…" : "Conectar mi número"}
+          </button>
+        </>
+      ) : (
+        <>
+          <h3 className="font-serif text-xl font-bold mb-1" style={{ color: BROWN }}>Escanea el código</h3>
+          <p className="text-xs mb-4 max-w-md" style={{ color: `${BROWN}70` }}>
+            En el celular con el número de la tienda: <b>WhatsApp → Ajustes → Dispositivos vinculados → Vincular dispositivo</b>.
+          </p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={qr} alt="Código QR para vincular WhatsApp" className="w-64 h-64 rounded-xl border" style={{ borderColor: `${BROWN}14` }} />
+          {qrSession && (
+            <p className="text-xs mt-3" style={{ color: `${BROWN}70` }}>
+              Sesión: <b>{qrSession.name || `#${qrSession.id}`}</b>{qrSession.phone_number ? ` · ${qrSession.phone_number}` : ""}
+            </p>
+          )}
+          <p className="text-[11px] mt-2" style={{ color: `${BROWN}60` }}>
+            El código se renueva solo. Al escanearlo, esta pantalla continuará automáticamente.
+          </p>
+          <button onClick={fetchQr} disabled={qrLoading} className="mt-3 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border disabled:opacity-50" style={{ borderColor: `${BROWN}20`, color: BROWN }}>
+            <RefreshCw className={`w-3.5 h-3.5 ${qrLoading ? "animate-spin" : ""}`} /> Actualizar código
+          </button>
+        </>
+      )}
+
+      {qrError && (
+        <p className="text-xs flex items-center gap-1.5 mt-4" style={{ color: "#dc2626" }}><AlertCircle className="w-3.5 h-3.5" /> {qrError}</p>
+      )}
+
+      {needToken && (
+        <div className="mt-5 w-full max-w-md text-left space-y-2">
+          <label className="text-xs font-semibold uppercase tracking-widest block" style={{ color: `${BROWN}80` }}>Token personal (WaSenderAPI)</label>
+          <input
+            className="w-full px-4 py-3 rounded-xl border text-sm font-mono focus:outline-none focus:ring-2"
+            style={{ borderColor: `${BROWN}26`, background: "#FAF8F5", color: BROWN }}
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            placeholder="Se crea en wasenderapi.com → API Tokens"
+          />
+          <button onClick={saveToken} disabled={savingToken || !token.trim()} className="w-full h-10 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50" style={{ background: ACCENT }}>
+            {savingToken ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Guardar y continuar
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -525,11 +689,14 @@ function ConexionTab({ onConnected }: { onConnected?: () => void }) {
   const [justConnected, setJustConnected] = useState(false)
   const [showAdvanced, setShowAdvanced] = useState(false)
 
+  const [connectedPhone, setConnectedPhone] = useState<string | null>(null)
+
   const checkStatus = useCallback(async () => {
     setChecking(true)
     try {
-      const { status } = await adminFetch("/api/admin/bot/status").then((r) => r.json())
+      const { status, phone } = await adminFetch("/api/admin/bot/status").then((r) => r.json())
       setStatus(status)
+      setConnectedPhone(phone || null)
     } catch { setStatus(null) } finally { setChecking(false) }
   }, [])
 
@@ -614,7 +781,9 @@ function ConexionTab({ onConnected }: { onConnected?: () => void }) {
           <Power className="w-6 h-6" style={{ color: tone.color }} />
         </div>
         <div className="flex-1">
-          <p className="font-semibold text-sm" style={{ color: BROWN }}>WhatsApp · {tone.label}</p>
+          <p className="font-semibold text-sm" style={{ color: BROWN }}>
+            WhatsApp · {tone.label}{status === "connected" && connectedPhone ? ` · +${connectedPhone}` : ""}
+          </p>
           <p className="text-xs" style={{ color: `${BROWN}60` }}>{status === "connected" ? "El bot puede enviar y recibir mensajes." : hasKey ? "Verifica el estado en vivo de la sesión." : "Pulsa «Conectar WhatsApp» y escanea el código con el celular de la tienda."}</p>
         </div>
         {hasKey && (

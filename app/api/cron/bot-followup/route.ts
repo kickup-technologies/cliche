@@ -29,11 +29,17 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ ok: true, skipped: "followups disabled" })
     }
 
+    // Solo follow-ups de la conexión actual: si se vinculó otro número, los
+    // pendientes del anterior no deben salir desde el número nuevo.
+    if (!config.connected_phone) {
+      return NextResponse.json({ ok: true, skipped: "no connected phone" })
+    }
     const now = new Date().toISOString()
     const { data: due } = await sb
       .from("wa_followups")
       .select("id, contact_phone")
       .eq("status", "pending")
+      .eq("session_phone", config.connected_phone)
       .lte("run_at", now)
       .limit(50)
 
@@ -62,7 +68,7 @@ export async function GET(req: NextRequest) {
       }
 
       await sendWhatsAppBotReply(f.contact_phone, nudge, config.wasender_api_key || undefined)
-      await sb.from("wa_messages").insert({ contact_phone: f.contact_phone, direction: "out", role: "assistant", body: nudge })
+      await sb.from("wa_messages").insert({ contact_phone: f.contact_phone, direction: "out", role: "assistant", body: nudge, session_phone: config.connected_phone })
       await sb.from("wa_followups").update({ status: "sent" }).eq("id", f.id)
       sent++
     }

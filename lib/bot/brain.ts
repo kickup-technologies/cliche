@@ -23,6 +23,9 @@ export interface BotConfig {
   store_maps_url: string
   wasender_api_key: string | null
   wasender_webhook_secret: string | null
+  wasender_personal_token: string | null
+  /** Número de WhatsApp vinculado actualmente (solo dígitos). Las conversaciones se filtran por él. */
+  connected_phone: string | null
 }
 
 export interface BotContext {
@@ -47,6 +50,8 @@ const FALLBACK_CONFIG: BotConfig = {
   store_maps_url: "",
   wasender_api_key: null,
   wasender_webhook_secret: null,
+  wasender_personal_token: null,
+  connected_phone: null,
 }
 
 /** Lee la configuración del bot (fila única). */

@@ -13,10 +13,14 @@ export async function GET(req: NextRequest) {
   if (!phone) return NextResponse.json({ error: "falta phone" }, { status: 400 })
   try {
     const sb = createServerClient()
+    // Solo el historial de la conexión actual (mensajes de números anteriores fuera).
+    const config = await loadBotConfig()
+    if (!config.connected_phone) return NextResponse.json({ messages: [] })
     const { data } = await sb
       .from("wa_messages")
       .select("id, direction, role, body, media_url, media_type, created_at")
       .eq("contact_phone", phone)
+      .eq("session_phone", config.connected_phone)
       .order("created_at", { ascending: true })
       .limit(500)
     await sb.from("wa_contacts").update({ unread: 0 }).eq("phone", phone)
@@ -36,7 +40,7 @@ export async function POST(req: NextRequest) {
     const sb = createServerClient()
     const config = await loadBotConfig()
     await sendWhatsAppBotReply(to, text.trim(), config.wasender_api_key || undefined)
-    await sb.from("wa_messages").insert({ contact_phone: to, direction: "out", role: "agent", body: text.trim() })
+    await sb.from("wa_messages").insert({ contact_phone: to, direction: "out", role: "agent", body: text.trim(), session_phone: config.connected_phone || null })
     await sb.from("wa_contacts").update({ handoff: true, last_seen: new Date().toISOString() }).eq("phone", to)
     return NextResponse.json({ ok: true })
   } catch (e) {

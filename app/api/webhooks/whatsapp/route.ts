@@ -109,8 +109,13 @@ export async function POST(req: NextRequest) {
   }
 
   // Upsert del contacto + persistir entrante (operaciones rápidas).
-  await sb.from("wa_contacts").upsert({ phone: from, last_seen: new Date().toISOString() }, { onConflict: "phone" })
-  await sb.from("wa_contacts").update({ unread: 1, last_seen: new Date().toISOString() }).eq("phone", from)
+  // session_phone = número de WhatsApp vinculado: el panel muestra SOLO las
+  // conversaciones de la conexión actual (las de números anteriores se ocultan).
+  const sessionPhone = config.connected_phone || null
+  await sb
+    .from("wa_contacts")
+    .upsert({ phone: from, last_seen: new Date().toISOString(), session_phone: sessionPhone }, { onConflict: "phone" })
+  await sb.from("wa_contacts").update({ unread: 1, last_seen: new Date().toISOString(), session_phone: sessionPhone }).eq("phone", from)
   const { data: inboundRow } = await sb
     .from("wa_messages")
     .insert({
@@ -119,6 +124,7 @@ export async function POST(req: NextRequest) {
       role: "user",
       body: body || "(mensaje multimedia)",
       wa_message_id: msgId || null,
+      session_phone: sessionPhone,
     })
     .select("id")
     .maybeSingle()
@@ -170,7 +176,7 @@ export async function POST(req: NextRequest) {
       if (!userText) {
         const ask = "¡Hola! 🌿 Por aquí no me cargó bien tu mensaje. ¿Me cuentas en un textico qué aroma o para qué marca buscas?"
         await sendWhatsAppBotReply(from, ask, apiKey)
-        await sb.from("wa_messages").insert({ contact_phone: from, direction: "out", role: "assistant", body: ask })
+        await sb.from("wa_messages").insert({ contact_phone: from, direction: "out", role: "assistant", body: ask, session_phone: sessionPhone })
         return
       }
 
@@ -194,7 +200,7 @@ export async function POST(req: NextRequest) {
       const catalogUrl = ctx.config.catalog_pdf_url || config.catalog_pdf_url
       console.log(`[WA] reply len=${result.text.length} sendCatalogPdf=${result.sendCatalogPdf} hasCatalogUrl=${!!catalogUrl}`)
       await sendWhatsAppBotReply(from, result.text, apiKey)
-      await sb.from("wa_messages").insert({ contact_phone: from, direction: "out", role: "assistant", body: result.text })
+      await sb.from("wa_messages").insert({ contact_phone: from, direction: "out", role: "assistant", body: result.text, session_phone: sessionPhone })
 
       if (result.sendCatalogPdf && catalogUrl) {
         await sendWhatsAppDocument(from, catalogUrl, "Catalogo-Cliche.pdf", "Aquí tienes nuestro catálogo completo 🌿", apiKey)
@@ -205,6 +211,7 @@ export async function POST(req: NextRequest) {
           body: "📎 Catálogo enviado",
           media_url: catalogUrl,
           media_type: "document",
+          session_phone: sessionPhone,
         })
       }
 
@@ -220,7 +227,7 @@ export async function POST(req: NextRequest) {
       if (config.followups_enabled) {
         const runAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
         await sb.from("wa_followups").delete().eq("contact_phone", from).eq("status", "pending")
-        await sb.from("wa_followups").insert({ contact_phone: from, run_at: runAt, kind: "nudge" })
+        await sb.from("wa_followups").insert({ contact_phone: from, run_at: runAt, kind: "nudge", session_phone: sessionPhone })
       }
     } catch (e) {
       console.error("[WA] error generando respuesta:", e)
