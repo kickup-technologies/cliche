@@ -11,12 +11,13 @@ import { usePathname, useRouter } from "next/navigation"
  * Intercepta los clics globalmente (funciona en catálogo, segmentos, vitrina…)
  * y respeta clic-medio / cmd-clic / reduced-motion.
  */
-// Tiempos cortos: la versión anterior (460 + 120 + 480 ms) sumaba ~1.1 s
-// artificiales a CADA clic de producto — la "lentitud" que reportaban era en
-// buena parte esta espera deliberada. El efecto premium se conserva.
-const COVER_MS = 200
-const HOLD_MS = 40
-const EXIT_MS = 200
+// Tiempos ORIGINALES restaurados (2026-08-26, pedido de Andrés): la versión
+// corta (200+40+200) pasaba tan rápido que la cinemática no se apreciaba.
+// La firma de marca merece su segundo — la navegación corre en paralelo por
+// debajo, así que la espera real percibida es menor que la suma.
+const COVER_MS = 460
+const HOLD_MS = 120
+const EXIT_MS = 480
 
 /** Dispara la cortina de transición por código y navega a `href`. */
 export function navigateWithCurtain(href: string) {
