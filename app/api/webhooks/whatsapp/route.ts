@@ -32,6 +32,13 @@ interface WaKey {
   cleanedParticipantPn?: string
 }
 
+// Acelerador de alertas al admin por fallas de IA: en una caída de Groq con
+// tráfico alto, un aviso POR CLIENTE saturaría el WhatsApp del dueño en
+// minutos. Máximo un aviso cada 15 min por instancia (var de módulo: se
+// reinicia en frío, suficiente para amortiguar ráfagas en instancias tibias).
+let lastAiFailNotifyAt = 0
+const AI_FAIL_NOTIFY_COOLDOWN_MS = 15 * 60 * 1000
+
 // Señales de intención de compra → avisar al equipo para cerrar la venta.
 const BUY_INTENT =
   /(lo\s+quiero|quiero\s+(comprar|pedir|llevar|uno|dos|tres|\d)|me\s+lo\s+llevo|c[oó]mo\s+(compro|pago|lo\s+pido|hago\s+el\s+pedido)|hacer\s+el\s+pedido|realizar\s+(la\s+compra|el\s+pedido)|comprar(lo|los)?|lo\s+pido|me\s+interesa\s+comprar|d[oó]nde\s+pago)/i
@@ -281,10 +288,13 @@ export async function POST(req: NextRequest) {
       // agotado): avisar al dueño para que lo atienda desde el panel. El
       // mensaje ya quedó guardado y en no-leídos; esto añade el aviso activo.
       try {
-        await waNotifyAdmin(
-          `⚠️ El asistente no pudo responder a +${from} (falla de IA). El mensaje quedó en el panel — respóndele desde Conversaciones.`,
-          apiKey,
-        )
+        if (Date.now() - lastAiFailNotifyAt > AI_FAIL_NOTIFY_COOLDOWN_MS) {
+          lastAiFailNotifyAt = Date.now()
+          await waNotifyAdmin(
+            `⚠️ El asistente no pudo responder a +${from} (falla de IA). Puede haber más clientes esperando — revisa Conversaciones en el panel.`,
+            apiKey,
+          )
+        }
       } catch { /* best-effort */ }
     }
   })
