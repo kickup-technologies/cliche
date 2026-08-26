@@ -4,6 +4,9 @@ import { sendAbandonedCartEmail } from "@/lib/mailer"
 import { sendWhatsAppBotReply, getSessionStatus } from "@/lib/whatsapp"
 import { loadBotConfig } from "@/lib/bot/brain"
 import { normalizePhone } from "@/lib/meta-capi"
+import { findApprovedPayment } from "@/lib/mercadopago"
+import { confirmPaidOrder } from "@/lib/orders/confirm"
+import { outboundLastHour, isHumanHoursColombia, pickVariant, jitter, PROACTIVE_HOURLY_CAP } from "@/lib/bot/anti-ban"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -34,6 +37,13 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    // Anti-ban: los mensajes proactivos solo salen en horario humano (9am-8pm
+    // Colombia). Los correos no tienen ese riesgo, pero unificar la ventana
+    // también evita correos a las 3am.
+    if (!isHumanHoursColombia()) {
+      return NextResponse.json({ ok: true, skipped: "fuera de horario humano (9-20 Bogotá)" })
+    }
+
     const sb = createServerClient()
     const now = Date.now()
     const oneHourAgo = new Date(now - 1 * 60 * 60 * 1000).toISOString()
@@ -67,6 +77,12 @@ export async function GET(req: NextRequest) {
     if (config.bot_enabled && config.wasender_api_key) {
       waReady = (await getSessionStatus(config.wasender_api_key)) === "connected"
     }
+    // Anti-ban: si la última hora ya tuvo mucho volumen saliente (flujo alto
+    // del bot), lo proactivo por WhatsApp se pausa esta corrida — las
+    // respuestas a clientes siempre tienen prioridad sobre el marketing.
+    if (waReady && (await outboundLastHour(sb)) >= PROACTIVE_HOURLY_CAP) {
+      waReady = false
+    }
 
     let emails = 0
     let whatsapps = 0
@@ -86,6 +102,24 @@ export async function GET(req: NextRequest) {
         items.push({ name, price, image_url: p?.image_url || undefined, product_id: it.product_id })
       }
       if (items.length === 0) continue
+
+      // ── Guarda anti-vergüenza: ¿de verdad NO ha pagado? ──
+      // Si el webhook de MP se cayó (pasó el 28-jul), un pedido PAGADO puede
+      // seguir "pending" y le estaríamos escribiendo "termina tu compra" a
+      // alguien que ya pagó. Antes de molestar, se le pregunta a Mercado Pago:
+      // si el pago está aprobado, se confirma el pedido (misma ruta que el
+      // webhook, idempotente) y NO se envía nada. Si MP no responde, tampoco
+      // se envía nada en esta corrida — mejor callar que quedar mal.
+      try {
+        const approved = await findApprovedPayment(order.stripe_session_id as string)
+        if (approved) {
+          await confirmPaidOrder(sb, order.stripe_session_id as string, { email: approved.email }, { paidAmount: approved.amount })
+          continue
+        }
+      } catch (e) {
+        console.warn("[cart-recovery] MP no respondió para", order.stripe_session_id, "- se omite esta corrida", e)
+        continue
+      }
 
       const resumeUrl = (order.payment_url as string | null) || null
 
@@ -111,7 +145,15 @@ export async function GET(req: NextRequest) {
           const firstName = (order.customer_name as string | null)?.trim().split(/\s+/)[0] || ""
           const itemTxt = items.length === 1 ? `tu *${items[0].name}*` : `tu pedido con *${items[0].name}*${items.length > 2 ? " y más aromas" : ` y *${items[1].name}*`}`
           const link = resumeUrl || "https://www.clichecolombia.com/checkout"
-          const msg = `¡Hola${firstName ? ` ${firstName}` : ""}! 🌿 Soy ${advisor}, de Cliché. Vi que dejaste ${itemTxt} casi listo — te lo guardé tal como lo armaste 😊\n\nPuedes terminar tu pedido aquí, en un par de clics: ${link}\n\nSi tienes alguna duda o quieres que te recomiende otro aroma, con todo gusto te ayudo por aquí.`
+          const hola = firstName ? `¡Hola ${firstName}!` : "¡Hola!"
+          // Anti-ban: plantillas variadas — el mismo texto masivo es huella de spam.
+          const msg = pickVariant([
+            `${hola} 🌿 Soy ${advisor}, de Cliché. Vi que dejaste ${itemTxt} casi listo — te lo guardé tal como lo armaste 😊\n\nPuedes terminar tu pedido aquí, en un par de clics: ${link}\n\nSi tienes alguna duda o quieres que te recomiende otro aroma, con todo gusto te ayudo por aquí.`,
+            `${hola} Soy ${advisor}, del equipo de Cliché 🌿 Quedó pendiente ${itemTxt} y no quería que se te pasara — sigue apartado para ti.\n\nAquí puedes retomar el pago cuando gustes: ${link}\n\nY si prefieres que te asesore antes de decidir, escríbeme por aquí con confianza 😊`,
+            `${hola} 😊 Te habla ${advisor}, de Cliché. Noté que ${itemTxt} se quedó en el carrito — te lo dejé guardado tal cual.\n\nSi quieres completarlo, es un momentico por aquí: ${link}\n\nCualquier duda sobre el aroma o el envío, me dices y te ayudo 🌿`,
+          ])
+          // Pausa aleatoria entre envíos proactivos (además del tipeo simulado).
+          if (whatsapps > 0) await jitter()
           await sendWhatsAppBotReply(phone, msg, config.wasender_api_key || undefined)
           await sb.from("orders").update({ recovery_wa_sent: true }).eq("id", order.id)
           // Registrar en el panel (pestaña Conversaciones) como mensaje del asistente.

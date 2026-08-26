@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
       wa_message_id: msgId || null,
       session_phone: sessionPhone,
     })
-    .select("id")
+    .select("id, created_at")
     .maybeSingle()
 
   // Bot apagado → solo registrar.
@@ -148,6 +148,24 @@ export async function POST(req: NextRequest) {
   after(async () => {
     const apiKey = config.wasender_api_key || undefined
     try {
+      // Anti-ban / anti-ráfaga: si el cliente manda varios mensajes seguidos
+      // ("hola" / "quiero un aroma" / "para mi marca"), responder cada uno por
+      // separado se ve robótico y triplica los envíos. Espera breve y, si ya
+      // llegó un mensaje MÁS NUEVO de este contacto, esta corrida se retira:
+      // la corrida del último mensaje responde UNA vez con todo el contexto.
+      await new Promise((r) => setTimeout(r, 6000))
+      if (inboundRow?.id && inboundRow.created_at) {
+        const { data: newer } = await sb
+          .from("wa_messages")
+          .select("id")
+          .eq("contact_phone", from)
+          .eq("direction", "in")
+          .gt("created_at", inboundRow.created_at)
+          .neq("id", inboundRow.id)
+          .limit(1)
+          .maybeSingle()
+        if (newer) return
+      }
       // Texto efectivo del cliente: el texto/caption, o el resultado de procesar
       // una nota de voz (transcripción) o una imagen (descripción de visión).
       let userText = body

@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase"
 import { sendWhatsAppBotReply } from "@/lib/whatsapp"
 import { loadBotConfig } from "@/lib/bot/brain"
+import { outboundLastHour, isHumanHoursColombia, pickVariant, jitter, PROACTIVE_HOURLY_CAP } from "@/lib/bot/anti-ban"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
+export const maxDuration = 60
 
 /**
  * GET /api/cron/bot-followup — disparado por Vercel Cron (diario).
@@ -23,10 +25,19 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    // Anti-ban: proactivos solo en horario humano de Colombia.
+    if (!isHumanHoursColombia()) {
+      return NextResponse.json({ ok: true, skipped: "fuera de horario humano (9-20 Bogotá)" })
+    }
+
     const sb = createServerClient()
     const config = await loadBotConfig()
     if (!config.bot_enabled || !config.followups_enabled) {
       return NextResponse.json({ ok: true, skipped: "followups disabled" })
+    }
+    // Anti-ban: con flujo alto en la última hora, el marketing cede el turno.
+    if ((await outboundLastHour(sb)) >= PROACTIVE_HOURLY_CAP) {
+      return NextResponse.json({ ok: true, skipped: "volumen alto — corrida pausada" })
     }
 
     // Solo follow-ups de la conexión actual: si se vinculó otro número, los
@@ -41,12 +52,13 @@ export async function GET(req: NextRequest) {
       .eq("status", "pending")
       .eq("session_phone", config.connected_phone)
       .lte("run_at", now)
-      .limit(50)
+      // Anti-ban: máx. 4 follow-ups por corrida, con pausas — nada de ráfagas.
+      // Los que no alcancen salen en la siguiente corrida.
+      .limit(4)
 
     let sent = 0
     let cancelled = 0
     const name = config.advisor_name || "Valentina"
-    const nudge = `Hola 🌿 soy ${name}, de Cliché. ¿Pudiste pensar en el aroma que buscabas? Con gusto te ayudo a elegir o te aparto el que más te haya gustado 😊`
 
     for (const f of due || []) {
       // ¿El contacto está en manos de un humano? → no molestar.
@@ -67,6 +79,13 @@ export async function GET(req: NextRequest) {
         continue
       }
 
+      // Anti-ban: plantillas variadas + pausa aleatoria entre envíos.
+      const nudge = pickVariant([
+        `Hola 🌿 soy ${name}, de Cliché. ¿Pudiste pensar en el aroma que buscabas? Con gusto te ayudo a elegir o te aparto el que más te haya gustado 😊`,
+        `¡Hola! 😊 Te habla ${name}, de Cliché. Me quedé pensando en el aroma que buscabas — si quieres te doy mi recomendación o te lo aparto sin compromiso 🌿`,
+        `Hola, soy ${name} 🌿 ¿Cómo vas con la elección del aroma? Si te quedaron dudas de precios o notas, me dices y te ayudo a decidir 😊`,
+      ])
+      if (sent > 0) await jitter()
       await sendWhatsAppBotReply(f.contact_phone, nudge, config.wasender_api_key || undefined)
       await sb.from("wa_messages").insert({ contact_phone: f.contact_phone, direction: "out", role: "assistant", body: nudge, session_phone: config.connected_phone })
       await sb.from("wa_followups").update({ status: "sent" }).eq("id", f.id)
