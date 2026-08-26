@@ -380,6 +380,9 @@ export async function POST(req: NextRequest) {
       })
       const url = pref.init_point
       if (!url) throw new Error("Mercado Pago no devolvió init_point")
+      // Guardar el link de pago: la recuperación de carrito lo reenvía por
+      // correo/WhatsApp para retomar el pago con un clic. Best-effort.
+      await db.from("orders").update({ payment_url: url }).eq("stripe_session_id", reference).then(undefined, () => {})
       return NextResponse.json({ url })
     } catch (e) {
       console.error("[checkout] error creando preferencia Mercado Pago:", e)

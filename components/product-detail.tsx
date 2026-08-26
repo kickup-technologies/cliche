@@ -155,8 +155,14 @@ export function ProductDetail({ product, related }: Props) {
     const t = setInterval(tick, 1000)
     return () => clearInterval(t)
   }, [pUrg])
-  // Gallery: null = show 3D render, string = show that photo URL
-  const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  // Gallery: null = show 3D render, string = show that photo URL.
+  // Por VELOCIDAD (móvil/pauta), la vista inicial es la FOTO del producto:
+  // carga instantánea con next/image. El 3D (three.js + GLB, varios MB) solo
+  // se descarga cuando el cliente toca la miniatura "Vista 3D".
+  const [selectedImage, setSelectedImage] = useState<string | null>(() => {
+    const first = Array.isArray(product.image_urls) ? product.image_urls.find(Boolean) : null
+    return first || product.image_url || null
+  })
   // (El countdown 24h de urgencia se eliminó junto con la prueba social falsa;
   // su interval re-renderizaba toda la página —con canvas 3D incluido— cada
   // segundo sin que ningún JSX lo mostrara.)
@@ -183,10 +189,13 @@ export function ProductDetail({ product, related }: Props) {
   // cliente podía detectar el patrón. La prueba social real vive en
   // /api/recent-purchases (compras verdaderas) consumido por SocialProofToast.
 
-  // La página entra cuando el render 3D está listo (así nunca se ve el frasco a
-  // medio cargar). Hay un timeout de respaldo por si el modelo tarda/falla, para
-  // no dejar la página oculta indefinidamente.
-  const [fell, setFell] = useState(false)
+  // Con la foto como vista inicial, la galería entra de inmediato (LCP rápido:
+  // antes se ocultaba hasta 2,5s esperando el render 3D — fatal en móvil con
+  // tráfico de pauta). El gate del 3D solo aplica si el producto NO tiene foto.
+  const [fell, setFell] = useState(() => {
+    const hasPhoto = (Array.isArray(product.image_urls) && product.image_urls.some(Boolean)) || !!product.image_url
+    return hasPhoto
+  })
   const handleModelReady = () => requestAnimationFrame(() => setFell(true))
   useEffect(() => {
     const t = setTimeout(() => setFell(true), 2500)
@@ -313,6 +322,7 @@ export function ProductDetail({ product, related }: Props) {
                         src={selectedImage}
                         alt={product.name}
                         fill
+                        priority
                         className="object-cover"
                         sizes="(max-width: 1024px) 100vw, 50vw"
                       />
@@ -372,8 +382,8 @@ export function ProductDetail({ product, related }: Props) {
                   </button>
 
                   {/* Admin photos or blank placeholders */}
-                  {galleryImages.length > 0
-                    ? galleryImages.map((url, i) => (
+                  {(galleryImages.length > 0 ? galleryImages : product.image_url ? [product.image_url] : []).length > 0
+                    ? (galleryImages.length > 0 ? galleryImages : [product.image_url as string]).map((url, i) => (
                         <button
                           key={url}
                           onClick={() => setSelectedImage(url)}

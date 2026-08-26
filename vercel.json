@@ -1,10 +1,6 @@
 {
   "crons": [
     {
-      "path": "/api/abandoned-cart",
-      "schedule": "0 15 * * *"
-    },
-    {
       "path": "/api/cron/review-emails",
       "schedule": "0 15 * * *"
     },

@@ -451,7 +451,9 @@ export async function sendOrderShippedEmail(
 // ═════════════════════════════════════════════════════════════════════════════
 export async function sendAbandonedCartEmail(
   to: string,
-  items: Array<{ name: string; price: number; image_url?: string; product_id?: string }>
+  items: Array<{ name: string; price: number; image_url?: string; product_id?: string }>,
+  /** Link directo para retomar el pago (init_point de Mercado Pago). Fallback: /checkout. */
+  resumeUrl?: string | null
 ): Promise<void> {
   const transport = createTransport()
   if (!transport) { console.warn("[mailer] SMTP not configured — skipping abandoned cart email"); return }
@@ -471,7 +473,7 @@ export async function sendAbandonedCartEmail(
       ${para("Estos aromas siguen esperando en tu carrito, tal como los dejaste:", 6)}
     </div>
     <table width="100%" cellpadding="0" cellspacing="0" style="margin:14px 0 30px;">${list}</table>
-    ${button(`${appUrl()}/checkout`, "Terminar mi compra")}
+    ${button(resumeUrl || `${appUrl()}/checkout`, "Terminar mi compra")}
     <p style="margin:22px 0 0;text-align:center;font-family:Arial,sans-serif;font-size:12px;color:${C.faint};">Si ya no te interesa, simplemente ignora este correo.</p>`
 
   try {
