@@ -307,6 +307,19 @@ export async function POST(req: NextRequest) {
         shipping_address: shipping_address || null,
         discount_code: validatedCode,
         discount_amount,
+        // Señales del navegador para el Purchase server-side de Meta (CAPI):
+        // _fbp/_fbc atan la venta al clic del anuncio aunque el comprador nunca
+        // vuelva a /gracias (PSE / app de Mercado Pago). Solo con consentimiento
+        // de marketing (mismo gate que /api/capi).
+        fb_browser_data:
+          req.cookies.get("cliche_marketing_consent")?.value === "0"
+            ? null
+            : {
+                fbp: req.cookies.get("_fbp")?.value || null,
+                fbc: req.cookies.get("_fbc")?.value || null,
+                ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null,
+                ua: req.headers.get("user-agent") || null,
+              },
       })
       if (orderErr) {
         console.error("[checkout] no se pudo guardar la orden pendiente:", orderErr.message,

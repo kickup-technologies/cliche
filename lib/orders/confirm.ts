@@ -194,6 +194,7 @@ export async function confirmPaidOrder(
       items: order.items || [],
       customer_email: customerEmail,
       customer_phone: order.customer_phone || null,
+      browser: order.fb_browser_data || null,
     })
   } catch { /* no bloquear */ }
 

@@ -31,6 +31,8 @@ export type PurchaseOrder = {
   items: OrderItem[]
   customer_email?: string | null
   customer_phone?: string | null
+  /** Señales del navegador capturadas en /api/checkout (orders.fb_browser_data). */
+  browser?: { fbp?: string | null; fbc?: string | null; ip?: string | null; ua?: string | null } | null
 }
 
 export async function sendPurchaseCAPI(order: PurchaseOrder): Promise<void> {
@@ -45,6 +47,12 @@ export async function sendPurchaseCAPI(order: PurchaseOrder): Promise<void> {
       const normalized = normalizePhone(order.customer_phone)
       if (normalized) user_data.ph = [hashValue(normalized)]
     }
+    // fbp/fbc atan la conversión al clic del anuncio (mejor atribución y Event
+    // Match Quality); ip/ua completan el perfil del evento server-side.
+    if (order.browser?.fbp) user_data.fbp = order.browser.fbp
+    if (order.browser?.fbc) user_data.fbc = order.browser.fbc
+    if (order.browser?.ip) user_data.client_ip_address = order.browser.ip
+    if (order.browser?.ua) user_data.client_user_agent = order.browser.ua
 
     const items = Array.isArray(order.items) ? order.items : []
     // Mismos content_ids que envía el navegador desde /gracias (product_id por
