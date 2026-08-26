@@ -9,16 +9,33 @@ for (const line of fs.readFileSync(envFile, "utf8").split(/\r?\n/)) {
   if (m && !process.env[m[1]]) process.env[m[1]] = m[2]
 }
 
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
 async function main() {
-  const { generateAdvisorReply } = await import("@/lib/bot/brain")
-  const r1 = await generateAdvisorReply([{ role: "user", content: "Hola" }])
-  console.log("— Respuesta a 'Hola':", JSON.stringify(r1.text))
-  const r2 = await generateAdvisorReply([
-    { role: "user", content: "Hola" },
-    { role: "assistant", content: r1.text },
-    { role: "user", content: "busco un aroma para mi marca de vestidos de baño, ¿cuál me recomiendas y cuánto vale?" },
-  ])
-  console.log("— Recomendación:", JSON.stringify(r2.text))
+  const { generateAdvisorReply, loadBotContext } = await import("@/lib/bot/brain")
+  const ctx = await loadBotContext()
+
+  // 1) Primer contacto → debe presentarse
+  const r1 = await generateAdvisorReply([{ role: "user", content: "Hola" }], ctx)
+  console.log("\n[1] Primer 'Hola':", JSON.stringify(r1.text))
+
+  await wait(35000) // respetar el TPM del tier gratuito
+
+  // 2) Ficha de un aroma específico → notas, precio, link
+  const h2 = [
+    { role: "user" as const, content: "Hola" },
+    { role: "assistant" as const, content: r1.text },
+    { role: "user" as const, content: "cuéntame todo sobre el aroma Luxury" },
+  ]
+  const r2 = await generateAdvisorReply(h2, ctx)
+  console.log("\n[2] Ficha Luxury:", JSON.stringify(r2.text))
+
+  await wait(35000)
+
+  // 3) Intención de compra → debe dar el link directo del producto
+  const h3 = [...h2, { role: "assistant" as const, content: r2.text }, { role: "user" as const, content: "listo, lo quiero comprar, ¿cómo hago el pedido?" }]
+  const r3 = await generateAdvisorReply(h3, ctx)
+  console.log("\n[3] Compra:", JSON.stringify(r3.text))
 }
 
 main().then(() => process.exit(0)).catch((e) => { console.error("FALLO:", e); process.exit(1) })
