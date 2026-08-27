@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useLayoutEffect, useState } from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { ShieldCheck } from "lucide-react"
@@ -77,26 +77,30 @@ export function getConsent(): ConsentState | null {
 
 export function CookieConsent() {
   const pathname = usePathname()
-  const [visible, setVisible] = useState(false)
+  // ARRANCA VISIBLE: el banner viaja en el HTML del servidor y pinta con el
+  // primer paint. Antes arrancaba oculto y aparecía tras la hidratación — esa
+  // pintura tardía era el elemento LCP de la página en PSI móvil (17s→6s,
+  // medido 2026-08-26). Para quien ya decidió, el <script> inline de abajo lo
+  // oculta ANTES del primer paint y useLayoutEffect lo desmonta sin flash.
+  const [visible, setVisible] = useState(true)
 
   // No mostrar en el panel de administración ni en el checkout: en el checkout
   // móvil el banner quedaba encima del botón "Pagar" (barra sticky inferior) y
   // bloqueaba el pago hasta que el usuario decidiera sobre las cookies.
   const isHiddenRoute = pathname?.startsWith("/admin") || pathname?.startsWith("/checkout")
 
-  useEffect(() => {
-    if (isHiddenRoute) return
+  // useLayoutEffect corre ANTES de que el navegador pinte el render hidratado:
+  // si ya hay consentimiento guardado, el banner se desmonta sin llegar a verse.
+  useLayoutEffect(() => {
     const existing = loadConsent()
     if (existing) {
       ;(window as unknown as Record<string, unknown>).__cookieConsent = existing
       // Usuarios que decidieron antes de existir la cookie server-side:
       // sincronizamos su elección para que /api/capi también la respete.
       syncConsentCookie(existing)
-      return
+      setVisible(false)
     }
-    const t = setTimeout(() => setVisible(true), 1200)
-    return () => clearTimeout(t)
-  }, [isHiddenRoute])
+  }, [])
 
   if (isHiddenRoute || !visible) return null
 
@@ -118,11 +122,15 @@ export function CookieConsent() {
     // compra (producto z-40, ~72px de alto): el banner queda SIEMPRE clickeable
     // sin tapar jamás un CTA de pago (por eso también z-30, debajo de ellas).
     <div
+      id="cliche-cookie-banner"
       role="dialog"
       aria-modal="false"
       aria-label="Aviso de cookies"
       className="fixed bottom-24 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-2rem)] max-w-md px-1"
       style={{ fontFamily: "system-ui, sans-serif" }}
+      // El script inline de abajo puede tocar style.display antes de hidratar;
+      // no es un mismatch real, así que silenciamos la advertencia.
+      suppressHydrationWarning
     >
       <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_8px_40px_-8px_rgba(45,26,20,0.25)] border border-[#ece2dc] px-5 py-4">
         <div className="flex items-start gap-3">
@@ -162,6 +170,16 @@ export function CookieConsent() {
           </button>
         </div>
       </div>
+
+      {/* Anti-flash pre-hidratación: el banner viaja visible en el HTML del
+          servidor; este script corre apenas el parser lo alcanza (antes del
+          primer paint del banner) y lo oculta si el visitante ya decidió.
+          Tras hidratar, useLayoutEffect toma el control y lo desmonta. */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `try{if(localStorage.getItem("${STORAGE_KEY}"))document.getElementById("cliche-cookie-banner").style.display="none"}catch(e){}`,
+        }}
+      />
     </div>
   )
 }
