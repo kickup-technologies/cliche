@@ -85,15 +85,26 @@ export function ProductShowcase3D() {
   // Rendimiento de navegación: no cargar three.js al entrar a la página.
   // El visor 3D (y su bundle) se monta solo cuando la sección se acerca al
   // viewport, así la navegación al landing es fluida.
+  // Además, el observer se ARMA solo tras el primer gesto del usuario: con
+  // rootMargin 400px la sección quedaba "cerca" del viewport móvil desde el
+  // load y los ~700KB de three.js se colaban en el primer paint (LCP 17s en
+  // PSI móvil, medido 2026-08-26). Sin gesto no hay descarga.
   useEffect(() => {
     const el = sectionRef.current
     if (!el) return
-    const io = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setMount3D(true); io.disconnect() } },
-      { rootMargin: "400px" },
-    )
-    io.observe(el)
-    return () => io.disconnect()
+    let io: IntersectionObserver | null = null
+    const arm = () => {
+      cleanup()
+      io = new IntersectionObserver(
+        ([e]) => { if (e.isIntersecting) { setMount3D(true); io?.disconnect() } },
+        { rootMargin: "400px" },
+      )
+      io.observe(el)
+    }
+    const events: (keyof WindowEventMap)[] = ["scroll", "pointerdown", "touchstart", "keydown"]
+    const cleanup = () => events.forEach((ev) => window.removeEventListener(ev, arm))
+    events.forEach((ev) => window.addEventListener(ev, arm, { passive: true, once: true }))
+    return () => { cleanup(); io?.disconnect() }
   }, [])
 
   // Segundo observer (NO se desconecta): apaga el WebGL cuando la sección sale

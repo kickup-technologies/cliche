@@ -55,7 +55,10 @@ export function LeadPopup() {
   const blocked = !!pathname && (
     pathname.startsWith("/checkout") ||
     pathname.startsWith("/gracias") ||
-    pathname.startsWith("/admin")
+    pathname.startsWith("/admin") ||
+    // Fichas de producto: el popup interrumpía justo cuando la persona está
+    // decidiendo la compra (feedback del cliente, 2026-08-26).
+    pathname.startsWith("/productos")
   )
 
   const open = useCallback(() => {
@@ -74,20 +77,29 @@ export function LeadPopup() {
     }
     if (blocked || seenThisSession() || isSubscribed()) return
 
-    // Disparador UNIVERSAL y fiable: aparece a los 7s en cualquier dispositivo.
-    const timer = setTimeout(open, 7000)
+    // El timer se ARMA solo tras el primer gesto (scroll/tap/tecla): el popup a
+    // los 7s "en frío" pintaba un elemento gigante tardío que Lighthouse tomaba
+    // como LCP (17s en PSI móvil, medido 2026-08-26). Tras una interacción real
+    // el LCP ya quedó finalizado y el popup no penaliza la métrica.
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const arm = () => {
+      if (timer === undefined) timer = setTimeout(open, 7000)
+    }
+    const gestures: (keyof WindowEventMap)[] = ["scroll", "pointerdown", "touchstart", "keydown"]
+    gestures.forEach((g) => window.addEventListener(g, arm, { passive: true, once: true }))
     // Extra PC: intención de salir (mouse fuera por arriba).
     const onMouseOut = (e: MouseEvent) => { if (e.clientY <= 0) open() }
     document.addEventListener("mouseout", onMouseOut)
-    // Extra: al pasar el 45% de la página.
+    // Extra: al pasar el 30% de la página (antes 45%).
     const onScroll = () => {
       const max = document.documentElement.scrollHeight - window.innerHeight
-      if (max > 0 && window.scrollY / max > 0.45) open()
+      if (max > 0 && window.scrollY / max > 0.3) open()
     }
     window.addEventListener("scroll", onScroll, { passive: true })
 
     return () => {
       clearTimeout(timer)
+      gestures.forEach((g) => window.removeEventListener(g, arm))
       document.removeEventListener("mouseout", onMouseOut)
       window.removeEventListener("scroll", onScroll)
     }

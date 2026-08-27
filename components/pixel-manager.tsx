@@ -135,10 +135,32 @@ export function PixelManager() {
       if (!marketing && w.ttq?.disableCookie) w.ttq.disableCookie()
     }
 
-    apply()
+    // Carga DIFERIDA de los pixels (LCP móvil): los SDKs de terceros (fbevents,
+    // gtag, clarity…) sumaban ~1.7s de evaluación de JS compitiendo con la
+    // hidratación en el primer paint. Se cargan al primer gesto del usuario o a
+    // los 3.5s — lo que ocurra primero. El PageView sigue disparándose segundos
+    // después de aterrizar (antes de cualquier clic), así que la atribución de
+    // pauta y la deduplicación con CAPI no cambian.
+    let fired = false
+    const start = () => {
+      if (fired) return
+      fired = true
+      cleanupDefer()
+      apply()
+    }
+    const events: (keyof WindowEventMap)[] = ["pointerdown", "scroll", "keydown", "touchstart"]
+    const cleanupDefer = () => {
+      events.forEach((e) => window.removeEventListener(e, start))
+      clearTimeout(timer)
+    }
+    events.forEach((e) => window.addEventListener(e, start, { passive: true, once: true }))
+    const timer = window.setTimeout(start, 3500)
 
     window.addEventListener("cliche-consent-change", apply)
-    return () => window.removeEventListener("cliche-consent-change", apply)
+    return () => {
+      cleanupDefer()
+      window.removeEventListener("cliche-consent-change", apply)
+    }
   }, [isAdminArea])
 
   return null

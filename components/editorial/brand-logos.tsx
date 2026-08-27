@@ -23,7 +23,9 @@ function Logo({ src, alt }: { src: string; alt: string }) {
       src={src}
       alt={alt}
       loading="lazy"
-      className="h-7 w-auto max-w-[140px] shrink-0 object-contain opacity-60 grayscale [mix-blend-mode:multiply] transition-opacity duration-500 hover:opacity-100 md:h-9 md:max-w-[160px]"
+      // Más grandes y protagonistas (pedido del cliente 2026-08-26); el
+      // mix-blend multiply funde el fondo blanco del logo con la sección.
+      className="h-10 w-auto max-w-[180px] shrink-0 object-contain opacity-85 [mix-blend-mode:multiply] transition-opacity duration-500 hover:opacity-100 md:h-14 md:max-w-[240px]"
     />
   )
 }

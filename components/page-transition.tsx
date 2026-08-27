@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
+import Image from "next/image"
 
 /**
  * PageTransition — cortina de transición al entrar a una página de producto
@@ -142,10 +143,14 @@ export function PageTransition() {
         <p className="mb-5 text-[0.58rem] font-semibold uppercase tracking-[0.42em] text-white/65 md:text-[0.62rem]">
           Marketing Olfativo
         </p>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        {/* next/image en vez de <img> crudo: el PNG original pesa 90KB y se
+            muestra a ~200px; optimizado baja a <10KB (AVIF del tamaño real). */}
+        <Image
           src="/images/logo-cliche.png"
           alt="Cliché"
+          width={152}
+          height={128}
+          sizes="200px"
           className="mx-auto h-24 w-auto object-contain brightness-0 invert md:h-32"
         />
         <div className="mx-auto my-5 h-px w-10 bg-white/40" />

@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { Star } from "lucide-react"
 import { SplitText } from "@/components/editorial/split-text"
 
@@ -88,6 +89,17 @@ export function Testimonials() {
             <ReviewCard key={`b-${i}`} review={r} tilt={tilts[(i + 2) % 4]} />
           ))}
         </div>
+      </div>
+
+      {/* CTA: la prueba social ahora empuja a la acción (más CTAs en el
+          embudo — feedback del cliente 2026-08-26) */}
+      <div className="container mx-auto mt-12 px-4 text-center">
+        <Link
+          href="/catalogo"
+          className="inline-flex items-center justify-center bg-foreground px-9 py-3.5 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-background transition-colors hover:bg-primary"
+        >
+          Quiero mi aroma
+        </Link>
       </div>
 
       <style jsx global>{`

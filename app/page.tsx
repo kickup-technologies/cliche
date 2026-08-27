@@ -22,6 +22,7 @@ import { ProductShowcase3D } from "@/components/editorial/product-showcase-3d"
 import { SegmentShowcase } from "@/components/editorial/segment-showcase"
 import { BrandLogos } from "@/components/editorial/brand-logos"
 import { CustomPackCTA } from "@/components/editorial/custom-pack-cta"
+import { SocialProofBar } from "@/components/editorial/social-proof-bar"
 
 /**
  * Landing — arquitectura de embudo de ventas (AIDA + objeciones + riesgo):
@@ -89,6 +90,10 @@ export default function Home() {
       {/* 1. ATENCIÓN — hero con CTA y confianza inmediata */}
       <EditorialHero />
 
+      {/* 1b. CONFIANZA INMEDIATA — reseñas + nº de marcas pegado al hero
+          (pedido del cliente 2026-08-26: prueba social más arriba) */}
+      <SocialProofBar />
+
       {/* 2. CONFIANZA — atributos de marca en movimiento */}
       <ScrollReveal>
         <Marquee />
@@ -100,7 +105,12 @@ export default function Home() {
       {/* 3b. OBJETO DE DESEO — vitrina rotativa de renders 3D reales */}
       <ProductShowcase3D />
 
-      {/* 3c. PERSONALIZACIÓN — arma tu propio kit combinando aromas */}
+      {/* 4. PRUEBA SOCIAL TEMPRANA — testimonios + logos de marcas suben al
+          primer tercio del embudo (antes vivían debajo del pliegue ~8º lugar) */}
+      <Testimonials />
+      <BrandLogos />
+
+      {/* 4b. PERSONALIZACIÓN — arma tu propio kit combinando aromas */}
       <CustomPackCTA />
 
       {/* 4. CREENCIA — razones para confiar (stagger interno) */}
@@ -121,12 +131,6 @@ export default function Home() {
 
       {/* 7. SEGMENTACIÓN — cada visitante a su camino (stagger interno) */}
       <EditorialStory />
-
-      {/* 8. PRUEBA SOCIAL — testimonios en marquee de cards */}
-      <Testimonials />
-
-      {/* 8b. PRUEBA SOCIAL — marcas que ya tienen su aroma propio (loop) */}
-      <BrandLogos />
 
       {/* 9. OFERTA — incentivo concreto con CTA único */}
       <OfferBand />
