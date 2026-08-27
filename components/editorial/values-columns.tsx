@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { ScrollReveal } from "@/components/editorial/scroll-reveal"
 import { SplitText } from "@/components/editorial/split-text"
 
@@ -56,6 +57,18 @@ export function ValuesColumns() {
             </ScrollReveal>
           ))}
         </div>
+
+        {/* Las razones para creer cierran con acción (más CTAs en el embudo) */}
+        <ScrollReveal delay={420}>
+          <div className="mt-14 text-center">
+            <Link
+              href="/catalogo"
+              className="inline-flex items-center justify-center bg-foreground px-9 py-3.5 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-background transition-colors hover:bg-primary"
+            >
+              Descubre tu aroma
+            </Link>
+          </div>
+        </ScrollReveal>
       </div>
     </section>
   )

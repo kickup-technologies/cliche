@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { Plus } from "lucide-react"
 import { SplitText } from "@/components/editorial/split-text"
 
@@ -86,6 +87,30 @@ export function Faq() {
               </div>
             )
           })}
+        </div>
+
+        {/* Cierre del manejo de objeciones: con las dudas resueltas, empujar a
+            la acción — catálogo o WhatsApp (más CTAs, pedido del cliente). */}
+        <div className="mt-12 text-center">
+          <p className="mb-5 font-serif text-lg text-foreground md:text-xl">
+            ¿Listo para que tu marca tenga su propio aroma?
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <Link
+              href="/catalogo"
+              className="inline-flex items-center justify-center bg-foreground px-9 py-3.5 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-background transition-colors hover:bg-primary"
+            >
+              Ver el catálogo
+            </Link>
+            <a
+              href="https://wa.me/573194565463?text=Hola%2C%20tengo%20una%20pregunta%20sobre%20los%20aromas%20Clich%C3%A9"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center border border-foreground/30 px-9 py-3.5 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-foreground transition-colors hover:border-foreground hover:bg-foreground hover:text-background"
+            >
+              Pregúntanos por WhatsApp
+            </a>
+          </div>
         </div>
       </div>
     </section>

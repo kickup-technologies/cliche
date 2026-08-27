@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
+import Link from "next/link"
 import { Leaf, Shirt, Truck, ShieldCheck } from "lucide-react"
 
 /**
@@ -187,6 +188,16 @@ export function Guarantees() {
               </div>
             )
           })}
+        </div>
+        {/* Garantías → acción: la reversión de riesgo cierra con CTA (móvil
+            es la mayoría del tráfico; más CTAs, pedido del cliente) */}
+        <div className="mt-12 text-center">
+          <Link
+            href="/catalogo"
+            className="inline-flex items-center justify-center bg-foreground px-9 py-3.5 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-background transition-colors hover:bg-primary"
+          >
+            Comprar con confianza
+          </Link>
         </div>
       </section>
 
