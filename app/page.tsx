@@ -99,16 +99,19 @@ export default function Home() {
         <Marquee />
       </ScrollReveal>
 
+      {/* 2b. VALIDACIÓN INMEDIATA — pasarela de logos de marcas reales justo
+          tras el hero (pedido del cliente: que la confianza se vea de una) */}
+      <BrandLogos />
+
       {/* 3. SEGMENTACIÓN B2B — categorías (layout original + "ver más") */}
       <SegmentShowcase />
 
       {/* 3b. OBJETO DE DESEO — vitrina rotativa de renders 3D reales */}
       <ProductShowcase3D />
 
-      {/* 4. PRUEBA SOCIAL TEMPRANA — testimonios + logos de marcas suben al
-          primer tercio del embudo (antes vivían debajo del pliegue ~8º lugar) */}
+      {/* 4. PRUEBA SOCIAL TEMPRANA — testimonios en el primer tercio del
+          embudo (antes vivían debajo del pliegue, ~8º lugar) */}
       <Testimonials />
-      <BrandLogos />
 
       {/* 4b. PERSONALIZACIÓN — arma tu propio kit combinando aromas */}
       <CustomPackCTA />

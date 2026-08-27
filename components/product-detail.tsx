@@ -234,7 +234,12 @@ export function ProductDetail({ product, related }: Props) {
 
   // Entrar a una ficha SIEMPRE arranca desde arriba (el smooth-scroll podía
   // conservar la posición de la página anterior y la ficha "nacía" a la mitad).
+  // OJO: window.scrollTo solo no basta — el loop rAF de Lenis conserva su
+  // posición interna y devolvía la página a la mitad un frame después
+  // (reportado por Andrés 2026-08-26). Hay que resetear a Lenis mismo.
   useEffect(() => {
+    const lenis = (window as unknown as { __lenis?: { scrollTo: (t: number, o?: Record<string, unknown>) => void } }).__lenis
+    if (lenis) lenis.scrollTo(0, { immediate: true, force: true })
     try { window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior }) } catch { window.scrollTo(0, 0) }
   }, [])
 
