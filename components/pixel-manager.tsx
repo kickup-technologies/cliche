@@ -67,6 +67,13 @@ function loadGA4() {
   w.gtag("js", new Date())
   w.gtag("config", GA4_ID)
   injectScript(`https://www.googletagmanager.com/gtag/js?id=${GA4_ID}`, "ga4-sdk")
+  // Drenar los eventos de embudo que use-capi encoló mientras gtag no existía
+  // (gtag carga diferido; un view_item temprano llegaría antes que este init).
+  const queued = w.__ga4Queue as Array<[string, Record<string, unknown>]> | undefined
+  if (queued?.length) {
+    queued.forEach(([name, params]) => w.gtag("event", name, params))
+    w.__ga4Queue = []
+  }
 }
 
 function loadTikTok() {
