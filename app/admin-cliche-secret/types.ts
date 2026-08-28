@@ -28,12 +28,10 @@ export interface Order {
 
 export interface PageView { path: string; created_at: string }
 
-export const PERIOD_DAYS: Record<Period, number> = { "1d": 1, "7d": 7, "1m": 30, "3m": 90, "6m": 180, "1y": 365 }
-
 export const PERIODS: { value: Period; label: string }[] = [
   { value: "1d", label: "Hoy" },
   { value: "7d", label: "7 días" },
-  { value: "1m", label: "1 mes" },
+  { value: "1m", label: "Este mes" },
   { value: "3m", label: "3 meses" },
   { value: "6m", label: "6 meses" },
   { value: "1y", label: "1 año" },
@@ -62,12 +60,42 @@ export function bogotaDay(d: Date | string): string {
   return new Date(d).toLocaleDateString("en-CA", { timeZone: "America/Bogota" })
 }
 
+const DAY_MS = 86400000
+// Colombia es UTC-5 fijo (sin horario de verano).
+const BOGOTA_OFFSET_MS = 5 * 3600000
+
+// Meses calendario que abarca cada periodo mensual (incluyendo el mes en curso).
+const PERIOD_MONTHS: Partial<Record<Period, number>> = { "1m": 1, "3m": 3, "6m": 6, "1y": 12 }
+
+// Date cuyo reloj UTC representa la hora de pared de Bogotá.
+function bogotaWall(d: Date = new Date()): Date {
+  return new Date(d.getTime() - BOGOTA_OFFSET_MS)
+}
+function wallToUtc(wall: Date): Date {
+  return new Date(wall.getTime() + BOGOTA_OFFSET_MS)
+}
+// Instante UTC en que inicia el mes de Bogotá `monthsBack` meses atrás.
+function bogotaMonthStart(monthsBack: number): Date {
+  const w = bogotaWall()
+  return wallToUtc(new Date(Date.UTC(w.getUTCFullYear(), w.getUTCMonth() - monthsBack, 1)))
+}
+
+// Los periodos son de calendario, no ventanas móviles: "1 mes" = el mes en
+// curso (desde el día 1), "3 meses" = el mes actual + los 2 anteriores, etc.
+// "Hoy" = desde la medianoche de Bogotá; "7 días" sigue siendo móvil.
 export function cutoff(period: Period): Date {
-  return new Date(Date.now() - PERIOD_DAYS[period] * 86400000)
+  if (period === "1d") {
+    const w = bogotaWall()
+    return wallToUtc(new Date(Date.UTC(w.getUTCFullYear(), w.getUTCMonth(), w.getUTCDate())))
+  }
+  if (period === "7d") return new Date(Date.now() - 7 * DAY_MS)
+  return bogotaMonthStart(PERIOD_MONTHS[period]! - 1)
 }
 
 export function prevCutoff(period: Period): Date {
-  return new Date(Date.now() - PERIOD_DAYS[period] * 2 * 86400000)
+  if (period === "1d") return new Date(cutoff("1d").getTime() - DAY_MS)
+  if (period === "7d") return new Date(Date.now() - 14 * DAY_MS)
+  return bogotaMonthStart(2 * PERIOD_MONTHS[period]! - 1)
 }
 
 export function filterPeriod<T extends { created_at: string }>(items: T[], period: Period): T[] {
@@ -75,10 +103,14 @@ export function filterPeriod<T extends { created_at: string }>(items: T[], perio
   return items.filter(i => new Date(i.created_at) >= c)
 }
 
+// El periodo anterior se compara contra el mismo tramo transcurrido (p. ej. a
+// 28 de agosto: ago 1–28 vs jul 1–28), no contra el mes anterior completo —
+// si no, a mitad de mes siempre saldría "caída" artificial.
 export function filterPrevPeriod<T extends { created_at: string }>(items: T[], period: Period): T[] {
   const c = cutoff(period)
   const pc = prevCutoff(period)
-  return items.filter(i => { const d = new Date(i.created_at); return d >= pc && d < c })
+  const end = new Date(pc.getTime() + (Date.now() - c.getTime()))
+  return items.filter(i => { const d = new Date(i.created_at); return d >= pc && d < end })
 }
 
 export function fmt(n: number): string {
@@ -90,20 +122,34 @@ export function pctChange(curr: number, prev: number): number | null {
   return ((curr - prev) / prev) * 100
 }
 
-export function buildDailyData(
-  orders: Order[], views: PageView[], period: Period
+// Medianoche (de pared) del día Bogotá en que cae el instante UTC `d`.
+function wallMidnight(d: Date): number {
+  const w = bogotaWall(d)
+  return Date.UTC(w.getUTCFullYear(), w.getUTCMonth(), w.getUTCDate())
+}
+
+// Dimensiones del periodo actual: cuántos días calendario Bogotá abarca
+// (varía por mes: agosto a día 28 son 28 buckets) y con qué agrupación.
+function periodShape(period: Period): { startMid: number; days: number; granularity: number } {
+  const startMid = wallMidnight(cutoff(period))
+  const days = Math.round((wallMidnight(new Date()) - startMid) / DAY_MS) + 1
+  const granularity = days <= 31 ? 1 : days <= 92 ? 7 : 30
+  return { startMid, days, granularity }
+}
+
+function buildRangeDailyData(
+  orders: Order[], views: PageView[], startMid: number, days: number, granularity: number
 ): Array<{ label: string; revenue: number; orders: number; views: number }> {
-  const days = PERIOD_DAYS[period]
-  const granularity = days <= 30 ? 1 : days <= 90 ? 7 : 30
   const result: Array<{ label: string; revenue: number; orders: number; views: number }> = []
 
-  for (let i = days - 1; i >= 0; i -= granularity) {
-    const to = new Date(Date.now() - i * 86400000)
-    const from = new Date(Date.now() - Math.min(i + granularity - 1, days - 1) * 86400000)
+  for (let i = 0; i < days; i += granularity) {
+    const from = new Date(startMid + i * DAY_MS)
+    const to = new Date(startMid + Math.min(i + granularity - 1, days - 1) * DAY_MS)
     // Buckets por día calendario de Bogotá (antes era UTC: las ventas de la
     // noche caían en el día siguiente y "Hoy" no cuadraba con los KPIs).
-    const fromStr = bogotaDay(from)
-    const toStr = bogotaDay(to)
+    // `from`/`to` ya son fechas de pared, por eso se formatean como UTC.
+    const fromStr = from.toISOString().slice(0, 10)
+    const toStr = to.toISOString().slice(0, 10)
 
     const periodOrders = orders.filter(o => {
       const d = bogotaDay(o.created_at)
@@ -115,8 +161,8 @@ export function buildDailyData(
     })
 
     const label = granularity === 1
-      ? to.toLocaleDateString("es-CO", { month: "short", day: "numeric", timeZone: "America/Bogota" })
-      : `${from.toLocaleDateString("es-CO", { month: "short", day: "numeric", timeZone: "America/Bogota" })} – ${to.toLocaleDateString("es-CO", { day: "numeric", timeZone: "America/Bogota" })}`
+      ? to.toLocaleDateString("es-CO", { month: "short", day: "numeric", timeZone: "UTC" })
+      : `${from.toLocaleDateString("es-CO", { month: "short", day: "numeric", timeZone: "UTC" })} – ${to.toLocaleDateString("es-CO", { day: "numeric", timeZone: "UTC" })}`
 
     result.push({
       label,
@@ -126,4 +172,21 @@ export function buildDailyData(
     })
   }
   return result
+}
+
+export function buildDailyData(
+  orders: Order[], views: PageView[], period: Period
+): Array<{ label: string; revenue: number; orders: number; views: number }> {
+  const { startMid, days, granularity } = periodShape(period)
+  return buildRangeDailyData(orders, views, startMid, days, granularity)
+}
+
+// Serie del periodo anterior con los MISMOS buckets que buildDailyData (mismo
+// número de días y agrupación) para poder superponerla índice a índice.
+export function buildPrevDailyData(
+  orders: Order[], views: PageView[], period: Period
+): Array<{ label: string; revenue: number; orders: number; views: number }> {
+  const { days, granularity } = periodShape(period)
+  const prevStartMid = wallMidnight(prevCutoff(period))
+  return buildRangeDailyData(orders, views, prevStartMid, days, granularity)
 }

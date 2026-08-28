@@ -2,7 +2,7 @@
 import { useState } from "react"
 import { Users, TrendingUp, Eye, ShoppingBag, Info } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts"
-import { Order, PageView, Period, CONFIRMED, filterPeriod, filterPrevPeriod, pctChange, buildDailyData, PERIOD_DAYS } from "../types"
+import { Order, PageView, Period, CONFIRMED, filterPeriod, filterPrevPeriod, pctChange, buildDailyData, buildPrevDailyData } from "../types"
 import { PeriodSelector } from "../components/period-selector"
 import { StatCard } from "../components/stat-card"
 
@@ -39,26 +39,7 @@ export function TraficoSection({ orders, pageViews }: { orders: Order[]; pageVie
   const chartData = buildDailyData(orders, pageViews, period)
 
   // Previous period views data
-  const prevChartData = (() => {
-    const days = PERIOD_DAYS[period]
-    const granularity = days <= 30 ? 1 : days <= 90 ? 7 : 30
-    const result: Array<{ label: string; views: number }> = []
-    for (let i = days - 1; i >= 0; i -= granularity) {
-      const to = new Date(Date.now() - (days + i) * 86400000)
-      const from = new Date(Date.now() - (days + Math.min(i + granularity - 1, days - 1)) * 86400000)
-      const fromStr = from.toISOString().slice(0, 10)
-      const toStr = to.toISOString().slice(0, 10)
-      const periodViews = pageViews.filter(v => {
-        const d = v.created_at.slice(0, 10)
-        return d >= fromStr && d <= toStr
-      })
-      const label = granularity === 1
-        ? to.toLocaleDateString("es-CO", { month: "short", day: "numeric" })
-        : `${from.toLocaleDateString("es-CO", { month: "short", day: "numeric" })} – ${to.toLocaleDateString("es-CO", { day: "numeric" })}`
-      result.push({ label, views: periodViews.length })
-    }
-    return result
-  })()
+  const prevChartData = buildPrevDailyData([], pageViews, period)
 
   const mergedChart = chartData.map((d, i) => ({
     ...d,

@@ -2,7 +2,7 @@
 import { useState } from "react"
 import { DollarSign, ShoppingBag, BarChart3, Tag, TrendingUp, TrendingDown, Info } from "lucide-react"
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts"
-import { Order, Period, CONFIRMED, filterPeriod, filterPrevPeriod, pctChange, fmt, buildDailyData, PERIOD_DAYS } from "../types"
+import { Order, Period, CONFIRMED, filterPeriod, filterPrevPeriod, pctChange, fmt, buildDailyData, buildPrevDailyData } from "../types"
 import { PeriodSelector } from "../components/period-selector"
 import { StatCard } from "../components/stat-card"
 import type { Product } from "@/lib/supabase"
@@ -50,26 +50,7 @@ export function VentasSection({ orders, products }: { orders: Order[]; products:
   const chartData = buildDailyData(orders, [], period)
 
   // Build previous period chart data for overlay
-  const prevChartData = (() => {
-    const days = PERIOD_DAYS[period]
-    const granularity = days <= 30 ? 1 : days <= 90 ? 7 : 30
-    const result: Array<{ label: string; revenue: number }> = []
-    for (let i = days - 1; i >= 0; i -= granularity) {
-      const to = new Date(Date.now() - (days + i) * 86400000)
-      const from = new Date(Date.now() - (days + Math.min(i + granularity - 1, days - 1)) * 86400000)
-      const fromStr = from.toISOString().slice(0, 10)
-      const toStr = to.toISOString().slice(0, 10)
-      const periodOrders = orders.filter(o => {
-        const d = o.created_at.slice(0, 10)
-        return d >= fromStr && d <= toStr && CONFIRMED.includes(o.status)
-      })
-      const label = granularity === 1
-        ? to.toLocaleDateString("es-CO", { month: "short", day: "numeric" })
-        : `${from.toLocaleDateString("es-CO", { month: "short", day: "numeric" })} – ${to.toLocaleDateString("es-CO", { day: "numeric" })}`
-      result.push({ label, revenue: periodOrders.reduce((s, o) => s + o.total, 0) })
-    }
-    return result
-  })()
+  const prevChartData = buildPrevDailyData(orders, [], period)
 
   // Merge chart data
   const mergedChart = chartData.map((d, i) => ({
