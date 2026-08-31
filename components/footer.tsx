@@ -27,7 +27,7 @@ const footerLinks = {
   ],
   soporte: [
     { name: "WhatsApp: +57 319 456 5463", href: "https://wa.me/573194565463" },
-    { name: "monica@clichecolombia.com", href: "mailto:monica@clichecolombia.com" },
+    { name: "clichecomercioexterior@gmail.com", href: "mailto:clichecomercioexterior@gmail.com" },
     { name: "Seguimiento de pedido", href: "/pedido" },
     { name: "Preguntas Frecuentes", href: "/#faq" },
     { name: "Envíos y Devoluciones", href: "/terminos#envios" },
@@ -44,7 +44,7 @@ const socialLinks = [
   { name: "Instagram", icon: Instagram,    href: "https://www.instagram.com/clichearomasoficial" },
   { name: "TikTok",    icon: TikTokIcon,   href: "https://www.tiktok.com/@clichearomasoficial" },
   { name: "WhatsApp",  icon: MessageCircle, href: "https://wa.me/573194565463?text=Hola!+Vi+sus+productos+y+quiero+más+información" },
-  { name: "Email",     icon: Mail,         href: "mailto:monica@clichecolombia.com" },
+  { name: "Email",     icon: Mail,         href: "mailto:clichecomercioexterior@gmail.com" },
 ]
 
 export function Footer() {

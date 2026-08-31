@@ -144,10 +144,10 @@ export default function CookiesPage() {
               actualizar, rectificar y solicitar la supresión de tus datos
               personales (Arts. 8 y 16). Para ejercer estos derechos, escríbenos a{" "}
               <a
-                href="mailto:monica@clichecolombia.com"
+                href="mailto:clichecomercioexterior@gmail.com"
                 className="text-[#A67163] underline underline-offset-2 hover:text-[#8f5e51]"
               >
-                monica@clichecolombia.com
+                clichecomercioexterior@gmail.com
               </a>
               .
             </p>
