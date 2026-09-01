@@ -18,7 +18,9 @@ import { getConsent } from "@/components/cookie-consent"
  * Analíticas → GA4 + Clarity
  */
 
-const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || "1574258694440791"
+// Píxel "Cliché Web - Píxel" (cuenta de Andrés, 2026-09-01). Hardcodeado a propósito:
+// el env NEXT_PUBLIC_META_PIXEL_ID en Vercel aún apunta al dataset viejo (1574258694440791).
+const META_PIXEL_ID = "1083378614065362"
 const GA4_ID = process.env.NEXT_PUBLIC_GA4_ID || "G-TLBP0W75MF"
 const TIKTOK_PIXEL_ID = process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID || ""
 const CLARITY_ID = process.env.NEXT_PUBLIC_CLARITY_ID || "x02j83u050"
