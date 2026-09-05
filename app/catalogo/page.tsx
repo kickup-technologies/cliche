@@ -117,7 +117,7 @@ function ProductCard({ product, onQuickView }: { product: Product; onQuickView: 
         <button
           onClick={handleAdd}
           disabled={soldOut}
-          className={`absolute inset-x-2.5 bottom-2.5 translate-y-3 rounded-lg py-2.5 text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-background opacity-0 shadow-lg transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-50 sm:py-3 sm:text-[0.66rem] ${added ? "bg-primary" : "bg-foreground hover:bg-primary"}`}
+          className={`absolute inset-x-2.5 bottom-2.5 rounded-lg py-2.5 text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-background shadow-lg transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50 sm:translate-y-3 sm:py-3 sm:text-[0.66rem] sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100 ${added ? "bg-primary" : "bg-foreground hover:bg-primary"}`}
         >
           {soldOut ? "Agotado" : added ? "Agregado ✓" : "Añadir a la cesta"}
         </button>

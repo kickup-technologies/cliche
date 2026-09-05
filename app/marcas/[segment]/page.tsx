@@ -6,6 +6,7 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { AnnouncementBar } from "@/components/announcement-bar"
 import { WhatsAppButton } from "@/components/whatsapp-button"
+import { QuickAddButton } from "@/components/quick-add-button"
 import { Leaf, Sparkles, Clock, ShieldCheck, ArrowRight } from "lucide-react"
 import { createServerClient, isSupabaseConfigured, type Product } from "@/lib/supabase"
 import { CATALOG, getCatalogProduct } from "@/lib/catalog-data"
@@ -159,6 +160,9 @@ export default async function SegmentLanding({ params }: { params: Promise<{ seg
                     )}
                     <p className="text-sm font-semibold text-[#2D1A14] mt-1.5">{cop(p.price)}</p>
                   </div>
+                  {/* Compra en 1 toque desde el anuncio: sin este botón, el
+                      visitante de pauta debía entrar a la ficha para comprar. */}
+                  <QuickAddButton product={p} className="mt-2.5 w-full" />
                 </Link>
               )
             })}
@@ -175,7 +179,7 @@ export default async function SegmentLanding({ params }: { params: Promise<{ seg
           </p>
           <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
             <a
-              href="https://wa.me/573053374066?text=Hola%2C%20quiero%20una%20recomendaci%C3%B3n%20de%20aroma%20para%20mi%20marca"
+              href="https://wa.me/573122838844?text=Hola%2C%20quiero%20una%20recomendaci%C3%B3n%20de%20aroma%20para%20mi%20marca"
               className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[#A67163] text-white text-sm font-semibold"
             >
               Hablar con una asesora

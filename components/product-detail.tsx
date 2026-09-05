@@ -38,8 +38,16 @@ import {
   ShoppingBag, Star, ShieldCheck, Truck, BadgeCheck,
   ChevronRight, Plus, Minus, Share2, Heart, CheckCircle,
   Wind, Shirt, Home, AlertTriangle, Package, Gift, RotateCcw,
-  Timer, Check, Sparkles, Zap
+  Timer, Check, Sparkles, Zap, Flame
 } from "lucide-react"
+
+// Día de despacho del próximo pedido: salen el siguiente día hábil (lun-vie).
+// Se calcula con el día de la semana de Bogotá para que "mañana" sea cierto.
+function nextDispatchLabel(): string {
+  const weekday = new Date().toLocaleDateString("en-US", { weekday: "short", timeZone: "America/Bogota" })
+  if (weekday === "Fri" || weekday === "Sat") return "el lunes"
+  return "mañana"
+}
 import type { Product } from "@/lib/supabase"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -730,6 +738,16 @@ export function ProductDetail({ product, related }: Props) {
                 </div>
 
                 <div ref={ctaWrapRef} className="space-y-3">
+                  {/* Escasez REAL junto al CTA (mismo criterio legal que el badge
+                      de la galería: solo stock verdadero ≤8 — Ley 1480/SIC). */}
+                  {product.stock > 0 && product.stock <= 8 && (
+                    <div className="flex items-center gap-2 rounded-xl border border-amber-500/25 bg-amber-50 px-3.5 py-2.5">
+                      <Flame className="h-4 w-4 flex-shrink-0 text-amber-600" />
+                      <p className="text-[13px] font-medium text-amber-800">
+                        ¡Quedan solo <span className="font-bold">{product.stock} unidades</span> disponibles!
+                      </p>
+                    </div>
+                  )}
                   <Button
                     size="lg"
                     data-heat="Agregar al carrito"
@@ -757,6 +775,15 @@ export function ProductDetail({ product, related }: Props) {
                       <><Zap className="w-4 h-4 mr-2" /> Comprar ahora</>
                     )}
                   </Button>
+                  {/* Promesa de despacho real: los pedidos salen el siguiente
+                      día hábil. El texto calcula el día para hacerla concreta
+                      ("mañana"/"el lunes"), que convierte más que un genérico. */}
+                  {product.stock > 0 && (
+                    <p className="flex items-center justify-center gap-1.5 text-[12.5px] text-foreground/60">
+                      <Truck className="h-3.5 w-3.5 text-primary" />
+                      Pídelo hoy y lo despachamos <span className="font-semibold text-foreground/80">{nextDispatchLabel()}</span>
+                    </p>
+                  )}
                 </div>
 
                 {/* Acciones secundarias — discretas, estilo editorial */}
