@@ -40,7 +40,7 @@ export function TiendaSection({ settings, onSettingsUpdate }: TiendaSectionProps
   const textFields = [
     { key: "announcement_text",       label: "Texto de la barra de anuncio",       placeholder: "Envío gratis a partir de $150.000" },
     { key: "free_shipping_threshold", label: "Mínimo para envío gratis (COP)",      placeholder: "150000", type: "number" },
-    { key: "whatsapp_number",         label: "Número WhatsApp (con código país)",   placeholder: "573194565463" },
+    { key: "whatsapp_number",         label: "Número WhatsApp (con código país)",   placeholder: "573122838844" },
     { key: "whatsapp_message",        label: "Mensaje predeterminado WhatsApp",     placeholder: "Hola, me interesa..." },
     { key: "hero_title",              label: "Título del hero",                      placeholder: "Aromas que transforman tu hogar" },
     { key: "hero_subtitle",           label: "Subtítulo del hero",                  placeholder: "Fragancias artesanales..." },

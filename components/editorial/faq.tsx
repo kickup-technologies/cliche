@@ -103,7 +103,7 @@ export function Faq() {
               Ver el catálogo
             </Link>
             <a
-              href="https://wa.me/573194565463?text=Hola%2C%20tengo%20una%20pregunta%20sobre%20los%20aromas%20Clich%C3%A9"
+              href="https://wa.me/573122838844?text=Hola%2C%20tengo%20una%20pregunta%20sobre%20los%20aromas%20Clich%C3%A9"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center border border-foreground/30 px-9 py-3.5 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-foreground transition-colors hover:border-foreground hover:bg-foreground hover:text-background"

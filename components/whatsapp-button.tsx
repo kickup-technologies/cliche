@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 import { useCart } from "@/context/cart-context"
 import { useSiteSettings } from "@/lib/use-site-settings"
 
-const DEFAULT_PHONE = "573194565463"
+const DEFAULT_PHONE = "573122838844"
 const DEFAULT_MESSAGE = "Hola! Vi sus productos en la tienda online y me gustaría saber más"
 
 export function WhatsAppButton() {

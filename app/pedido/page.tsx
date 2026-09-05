@@ -92,7 +92,7 @@ export default function PedidoSearchPage() {
               <li className="flex items-start gap-2">
                 <span className="text-[#A67163] font-bold mt-0.5">3.</span>
                 Si no lo tienes, escríbenos al{" "}
-                <a href="https://wa.me/573194565463" className="text-[#A67163] font-semibold hover:underline" target="_blank" rel="noopener noreferrer">
+                <a href="https://wa.me/573122838844" className="text-[#A67163] font-semibold hover:underline" target="_blank" rel="noopener noreferrer">
                   WhatsApp
                 </a>{" "}
                 y te ayudamos.

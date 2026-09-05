@@ -23,11 +23,11 @@ const footerLinks = {
     { name: "Nuestra Historia", href: "/nosotros" },
     { name: "Marcas aliadas", href: "/#marcas" },
     { name: "Crea tu aroma", href: "/arma-tu-kit" },
-    { name: "Distribuidores", href: "https://wa.me/573194565463?text=Hola!+Quiero+info+sobre+distribuidores" },
+    { name: "Distribuidores", href: "https://wa.me/573122838844?text=Hola!+Quiero+info+sobre+distribuidores" },
   ],
   soporte: [
-    { name: "WhatsApp: +57 319 456 5463", href: "https://wa.me/573194565463" },
-    { name: "clichecomercioexterior@gmail.com", href: "mailto:clichecomercioexterior@gmail.com" },
+    { name: "WhatsApp: +57 312 283 8844", href: "https://wa.me/573122838844" },
+    { name: "monica@clichecolombia.com", href: "mailto:monica@clichecolombia.com" },
     { name: "Seguimiento de pedido", href: "/pedido" },
     { name: "Preguntas Frecuentes", href: "/#faq" },
     { name: "Envíos y Devoluciones", href: "/terminos#envios" },
@@ -43,8 +43,8 @@ const footerLinks = {
 const socialLinks = [
   { name: "Instagram", icon: Instagram,    href: "https://www.instagram.com/clichearomasoficial" },
   { name: "TikTok",    icon: TikTokIcon,   href: "https://www.tiktok.com/@clichearomasoficial" },
-  { name: "WhatsApp",  icon: MessageCircle, href: "https://wa.me/573194565463?text=Hola!+Vi+sus+productos+y+quiero+más+información" },
-  { name: "Email",     icon: Mail,         href: "mailto:clichecomercioexterior@gmail.com" },
+  { name: "WhatsApp",  icon: MessageCircle, href: "https://wa.me/573122838844?text=Hola!+Vi+sus+productos+y+quiero+más+información" },
+  { name: "Email",     icon: Mail,         href: "mailto:monica@clichecolombia.com" },
 ]
 
 export function Footer() {

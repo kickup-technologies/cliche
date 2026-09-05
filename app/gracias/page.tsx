@@ -224,7 +224,7 @@ function GraciasContent() {
             {/* Rescate humano: si la pasarela no deja pagar, que el cliente no
                 se vaya en silencio — un WhatsApp con la referencia lista. */}
             <a
-              href={`https://wa.me/573194565463?text=${encodeURIComponent(
+              href={`https://wa.me/573122838844?text=${encodeURIComponent(
                 `Hola, intenté pagar mi pedido${sessionId ? ` #${sessionId.slice(-8).toUpperCase()}` : ""} en la tienda y el pago no pasó. ¿Me ayudan a completarlo?`
               )}`}
               target="_blank"

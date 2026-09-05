@@ -89,7 +89,7 @@ const GROUPS: Group[] = [
     icon: MessageCircle,
     desc: "Botón flotante de contacto",
     fields: [
-      { key: "whatsapp_number", label: "Número (con código país)", placeholder: "573194565463" },
+      { key: "whatsapp_number", label: "Número (con código país)", placeholder: "573122838844" },
       { key: "whatsapp_message", label: "Mensaje predeterminado", placeholder: "Hola, me interesa...", area: true },
     ],
   },

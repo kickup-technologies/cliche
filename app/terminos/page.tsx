@@ -45,7 +45,7 @@ export default function TerminosPage() {
               <ul className="list-disc list-inside text-muted-foreground space-y-1 mt-3">
                 <li>Razón social: <strong>Cliché S.A.S.</strong> · NIT <strong>901.432.536-8</strong></li>
                 <li>Dirección de notificación: <strong>Calle 5A # 43B-25, Local 101, Medellín, Antioquia, Colombia</strong></li>
-                <li>Correo electrónico: <strong>clichecomercioexterior@gmail.com</strong></li>
+                <li>Correo electrónico: <strong>monica@clichecolombia.com</strong></li>
                 <li>WhatsApp: disponible en el Sitio</li>
                 <li>País de operación: Colombia</li>
               </ul>
@@ -107,7 +107,7 @@ export default function TerminosPage() {
                 <li>Al ejercer el retracto se resuelve el contrato y Cliché Aromas devolverá <strong>la totalidad del dinero pagado</strong>, en un plazo máximo de treinta (30) días calendario desde que el consumidor comunicó su decisión.</li>
                 <li>El producto debe devolverse en las mismas condiciones en que fue recibido: <strong>sin uso</strong>, con su empaque y sellos originales.</li>
                 <li>Los <strong>costos de transporte de la devolución</strong> del producto corren por cuenta del consumidor, conforme al artículo 47 de la Ley 1480.</li>
-                <li>Para ejercerlo, escribe a <strong>clichecomercioexterior@gmail.com</strong> o al WhatsApp del Sitio indicando tu número de pedido dentro del plazo señalado.</li>
+                <li>Para ejercerlo, escribe a <strong>monica@clichecolombia.com</strong> o al WhatsApp del Sitio indicando tu número de pedido dentro del plazo señalado.</li>
               </ul>
               <p className="text-muted-foreground leading-relaxed mt-3">
                 Este derecho es irrenunciable y opera con independencia de la garantía voluntaria descrita en la sección 8.
@@ -142,7 +142,7 @@ export default function TerminosPage() {
                 <li>El producto no debe haber sido usado en más del 20% de su contenido.</li>
                 <li>Debe presentarse prueba de compra (número de pedido o confirmación por correo).</li>
                 <li>El empaque original debe estar en buen estado.</li>
-                <li>La solicitud debe realizarse a <strong>clichecomercioexterior@gmail.com</strong> dentro del plazo establecido.</li>
+                <li>La solicitud debe realizarse a <strong>monica@clichecolombia.com</strong> dentro del plazo establecido.</li>
               </ol>
               <p className="text-muted-foreground leading-relaxed mt-3">
                 No aplicarán devoluciones por: preferencia de olor (los aromas están claramente descritos en el Sitio), productos dañados por uso inadecuado, o compras realizadas fuera de nuestros canales oficiales.
@@ -208,7 +208,7 @@ export default function TerminosPage() {
             <section>
               <h2 className="text-xl font-serif font-bold text-foreground mb-3">12. Contacto</h2>
               <p className="text-muted-foreground leading-relaxed">
-                Para cualquier consulta relacionada con estos términos, puedes escribirnos a <strong>clichecomercioexterior@gmail.com</strong> o a través del WhatsApp disponible en el Sitio. Atendemos de lunes a sábado de 8:00 a.m. a 6:00 p.m. (hora Colombia).
+                Para cualquier consulta relacionada con estos términos, puedes escribirnos a <strong>monica@clichecolombia.com</strong> o a través del WhatsApp disponible en el Sitio. Atendemos de lunes a sábado de 8:00 a.m. a 6:00 p.m. (hora Colombia).
               </p>
             </section>
 
