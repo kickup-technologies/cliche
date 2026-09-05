@@ -112,6 +112,31 @@ function getCookie(name: string): string | undefined {
     ?.split('=')[1]
 }
 
+/**
+ * fbc con respaldo manual ("parameter builder" de Meta): la cookie _fbc la
+ * crea el píxel del navegador, pero en iOS/adblock (la mayoría del tráfico de
+ * pauta) puede no existir aunque la visita SÍ venga de un anuncio (fbclid en
+ * la URL). Sin fbc, el evento del servidor pierde la atribución al clic — Meta
+ * reportaba "baja cobertura de fbc". Aquí se construye con el formato oficial
+ * fb.1.<ms>.<fbclid> y se conserva en sessionStorage para que TODO el embudo
+ * de esa sesión (ViewContent → … → Purchase) viaje con el id del clic.
+ */
+function ensureFbc(): string | undefined {
+  const cookie = getCookie('_fbc')
+  if (cookie) return cookie
+  try {
+    const fbclid = new URLSearchParams(window.location.search).get('fbclid')
+    if (fbclid) {
+      const built = `fb.1.${Date.now()}.${fbclid}`
+      sessionStorage.setItem('_cliche_fbc', built)
+      return built
+    }
+    return sessionStorage.getItem('_cliche_fbc') || undefined
+  } catch {
+    return undefined
+  }
+}
+
 function generateEventId(): string {
   return `${Date.now()}_${Math.random().toString(36).slice(2)}`
 }
@@ -145,7 +170,7 @@ export function useCAPI() {
     }
 
     // 2. Server-side CAPI (same event_id for deduplication)
-    const fbc = getCookie('_fbc')
+    const fbc = ensureFbc()
     const fbp = getCookie('_fbp')
 
     await fetch('/api/capi', {
