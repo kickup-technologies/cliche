@@ -8,6 +8,31 @@ import { isAdmin } from "@/lib/admin-auth"
  * Protegido por la cookie firmada del panel admin (isAdmin). Devuelve datos
  * personales de clientes, así que SIN auth no responde.
  */
+// PostgREST devuelve máximo 1.000 filas por consulta; se pagina con .range()
+// hasta agotar los registros del año para que ningún mes quede sin visitas.
+async function fetchAllPageViews(
+  supabase: ReturnType<typeof createServerClient>,
+  since: string
+): Promise<{ data: Array<{ path: string; created_at: string }> }> {
+  const PAGE = 1000
+  const all: Array<{ path: string; created_at: string }> = []
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from("page_views")
+      .select("path, created_at")
+      .gte("created_at", since)
+      .order("created_at", { ascending: false })
+      .range(from, from + PAGE - 1)
+    if (error) {
+      console.error("[admin/data] page_views error:", error)
+      break
+    }
+    all.push(...(data || []))
+    if (!data || data.length < PAGE) break
+  }
+  return { data: all }
+}
+
 export async function GET(req: NextRequest) {
   if (!isAdmin(req)) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
 
@@ -37,10 +62,10 @@ export async function GET(req: NextRequest) {
       supabase
         .from("site_settings")
         .select("*"),
-      supabase
-        .from("page_views")
-        .select("path, created_at")
-        .gte("created_at", oneYearAgo),
+      // page_views supera el tope de 1.000 filas por consulta de PostgREST:
+      // sin paginar, solo llegaban las filas más viejas y los meses recientes
+      // aparecían con 0 visitas en el panel. Se trae completo por páginas.
+      fetchAllPageViews(supabase, oneYearAgo),
     ])
 
     if (ordersErr) console.error("[admin/data] orders error:", ordersErr)

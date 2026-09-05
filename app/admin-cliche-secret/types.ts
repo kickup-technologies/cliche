@@ -1,4 +1,13 @@
-export type Period = "1d" | "7d" | "1m" | "3m" | "6m" | "1y"
+// Además de los presets, un mes calendario específico: "month:2026-07".
+export type Period = "1d" | "7d" | "1m" | "3m" | "6m" | "1y" | `month:${string}`
+
+// Descompone un periodo "month:YYYY-MM"; null para los presets.
+export function monthParts(period: Period): { y: number; m: number } | null {
+  if (!period.startsWith("month:")) return null
+  const [y, m] = period.slice(6).split("-").map(Number)
+  if (!y || !m) return null
+  return { y, m }
+}
 
 export interface Order {
   id: string
@@ -84,6 +93,8 @@ function bogotaMonthStart(monthsBack: number): Date {
 // curso (desde el día 1), "3 meses" = el mes actual + los 2 anteriores, etc.
 // "Hoy" = desde la medianoche de Bogotá; "7 días" sigue siendo móvil.
 export function cutoff(period: Period): Date {
+  const mp = monthParts(period)
+  if (mp) return wallToUtc(new Date(Date.UTC(mp.y, mp.m - 1, 1)))
   if (period === "1d") {
     const w = bogotaWall()
     return wallToUtc(new Date(Date.UTC(w.getUTCFullYear(), w.getUTCMonth(), w.getUTCDate())))
@@ -92,7 +103,17 @@ export function cutoff(period: Period): Date {
   return bogotaMonthStart(PERIOD_MONTHS[period]! - 1)
 }
 
+// Fin (exclusivo) del periodo: para un mes específico, el inicio del mes
+// siguiente; para los presets, "ahora".
+export function endCutoff(period: Period): Date {
+  const mp = monthParts(period)
+  if (mp) return wallToUtc(new Date(Date.UTC(mp.y, mp.m, 1)))
+  return new Date()
+}
+
 export function prevCutoff(period: Period): Date {
+  const mp = monthParts(period)
+  if (mp) return wallToUtc(new Date(Date.UTC(mp.y, mp.m - 2, 1)))
   if (period === "1d") return new Date(cutoff("1d").getTime() - DAY_MS)
   if (period === "7d") return new Date(Date.now() - 14 * DAY_MS)
   return bogotaMonthStart(2 * PERIOD_MONTHS[period]! - 1)
@@ -100,7 +121,8 @@ export function prevCutoff(period: Period): Date {
 
 export function filterPeriod<T extends { created_at: string }>(items: T[], period: Period): T[] {
   const c = cutoff(period)
-  return items.filter(i => new Date(i.created_at) >= c)
+  const end = endCutoff(period)
+  return items.filter(i => { const d = new Date(i.created_at); return d >= c && d < end })
 }
 
 // El periodo anterior se compara contra el mismo tramo transcurrido (p. ej. a
@@ -109,7 +131,9 @@ export function filterPeriod<T extends { created_at: string }>(items: T[], perio
 export function filterPrevPeriod<T extends { created_at: string }>(items: T[], period: Period): T[] {
   const c = cutoff(period)
   const pc = prevCutoff(period)
-  const end = new Date(pc.getTime() + (Date.now() - c.getTime()))
+  // Para un mes específico se compara contra el mes anterior COMPLETO
+  // (ambos cerrados); para los presets, contra el mismo tramo transcurrido.
+  const end = monthParts(period) ? c : new Date(pc.getTime() + (Date.now() - c.getTime()))
   return items.filter(i => { const d = new Date(i.created_at); return d >= pc && d < end })
 }
 
@@ -132,7 +156,10 @@ function wallMidnight(d: Date): number {
 // (varía por mes: agosto a día 28 son 28 buckets) y con qué agrupación.
 function periodShape(period: Period): { startMid: number; days: number; granularity: number } {
   const startMid = wallMidnight(cutoff(period))
-  const days = Math.round((wallMidnight(new Date()) - startMid) / DAY_MS) + 1
+  // Un mes pasado termina en su último día; el mes en curso (y los presets),
+  // en el día de hoy.
+  const endInstant = Math.min(endCutoff(period).getTime() - 1, Date.now())
+  const days = Math.round((wallMidnight(new Date(endInstant)) - startMid) / DAY_MS) + 1
   const granularity = days <= 31 ? 1 : days <= 92 ? 7 : 30
   return { startMid, days, granularity }
 }
