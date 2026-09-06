@@ -139,6 +139,17 @@ export function PedidosSection({
     return map
   }, [products])
 
+  // Cola de despacho: pedidos pagados aún sin enviar, de TODO el historial.
+  // Ignora a propósito el periodo y la vista: un pedido sin despachar no puede
+  // "desaparecer" del panel por tener puesto el filtro de otro mes.
+  const pendientesDespacho = useMemo(
+    () =>
+      orders
+        .filter(o => ["confirmed", "preparing", "paid"].includes(o.status))
+        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
+    [orders]
+  )
+
   const sourceOrders = vista === "pagados" ? orders : (intentos ?? [])
   const periodOrders = filterPeriod(sourceOrders, period)
   const confirmedOrders = periodOrders.filter(o => ["confirmed", "preparing", "shipped", "delivered", "paid"].includes(o.status))
@@ -346,6 +357,46 @@ export function PedidosSection({
         <p className="text-xs text-[#2D1A14]/45 bg-[#FAF8F5] border border-[#2D1A14]/8 rounded-xl px-4 py-2.5">
           Estos NO son pedidos: son personas que iniciaron el pago y no lo terminaron. No se cobró dinero y no hay nada que enviar. Es solo información (p. ej. para recuperar carritos).
         </p>
+      )}
+
+      {/* Cola fija de despacho: visible SIEMPRE, sin importar el filtro de
+          fechas ni la vista. Ordenada del pedido más viejo al más nuevo. */}
+      {pendientesDespacho.length > 0 && (
+        <div className="bg-amber-50/70 rounded-2xl border border-amber-200 overflow-hidden">
+          <div className="px-5 py-3 border-b border-amber-200/60 flex items-center justify-between gap-3 flex-wrap">
+            <p className="text-sm font-semibold text-amber-900">
+              📦 Por despachar ({pendientesDespacho.length})
+            </p>
+            <p className="text-[11px] text-amber-700/70">Siempre visibles, sin importar el filtro de fechas</p>
+          </div>
+          <div className="divide-y divide-amber-200/40">
+            {pendientesDespacho.map(o => {
+              const dias = Math.floor((Date.now() - new Date(o.created_at).getTime()) / 86_400_000)
+              const st = ORDER_STATUS_MAP[o.status]
+              return (
+                <div
+                  key={o.id}
+                  onClick={() => openOrder(o)}
+                  className="px-5 py-3 flex items-center justify-between gap-3 cursor-pointer hover:bg-amber-100/40 transition-colors"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-[#2D1A14] truncate">
+                      {o.customer_name || "Sin nombre"} <span className="text-[#2D1A14]/40">·</span> {fmt(o.total)}
+                    </p>
+                    <p className="text-xs text-[#2D1A14]/50">
+                      {new Date(o.created_at).toLocaleDateString("es-CO", { day: "numeric", month: "short", timeZone: "America/Bogota" })}
+                      {" · "}{st?.label || o.status}
+                      {o.shipping_address?.city ? ` · ${o.shipping_address.city}` : ""}
+                    </p>
+                  </div>
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border whitespace-nowrap ${dias >= 3 ? "bg-amber-100 text-amber-800 border-amber-300" : "bg-white text-[#2D1A14]/60 border-[#2D1A14]/10"}`}>
+                    {dias === 0 ? "hoy" : `⏰ ${dias} día${dias !== 1 ? "s" : ""}`}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
       )}
 
       {sorted.length === 0 ? (
