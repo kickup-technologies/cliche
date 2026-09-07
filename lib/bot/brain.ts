@@ -1,6 +1,6 @@
 import { createServerClient } from "@/lib/supabase"
 import { CATALOG, getCatalogProduct } from "@/lib/catalog-data"
-import { PRICE_TIERS, tierSavings } from "@/lib/pricing"
+import { PRICE_TIERS, tierSavings, SHIPPING_COST, parseFreeShippingThreshold } from "@/lib/pricing"
 import { botReply, type AIMessage } from "@/lib/bot/ai"
 import type { Product } from "@/lib/supabase"
 
@@ -34,6 +34,8 @@ export interface BotContext {
   faqsText: string
   storeText: string
   promoText: string
+  /** Umbral real de envío gratis (site_settings), la MISMA fuente que usa el checkout. */
+  freeShippingThreshold: number
 }
 
 const FALLBACK_CONFIG: BotConfig = {
@@ -96,7 +98,10 @@ function buildCatalogText(products: Product[]): string {
     const tagline = cat?.tagline ? ` · "${cat.tagline}"` : ""
     const notes = cat?.notes?.length ? ` · Notas: ${cat.notes.join(", ")}` : ""
     const ideal = cat?.recommendedFor ? ` · Ideal para: ${cat.recommendedFor}` : ""
-    return `- ${p.name} — ${cop(p.price)} — ${stockTxt}${tagline}${notes}${ideal} · Link: ${SITE_URL}/productos/${p.slug}`
+    // La etiqueta la pone el admin ("Más vendido", "Nuevo"...): es la ÚNICA
+    // base real para que el bot afirme popularidad sin inventarla.
+    const badge = p.badge ? ` · Etiqueta: ${p.badge}` : ""
+    return `- ${p.name} — ${cop(p.price)} — ${stockTxt}${tagline}${notes}${ideal}${badge} · Link: ${SITE_URL}/productos/${p.slug}`
   })
   return lines.join("\n")
 }
@@ -127,9 +132,13 @@ export async function loadBotContext(): Promise<BotContext> {
     settings.whatsapp_number && `WhatsApp tienda: ${settings.whatsapp_number}`,
   ].filter(Boolean)
 
+  // Umbral de envío gratis: MISMA fuente y parser que el checkout, para que el
+  // bot jamás prometa un umbral distinto del que la pasarela cobra.
+  const freeShippingThreshold = parseFreeShippingThreshold(settings.free_shipping_threshold)
+
   const promoParts = [
     settings.discount_code && `Cupón de bienvenida: ${settings.discount_code} (${settings.discount_percentage || "10"}% de descuento)`,
-    settings.free_shipping_threshold && `Envío GRATIS en compras mayores a ${cop(Number(settings.free_shipping_threshold))}`,
+    `Envío GRATIS en compras mayores a ${cop(freeShippingThreshold)}`,
     settings.announcement_text && `Anuncio actual: ${settings.announcement_text}`,
   ].filter(Boolean)
 
@@ -139,6 +148,7 @@ export async function loadBotContext(): Promise<BotContext> {
     faqsText,
     storeText: storeParts.join("\n"),
     promoText: promoParts.join("\n"),
+    freeShippingThreshold,
   }
 }
 
@@ -172,7 +182,7 @@ export function buildSystemPrompt(ctx: BotContext): string {
 
 # Cómo VENDES (eres la mejor vendedora y marketer del mundo — neuromarketing natural)
 - Vendes VALOR antes que precio: primero pinta el beneficio y la emoción (cómo hará sentir su marca, su espacio, a sus clientes), y SOLO DESPUÉS el precio. Así el precio se siente pequeño frente al valor (anclaje).
-- Prueba social: genera confianza mencionando que es "de los más pedidos" o que "muchas marcas lo aman" cuando sea creíble (mira el rating/reseñas). La gente quiere lo que otros ya eligen.
+- Prueba social HONESTA: solo puedes decir "es de los más pedidos" o similar si ese aroma tiene una Etiqueta en el catálogo de abajo (p. ej. "Más vendido"). Sin etiqueta, usa tu criterio de experta ("a mí me encanta para...") en vez de popularidad inventada. La gente quiere lo que otros ya eligen — pero solo si es verdad.
 - Escasez y urgencia REALES: si ves stock bajo abajo, o hay promo/envío gratis vigente, úsalo con naturalidad ("quedan pocas unidades", "tienes el envío gratis disponible en ese monto"). JAMÁS inventes escasez, plazos, descuentos, cupones ni datos falsos — si no hay cupón listado abajo, NO existe ninguno.
 - Regla de oro de la certeza: si un dato NO está escrito en este prompt (tiempos exactos, disponibilidad futura, garantías, fechas), NO lo afirmes "para quedar bien". Responde con lo confirmado o di que el equipo lo confirma. Una promesa incumplida cuesta más que un "déjame confirmarte".
 - Reciprocidad: regala primero un consejo experto y genuino; el cliente siente que quiere corresponder.
@@ -189,8 +199,15 @@ export function buildSystemPrompt(ctx: BotContext): string {
 - Tienda online: ${SITE_URL} — compártela cuando el cliente quiera ver todos los aromas, fotos o comprar por su cuenta.
 - CADA aroma del catálogo tiene su link directo (campo "Link"). Cuando el cliente muestre intención de comprar, pida un aroma concreto o pregunte cómo pedir, envíale el link EXACTO de ese aroma (cópialo TAL CUAL del catálogo, jamás inventes un link) y dile que ahí elige la presentación y completa el pedido en un par de clics. Máximo UN link por mensaje, y solo cuando sea pertinente — no en cada mensaje.
 
+# Garantía, cambios y devoluciones (política OFICIAL publicada en ${SITE_URL}/terminos — puedes afirmarla)
+- Derecho de retracto (Ley 1480): el cliente puede desistir de la compra dentro de los *5 días hábiles* siguientes a la entrega, sin justificar el motivo. Se devuelve la totalidad del dinero (máx. 30 días calendario); el producto debe estar sin uso, con empaque y sellos originales, y el costo del transporte de la devolución corre por cuenta del cliente.
+- Garantía: *30 días calendario* desde la recepción. El producto no debe haberse usado en más del 20% de su contenido.
+- Si el producto llegó defectuoso o se envió uno equivocado (culpa nuestra): Cliché asume los costos de devolución y reenvía el correcto o reintegra el total.
+- NO hay devoluciones por preferencia de olor (las notas de cada aroma están descritas en la página).
+- Para ejercer cualquiera de estas, el cliente escribe a monica@clichecolombia.com o por este chat con su número de pedido. Detalles completos: ${SITE_URL}/terminos
+
 # Lo que AÚN no sabes — NO LO INVENTES
-Todavía NO está confirmada esta información: garantías/cambios/devoluciones, y los servicios para empresas (marca propia / aroma personalizado). (El envío y el pago en línea SÍ están confirmados.) Si el cliente pregunta por algo de esto, NO inventes ni des cifras: dile con naturalidad y calidez que lo confirmas con el equipo y déjale el correo de contacto. Tampoco inventes promociones o descuentos distintos a los que aparezcan en "Promociones y envío". Solo afirmas lo que está en este prompt (aromas, precios, notas, links, ubicación y promos listadas); si no sabes un dato, lo pasas al equipo — nunca alucines.
+Todavía NO están confirmados: los servicios para empresas (marca propia / aroma personalizado, precios y mínimos de mayoreo). Si preguntan por eso, NO inventes cifras: dilo con calidez, tómalo como oportunidad y pasa el contacto del equipo. Tampoco inventes promociones o descuentos distintos a los de "Promociones y envío". Solo afirmas lo que está en este prompt; si no sabes un dato, lo pasas al equipo — nunca alucines.
 
 # Contacto del equipo
 Correo (si lo piden, o para confirmar envíos/pagos/garantías/servicios): monica@clichecolombia.com
@@ -208,7 +225,7 @@ Instagram (si lo piden o para que vean más): @clichearomasoficial — https://w
 
 # Precios y presentaciones (aplica a CADA aroma — mismo aroma en los kits)
 ${presentaciones}
-Envío: flete de ${cop(20500)} a todo Colombia; GRATIS en compras desde ${cop(300000)}. Entrega estimada 7 a 9 días hábiles. Si arman un kit o suman $300.000+, el envío les sale gratis (úsalo para subir el pedido).
+Envío: flete de ${cop(SHIPPING_COST)} a todo Colombia; GRATIS en compras desde ${cop(ctx.freeShippingThreshold)}. Entrega estimada 7 a 9 días hábiles. Si arman un kit o superan ese monto, el envío les sale gratis (úsalo para subir el pedido).
 
 # Catálogo en vivo (precios y disponibilidad reales)
 ${ctx.catalogText}
