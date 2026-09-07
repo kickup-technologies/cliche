@@ -79,6 +79,25 @@ export async function GET(req: NextRequest) {
         continue
       }
 
+      // ¿Este contacto YA COMPRÓ en la tienda? → no se le hace seguimiento de
+      // venta ("¿pudiste pensar en el aroma?") a alguien con pedido pagado:
+      // queda confundido y la marca queda mal (queja real del 7-sep).
+      const digits = f.contact_phone.replace(/\D/g, "").slice(-10)
+      if (digits.length === 10) {
+        const { data: paid } = await sb
+          .from("orders")
+          .select("id")
+          .in("status", ["paid", "confirmed", "preparing", "shipped", "delivered"])
+          .ilike("customer_phone", `%${digits}`)
+          .gte("created_at", new Date(Date.now() - 30 * 86_400_000).toISOString())
+          .limit(1)
+        if (paid && paid.length > 0) {
+          await sb.from("wa_followups").update({ status: "cancelled" }).eq("id", f.id)
+          cancelled++
+          continue
+        }
+      }
+
       // Anti-ban: plantillas variadas + pausa aleatoria entre envíos.
       const nudge = pickVariant([
         `Hola 🌿 soy ${name}, de Cliché. ¿Pudiste pensar en el aroma que buscabas? Con gusto te ayudo a elegir o te aparto el que más te haya gustado 😊`,

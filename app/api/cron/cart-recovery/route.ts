@@ -111,6 +111,33 @@ export async function GET(req: NextRequest) {
       const wantWa = !order.recovery_wa_sent && !!order.customer_phone && waReady && whatsapps < WA_MAX_PER_RUN
       if (!wantEmail && !wantWa) continue
 
+      // ── Guarda anti-vergüenza 0: ¿pagó con OTRO intento? ──
+      // Patrón real (Julián 2-sep, Alejandra 5-sep): falla el primer pago,
+      // reintentan y pagan bajo un pedido NUEVO. El pending viejo queda
+      // "abandonado" y le escribiríamos "termina tu compra" a alguien que ya
+      // compró. Si el mismo teléfono o correo tiene un pedido pagado POSTERIOR,
+      // este carrito se cierra sin enviar nada.
+      {
+        const digits = String(order.customer_phone || "").replace(/\D/g, "").slice(-10)
+        const email = String(order.customer_email || "").trim().toLowerCase()
+        const matchers: string[] = []
+        if (digits.length === 10) matchers.push(`customer_phone.ilike.%${digits}`)
+        if (email) matchers.push(`customer_email.ilike.${email}`)
+        if (matchers.length > 0) {
+          const { data: pagoPosterior } = await sb
+            .from("orders")
+            .select("id")
+            .in("status", ["paid", "confirmed", "preparing", "shipped", "delivered"])
+            .gt("created_at", order.created_at as string)
+            .or(matchers.join(","))
+            .limit(1)
+          if (pagoPosterior && pagoPosterior.length > 0) {
+            await sb.from("orders").update({ abandoned_email_sent: true, recovery_wa_sent: true }).eq("id", order.id)
+            continue
+          }
+        }
+      }
+
       // ── Guarda anti-vergüenza: ¿de verdad NO ha pagado? ──
       // Si el webhook de MP se cayó (pasó el 28-jul), un pedido PAGADO puede
       // seguir "pending" y le estaríamos escribiendo "termina tu compra" a

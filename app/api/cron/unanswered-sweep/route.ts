@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
           role: m.direction === "in" ? "user" : "assistant",
           content: m.body,
         }))
-        const result = await generateAdvisorReply(history, ctx)
+        const result = await generateAdvisorReply(history, ctx, phone)
 
         // ¿Pasó ALGO en la conversación mientras la IA generaba? Una respuesta
         // (bot/humano) hace innecesario este envío; un mensaje NUEVO del

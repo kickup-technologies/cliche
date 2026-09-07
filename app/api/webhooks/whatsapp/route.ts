@@ -240,7 +240,7 @@ export async function POST(req: NextRequest) {
         if (history[i].role === "user") { history[i].content = userText; break }
       }
 
-      const result = await generateAdvisorReply(history, ctx)
+      const result = await generateAdvisorReply(history, ctx, from)
       // Segundo chequeo: si durante la generación de la IA (~5-15s) llegó otro
       // mensaje del cliente, esta respuesta ya está desactualizada — se descarta
       // y responde la corrida del mensaje más nuevo (una sola respuesta, al día).

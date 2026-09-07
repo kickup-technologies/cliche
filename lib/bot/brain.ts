@@ -244,6 +244,58 @@ export interface BrainResult {
   sendCatalogPdf: boolean
 }
 
+// Estados que significan "este cliente YA pagó".
+export const ORDER_PAID_STATUSES = ["paid", "confirmed", "preparing", "shipped", "delivered"]
+
+const ORDER_STATUS_ES: Record<string, string> = {
+  paid: "pagado",
+  confirmed: "confirmado",
+  preparing: "en preparación para despacho",
+  shipped: "despachado",
+  delivered: "entregado",
+}
+
+/**
+ * Busca el pedido pagado más reciente (últimos 45 días) del teléfono que está
+ * chateando y lo convierte en contexto para el prompt. Sin esto, el bot le
+ * vendía a gente que YA había comprado ("¿quieres que te lo enviemos?") y el
+ * cliente quedaba confundido — queja real de Mónica del 7-sep.
+ * El teléfono del chat llega como 57XXXXXXXXXX y en orders sin indicativo:
+ * se comparan los últimos 10 dígitos.
+ */
+export async function recentOrderSnippet(contactPhone: string): Promise<string | null> {
+  const digits = contactPhone.replace(/\D/g, "").slice(-10)
+  if (digits.length < 10) return null
+  try {
+    const sb = createServerClient()
+    const { data } = await sb
+      .from("orders")
+      .select("id, stripe_session_id, total, status, created_at, items, tracking_number, carrier")
+      .in("status", ORDER_PAID_STATUSES)
+      .ilike("customer_phone", `%${digits}`)
+      .gte("created_at", new Date(Date.now() - 45 * 86_400_000).toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1)
+    const o = data?.[0]
+    if (!o) return null
+    const ref = String(o.stripe_session_id || o.id).slice(-8).toUpperCase()
+    const fecha = new Date(o.created_at).toLocaleDateString("es-CO", { day: "numeric", month: "long", timeZone: "America/Bogota" })
+    const items = Array.isArray(o.items)
+      ? (o.items as Array<{ name?: string; quantity?: number }>).map((i) => `${i.name || "producto"} x${i.quantity || 1}`).join(", ")
+      : "sus productos"
+    const guia = o.tracking_number && o.tracking_number !== "null"
+      ? `guía ${o.tracking_number}${o.carrier ? ` por ${o.carrier}` : ""}`
+      : "aún sin guía de envío"
+    return `# PEDIDO RECIENTE DE ESTE CLIENTE (dato real y verificado — úsalo)
+Este cliente YA COMPRÓ Y PAGÓ: pedido #${ref} del ${fecha} (${items}, total ${cop(o.total)}), estado: ${ORDER_STATUS_ES[o.status] || o.status}, ${guia}.
+- NUNCA le ofrezcas comprar lo que ya pidió, ni le preguntes "¿quieres continuar con tu compra?" o "¿quieres que te lo enviemos?": su compra YA está hecha. Reconócela y agradécele.
+- Si pregunta por su pedido: responde con el estado real de arriba. Si aún no hay guía, dile que se despacha lo más pronto posible y que la guía le llegará al correo — sin prometer fechas.
+- Puedes ofrecerle ayuda con otra cosa o complementos, con suavidad y sin presión.`
+  } catch {
+    return null
+  }
+}
+
 /**
  * Convierte restos de Markdown a formato WhatsApp. El prompt ya lo prohíbe,
  * pero los modelos a veces desobedecen ("**negrita**", títulos '#', viñetas
@@ -263,9 +315,16 @@ export function toWhatsAppFormat(text: string): string {
  * Genera la respuesta del asesor a partir del historial de la conversación.
  * `history` viene en orden cronológico (más antiguo primero).
  */
-export async function generateAdvisorReply(history: AIMessage[], ctx?: BotContext): Promise<BrainResult> {
+export async function generateAdvisorReply(history: AIMessage[], ctx?: BotContext, contactPhone?: string): Promise<BrainResult> {
   const context = ctx || (await loadBotContext())
   let system = buildSystemPrompt(context)
+
+  // Conciencia de pedidos: si quien chatea ya compró, el bot debe saberlo
+  // ANTES de responder (no venderle de nuevo, poder informar el estado).
+  if (contactPhone) {
+    const orderCtx = await recentOrderSnippet(contactPhone)
+    if (orderCtx) system += `\n\n${orderCtx}`
+  }
 
   // Primer contacto (sin historial previo): la asesora se presenta una sola vez.
   const userTurns = history.filter((m) => m.role === "user").length
