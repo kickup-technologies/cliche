@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
-import DOMPurify from "isomorphic-dompurify"
+import { sanitizeRichHtml } from "@/lib/sanitize"
 import { createServerClient } from "@/lib/supabase"
 import { isAdmin } from "@/lib/admin-auth"
 
@@ -17,10 +17,7 @@ export function pickProductFields(body: Record<string, unknown>) {
   // page_content es HTML del editor visual y la ficha lo renderiza con
   // dangerouslySetInnerHTML: se sanitiza SIEMPRE en el servidor.
   if (typeof out.page_content === "string") {
-    out.page_content = DOMPurify.sanitize(out.page_content, {
-      ALLOWED_ATTR: ["href", "src", "alt", "title", "style", "class", "target", "rel", "width", "height"],
-      ALLOWED_URI_REGEXP: /^(?:https?:|mailto:|tel:|data:image\/|\/(?!\/))/i,
-    })
+    out.page_content = sanitizeRichHtml(out.page_content)
   }
   return out
 }

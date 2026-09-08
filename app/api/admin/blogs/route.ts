@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
-import DOMPurify from "isomorphic-dompurify"
+import { sanitizeRichHtml } from "@/lib/sanitize"
 import { createServerClient } from "@/lib/supabase"
 import { isAdmin } from "@/lib/admin-auth"
 
@@ -15,10 +15,7 @@ export function pickBlogFields(body: Record<string, unknown>) {
   // El contenido llega como HTML del editor: se sanitiza SIEMPRE en el servidor
   // porque el sitio lo renderiza con dangerouslySetInnerHTML.
   if (typeof out.content === "string") {
-    out.content = DOMPurify.sanitize(out.content, {
-      ALLOWED_ATTR: ["href", "src", "alt", "title", "style", "class", "target", "rel", "width", "height"],
-      ALLOWED_URI_REGEXP: /^(?:https?:|mailto:|tel:|data:image\/|\/(?!\/))/i,
-    })
+    out.content = sanitizeRichHtml(out.content)
   }
   return out
 }
