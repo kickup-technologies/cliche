@@ -17,7 +17,7 @@ export function pickBlogFields(body: Record<string, unknown>) {
   if (typeof out.content === "string") {
     out.content = DOMPurify.sanitize(out.content, {
       ALLOWED_ATTR: ["href", "src", "alt", "title", "style", "class", "target", "rel", "width", "height"],
-      ALLOWED_URI_REGEXP: /^(?:https?:|mailto:|tel:|\/(?!\/))/i,
+      ALLOWED_URI_REGEXP: /^(?:https?:|mailto:|tel:|data:image\/|\/(?!\/))/i,
     })
   }
   return out

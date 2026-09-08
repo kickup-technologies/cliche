@@ -6,7 +6,7 @@ import {
   Bold, Italic, Underline as UnderlineIcon, Strikethrough, Undo2, Redo2,
   Heading2, Heading3, Pilcrow, List, ListOrdered, Quote, Minus as MinusIcon,
   AlignLeft, AlignCenter, AlignRight, Link2, Link2Off, ImageIcon, Highlighter,
-  Eye, EyeOff, ExternalLink, Baseline,
+  Eye, EyeOff, ExternalLink, Baseline, FileUp,
 } from "lucide-react"
 import { useEditor, EditorContent, type Editor } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
@@ -21,6 +21,7 @@ import type { BlogPost } from "@/lib/supabase"
 import { adminFetch } from "@/lib/admin-client"
 import { subirImagen } from "@/lib/admin-upload"
 import { IMAGE_ACCEPT } from "@/lib/upload-limits"
+import { imagePasteDropProps, base64ToFile } from "../components/editor-media"
 
 /**
  * Sección "Blog" — lista de artículos + editor tipo documento (Tiptap).
@@ -193,8 +194,10 @@ function BlogEditor({ initial, onBack, onSaved }: {
   const [savedAt, setSavedAt] = useState<Date | null>(null)
   const [uploadingCover, setUploadingCover] = useState(false)
   const [uploadingInline, setUploadingInline] = useState(false)
+  const [importing, setImporting] = useState(false)
   const coverRef = useRef<HTMLInputElement>(null)
   const inlineRef = useRef<HTMLInputElement>(null)
+  const importRef = useRef<HTMLInputElement>(null)
   const originalRef = useRef("")
 
   const editor = useEditor({
@@ -214,6 +217,9 @@ function BlogEditor({ initial, onBack, onSaved }: {
     immediatelyRender: false,
     editorProps: {
       attributes: { class: "blog-content focus:outline-none min-h-[50vh]" },
+      // Imágenes pegadas o arrastradas: se suben al servidor y se inserta su
+      // URL definitiva (antes quedaba un blob local → ícono roto al guardar).
+      ...imagePasteDropProps(setError),
     },
   })
 
@@ -257,6 +263,82 @@ function BlogEditor({ initial, onBack, onSaved }: {
     else setError(r.error)
   }
 
+  /**
+   * Importar un archivo con el artículo ya escrito (p. ej. descargado de
+   * Google Docs como .docx). La estructura se conserva: títulos, negritas,
+   * listas, citas y enlaces; las imágenes embebidas se SUBEN al servidor
+   * para que no se corrompan al publicar.
+   */
+  async function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !editor) return
+    if (importRef.current) importRef.current.value = ""
+    const replace = editor.isEmpty
+      ? true
+      : confirm("¿Reemplazar el contenido actual con el del archivo? (Cancelar lo añade al final)")
+    setImporting(true); setError("")
+    try {
+      const name = file.name.toLowerCase()
+      let html = ""
+      if (name.endsWith(".docx")) {
+        const mammoth = await import("mammoth")
+        const arrayBuffer = await file.arrayBuffer()
+        const result = await mammoth.convertToHtml(
+          { arrayBuffer },
+          {
+            // El H1 lo pone el título del post: los encabezados del documento
+            // entran como H2/H3 para que la jerarquía de la página se conserve.
+            styleMap: [
+              "p[style-name='Title'] => h2:fresh",
+              "p[style-name='Título'] => h2:fresh",
+              "p[style-name='Subtitle'] => h3:fresh",
+              "p[style-name='Subtítulo'] => h3:fresh",
+            ],
+            convertImage: mammoth.images.imgElement(async (image) => {
+              try {
+                const b64 = await image.readAsBase64String()
+                const r = await subirImagen(base64ToFile(b64, image.contentType || "image/png"))
+                if ("url" in r) return { src: r.url }
+                // Si la subida falla, la imagen entra embebida (data:) para
+                // no perderla; el sanitizador del servidor la permite.
+                return { src: `data:${image.contentType};base64,${b64}` }
+              } catch {
+                return { src: "" }
+              }
+            }),
+          },
+        )
+        html = result.value
+          // mammoth deja h1 si el doc usa Heading 1: se baja a h2 (ver arriba).
+          .replace(/<(\/?)h1>/g, "<$1h2>")
+      } else if (name.endsWith(".html") || name.endsWith(".htm")) {
+        const raw = await file.text()
+        const bodyMatch = raw.match(/<body[^>]*>([\s\S]*)<\/body>/i)
+        html = bodyMatch ? bodyMatch[1] : raw
+      } else if (name.endsWith(".txt") || name.endsWith(".md")) {
+        const text = await file.text()
+        html = text
+          .split(/\n{2,}/)
+          .map(p => `<p>${p.trim().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/\n/g, "<br>")}</p>`)
+          .join("")
+      } else {
+        setError("Formato no soportado. Sube un .docx (Google Docs → Archivo → Descargar → Word), .html o .txt.")
+        return
+      }
+      if (!html.trim()) { setError("El archivo llegó vacío o no se pudo leer."); return }
+      if (replace) editor.commands.setContent(html)
+      else editor.chain().focus("end").insertContent(html).run()
+      if (!post.title?.trim()) {
+        setField("title", file.name.replace(/\.(docx|html?|txt|md)$/i, "").replace(/[-_]+/g, " "))
+      }
+    } catch (err) {
+      console.error("[blog import]", err)
+      setError("No se pudo leer el archivo. Verifica que sea un .docx válido e intenta de nuevo.")
+    } finally {
+      setImporting(false)
+    }
+  }
+
   async function save() {
     if (!editor) return
     const p = { ...post, content: editor.getHTML() }
@@ -294,6 +376,22 @@ function BlogEditor({ initial, onBack, onSaved }: {
           <ArrowLeft className="w-4 h-4" /> Volver
         </button>
         <div className="flex-1" />
+        <button
+          onClick={() => importRef.current?.click()}
+          disabled={importing}
+          title="Importar un artículo escrito en Google Docs (descárgalo como .docx), HTML o texto"
+          className="flex items-center gap-1.5 px-3 h-9 rounded-xl border border-[#2D1A14]/15 bg-white text-xs font-semibold text-[#2D1A14]/70 hover:border-[#A67163]/50 hover:text-[#A67163] transition-colors disabled:opacity-50"
+        >
+          {importing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <FileUp className="w-3.5 h-3.5" />}
+          Abrir archivo
+        </button>
+        <input
+          ref={importRef}
+          type="file"
+          accept=".docx,.html,.htm,.txt,.md"
+          className="hidden"
+          onChange={handleImportFile}
+        />
         {post.id && post.slug && published && (
           <a
             href={`/blog/${post.slug}`}

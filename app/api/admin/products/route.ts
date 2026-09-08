@@ -19,7 +19,7 @@ export function pickProductFields(body: Record<string, unknown>) {
   if (typeof out.page_content === "string") {
     out.page_content = DOMPurify.sanitize(out.page_content, {
       ALLOWED_ATTR: ["href", "src", "alt", "title", "style", "class", "target", "rel", "width", "height"],
-      ALLOWED_URI_REGEXP: /^(?:https?:|mailto:|tel:|\/(?!\/))/i,
+      ALLOWED_URI_REGEXP: /^(?:https?:|mailto:|tel:|data:image\/|\/(?!\/))/i,
     })
   }
   return out
@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
     const db = createServerClient()
     const { data, error } = await db
       .from("products")
-      .select("id, name, price, stock, image_url")
+      .select("id, name, slug, price, stock, image_url, category, badge, badge_color, is_active")
       .order("name", { ascending: true })
 
     if (error) throw error

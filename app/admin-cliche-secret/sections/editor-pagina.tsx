@@ -15,6 +15,7 @@ import { subirImagen } from "@/lib/admin-upload"
 import { IMAGE_ACCEPT } from "@/lib/upload-limits"
 import { PRODUCT_PLACEHOLDER } from "@/lib/placeholder"
 import { EditorToolbar } from "./blogs"
+import { imagePasteDropProps } from "../components/editor-media"
 
 /**
  * Editor visual de la ficha del producto: réplica 1:1 del layout de la página
@@ -54,16 +55,26 @@ export function EditorPaginaProducto({ product, onClose, onSaved }: {
     immediatelyRender: false,
     editorProps: {
       attributes: { class: "blog-content focus:outline-none min-h-[200px]" },
+      // Imágenes pegadas/arrastradas suben al servidor (igual que en el blog).
+      ...imagePasteDropProps(setError),
     },
   })
 
+  // Huella de lo último GUARDADO (no del prop, que no se refresca tras
+  // guardar): sin esto, "Volver" avisaba de cambios sin guardar ya guardados.
+  const savedRef = useRef<string | null>(null)
+  function fingerprint(n: string, dt: string, d: string, content: string) {
+    return JSON.stringify({ n, dt, d, content })
+  }
   function hasChanges() {
-    return (
-      name !== product.name ||
-      descTitle !== (product.description_title || "") ||
-      desc !== (product.description || "") ||
-      (editor?.getHTML() || "") !== (product.page_content || (editor ? "<p></p>" : ""))
+    const current = fingerprint(name, descTitle, desc, editor?.getHTML() || "")
+    const base = savedRef.current ?? fingerprint(
+      product.name,
+      product.description_title || "",
+      product.description || "",
+      editor ? (product.page_content || "<p></p>") : "",
     )
+    return current !== base
   }
 
   function requestClose() {
@@ -101,6 +112,8 @@ export function EditorPaginaProducto({ product, onClose, onSaved }: {
         return
       }
       setSavedAt(new Date())
+      setName(name.trim()); setDescTitle(descTitle.trim())
+      savedRef.current = fingerprint(name.trim(), descTitle.trim(), desc, editor?.getHTML() || "")
       await onSaved()
     } catch {
       setError("Error de conexión.")

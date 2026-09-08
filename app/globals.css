@@ -440,6 +440,9 @@ html.lenis body {
 .blog-content > * + * {
   margin-top: 1.1em;
 }
+/* h1 solo llega desde documentos importados: se ve como h2 para no competir
+   con el título del artículo. */
+.blog-content h1,
 .blog-content h2 {
   font-family: var(--font-serif), Georgia, serif;
   font-size: 1.75rem;
