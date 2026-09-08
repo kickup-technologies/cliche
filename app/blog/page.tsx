@@ -47,9 +47,9 @@ export default async function BlogPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {/* Cabecera de la sección */}
           <div className="mb-10 lg:mb-14">
-            <p className="eyebrow text-primary mb-3">Cliché Colombia</p>
+            <p className="eyebrow text-primary mb-3">El journal de Cliché</p>
             <h1 className="font-serif text-4xl sm:text-5xl font-bold text-foreground leading-tight">
-              El Blog
+              Notas de Aroma
             </h1>
             <p className="mt-3 text-muted-foreground max-w-xl">
               Historias, guías y consejos sobre aromas, bienestar y marketing olfativo.
