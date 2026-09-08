@@ -1,6 +1,6 @@
 "use client"
 import { useState, useRef, useEffect } from "react"
-import { Plus, Pencil, Minus, RefreshCw, Save, X, AlertCircle, ToggleLeft, ToggleRight, Upload, ImageIcon, Trash2 } from "lucide-react"
+import { Plus, Pencil, Minus, RefreshCw, Save, X, AlertCircle, ToggleLeft, ToggleRight, Upload, ImageIcon, Trash2, LayoutTemplate } from "lucide-react"
 import { fmt } from "../types"
 import type { Product } from "@/lib/supabase"
 import { adminFetch } from "@/lib/admin-client"
@@ -8,6 +8,7 @@ import { PRODUCT_PLACEHOLDER } from "@/lib/placeholder"
 import { IMAGE_ACCEPT, IMAGE_FORMATS_TEXTO, MAX_IMAGE_MB } from "@/lib/upload-limits"
 import { subirImagen } from "@/lib/admin-upload"
 import { Ayuda } from "../components/ayuda"
+import { EditorPaginaProducto } from "./editor-pagina"
 
 // Categorías (familias olfativas) que el admin asigna al producto. Deben
 // coincidir con las del catálogo (app/catalogo/page.tsx → FAMILIES).
@@ -52,6 +53,8 @@ function snapshot(p: Partial<Product> | null): string {
 
 export function InventarioSection({ products, onRefresh }: { products: Product[]; onRefresh: () => Promise<void> }) {
   const [modal, setModal] = useState<{ open: boolean; product: Partial<Product> | null }>({ open: false, product: null })
+  // Editor visual de la página de ventas (réplica 1:1); sustituye la parrilla.
+  const [pageEditor, setPageEditor] = useState<Product | null>(null)
   // Huella del producto tal como se abrió: contra esto se compara al cerrar.
   const originalRef = useRef("")
   const [modalSaving, setModalSaving] = useState(false)
@@ -227,6 +230,16 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
 
   const modalImages = imagesOf(modal.product)
 
+  if (pageEditor) {
+    return (
+      <EditorPaginaProducto
+        product={pageEditor}
+        onClose={() => setPageEditor(null)}
+        onSaved={onRefresh}
+      />
+    )
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -327,6 +340,15 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
                   {product.is_active ? "Activo" : "Oculto"}
                 </button>
               </div>
+
+              {/* Editor visual: réplica 1:1 de la página de ventas. */}
+              <button
+                onClick={e => { e.stopPropagation(); setPageEditor(product) }}
+                className="w-full mt-1 flex items-center justify-center gap-1.5 text-[11px] font-semibold px-2 py-1.5 rounded-lg border border-[#A67163]/30 text-[#A67163] hover:bg-[#A67163]/8 transition-colors"
+                title="Editar los textos de la página de ventas tal como se ve"
+              >
+                <LayoutTemplate className="w-3.5 h-3.5" /> Editar página
+              </button>
             </div>
           </div>
           )

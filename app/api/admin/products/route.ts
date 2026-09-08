@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
+import DOMPurify from "isomorphic-dompurify"
 import { createServerClient } from "@/lib/supabase"
 import { isAdmin } from "@/lib/admin-auth"
 
@@ -7,11 +8,20 @@ import { isAdmin } from "@/lib/admin-auth"
 export const PRODUCT_FIELDS = [
   "name", "slug", "price", "original_price", "description", "description_title", "image_url",
   "image_urls", "category", "badge", "badge_color", "stock", "rating", "reviews", "is_active",
+  "page_content",
 ] as const
 
 export function pickProductFields(body: Record<string, unknown>) {
   const out: Record<string, unknown> = {}
   for (const k of PRODUCT_FIELDS) if (k in body) out[k] = body[k]
+  // page_content es HTML del editor visual y la ficha lo renderiza con
+  // dangerouslySetInnerHTML: se sanitiza SIEMPRE en el servidor.
+  if (typeof out.page_content === "string") {
+    out.page_content = DOMPurify.sanitize(out.page_content, {
+      ALLOWED_ATTR: ["href", "src", "alt", "title", "style", "class", "target", "rel", "width", "height"],
+      ALLOWED_URI_REGEXP: /^(?:https?:|mailto:|tel:|\/(?!\/))/i,
+    })
+  }
   return out
 }
 

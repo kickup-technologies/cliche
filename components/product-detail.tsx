@@ -511,6 +511,15 @@ export function ProductDetail({ product, related }: Props) {
                       ))
                   }
                 </div>
+
+                {/* Contenido libre escrito desde el editor visual del panel
+                    (HTML ya sanitizado al guardar en la API). */}
+                {product.page_content && (
+                  <div
+                    className="blog-content mt-10 hidden lg:block"
+                    dangerouslySetInnerHTML={{ __html: product.page_content }}
+                  />
+                )}
               </div>
             </div>
 
@@ -821,6 +830,15 @@ export function ProductDetail({ product, related }: Props) {
               </div>
             </div>
           </div>
+
+          {/* En móvil las columnas se apilan: el contenido libre iría entre la
+              galería y el botón de compra, así que aquí se muestra después. */}
+          {product.page_content && (
+            <div
+              className="blog-content mb-14 lg:hidden"
+              dangerouslySetInnerHTML={{ __html: product.page_content }}
+            />
+          )}
 
           {/* Info en acordeón — cada botón guarda/despliega su contenido (ancho completo) */}
           <div className="w-full mb-20">

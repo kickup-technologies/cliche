@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase"
 import { getSupabaseBrowser } from "@/lib/supabase/client"
 import {
   LayoutDashboard, TrendingUp, BarChart3, Star, ShoppingBag, Zap,
-  Package, Settings, Lock, RefreshCw, AlertCircle, Eye, LogOut, Menu, X, Paintbrush, Flame, Ticket, MessageCircle, Users, Search,
+  Package, Settings, Lock, RefreshCw, AlertCircle, Eye, LogOut, Menu, X, Paintbrush, Flame, Ticket, MessageCircle, Users, Search, Newspaper,
 } from "lucide-react"
 import type { Product } from "@/lib/supabase"
 import { Order, PageView } from "./types"
@@ -24,9 +24,10 @@ import { DescuentosSection } from "./sections/descuentos"
 import { AsistenteSection } from "./sections/asistente"
 import { ClientesSection } from "./sections/clientes"
 import { SeoSection } from "./sections/seo"
+import { BlogsSection } from "./sections/blogs"
 import { ChatAyuda } from "./components/chat-ayuda"
 
-type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "heatmaps" | "pedidos" | "clientes" | "descuentos" | "inventario" | "seo" | "asistente"
+type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "heatmaps" | "pedidos" | "clientes" | "descuentos" | "blogs" | "inventario" | "seo" | "asistente"
 
 interface Setting { key: string; value: string }
 
@@ -44,6 +45,7 @@ const SIDEBAR = [
     { id: "pedidos",   label: "Pedidos",              icon: ShoppingBag },
     { id: "clientes",  label: "Clientes",             icon: Users },
     { id: "descuentos", label: "Códigos de descuento", icon: Ticket },
+    { id: "blogs",      label: "Blog",                 icon: Newspaper },
   ]},
   { section: "ASISTENTE", items: [
     { id: "asistente", label: "Asistente WhatsApp", icon: MessageCircle },
@@ -524,6 +526,9 @@ export default function AdminPage() {
           )}
           {activeSection === "descuentos" && (
             <DescuentosSection />
+          )}
+          {activeSection === "blogs" && (
+            <BlogsSection />
           )}
           {activeSection === "inventario" && (
             <InventarioSection products={products} onRefresh={loadAll} />

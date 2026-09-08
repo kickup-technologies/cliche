@@ -33,6 +33,9 @@ export interface Product {
   description: string | null
   // Título opcional que el admin puede mostrar arriba de la descripción
   description_title?: string | null
+  // Contenido libre (HTML del editor visual del panel) que se muestra bajo la
+  // galería de la ficha del producto
+  page_content?: string | null
   image_url: string
   image_urls: string[]
   category?: string | null
@@ -42,6 +45,20 @@ export interface Product {
   rating: number
   reviews: number
   is_active: boolean
+  created_at: string
+  updated_at?: string
+}
+
+export interface BlogPost {
+  id: string
+  slug: string
+  title: string
+  excerpt: string | null
+  cover_url: string | null
+  content: string
+  author: string | null
+  published: boolean
+  published_at: string | null
   created_at: string
   updated_at?: string
 }

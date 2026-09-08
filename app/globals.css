@@ -428,3 +428,83 @@ html.lenis body {
     scroll-behavior: auto !important;
   }
 }
+
+/* ── Blog: cuerpo del artículo ─────────────────────────────────────────────
+   Compartido por el sitio público (/blog/[slug]) y el editor del panel admin
+   (Tiptap) para que lo que se escribe se vea EXACTAMENTE igual publicado. */
+.blog-content {
+  color: var(--foreground);
+  font-size: 1.125rem;
+  line-height: 1.8;
+}
+.blog-content > * + * {
+  margin-top: 1.1em;
+}
+.blog-content h2 {
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-top: 2em;
+}
+.blog-content h3 {
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-top: 1.6em;
+}
+.blog-content a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.blog-content a:hover {
+  color: var(--accent);
+}
+.blog-content blockquote {
+  border-left: 3px solid var(--primary);
+  padding-left: 1.25rem;
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 1.25rem;
+  font-style: italic;
+  color: var(--muted-foreground);
+}
+.blog-content ul,
+.blog-content ol {
+  padding-left: 1.5rem;
+}
+.blog-content ul { list-style: disc; }
+.blog-content ol { list-style: decimal; }
+.blog-content li { margin-top: 0.4em; }
+.blog-content img,
+.blog-content .blog-img {
+  border-radius: 1rem;
+  max-width: 100%;
+  height: auto;
+  margin-left: auto;
+  margin-right: auto;
+}
+.blog-content hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2.5rem auto;
+  width: 40%;
+}
+.blog-content mark {
+  background: var(--secondary);
+  color: inherit;
+  padding: 0.05em 0.2em;
+  border-radius: 0.25em;
+}
+.blog-content strong { font-weight: 700; }
+.blog-content s { opacity: 0.6; }
+
+/* Placeholder del editor (Tiptap) en el panel admin */
+.blog-content p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: color-mix(in srgb, var(--foreground) 25%, transparent);
+  pointer-events: none;
+  height: 0;
+}

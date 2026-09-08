@@ -19,6 +19,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .select("slug, updated_at")
     .eq("is_active", true)
 
+  const { data: posts } = await supabase
+    .from("blog_posts")
+    .select("slug, updated_at")
+    .eq("published", true)
+
+  const blogUrls: MetadataRoute.Sitemap = (posts || []).map((p) => ({
+    url: `${baseUrl}/blog/${p.slug}`,
+    lastModified: p.updated_at ? new Date(p.updated_at) : new Date(),
+    changeFrequency: "monthly",
+    priority: 0.6,
+  }))
+
   const productUrls: MetadataRoute.Sitemap = (products || []).map((p) => ({
     url: `${baseUrl}/productos/${p.slug}`,
     lastModified: p.updated_at ? new Date(p.updated_at) : new Date(),
@@ -33,7 +45,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 1,
     },
-    ...["/catalogo", "/ofertas", "/arma-tu-kit", "/nosotros"].map((path) => ({
+    ...["/catalogo", "/ofertas", "/arma-tu-kit", "/nosotros", "/blog"].map((path) => ({
       url: `${baseUrl}${path}`,
       lastModified: new Date(),
       changeFrequency: "weekly" as const,
@@ -46,5 +58,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.3,
     })),
     ...productUrls,
+    ...blogUrls,
   ]
 }

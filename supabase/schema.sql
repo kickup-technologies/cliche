@@ -110,3 +110,25 @@ CREATE POLICY "subscribers_service_read" ON subscribers
 
 CREATE POLICY "orders_service_only" ON orders
   FOR ALL USING (auth.role() = 'service_role');
+
+-- ── Blog (artículos escritos desde el panel admin) ──────────────────────────
+CREATE TABLE IF NOT EXISTS blog_posts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug TEXT UNIQUE NOT NULL,
+  title TEXT NOT NULL,
+  excerpt TEXT,
+  cover_url TEXT,
+  content TEXT NOT NULL DEFAULT '',
+  author TEXT DEFAULT 'Cliché Colombia',
+  published BOOLEAN DEFAULT TRUE,
+  published_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_blog_posts_published ON blog_posts (published, published_at DESC);
+
+ALTER TABLE blog_posts ENABLE ROW LEVEL SECURITY;
+
+-- Artículos publicados visibles para todos; escrituras solo por service_role.
+CREATE POLICY "blog_posts_public_read" ON blog_posts FOR SELECT USING (published = TRUE);

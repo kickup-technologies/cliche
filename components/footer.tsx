@@ -21,6 +21,7 @@ const footerLinks = {
   ],
   empresa: [
     { name: "Nuestra Historia", href: "/nosotros" },
+    { name: "Blog", href: "/blog" },
     { name: "Marcas aliadas", href: "/#marcas" },
     { name: "Crea tu aroma", href: "/arma-tu-kit" },
     { name: "Distribuidores", href: "https://wa.me/573122838844?text=Hola!+Quiero+info+sobre+distribuidores" },

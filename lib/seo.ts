@@ -71,6 +71,13 @@ export const SEO_PAGES = [
     description:
       "Crea tu kit de aromas a tu medida: elige tus esencias favoritas para el hogar y la ropa y ahorra con precios por combo. Aromas artesanales colombianos con envío a todo el país.",
   },
+  {
+    path: "/blog",
+    label: "Blog",
+    title: "Blog de Aromas y Bienestar",
+    description:
+      "Historias, guías y consejos de aromas para el hogar y la ropa. El blog de Cliché Colombia: marketing olfativo, aromaterapia y bienestar.",
+  },
 ] as const
 
 export type SeoPagePath = (typeof SEO_PAGES)[number]["path"]

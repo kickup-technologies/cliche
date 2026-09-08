@@ -203,14 +203,28 @@ function FamilySection({
 /* ─────────────────────────────── Página ─────────────────────────────── */
 function CatalogoInner() {
   const searchParams = useSearchParams()
-  const initialCategory = searchParams.get("categoria") ?? "all"
+  // `categoria` en la URL puede ser una FAMILIA olfativa (citricos, florales…,
+  // los enlaces del menú "Aromas" del header) o el legado hogar/ropa. Cualquier
+  // otro valor se ignora: antes un valor desconocido filtraba contra
+  // categorize() (que solo devuelve hogar/ropa) y dejaba el catálogo vacío.
+  const categoriaParam = searchParams.get("categoria") ?? "all"
+  const paramFamily = FAMILIES.some((f) => f.value === categoriaParam) ? categoriaParam : "all"
+  const paramCategory = categoriaParam === "hogar" || categoriaParam === "ropa" ? categoriaParam : "all"
   const initialSegment = searchParams.get("segmento") ?? "all"
 
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
-  const [category] = useState(initialCategory)
-  const [family, setFamily] = useState("all")
+  const [category, setCategory] = useState(paramCategory)
+  const [family, setFamily] = useState(paramFamily)
   const [segment, setSegment] = useState(initialSegment)
+
+  // Si la URL cambia con el catálogo ya montado (clic en el submenú del header
+  // estando en /catalogo), el estado inicial no se recalcula: se sincroniza aquí.
+  useEffect(() => {
+    setFamily(paramFamily)
+    setCategory(paramCategory)
+    setSegment(initialSegment)
+  }, [paramFamily, paramCategory, initialSegment])
   const [catOpen, setCatOpen] = useState(false)
   const [quickView, setQuickView] = useState<Product | null>(null)
   const [showTop, setShowTop] = useState(false)

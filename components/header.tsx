@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { ShoppingBag, ChevronDown, ChevronRight, Heart, Instagram, User, Package, LogOut, LogIn, Crown, Leaf, Gift, Users, X, ShieldCheck } from "lucide-react"
+import { ShoppingBag, ChevronDown, ChevronRight, Heart, Instagram, User, Package, LogOut, LogIn, Crown, Leaf, Gift, Users, X, ShieldCheck, Newspaper } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet"
 import {
   DropdownMenu,
@@ -25,14 +25,19 @@ const navigation = [
   {
     name: "Aromas",
     href: "/catalogo",
+    // Las familias olfativas REALES del catálogo (categoria=<familia>). Antes
+    // enlazaba a hogar/ropa/kit, valores que el filtro no conoce → página vacía.
     submenu: [
-      { name: "Para el Hogar", href: "/catalogo?categoria=hogar" },
-      { name: "Para Ropa", href: "/catalogo?categoria=ropa" },
-      { name: "Kits de Regalo", href: "/catalogo?categoria=kit" },
+      { name: "Cítricos", href: "/catalogo?categoria=citricos" },
+      { name: "Florales", href: "/catalogo?categoria=florales" },
+      { name: "Amaderados", href: "/catalogo?categoria=amaderados" },
+      { name: "Dulces", href: "/catalogo?categoria=dulces" },
+      { name: "Frescos", href: "/catalogo?categoria=frescos" },
       { name: "Ver todo el catálogo", href: "/catalogo" },
     ],
   },
   { name: "Arma tu kit", href: "/arma-tu-kit", highlight: true },
+  { name: "Blog", href: "/blog" },
   { name: "Nosotros", href: "/nosotros" },
 ]
 
@@ -40,6 +45,7 @@ const navigation = [
 const MOBILE_EXPLORE = [
   { name: "Aromas", href: "/catalogo", icon: Leaf },
   { name: "Arma tu kit", href: "/arma-tu-kit", icon: Gift, dot: true },
+  { name: "Blog", href: "/blog", icon: Newspaper },
   { name: "Nosotros", href: "/nosotros", icon: Users },
 ]
 const MOBILE_ACCOUNT = [
@@ -69,7 +75,9 @@ export function Header() {
     (pathname?.startsWith("/pedido") ?? false) ||
     // Landings de pauta: fondo crema — el modo transparente (letras blancas)
     // dejaba el menú invisible.
-    (pathname?.startsWith("/marcas") ?? false)
+    (pathname?.startsWith("/marcas") ?? false) ||
+    // El blog es fondo crema: en modo transparente el menú quedaba invisible.
+    (pathname?.startsWith("/blog") ?? false)
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50)
