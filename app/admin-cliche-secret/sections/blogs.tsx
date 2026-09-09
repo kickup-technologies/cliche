@@ -376,9 +376,16 @@ function BlogEditor({ initial, onBack, onSaved }: {
     }
   }
 
-  async function save() {
+  /**
+   * Guarda el artículo. `publish` fija la visibilidad explícitamente:
+   * true = Publicar, false = guardar como borrador/ocultar, undefined = tal
+   * como está. Botones separados: antes un toggle discreto dejaba artículos
+   * en borrador sin que la dueña entendiera por qué no se publicaban.
+   */
+  async function save(publish?: boolean) {
     if (!editor) return
     const p = { ...post, content: editor.getHTML() }
+    if (publish !== undefined) p.published = publish
     if (!p.title?.trim()) { setError("El título es obligatorio."); return }
     // Link definitivo: lo tecleado (sin guiones sueltos al final) o el automático.
     p.slug = (p.slug || "").replace(/^-+|-+$/g, "") || autoSlug(p.title)
@@ -440,26 +447,46 @@ function BlogEditor({ initial, onBack, onSaved }: {
             <ExternalLink className="w-3.5 h-3.5" /> Ver en la página
           </a>
         )}
-        <button
-          onClick={() => setField("published", !published)}
-          className={`flex items-center gap-1.5 px-3 h-9 rounded-xl text-xs font-semibold border transition-colors ${
-            published
-              ? "border-green-600/30 bg-green-50 text-green-700"
-              : "border-[#2D1A14]/15 bg-white text-[#2D1A14]/60"
-          }`}
-          title={published ? "El artículo será visible en la página" : "El artículo quedará oculto (borrador)"}
-        >
-          {published ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-          {published ? "Visible" : "Borrador"}
-        </button>
-        <button
-          onClick={save}
-          disabled={saving}
-          className="flex items-center gap-2 px-4 h-9 rounded-xl bg-[#2D1A14] hover:bg-[#3D2A24] text-white text-sm font-semibold transition-colors disabled:opacity-50"
-        >
-          {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          {published ? "Guardar y publicar" : "Guardar borrador"}
-        </button>
+        {published ? (
+          <>
+            {/* Publicado: guardar actualiza la página; "Ocultar" lo despublica. */}
+            <button
+              onClick={() => save(false)}
+              disabled={saving}
+              title="Quitar el artículo de la página (queda guardado como oculto y puedes publicarlo de nuevo cuando quieras)"
+              className="flex items-center gap-1.5 px-3 h-9 rounded-xl border border-[#2D1A14]/15 bg-white text-xs font-semibold text-[#2D1A14]/70 hover:border-amber-500/60 hover:text-amber-700 transition-colors disabled:opacity-50"
+            >
+              <EyeOff className="w-3.5 h-3.5" /> Ocultar de la página
+            </button>
+            <button
+              onClick={() => save(true)}
+              disabled={saving}
+              className="flex items-center gap-2 px-4 h-9 rounded-xl bg-[#2D1A14] hover:bg-[#3D2A24] text-white text-sm font-semibold transition-colors disabled:opacity-50"
+            >
+              {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Guardar cambios
+            </button>
+          </>
+        ) : (
+          <>
+            {/* Oculto/borrador: el botón protagonista es PUBLICAR. */}
+            <button
+              onClick={() => save(false)}
+              disabled={saving}
+              className="flex items-center gap-1.5 px-3 h-9 rounded-xl border border-[#2D1A14]/15 bg-white text-xs font-semibold text-[#2D1A14]/70 hover:border-[#A67163]/50 transition-colors disabled:opacity-50"
+            >
+              <Save className="w-3.5 h-3.5" /> Guardar borrador
+            </button>
+            <button
+              onClick={() => save(true)}
+              disabled={saving}
+              className="flex items-center gap-2 px-4 h-9 rounded-xl bg-[#A67163] hover:bg-[#8B5A4A] text-white text-sm font-semibold transition-colors disabled:opacity-50"
+            >
+              {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
+              Publicar
+            </button>
+          </>
+        )}
       </div>
 
       {error && (
@@ -468,8 +495,10 @@ function BlogEditor({ initial, onBack, onSaved }: {
         </p>
       )}
       {savedAt && !error && (
-        <p className="text-[11px] text-green-700/80">
-          Guardado y publicado a las {savedAt.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })} — los cambios ya están en la página.
+        <p className={`text-[11px] ${published ? "text-green-700/80" : "text-amber-700/80"}`}>
+          {published
+            ? `Publicado a las ${savedAt.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })} — los cambios ya están en la página.`
+            : `Guardado a las ${savedAt.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })} como OCULTO — no aparece en la página hasta que pulses «Publicar».`}
         </p>
       )}
 
@@ -589,6 +618,20 @@ export function BlogsSection() {
     await adminFetch(`/api/admin/blogs/${p.id}`, { method: "DELETE" }).catch(() => load())
   }
 
+  /** Mostrar/ocultar en la página sin abrir el editor (optimista). */
+  async function toggleVisible(p: BlogPost) {
+    setPosts(prev => prev.map(x => x.id === p.id ? { ...x, published: !p.published } : x))
+    try {
+      const res = await adminFetch(`/api/admin/blogs/${p.id}`, {
+        method: "PUT",
+        body: JSON.stringify({ published: !p.published }),
+      })
+      if (!res.ok) await load()
+    } catch {
+      await load()
+    }
+  }
+
   if (editing) {
     return (
       <BlogEditor
@@ -655,11 +698,23 @@ export function BlogsSection() {
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                     p.published ? "bg-green-100 text-green-700" : "bg-[#2D1A14]/8 text-[#2D1A14]/50"
                   }`}>
-                    {p.published ? "Publicado" : "Borrador"}
+                    {p.published ? "Publicado" : "Oculto"}
                   </span>
                   <span className="text-[11px] text-[#2D1A14]/40">{fecha(p.published_at || p.created_at)}</span>
                 </div>
               </div>
+              <button
+                onClick={(e) => { e.stopPropagation(); toggleVisible(p) }}
+                className={`flex items-center gap-1.5 px-2.5 h-8 rounded-lg text-[11px] font-semibold border transition-colors flex-shrink-0 ${
+                  p.published
+                    ? "border-green-600/30 bg-green-50 text-green-700 hover:border-amber-500/60 hover:bg-amber-50 hover:text-amber-700"
+                    : "border-[#2D1A14]/15 bg-white text-[#2D1A14]/50 hover:border-green-600/40 hover:text-green-700"
+                }`}
+                title={p.published ? "Ocultar de la página" : "Publicar en la página"}
+              >
+                {p.published ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                {p.published ? "Visible" : "Oculto"}
+              </button>
               <button
                 onClick={(e) => { e.stopPropagation(); remove(p) }}
                 className="w-9 h-9 rounded-xl flex items-center justify-center text-[#2D1A14]/30 hover:text-red-600 hover:bg-red-50 transition-colors flex-shrink-0"
