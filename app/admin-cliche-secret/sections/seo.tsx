@@ -1,8 +1,8 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { Search, RefreshCw, Save, Wand2, Check, AlertCircle, Globe, Package } from "lucide-react"
-import type { Product } from "@/lib/supabase"
+import { Search, RefreshCw, Save, Wand2, Check, AlertCircle, Globe, Package, Newspaper } from "lucide-react"
+import type { Product, BlogPost } from "@/lib/supabase"
 import { adminFetch } from "@/lib/admin-client"
 import { Ayuda } from "../components/ayuda"
 import {
@@ -10,11 +10,13 @@ import {
   SEO_MAX_TITLE,
   SEO_MAX_DESCRIPTION,
   productSeoPath,
+  blogSeoPath,
   suggestPageSeo,
   suggestProductTitle,
   suggestProductDescription,
   seoLengthTone,
   trimTo,
+  titleBudget,
   SEO_TITLE_SUFFIX,
   type SeoRow,
 } from "@/lib/seo"
@@ -24,7 +26,7 @@ const DOMAIN = "www.clichecolombia.com"
 interface Entry {
   path: string
   label: string
-  kind: "page" | "product"
+  kind: "page" | "product" | "blog"
   defaultTitle: string
   defaultDescription: string
   /** Portada: su título NO recibe el sufijo de plantilla. */
@@ -124,6 +126,13 @@ function SeoEditor({
     if (entry.kind === "page") {
       const s = suggestPageSeo(entry.path)
       setDraft({ title: s.title || entry.defaultTitle, description: s.description || entry.defaultDescription })
+    } else if (entry.kind === "blog") {
+      // Para un artículo, lo más honesto es su propio título y su bajada,
+      // recortados al presupuesto de caracteres de Google.
+      setDraft({
+        title: trimTo(entry.defaultTitle, titleBudget(false)),
+        description: trimTo(entry.defaultDescription, SEO_MAX_DESCRIPTION),
+      })
     } else {
       setDraft({
         title: suggestProductTitle(entry.label),
@@ -244,8 +253,10 @@ function SeoEditor({
 // ── Sección ──────────────────────────────────────────────────────────────────
 
 export function SeoSection({ products }: { products: Product[] }) {
-  const [tab, setTab] = useState<"paginas" | "productos">("paginas")
+  const [tab, setTab] = useState<"paginas" | "productos" | "blog">("paginas")
   const [rows, setRows] = useState<Record<string, Draft>>({})
+  // Artículos del blog: se cargan aquí mismo (no vienen en /api/admin/data).
+  const [posts, setPosts] = useState<BlogPost[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState("")
   const [query, setQuery] = useState("")
@@ -290,6 +301,13 @@ export function SeoSection({ products }: { products: Product[] }) {
 
   useEffect(() => { load() }, [load])
 
+  useEffect(() => {
+    adminFetch("/api/admin/blogs")
+      .then((r) => r.json())
+      .then((data) => setPosts(Array.isArray(data) ? data : []))
+      .catch(() => setPosts([]))
+  }, [])
+
   function handleSaved(path: string, draft: Draft) {
     setRows((prev) => {
       const next = { ...prev }
@@ -333,7 +351,25 @@ export function SeoSection({ products }: { products: Product[] }) {
       }))
   }, [products, query, openDirty, openPath])
 
-  const entries = tab === "paginas" ? pageEntries : productEntries
+  const blogEntries: Entry[] = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return posts
+      .filter((p) =>
+        !q ||
+        p.title.toLowerCase().includes(q) ||
+        p.slug.toLowerCase().includes(q) ||
+        (openDirty && blogSeoPath(p.slug) === openPath),
+      )
+      .map((p) => ({
+        path: blogSeoPath(p.slug),
+        label: p.title,
+        kind: "blog" as const,
+        defaultTitle: p.title,
+        defaultDescription: p.excerpt || `${p.title} — Blog de Cliché Colombia`,
+      }))
+  }, [posts, query, openDirty, openPath])
+
+  const entries = tab === "paginas" ? pageEntries : tab === "blog" ? blogEntries : productEntries
   const personalizados = Object.keys(rows).length
 
   return (
@@ -375,6 +411,14 @@ export function SeoSection({ products }: { products: Product[] }) {
         >
           <Package className="w-4 h-4" /> Productos ({products.length})
         </button>
+        <button
+          onClick={() => { if (tab !== "blog" && changeOpen(null)) setTab("blog") }}
+          className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+            tab === "blog" ? "bg-[#2D1A14] text-white" : "text-[#2D1A14]/60 hover:bg-[#2D1A14]/5"
+          }`}
+        >
+          <Newspaper className="w-4 h-4" /> Blog ({posts.length})
+        </button>
         {/* Recargar pisa el borrador con lo guardado en el servidor: si hay
             cambios sin guardar, se pregunta antes (igual que al cambiar de
             pestaña o cerrar la tarjeta). */}
@@ -391,13 +435,13 @@ export function SeoSection({ products }: { products: Product[] }) {
         </button>
       </div>
 
-      {tab === "productos" && (
+      {tab !== "paginas" && (
         <div className="relative">
           <Search className="w-4 h-4 text-[#2D1A14]/30 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar producto…"
+            placeholder={tab === "blog" ? "Buscar artículo…" : "Buscar producto…"}
             className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-[#2D1A14]/15 bg-white text-sm text-[#2D1A14] focus:outline-none focus:ring-2 focus:ring-[#A67163]/40"
           />
         </div>

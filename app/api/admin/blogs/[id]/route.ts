@@ -2,6 +2,23 @@ import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase"
 import { isAdmin } from "@/lib/admin-auth"
 import { pickBlogFields, revalidateBlogPages } from "../route"
+import { blogSeoPath } from "@/lib/seo"
+import type { SupabaseClient } from "@supabase/supabase-js"
+
+/**
+ * El SEO personalizado de un artículo se guarda por RUTA (`/blog/<slug>`):
+ * tiene que seguir al artículo cuando cambia de link y desaparecer cuando se
+ * borra. Si esto falla, el artículo igual se guarda (el SEO es un extra).
+ */
+async function moveBlogSeo(db: SupabaseClient, fromSlug: string, toSlug: string) {
+  try {
+    const to = blogSeoPath(toSlug)
+    await db.from("seo_settings").delete().eq("path", to)
+    await db.from("seo_settings").update({ path: to }).eq("path", blogSeoPath(fromSlug))
+  } catch (e) {
+    console.error("[admin/blogs] no se pudo mover el SEO del artículo:", e)
+  }
+}
 
 // PUT /api/admin/blogs/[id] — actualiza cualquier campo permitido del artículo
 export async function PUT(
@@ -49,6 +66,7 @@ export async function PUT(
     if (error) throw error
 
     if (before?.slug && data?.slug && before.slug !== data.slug) {
+      await moveBlogSeo(db, before.slug, data.slug)
       revalidateBlogPages(before.slug)
     }
     revalidateBlogPages(data?.slug)
@@ -72,6 +90,14 @@ export async function DELETE(
     const { data: existing } = await db.from("blog_posts").select("slug").eq("id", id).single()
     const { error } = await db.from("blog_posts").delete().eq("id", id)
     if (error) throw error
+    // El artículo ya no existe: su SEO personalizado tampoco debe quedar vivo.
+    if (existing?.slug) {
+      try {
+        await db.from("seo_settings").delete().eq("path", blogSeoPath(existing.slug))
+      } catch (e) {
+        console.error("[admin/blogs] no se pudo borrar el SEO del artículo:", e)
+      }
+    }
     revalidateBlogPages(existing?.slug)
     return NextResponse.json({ ok: true })
   } catch (err) {

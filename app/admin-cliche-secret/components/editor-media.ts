@@ -8,7 +8,33 @@
  */
 
 import type { EditorView } from "@tiptap/pm/view"
+import TiptapImage from "@tiptap/extension-image"
 import { subirImagen } from "@/lib/admin-upload"
+
+/**
+ * Imagen del editor que CONSERVA width/height. La extensión estándar de
+ * Tiptap solo guarda src/alt/title: cualquier dimensión que traiga la imagen
+ * (pegada, importada de un .docx o escrita en el HTML) se perdía al guardar y
+ * la publicación no era fiel al tamaño adjuntado.
+ */
+export const ImagenFiel = TiptapImage.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      width: { default: null },
+      height: { default: null },
+      // Posición de la imagen (izquierda/centro/derecha). Se guarda como
+      // clase (blog-img-left/right) para que la publicación la respete tal
+      // cual; también se puede arrastrar la imagen dentro del texto.
+      align: {
+        default: "center",
+        parseHTML: (el: HTMLElement) => el.getAttribute("class")?.match(/blog-img-(left|right)/)?.[1] || "center",
+        renderHTML: (attrs: { align?: string }) =>
+          attrs.align === "left" || attrs.align === "right" ? { class: `blog-img-${attrs.align}` } : {},
+      },
+    }
+  },
+}).configure({ HTMLAttributes: { class: "blog-img" } })
 
 async function uploadAndInsert(view: EditorView, files: File[], onError: (msg: string) => void) {
   for (const f of files) {

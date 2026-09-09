@@ -5,7 +5,6 @@ import { ArrowLeft, Save, RefreshCw, AlertCircle, Heart, Share2, Truck, ShieldCh
 import { useEditor, EditorContent } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import { TextStyle, Color, FontFamily } from "@tiptap/extension-text-style"
-import TiptapImage from "@tiptap/extension-image"
 import TextAlign from "@tiptap/extension-text-align"
 import { Placeholder } from "@tiptap/extension-placeholder"
 import Highlight from "@tiptap/extension-highlight"
@@ -15,7 +14,7 @@ import { subirImagen } from "@/lib/admin-upload"
 import { IMAGE_ACCEPT } from "@/lib/upload-limits"
 import { PRODUCT_PLACEHOLDER } from "@/lib/placeholder"
 import { EditorToolbar } from "./blogs"
-import { imagePasteDropProps } from "../components/editor-media"
+import { imagePasteDropProps, ImagenFiel } from "../components/editor-media"
 
 /**
  * Editor visual de la ficha del producto: réplica 1:1 del layout de la página
@@ -47,12 +46,13 @@ export function EditorPaginaProducto({ product, onClose, onSaved }: {
       Color,
       FontFamily,
       Highlight.configure({ multicolor: true }),
-      TiptapImage.configure({ HTMLAttributes: { class: "blog-img" } }),
+      ImagenFiel,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Placeholder.configure({ placeholder: "Escribe aquí lo que quieras mostrar debajo de la imagen del producto…" }),
     ],
     content: product.page_content || "",
     immediatelyRender: false,
+    shouldRerenderOnTransaction: true,
     editorProps: {
       attributes: { class: "blog-content focus:outline-none min-h-[200px]" },
       // Imágenes pegadas/arrastradas suben al servidor (igual que en el blog).

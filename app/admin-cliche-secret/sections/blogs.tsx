@@ -13,7 +13,6 @@ import StarterKit from "@tiptap/starter-kit"
 // Tiptap v3: underline y link vienen DENTRO de StarterKit (se configuran ahí);
 // TextStyle/Color/FontFamily son exports con nombre de extension-text-style.
 import { TextStyle, Color, FontFamily } from "@tiptap/extension-text-style"
-import TiptapImage from "@tiptap/extension-image"
 import TextAlign from "@tiptap/extension-text-align"
 import { Placeholder } from "@tiptap/extension-placeholder"
 import Highlight from "@tiptap/extension-highlight"
@@ -21,15 +20,29 @@ import type { BlogPost } from "@/lib/supabase"
 import { adminFetch } from "@/lib/admin-client"
 import { subirImagen } from "@/lib/admin-upload"
 import { IMAGE_ACCEPT } from "@/lib/upload-limits"
-import { imagePasteDropProps, base64ToFile } from "../components/editor-media"
+import { imagePasteDropProps, base64ToFile, ImagenFiel } from "../components/editor-media"
 
 /**
  * Sección "Blog" — lista de artículos + editor tipo documento (Tiptap).
  * Guardar publica de inmediato: la API revalida /blog y /blog/[slug].
  */
 
+/**
+ * Slug automático CORTO: un título de artículo puede ser una frase entera y
+ * el link quedaba kilométrico. Se corta en ~50 caracteres sin partir palabras;
+ * la dueña puede editarlo a mano en el campo "Link" del editor.
+ */
 function autoSlug(title: string) {
-  return title.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
+  const full = title.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
+  if (full.length <= 50) return full
+  const cut = full.slice(0, 50)
+  const lastDash = cut.lastIndexOf("-")
+  return (lastDash > 25 ? cut.slice(0, lastDash) : cut).replace(/-+$/, "")
+}
+
+/** Normaliza lo tecleado en el campo de link (permite guiones mientras se escribe). */
+function normalizeSlugInput(value: string) {
+  return value.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9-]+/g, "-").replace(/-{2,}/g, "-").replace(/^-+/, "")
 }
 
 const fecha = (iso: string | null) =>
@@ -61,7 +74,7 @@ interface EditorState {
 
 function snapshot(p: Partial<BlogPost>, content: string): string {
   return JSON.stringify({
-    title: p.title || "", excerpt: p.excerpt || "", cover_url: p.cover_url || "",
+    title: p.title || "", slug: p.slug || "", excerpt: p.excerpt || "", cover_url: p.cover_url || "",
     published: p.published ?? true, content,
   })
 }
@@ -164,9 +177,27 @@ export function EditorToolbar({ editor, onInsertImage, uploading }: { editor: Ed
         )}
       </div>
       <Divider />
-      <TBtn title="Alinear izquierda" onClick={() => editor.chain().focus().setTextAlign("left").run()} active={editor.isActive({ textAlign: "left" })}><AlignLeft className="w-4 h-4" /></TBtn>
-      <TBtn title="Centrar" onClick={() => editor.chain().focus().setTextAlign("center").run()} active={editor.isActive({ textAlign: "center" })}><AlignCenter className="w-4 h-4" /></TBtn>
-      <TBtn title="Alinear derecha" onClick={() => editor.chain().focus().setTextAlign("right").run()} active={editor.isActive({ textAlign: "right" })}><AlignRight className="w-4 h-4" /></TBtn>
+      {/* Alineación: si hay una imagen seleccionada la mueve a ella; si no,
+          alinea el texto. La posición se publica tal cual se ve aquí. */}
+      {(["left", "center", "right"] as const).map((align) => {
+        const Icon = align === "left" ? AlignLeft : align === "center" ? AlignCenter : AlignRight
+        const label = align === "left" ? "izquierda" : align === "center" ? "centro" : "derecha"
+        const onImage = editor.isActive("image")
+        return (
+          <TBtn
+            key={align}
+            title={onImage ? `Mover imagen a la ${label}` : `Alinear texto a la ${label}`}
+            onClick={() =>
+              onImage
+                ? editor.chain().focus().updateAttributes("image", { align }).run()
+                : editor.chain().focus().setTextAlign(align).run()
+            }
+            active={onImage ? editor.isActive("image", { align }) : editor.isActive({ textAlign: align })}
+          >
+            <Icon className="w-4 h-4" />
+          </TBtn>
+        )
+      })}
       <Divider />
       <TBtn title="Lista" onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive("bulletList")}><List className="w-4 h-4" /></TBtn>
       <TBtn title="Lista numerada" onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive("orderedList")}><ListOrdered className="w-4 h-4" /></TBtn>
@@ -199,6 +230,9 @@ function BlogEditor({ initial, onBack, onSaved }: {
   const inlineRef = useRef<HTMLInputElement>(null)
   const importRef = useRef<HTMLInputElement>(null)
   const originalRef = useRef("")
+  // Mientras el artículo es nuevo y la dueña no ha tocado el link, este se
+  // genera solo (corto) a partir del título; al primer toque manual, manda ella.
+  const slugTouched = useRef(!!initial.id)
 
   const editor = useEditor({
     extensions: [
@@ -209,12 +243,15 @@ function BlogEditor({ initial, onBack, onSaved }: {
       Color,
       FontFamily,
       Highlight.configure({ multicolor: true }),
-      TiptapImage.configure({ HTMLAttributes: { class: "blog-img" } }),
+      ImagenFiel,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Placeholder.configure({ placeholder: "Escribe aquí tu artículo…" }),
     ],
     content: initial.content || "",
     immediatelyRender: false,
+    // La toolbar pinta estados (negrita activa, imagen seleccionada…) y en
+    // Tiptap v3 el re-render por transacción viene apagado por defecto.
+    shouldRerenderOnTransaction: true,
     editorProps: {
       attributes: { class: "blog-content focus:outline-none min-h-[50vh]" },
       // Imágenes pegadas o arrastradas: se suben al servidor y se inserta su
@@ -343,7 +380,8 @@ function BlogEditor({ initial, onBack, onSaved }: {
     if (!editor) return
     const p = { ...post, content: editor.getHTML() }
     if (!p.title?.trim()) { setError("El título es obligatorio."); return }
-    if (!p.slug?.trim() || !p.id) p.slug = autoSlug(p.title)
+    // Link definitivo: lo tecleado (sin guiones sueltos al final) o el automático.
+    p.slug = (p.slug || "").replace(/^-+|-+$/g, "") || autoSlug(p.title)
     setSaving(true); setError("")
     try {
       const res = p.id
@@ -440,8 +478,10 @@ function BlogEditor({ initial, onBack, onSaved }: {
         {/* Portada */}
         <div className="relative">
           {post.cover_url ? (
+            // Sin recorte: la portada se muestra con su proporción real, igual
+            // que en la publicación.
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={post.cover_url} alt="Portada" className="w-full h-52 sm:h-64 object-cover" />
+            <img src={post.cover_url} alt="Portada" className="w-full h-auto" />
           ) : (
             <div className="w-full h-32 bg-[#F5EDE8] flex items-center justify-center">
               <p className="text-xs text-[#2D1A14]/40">Sin imagen de portada</p>
@@ -462,12 +502,35 @@ function BlogEditor({ initial, onBack, onSaved }: {
           {/* Título */}
           <textarea
             value={post.title || ""}
-            onChange={(e) => setField("title", e.target.value.replace(/\n/g, " "))}
+            onChange={(e) => {
+              const title = e.target.value.replace(/\n/g, " ")
+              setPost(prev => ({
+                ...prev,
+                title,
+                ...(slugTouched.current ? {} : { slug: autoSlug(title) }),
+              }))
+            }}
             placeholder="Título del artículo"
             rows={1}
             className="w-full font-serif text-3xl sm:text-4xl font-bold text-[#2D1A14] placeholder:text-[#2D1A14]/25 resize-none focus:outline-none leading-tight"
             onInput={(e) => { const t = e.currentTarget; t.style.height = "auto"; t.style.height = `${t.scrollHeight}px` }}
           />
+          {/* Link del artículo: corto por defecto y editable a mano */}
+          <div className="mt-2 flex flex-wrap items-center gap-1 text-xs">
+            <span className="text-[#2D1A14]/40">Link:</span>
+            <span className="text-[#2D1A14]/40 font-mono">clichecolombia.com/blog/</span>
+            <input
+              value={post.slug || ""}
+              onChange={(e) => { slugTouched.current = true; setField("slug", normalizeSlugInput(e.target.value)) }}
+              placeholder="mi-articulo"
+              className="flex-1 min-w-[140px] font-mono text-xs text-[#A67163] bg-[#FAF8F5] border border-[#2D1A14]/10 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#A67163]/40"
+            />
+            {post.id && (
+              <span className="text-[10px] text-amber-700/80 basis-full">
+                Ojo: cambiar el link de un artículo ya publicado rompe los enlaces que ya compartiste con el link viejo.
+              </span>
+            )}
+          </div>
           {/* Bajada / excerpt */}
           <textarea
             value={post.excerpt || ""}

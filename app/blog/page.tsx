@@ -70,11 +70,13 @@ export default async function BlogPage() {
               >
                 {featured.cover_url && (
                   <div className="overflow-hidden rounded-2xl shadow-soft">
+                    {/* Fiel a la proporción con la que se subió la portada:
+                        un alto fijo recortaba la imagen del artículo. */}
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={featured.cover_url}
                       alt={featured.title}
-                      className="w-full aspect-[16/9] object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                      className="w-full h-auto transition-transform duration-700 group-hover:scale-[1.03]"
                     />
                   </div>
                 )}

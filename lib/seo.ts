@@ -87,6 +87,11 @@ export function productSeoPath(slug: string): string {
   return `/productos/${slug}`
 }
 
+/** Ruta canónica de un artículo del blog. */
+export function blogSeoPath(slug: string): string {
+  return `/blog/${slug}`
+}
+
 // ── Lectura (servidor) ───────────────────────────────────────────────────────
 
 /** Override guardado para una ruta. Devuelve {} si no hay o si algo falla. */

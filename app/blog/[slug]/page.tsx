@@ -108,7 +108,16 @@ export default async function BlogPostPage({ params }: Props) {
           >
             <ArrowLeft className="w-4 h-4" /> Volver al blog
           </Link>
-          <header className="mt-6">
+          {/* La portada va ARRIBA del titular (pedido del cliente), con su
+              proporción original — sin recortes. */}
+          {post.cover_url && (
+            <div className="mt-6 overflow-hidden rounded-2xl shadow-soft">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={post.cover_url} alt={post.title} className="w-full h-auto" />
+            </div>
+          )}
+
+          <header className="mt-8">
             <p className="eyebrow text-primary">{fechaLarga(post.published_at || post.created_at)}</p>
             <h1 className="mt-3 font-serif text-4xl sm:text-5xl font-bold text-foreground leading-[1.1]">
               {post.title}
@@ -122,13 +131,6 @@ export default async function BlogPostPage({ params }: Props) {
               </p>
             )}
           </header>
-
-          {post.cover_url && (
-            <div className="mt-8 overflow-hidden rounded-2xl shadow-soft">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={post.cover_url} alt={post.title} className="w-full object-cover" />
-            </div>
-          )}
 
           {/* Cuerpo del artículo (HTML del editor, ya sanitizado al guardar) */}
           <div

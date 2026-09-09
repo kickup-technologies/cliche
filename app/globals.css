@@ -482,11 +482,27 @@ html.lenis body {
 .blog-content li { margin-top: 0.4em; }
 .blog-content img,
 .blog-content .blog-img {
+  display: block;
   border-radius: 1rem;
   max-width: 100%;
   height: auto;
   margin-left: auto;
   margin-right: auto;
+}
+/* Posición elegida en el editor (botones de alinear con la imagen
+   seleccionada): la publicación la respeta tal cual. */
+.blog-content img.blog-img-left {
+  margin-left: 0;
+  margin-right: auto;
+}
+.blog-content img.blog-img-right {
+  margin-left: auto;
+  margin-right: 0;
+}
+/* Imagen seleccionada en el editor del panel */
+.blog-content img.ProseMirror-selectednode {
+  outline: 3px solid #a67163;
+  outline-offset: 2px;
 }
 .blog-content hr {
   border: none;
