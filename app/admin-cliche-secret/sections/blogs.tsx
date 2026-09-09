@@ -412,6 +412,9 @@ function BlogEditor({ initial, onBack, onSaved }: {
   }
 
   const published = post.published ?? true
+  // "En vivo" = guardado Y publicado. Un artículo nuevo sin guardar todavía no
+  // está en la página aunque el campo published venga en true por defecto.
+  const isLive = published && !!post.id
 
   return (
     <div className="space-y-4 max-w-4xl mx-auto">
@@ -428,7 +431,7 @@ function BlogEditor({ initial, onBack, onSaved }: {
           className="flex items-center gap-1.5 px-3 h-9 rounded-xl border border-[#2D1A14]/15 bg-white text-xs font-semibold text-[#2D1A14]/70 hover:border-[#A67163]/50 hover:text-[#A67163] transition-colors disabled:opacity-50"
         >
           {importing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <FileUp className="w-3.5 h-3.5" />}
-          Abrir archivo
+          Importar de Word / Google Docs
         </button>
         <input
           ref={importRef}
@@ -437,7 +440,7 @@ function BlogEditor({ initial, onBack, onSaved }: {
           className="hidden"
           onChange={handleImportFile}
         />
-        {post.id && post.slug && published && (
+        {isLive && post.slug && (
           <a
             href={`/blog/${post.slug}`}
             target="_blank"
@@ -447,7 +450,7 @@ function BlogEditor({ initial, onBack, onSaved }: {
             <ExternalLink className="w-3.5 h-3.5" /> Ver en la página
           </a>
         )}
-        {published ? (
+        {isLive ? (
           <>
             {/* Publicado: guardar actualiza la página; "Ocultar" lo despublica. */}
             <button
@@ -489,6 +492,24 @@ function BlogEditor({ initial, onBack, onSaved }: {
         )}
       </div>
 
+      {/* Estado del artículo, siempre a la vista: la clienta sabe en todo
+          momento si lo que tiene enfrente está en la página o no. */}
+      <div className={`rounded-xl border px-4 py-3 flex items-start gap-2.5 ${
+        isLive ? "border-green-600/25 bg-green-50" : "border-amber-400/40 bg-amber-50"
+      }`}>
+        {isLive ? <Eye className="w-4 h-4 text-green-700 mt-0.5 flex-shrink-0" /> : <EyeOff className="w-4 h-4 text-amber-700 mt-0.5 flex-shrink-0" />}
+        <div>
+          <p className={`text-sm font-semibold ${isLive ? "text-green-800" : "text-amber-800"}`}>
+            {isLive ? "Este artículo está publicado" : !post.id ? "Artículo nuevo — todavía no está en la página" : "Este artículo está oculto — no aparece en la página"}
+          </p>
+          <p className={`text-xs mt-0.5 ${isLive ? "text-green-700/80" : "text-amber-700/80"}`}>
+            {isLive
+              ? "Cualquier persona puede verlo en la página. Si cambias algo, pulsa «Guardar cambios» para que se actualice."
+              : "Escribe con calma: nadie lo ve todavía. Cuando esté listo, pulsa el botón «Publicar» y aparecerá al instante en la página."}
+          </p>
+        </div>
+      </div>
+
       {error && (
         <p className="text-xs text-red-600 flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
           <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" /> {error}
@@ -512,8 +533,9 @@ function BlogEditor({ initial, onBack, onSaved }: {
             // eslint-disable-next-line @next/next/no-img-element
             <img src={post.cover_url} alt="Portada" className="w-full h-auto" />
           ) : (
-            <div className="w-full h-32 bg-[#F5EDE8] flex items-center justify-center">
-              <p className="text-xs text-[#2D1A14]/40">Sin imagen de portada</p>
+            <div className="w-full h-36 bg-[#F5EDE8] flex flex-col items-center justify-center gap-1 px-4 text-center">
+              <p className="text-sm font-medium text-[#2D1A14]/60">Imagen de portada</p>
+              <p className="text-xs text-[#2D1A14]/40">Se muestra en grande arriba del título, tal cual aquí. Súbela con el botón de abajo a la derecha.</p>
             </div>
           )}
           <button
@@ -574,7 +596,10 @@ function BlogEditor({ initial, onBack, onSaved }: {
           {/* Toolbar + lienzo */}
           {editor && <EditorToolbar editor={editor} onInsertImage={() => inlineRef.current?.click()} uploading={uploadingInline} />}
           <input ref={inlineRef} type="file" accept={IMAGE_ACCEPT} className="hidden" onChange={handleInlineImage} />
-          <div className="mt-5 cursor-text" onClick={() => editor?.chain().focus().run()}>
+          <p className="mt-2 text-[11px] text-[#2D1A14]/40">
+            💡 Tal como se ve aquí quedará en la página. Para mover una imagen: haz clic sobre ella y usa los botones de alinear (izquierda, centro, derecha), o arrástrala a otro punto del texto. También puedes pegar imágenes directamente.
+          </p>
+          <div className="mt-4 cursor-text" onClick={() => editor?.chain().focus().run()}>
             <EditorContent editor={editor} />
           </div>
         </div>
@@ -650,7 +675,9 @@ export function BlogsSection() {
             <Newspaper className="w-6 h-6 text-[#A67163]" /> Blog
           </h1>
           <p className="text-sm text-[#9e8a84] mt-1">
-            Escribe artículos y publícalos en la página al instante. Se muestran en <span className="font-medium">clichecolombia.com/blog</span>.
+            Tus artículos de <span className="font-medium">clichecolombia.com/blog</span>. Los marcados
+            <span className="font-semibold text-green-700"> Visible</span> aparecen en la página; los
+            <span className="font-semibold"> Ocultos</span> no — actívalos con su botón o con «Publicar» dentro del artículo.
           </p>
         </div>
         <button
@@ -664,6 +691,16 @@ export function BlogsSection() {
       {listError && (
         <p className="text-xs text-amber-800 bg-amber-50 border border-amber-300/60 rounded-xl px-3 py-2 flex items-center gap-1.5">
           <AlertCircle className="w-3.5 h-3.5" /> {listError}
+        </p>
+      )}
+
+      {/* Recordatorio de ocultos: evita el "escribí mi blog y no aparece". */}
+      {!loading && posts.some(p => !p.published) && (
+        <p className="text-xs text-amber-800 bg-amber-50 border border-amber-300/60 rounded-xl px-3 py-2 flex items-center gap-1.5">
+          <EyeOff className="w-3.5 h-3.5 flex-shrink-0" />
+          {(() => { const n = posts.filter(p => !p.published).length; return n === 1
+            ? "Tienes 1 artículo oculto: no aparece en la página. Pulsa su botón «Oculto» para publicarlo."
+            : `Tienes ${n} artículos ocultos: no aparecen en la página. Pulsa su botón «Oculto» para publicarlos.` })()}
         </p>
       )}
 
