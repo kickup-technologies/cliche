@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { notFound } from "next/navigation"
+import { notFound, permanentRedirect } from "next/navigation"
 import { ArrowLeft, ArrowRight } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -66,7 +66,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function BlogPostPage({ params }: Props) {
   const { slug } = await params
   const post = await getPost(slug)
-  if (!post) notFound()
+  if (!post) {
+    // ¿Es un link VIEJO del artículo (el slug se cambió desde el panel)?
+    // Redirige 308 al link actual para no romper lo ya compartido/indexado.
+    if (isSupabaseConfigured) {
+      const { data: moved } = await supabase
+        .from("blog_posts")
+        .select("slug")
+        .contains("previous_slugs", [slug])
+        .eq("published", true)
+        .maybeSingle()
+      if (moved?.slug) permanentRedirect(`/blog/${moved.slug}`)
+    }
+    notFound()
+  }
 
   const { data: othersData } = isSupabaseConfigured
     ? await supabase

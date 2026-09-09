@@ -57,6 +57,8 @@ export interface BlogPost {
   cover_url: string | null
   content: string
   author: string | null
+  // Links anteriores (el viejo redirige al actual si el slug cambia)
+  previous_slugs?: string[]
   published: boolean
   published_at: string | null
   created_at: string

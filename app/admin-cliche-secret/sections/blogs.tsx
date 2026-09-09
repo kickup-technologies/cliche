@@ -27,17 +27,34 @@ import { imagePasteDropProps, base64ToFile, ImagenFiel } from "../components/edi
  * Guardar publica de inmediato: la API revalida /blog y /blog/[slug].
  */
 
+// Palabras de relleno que un link SEO no necesita (artículos, preposiciones…).
+const STOPWORDS = new Set([
+  "de", "del", "la", "el", "los", "las", "lo", "le", "les", "un", "una", "unos", "unas",
+  "y", "e", "o", "u", "a", "al", "que", "se", "su", "sus", "tu", "tus", "mi", "mis",
+  "en", "con", "sin", "por", "para", "como", "mas", "es", "son", "ser", "hay",
+  "tambien", "pueda", "puede", "pueden", "muy", "the", "of", "and", "for", "to", "in",
+])
+
 /**
- * Slug automático CORTO: un título de artículo puede ser una frase entera y
- * el link quedaba kilométrico. Se corta en ~50 caracteres sin partir palabras;
- * la dueña puede editarlo a mano en el campo "Link" del editor.
+ * Slug automático optimizado para SEO: solo las palabras con significado del
+ * título (sin "de", "para", "que"…), máximo 5 y ~45 caracteres. Un título como
+ * "Marketing olfativo para empresas: beneficios y razones…" genera
+ * "marketing-olfativo-empresas-beneficios". La dueña puede editarlo a mano en
+ * el campo "Link" del editor.
  */
 function autoSlug(title: string) {
-  const full = title.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
-  if (full.length <= 50) return full
-  const cut = full.slice(0, 50)
-  const lastDash = cut.lastIndexOf("-")
-  return (lastDash > 25 ? cut.slice(0, lastDash) : cut).replace(/-+$/, "")
+  const words = title
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9\s]+/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+  // Si al quitar el relleno quedan muy pocas palabras, se conserva el título tal cual.
+  const significant = words.filter((w) => !STOPWORDS.has(w))
+  let chosen = (significant.length >= 2 ? significant : words).slice(0, 5)
+  while (chosen.length > 2 && chosen.join("-").length > 45) chosen = chosen.slice(0, -1)
+  return chosen.join("-")
 }
 
 /** Normaliza lo tecleado en el campo de link (permite guiones mientras se escribe). */

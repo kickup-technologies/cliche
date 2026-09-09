@@ -120,6 +120,8 @@ CREATE TABLE IF NOT EXISTS blog_posts (
   cover_url TEXT,
   content TEXT NOT NULL DEFAULT '',
   author TEXT DEFAULT 'Cliché Colombia',
+  -- Links anteriores del artículo: si el slug cambia, el viejo redirige al nuevo.
+  previous_slugs TEXT[] NOT NULL DEFAULT '{}',
   published BOOLEAN DEFAULT TRUE,
   published_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),

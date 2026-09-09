@@ -43,11 +43,20 @@ export async function PUT(
     // primera vez.
     const { data: before } = await db
       .from("blog_posts")
-      .select("slug, published, published_at")
+      .select("slug, published, published_at, previous_slugs")
       .eq("id", id)
       .single()
     if (fields.published === true && !before?.published_at) {
       fields.published_at = new Date().toISOString()
+    }
+    // Cambio de link: el slug viejo se guarda para redirigir al nuevo (los
+    // enlaces ya compartidos siguen funcionando). Si se vuelve a un link
+    // anterior, ese sale de la lista para no redirigirse a sí mismo.
+    if (typeof fields.slug === "string" && before?.slug && fields.slug !== before.slug) {
+      const prev = new Set<string>((before.previous_slugs as string[] | null) || [])
+      prev.add(before.slug)
+      prev.delete(fields.slug)
+      fields.previous_slugs = Array.from(prev)
     }
 
     const { data, error } = await db
