@@ -551,10 +551,11 @@ html.lenis body {
 @media (prefers-reduced-motion:reduce) { .pv-tab-thumb { transition:none; } }
 
 /* Selector de tiendas del panel (dropdown que se despliega) + transición de vistas */
-.store-dd { display:grid; grid-template-rows:0fr; transition:grid-template-rows .35s cubic-bezier(.22,1,.36,1); }
-.store-dd.open { grid-template-rows:1fr; }
-.store-dd > div { overflow:hidden; min-height:0; }
-.store-dd.open > div { border-top:1px solid rgba(45,26,20,.06); }
+/* Popover flotante: anima SOLO transform/opacity (GPU). La versión anterior
+   animaba grid-template-rows = re-layout de toda la página en cada frame —
+   por eso en equipos modestos abrir el menú se sentía lento/trabado. */
+.store-dd { position:absolute; top:calc(100% + 4px); left:8px; right:8px; z-index:60; background:#fff; border:1px solid rgba(45,26,20,.1); border-radius:12px; box-shadow:0 16px 40px rgba(45,26,20,.18); overflow:hidden; opacity:0; transform:translateY(-6px) scale(.98); pointer-events:none; transition:opacity .16s ease, transform .2s cubic-bezier(.22,1,.36,1); will-change:transform,opacity; }
+.store-dd.open { opacity:1; transform:none; pointer-events:auto; }
 .admin-view { animation:admin-view-in .22s ease-out; }
 @keyframes admin-view-in { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
 @media (prefers-reduced-motion:reduce) { .admin-view { animation:none; } .store-dd { transition:none; } }
@@ -593,3 +594,4 @@ aside { transition: background-color .35s ease, border-color .35s ease; }
 .skin-bienestar aside nav::-webkit-scrollbar { width:5px; }
 .skin-bienestar aside nav::-webkit-scrollbar-track { background:transparent; }
 .skin-bienestar aside nav::-webkit-scrollbar-thumb { background:rgba(255,255,255,.15); border-radius:99px; }
+.skin-bienestar .store-dd { background:#2b322a; border-color:rgba(255,255,255,.12); }

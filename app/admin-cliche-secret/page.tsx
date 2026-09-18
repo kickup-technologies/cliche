@@ -507,7 +507,7 @@ export default function AdminPage() {
       <aside className={`fixed top-0 left-0 h-full w-64 bg-white border-r border-[#2D1A14]/8 z-40 flex flex-col transition-transform duration-200 lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         {/* Selector de tienda (esquina superior izquierda): se hunde y se
             despliega la tienda opuesta + el comparador. */}
-        <div className="border-b border-[#2D1A14]/8">
+        <div className="relative border-b border-[#2D1A14]/8">
           <div className="flex items-center">
             <button onClick={() => setStoreDdOpen(v => !v)} aria-expanded={storeDdOpen}
               className="flex-1 flex items-center gap-3 px-5 py-4 text-left hover:bg-[#FAF8F5] transition-colors">
