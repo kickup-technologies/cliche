@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase"
 import { getSupabaseBrowser } from "@/lib/supabase/client"
 import {
   LayoutDashboard, TrendingUp, BarChart3, Star, ShoppingBag, Zap,
-  Package, Settings, Lock, RefreshCw, AlertCircle, Eye, LogOut, Menu, X, Paintbrush, Flame, Ticket, MessageCircle, Users, Search, Newspaper, LayoutGrid, Store, Scale,
+  Package, Settings, Lock, RefreshCw, AlertCircle, Eye, LogOut, Menu, X, Paintbrush, Flame, Ticket, MessageCircle, Users, Search, Newspaper, LayoutGrid, Store, Scale, ChevronDown,
 } from "lucide-react"
 import type { Product } from "@/lib/supabase"
 import { Order, PageView } from "./types"
@@ -29,7 +29,9 @@ import { CatalogoEditorSection } from "./sections/catalogo-editor"
 import { BienestarSection, CompararTiendasSection } from "./sections/tiendas"
 import { ChatAyuda } from "./components/chat-ayuda"
 
-type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "heatmaps" | "pedidos" | "clientes" | "descuentos" | "blogs" | "inventario" | "catalogo" | "seo" | "asistente" | "tienda-bienestar" | "comparar-tiendas"
+type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "heatmaps" | "pedidos" | "clientes" | "descuentos" | "blogs" | "inventario" | "catalogo" | "seo" | "asistente"
+// Multi-tienda: qué tienda se está administrando desde este panel.
+type StoreView = "cliche" | "bienestar" | "comparar"
 
 interface Setting { key: string; value: string }
 
@@ -57,11 +59,6 @@ const SIDEBAR = [
     { id: "catalogo",   label: "Catálogo",   icon: LayoutGrid },
     { id: "seo",        label: "SEO",        icon: Search },
   ]},
-  // Multi-tienda: la tienda hermana (Bienestar) en vivo y el comparador.
-  { section: "TIENDAS", items: [
-    { id: "tienda-bienestar", label: "Bienestar",        icon: Store },
-    { id: "comparar-tiendas", label: "Comparar tiendas", icon: Scale },
-  ]},
 ] as const
 
 export default function AdminPage() {
@@ -80,6 +77,8 @@ export default function AdminPage() {
 
   const [activeSection, setActiveSection] = useState<SectionId>("resumen")
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [storeView, setStoreView] = useState<StoreView>("cliche")
+  const [storeDdOpen, setStoreDdOpen] = useState(false)
 
   const [products, setProducts] = useState<Product[]>([])
   const [orders, setOrders] = useState<Order[]>([])
@@ -239,7 +238,20 @@ export default function AdminPage() {
 
   function navigate(id: SectionId) {
     setActiveSection(id)
+    setStoreView("cliche") // las herramientas del sidebar son de la tienda Cliché
     setSidebarOpen(false)
+  }
+
+  const STORE_META: Record<StoreView, { label: string; sub: string; dot: string; icon: typeof Store }> = {
+    cliche: { label: "Cliché Colombia", sub: "Panel administrativo", dot: "#A67163", icon: Store },
+    bienestar: { label: "Bienestar by Cliché", sub: "Tienda hermana · gestión en vivo", dot: "#6E7A6D", icon: Store },
+    comparar: { label: "Comparar tiendas", sub: "Métricas lado a lado", dot: "#8b8b8b", icon: Scale },
+  }
+
+  function pickStore(v: StoreView) {
+    setStoreView(v)
+    setStoreDdOpen(false)
+    if (v !== "comparar") setSidebarOpen(false)
   }
 
   // Badges: pedidos que requieren acción (pagados, sin despachar) + productos con stock bajo
@@ -408,24 +420,46 @@ export default function AdminPage() {
 
       {/* Sidebar */}
       <aside className={`fixed top-0 left-0 h-full w-64 bg-white border-r border-[#2D1A14]/8 z-40 flex flex-col transition-transform duration-200 lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
-        {/* Logo */}
-        <div className="px-5 py-5 border-b border-[#2D1A14]/8 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-[#2D1A14] rounded-lg flex items-center justify-center flex-shrink-0">
-              <span className="text-white font-bold text-sm font-serif">C</span>
-            </div>
+        {/* Selector de tienda (esquina superior izquierda): se hunde y se
+            despliega la tienda opuesta + el comparador. */}
+        <div className="border-b border-[#2D1A14]/8">
+          <div className="flex items-center">
+            <button onClick={() => setStoreDdOpen(v => !v)} aria-expanded={storeDdOpen}
+              className="flex-1 flex items-center gap-3 px-5 py-4 text-left hover:bg-[#FAF8F5] transition-colors">
+              <span className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: STORE_META[storeView].dot }}>
+                {(() => { const I = STORE_META[storeView].icon; return <I className="w-4 h-4 text-white" /> })()}
+              </span>
+              <span className="min-w-0">
+                <p className="font-semibold text-[#2D1A14] text-sm leading-none truncate">{STORE_META[storeView].label}</p>
+                <p className="text-[10px] text-[#2D1A14]/40 mt-1 truncate">{STORE_META[storeView].sub}</p>
+              </span>
+              <ChevronDown className={`w-4 h-4 text-[#2D1A14]/40 ml-auto flex-shrink-0 transition-transform duration-300 ${storeDdOpen ? "rotate-180" : ""}`} />
+            </button>
+            <button onClick={() => setSidebarOpen(false)} className="lg:hidden w-7 h-7 mr-3 rounded-lg hover:bg-[#FAF8F5] flex items-center justify-center flex-shrink-0">
+              <X className="w-4 h-4 text-[#2D1A14]/50" />
+            </button>
+          </div>
+          <div className={`store-dd ${storeDdOpen ? "open" : ""}`}>
             <div>
-              <p className="font-semibold text-[#2D1A14] text-sm leading-none">Panel Admin</p>
-              <p className="text-[10px] text-[#2D1A14]/40 mt-0.5">Cliché Colombia</p>
+              {(["cliche", "bienestar", "comparar"] as StoreView[]).filter(v => v !== storeView).map(v => (
+                <button key={v} onClick={() => pickStore(v)}
+                  className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-[#FAF8F5] transition-colors">
+                  <span className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: STORE_META[v].dot }}>
+                    {(() => { const I = STORE_META[v].icon; return <I className="w-3.5 h-3.5 text-white" /> })()}
+                  </span>
+                  <span className="min-w-0">
+                    <p className="text-sm font-medium text-[#2D1A14] leading-none truncate">{STORE_META[v].label}</p>
+                    <p className="text-[10px] text-[#2D1A14]/40 mt-0.5 truncate">{STORE_META[v].sub}</p>
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden w-7 h-7 rounded-lg hover:bg-[#FAF8F5] flex items-center justify-center">
-            <X className="w-4 h-4 text-[#2D1A14]/50" />
-          </button>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+        {/* Nav — en modo comparativa se ocultan las herramientas: esa vista
+            solo muestra métricas lado a lado. */}
+        <nav className={`flex-1 overflow-y-auto px-3 py-4 space-y-5 ${storeView === "comparar" ? "hidden" : ""}`}>
           {SIDEBAR.map(group => (
             <div key={group.section}>
               <p className="text-[10px] font-bold uppercase tracking-widest text-[#2D1A14]/30 px-2 mb-1.5">{group.section}</p>
@@ -438,7 +472,7 @@ export default function AdminPage() {
                       key={id}
                       onClick={() => navigate(id as SectionId)}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left ${
-                        active
+                        active && storeView === "cliche"
                           ? "bg-[#2D1A14] text-white"
                           : "text-[#2D1A14]/60 hover:bg-[#2D1A14]/5 hover:text-[#2D1A14]"
                       }`}
@@ -494,6 +528,7 @@ export default function AdminPage() {
           </button>
           <p className="font-semibold text-[#2D1A14] text-sm">
             {(SIDEBAR.flatMap(g => [...g.items]) as Array<{ id: string; label: string; icon: unknown }>).find(i => i.id === activeSection)?.label || "Panel Admin"}
+            {storeView === "bienestar" ? " · Bienestar" : storeView === "comparar" ? " · Comparativa" : ""}
           </p>
           <button onClick={handleLogout} className="w-9 h-9 rounded-xl border border-[#2D1A14]/15 flex items-center justify-center">
             <LogOut className="w-4 h-4 text-[#2D1A14]/50" />
@@ -502,6 +537,7 @@ export default function AdminPage() {
 
         {/* Page content */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
+          <div key={`${storeView}-${activeSection}`} className="admin-view">
           {loadError && (
             <div className="mb-5 flex items-start gap-3 rounded-xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-900">
               <span className="text-base leading-none">⚠️</span>
@@ -511,51 +547,52 @@ export default function AdminPage() {
               </div>
             </div>
           )}
-          {activeSection === "resumen" && (
+          {storeView === "cliche" && activeSection === "resumen" && (
             <OverviewSection orders={orders} pageViews={pageViews} products={products} />
           )}
-          {activeSection === "ventas" && (
+          {storeView === "cliche" && activeSection === "ventas" && (
             <VentasSection orders={orders} products={products} />
           )}
-          {activeSection === "trafico" && (
+          {storeView === "cliche" && activeSection === "trafico" && (
             <TraficoSection orders={orders} pageViews={pageViews} />
           )}
-          {activeSection === "productos-stats" && (
+          {storeView === "cliche" && activeSection === "productos-stats" && (
             <ProductosStatsSection orders={orders} products={products} pageViews={pageViews} />
           )}
-          {activeSection === "heatmaps" && (
+          {storeView === "cliche" && activeSection === "heatmaps" && (
             <HeatmapsSection pageViews={pageViews} />
           )}
-          {activeSection === "pedidos" && (
+          {storeView === "cliche" && activeSection === "pedidos" && (
             <PedidosSection orders={orders} products={products} onOrdersUpdate={handleOrderUpdate} />
           )}
-          {activeSection === "clientes" && (
+          {storeView === "cliche" && activeSection === "clientes" && (
             <ClientesSection />
           )}
-          {activeSection === "descuentos" && (
+          {storeView === "cliche" && activeSection === "descuentos" && (
             <DescuentosSection />
           )}
-          {activeSection === "blogs" && (
+          {storeView === "cliche" && activeSection === "blogs" && (
             <BlogsSection />
           )}
-          {activeSection === "inventario" && (
+          {storeView === "cliche" && activeSection === "inventario" && (
             <InventarioSection products={products} onRefresh={loadAll} />
           )}
-          {activeSection === "catalogo" && (
+          {storeView === "cliche" && activeSection === "catalogo" && (
             <CatalogoEditorSection />
           )}
-          {activeSection === "seo" && (
+          {storeView === "cliche" && activeSection === "seo" && (
             <SeoSection products={products} />
           )}
-          {activeSection === "asistente" && (
+          {storeView === "cliche" && activeSection === "asistente" && (
             <AsistenteSection />
           )}
-          {activeSection === "tienda-bienestar" && (
+          {storeView === "bienestar" && (
             <BienestarSection />
           )}
-          {activeSection === "comparar-tiendas" && (
+          {storeView === "comparar" && (
             <CompararTiendasSection />
           )}
+          </div>
         </main>
       </div>
 
