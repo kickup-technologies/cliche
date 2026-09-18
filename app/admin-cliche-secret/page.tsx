@@ -279,6 +279,26 @@ export default function AdminPage() {
   // tienda pinta al instante en vez de mostrar un spinner.
   useEffect(() => { if (authed) prefetchTiendas() }, [authed])
 
+  // Con el panel ya interactivo, se descargan los chunks de las secciones en
+  // tiempo muerto del navegador: al hacer clic ya están en caché (sin spinner)
+  // y el arranque sigue siendo liviano.
+  useEffect(() => {
+    if (!authed) return
+    const warm = () => {
+      void import("./sections/overview"); void import("./sections/ventas")
+      void import("./sections/trafico"); void import("./sections/productos-stats")
+      void import("./sections/pedidos"); void import("./sections/inventario")
+      void import("./sections/heatmaps"); void import("./sections/descuentos")
+      void import("./sections/asistente"); void import("./sections/clientes")
+      void import("./sections/seo"); void import("./sections/blogs")
+      void import("./sections/catalogo-editor"); void import("./sections/tiendas")
+      void import("./components/chat-ayuda")
+    }
+    const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }
+    if (w.requestIdleCallback) w.requestIdleCallback(warm, { timeout: 4000 })
+    else setTimeout(warm, 2500)
+  }, [authed])
+
   function handleOrderUpdate(updated: Order) {
     setOrders(prev => prev.map(o => o.id === updated.id ? updated : o))
   }
