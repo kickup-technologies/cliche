@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getSupabaseServer } from "@/lib/supabase/server"
-import { isAdminEmailAnywhere, isAdmin, otpSkipEmails } from "@/lib/admin-auth"
+import { isAdminEmailAnywhere, otpSkipEmails, readAdminToken, signAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth"
 
 /**
  * GET /api/admin/whoami — dice al panel en qué estado está el visitante:
@@ -8,6 +8,12 @@ import { isAdminEmailAnywhere, isAdmin, otpSkipEmails } from "@/lib/admin-auth"
  *  - isAdminEmail:  esa sesión es una cuenta admin (envs o lista en BD)
  *  - unlocked:      ya pasó el código OTP (cookie admin válida)
  * No expone ADMIN_EMAIL ni datos sensibles.
+ *
+ * Además RENUEVA la sesión (deslizante): si la cookie admin sigue válida se
+ * re-firma con 8h nuevas. El panel llama aquí al abrir y periódicamente, así
+ * que mientras se use el panel la sesión no caduca a mitad de trabajo (el
+ * "No autorizado" al guardar un pedido venía de un token vencido en una
+ * pestaña abierta de un día para otro).
  */
 export async function GET(req: NextRequest) {
   let authenticated = false
@@ -28,13 +34,25 @@ export async function GET(req: NextRequest) {
     // error inesperado → tratado como transitorio: no invitar a purgar sesión
   }
   const adminOk = await isAdminEmailAnywhere(email)
-  return NextResponse.json({
+  const tokenData = readAdminToken(req.cookies.get(ADMIN_COOKIE)?.value)
+  const res = NextResponse.json({
     authenticated,
     sessionInvalid,
     isAdminEmail: adminOk,
     // otpSkip: este admin está exento del código de 6 dígitos
     // (site_settings.admin_otp_skip); el panel desbloquea sin pedirlo.
     otpSkip: adminOk && (await otpSkipEmails()).includes(String(email).trim().toLowerCase()),
-    unlocked: isAdmin(req),
+    unlocked: tokenData !== null,
   })
+  // Sesión deslizante: cookie válida → se re-emite con vigencia completa.
+  if (tokenData) {
+    res.cookies.set(ADMIN_COOKIE, signAdminToken(tokenData.email, undefined, tokenData.viaDb), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 8 * 60 * 60,
+    })
+  }
+  return res
 }

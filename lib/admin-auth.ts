@@ -132,29 +132,38 @@ export function signAdminToken(email: string, ttlMs: number = TOKEN_TTL_MS, viaD
   return `${payload}.${sig}`
 }
 
-/** Valida el token: firma correcta, no expirado y correo en la lista admin. */
-export function verifyAdminToken(token: string | null | undefined): boolean {
+/**
+ * Lee y valida el token; devuelve sus datos (correo y origen de la
+ * autorización) o null si no es válido. Es la base de verifyAdminToken y
+ * permite RENOVAR la sesión (re-firmar el mismo correo) sin re-validar OTP.
+ */
+export function readAdminToken(token: string | null | undefined): { email: string; viaDb: boolean } | null {
   const secret = signingSecret()
-  if (!secret || adminEmails().length === 0 || !token) return false
+  if (!secret || adminEmails().length === 0 || !token) return null
   const [payload, sig] = token.split(".")
-  if (!payload || !sig) return false
+  if (!payload || !sig) return null
   const expected = createHmac("sha256", secret).update(payload).digest("base64url")
   const a = Buffer.from(sig)
   const b = Buffer.from(expected)
-  if (a.length !== b.length || !timingSafeEqual(a, b)) return false
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return null
   try {
     const { e, exp, d } = JSON.parse(Buffer.from(payload, "base64url").toString()) as {
       e: string
       exp: number
       d?: number
     }
-    if (typeof exp !== "number" || Date.now() > exp) return false
+    if (typeof exp !== "number" || Date.now() > exp) return null
     // Claim d:1 = admin de la lista en BD, ya validado al emitir (ver signAdminToken).
-    if (d === 1) return typeof e === "string" && e.length > 0
-    return isAdminEmail(e)
+    if (d === 1) return typeof e === "string" && e.length > 0 ? { email: e, viaDb: true } : null
+    return isAdminEmail(e) ? { email: e, viaDb: false } : null
   } catch {
-    return false
+    return null
   }
+}
+
+/** Valida el token: firma correcta, no expirado y correo en la lista admin. */
+export function verifyAdminToken(token: string | null | undefined): boolean {
+  return readAdminToken(token) !== null
 }
 
 /**

@@ -13,7 +13,9 @@ import { Order, PageView } from "./types"
 import { adminFetch } from "@/lib/admin-client"
 
 import dynamic from "next/dynamic"
-import { prefetchTiendas, type PeerTab } from "./sections/tiendas"
+// Solo el TIPO: importar el módulo tiendas aquí lo metía en el bundle del
+// cascarón del panel (ver nota "desactivado parcialmente" más abajo).
+import type { PeerTab } from "./sections/tiendas"
 
 // Sections CODE-SPLIT: antes TODO el panel (editor Tiptap del blog, gráficas
 // Recharts, asistente, etc.) viajaba en UN solo bundle gigante — hasta que no
@@ -128,6 +130,13 @@ export default function AdminPage() {
   //    contra ADMIN_EMAIL/ADMIN_EMAILS).
   //  - Sesión de una cuenta que NO es admin → a la tienda (sin pistas).
   useEffect(() => {
+    // Si adminFetch nos trajo aquí por sesión vencida, decirlo en el login.
+    try {
+      if (sessionStorage.getItem("cliche_admin_expired") === "1") {
+        sessionStorage.removeItem("cliche_admin_expired")
+        setAuthError("Tu sesión expiró. Inicia sesión de nuevo para continuar.")
+      }
+    } catch {}
     adminFetch("/api/admin/whoami")
       .then((r) => r.json())
       .then((d: { authenticated: boolean; isAdminEmail: boolean; otpSkip?: boolean; unlocked: boolean }) => {
@@ -289,9 +298,35 @@ export default function AdminPage() {
     } catch { /* snapshot corrupto: se ignora */ }
     loadAll()
   }, [authed, loadAll])
-  // Precargar los datos de la otra tienda en segundo plano: el cambio de
-  // tienda pinta al instante en vez de mostrar un spinner.
-  useEffect(() => { if (authed) prefetchTiendas() }, [authed])
+  // Multi-tienda DESACTIVADO PARCIALMENTE (petición de Andrés: dejaba el
+  // panel muy lento): ya NO se precargan los resúmenes de la otra tienda al
+  // desbloquear, ni viaja el chunk de tiendas en el arranque. El selector
+  // sigue funcionando — al entrar a Bienestar/Comparar los datos se cargan
+  // en ese momento (con spinner). Para reactivar la precarga: volver a
+  // importar prefetchTiendas y llamarla aquí con el panel desbloqueado.
+
+  // Sesión viva mientras el panel esté abierto: whoami renueva la cookie
+  // (deslizante, 8h) en cada visita; este ping cada 20 min evita que una
+  // pestaña abierta de un día para otro se quede con el token vencido y
+  // todo guardado responda "No autorizado". Si aun así la sesión murió
+  // (p. ej. el equipo estuvo suspendido), se vuelve al login con aviso.
+  useEffect(() => {
+    if (!authed) return
+    const ping = async () => {
+      try {
+        const d = await adminFetch("/api/admin/whoami").then(r => r.json())
+        if (d && d.unlocked === false) {
+          try {
+            sessionStorage.setItem("cliche_admin_unlocked", "0")
+            sessionStorage.setItem("cliche_admin_expired", "1")
+          } catch {}
+          window.location.reload()
+        }
+      } catch { /* sin red: se reintenta en el próximo tick */ }
+    }
+    const t = setInterval(ping, 20 * 60_000)
+    return () => clearInterval(t)
+  }, [authed])
 
   // Detector de versión: una pestaña abierta NUNCA se actualiza sola cuando
   // se despliega — el JS viejo (con bugs ya corregidos) sigue corriendo por
@@ -324,7 +359,9 @@ export default function AdminPage() {
       void import("./sections/heatmaps"); void import("./sections/descuentos")
       void import("./sections/asistente"); void import("./sections/clientes")
       void import("./sections/seo"); void import("./sections/blogs")
-      void import("./sections/catalogo-editor"); void import("./sections/tiendas")
+      // sections/tiendas NO se precalienta (multi-tienda parcialmente
+      // desactivado): su chunk baja solo si se entra a Bienestar/Comparar.
+      void import("./sections/catalogo-editor")
       void import("./components/chat-ayuda")
     }
     const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }
