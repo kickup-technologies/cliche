@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, type ComponentType } from "react"
 // supabase anon client only used for mutations (settings save, order status update)
 import { supabase } from "@/lib/supabase"
 import { getSupabaseBrowser } from "@/lib/supabase/client"
@@ -12,22 +12,36 @@ import type { Product } from "@/lib/supabase"
 import { Order, PageView } from "./types"
 import { adminFetch } from "@/lib/admin-client"
 
-// Sections
-import { OverviewSection } from "./sections/overview"
-import { VentasSection } from "./sections/ventas"
-import { TraficoSection } from "./sections/trafico"
-import { ProductosStatsSection } from "./sections/productos-stats"
-import { PedidosSection } from "./sections/pedidos"
-import { InventarioSection } from "./sections/inventario"
-import { HeatmapsSection } from "./sections/heatmaps"
-import { DescuentosSection } from "./sections/descuentos"
-import { AsistenteSection } from "./sections/asistente"
-import { ClientesSection } from "./sections/clientes"
-import { SeoSection } from "./sections/seo"
-import { BlogsSection } from "./sections/blogs"
-import { CatalogoEditorSection } from "./sections/catalogo-editor"
-import { BienestarSection, CompararTiendasSection, prefetchTiendas } from "./sections/tiendas"
-import { ChatAyuda } from "./components/chat-ayuda"
+import dynamic from "next/dynamic"
+import { prefetchTiendas } from "./sections/tiendas"
+
+// Sections CODE-SPLIT: antes TODO el panel (editor Tiptap del blog, gráficas
+// Recharts, asistente, etc.) viajaba en UN solo bundle gigante — hasta que no
+// bajaba y se ejecutaba, NINGÚN botón respondía (el selector de tiendas podía
+// tardar minutos en conexiones lentas). Ahora cada sección se descarga solo
+// al abrirla y el cascarón del panel hidrata en milisegundos.
+const SectionLoading = () => (
+  <div className="py-20 grid place-items-center"><RefreshCw className="w-6 h-6 animate-spin text-[#A67163]" /></div>
+)
+const lazy = <T,>(load: () => Promise<T>, pick: (m: T) => ComponentType<any>) =>
+  dynamic(() => load().then(m => ({ default: pick(m) })), { ssr: false, loading: SectionLoading })
+
+const OverviewSection = lazy(() => import("./sections/overview"), m => m.OverviewSection)
+const VentasSection = lazy(() => import("./sections/ventas"), m => m.VentasSection)
+const TraficoSection = lazy(() => import("./sections/trafico"), m => m.TraficoSection)
+const ProductosStatsSection = lazy(() => import("./sections/productos-stats"), m => m.ProductosStatsSection)
+const PedidosSection = lazy(() => import("./sections/pedidos"), m => m.PedidosSection)
+const InventarioSection = lazy(() => import("./sections/inventario"), m => m.InventarioSection)
+const HeatmapsSection = lazy(() => import("./sections/heatmaps"), m => m.HeatmapsSection)
+const DescuentosSection = lazy(() => import("./sections/descuentos"), m => m.DescuentosSection)
+const AsistenteSection = lazy(() => import("./sections/asistente"), m => m.AsistenteSection)
+const ClientesSection = lazy(() => import("./sections/clientes"), m => m.ClientesSection)
+const SeoSection = lazy(() => import("./sections/seo"), m => m.SeoSection)
+const BlogsSection = lazy(() => import("./sections/blogs"), m => m.BlogsSection)
+const CatalogoEditorSection = lazy(() => import("./sections/catalogo-editor"), m => m.CatalogoEditorSection)
+const BienestarSection = lazy(() => import("./sections/tiendas"), m => m.BienestarSection)
+const CompararTiendasSection = lazy(() => import("./sections/tiendas"), m => m.CompararTiendasSection)
+const ChatAyuda = lazy(() => import("./components/chat-ayuda"), m => m.ChatAyuda)
 
 type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "heatmaps" | "pedidos" | "clientes" | "descuentos" | "blogs" | "inventario" | "catalogo" | "seo" | "asistente"
 // Multi-tienda: qué tienda se está administrando desde este panel.
@@ -66,7 +80,12 @@ export default function AdminPage() {
   // hay sesión) + código OTP de 6 dígitos enviado a su correo. Quién es admin
   // lo deciden SOLO las envs ADMIN_EMAIL/ADMIN_EMAILS en el servidor. Una
   // sesión de cuenta no-admin es devuelta a la tienda sin ver nada del panel.
-  const [gate, setGate] = useState<"checking" | "login" | "otp" | "unlocked">("checking")
+  // Optimista: si esta pestaña ya estuvo desbloqueada, el panel pinta DE UNA
+  // (con el snapshot) mientras whoami re-verifica en segundo plano. El
+  // servidor sigue mandando: cualquier API sin cookie válida responde 401 y
+  // el panel vuelve al login. Solo cambia qué se muestra mientras tanto.
+  const wasUnlocked = typeof window !== "undefined" && (() => { try { return sessionStorage.getItem("cliche_admin_unlocked") === "1" } catch { return false } })()
+  const [gate, setGate] = useState<"checking" | "login" | "otp" | "unlocked">(wasUnlocked ? "unlocked" : "checking")
   const [otpInput, setOtpInput] = useState("")
   const [otpSent, setOtpSent] = useState(false)
   const [authError, setAuthError] = useState("")
@@ -98,6 +117,7 @@ export default function AdminPage() {
     adminFetch("/api/admin/whoami")
       .then((r) => r.json())
       .then((d: { authenticated: boolean; isAdminEmail: boolean; otpSkip?: boolean; unlocked: boolean }) => {
+        try { sessionStorage.setItem("cliche_admin_unlocked", d.unlocked ? "1" : "0") } catch {}
         if (d.unlocked) { setGate("unlocked"); return }
         // Admin exento del código (admin_otp_skip): desbloqueo automático —
         // requestCode responde skipped y entra directo, sin pedir nada.
@@ -162,7 +182,7 @@ export default function AdminPage() {
       }
       const data = (await res.json().catch(() => ({}))) as { skipped?: boolean }
       // Correo exento del 2º factor: la cookie de acceso ya viene puesta.
-      if (data.skipped) { setGate("unlocked"); return }
+      if (data.skipped) { try { sessionStorage.setItem("cliche_admin_unlocked", "1") } catch {}; setGate("unlocked"); return }
       setOtpSent(true)
     } catch {
       setAuthError("Error de conexión")
@@ -187,6 +207,7 @@ export default function AdminPage() {
         setAuthError(error || "Código incorrecto")
         return
       }
+      try { sessionStorage.setItem("cliche_admin_unlocked", "1") } catch {}
       setGate("unlocked")
     } catch {
       setAuthError("Error de conexión")
@@ -196,6 +217,7 @@ export default function AdminPage() {
   }
 
   function handleLogout() {
+    try { sessionStorage.removeItem("cliche_admin_unlocked"); sessionStorage.removeItem("cliche_admin_snapshot_v1") } catch {}
     adminFetch("/api/admin/logout", { method: "POST" }).finally(() => window.location.replace("/"))
   }
 
