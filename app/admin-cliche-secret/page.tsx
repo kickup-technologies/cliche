@@ -199,6 +199,12 @@ export default function AdminPage() {
     adminFetch("/api/admin/logout", { method: "POST" }).finally(() => window.location.replace("/"))
   }
 
+  // ── Snapshot instantáneo ──────────────────────────────────────────────────
+  // La última foto de los datos queda en sessionStorage: al reabrir el panel
+  // pinta AL INSTANTE con ella y se refresca en segundo plano. La pantalla
+  // "Cargando datos..." solo aparece la primera vez en la pestaña.
+  const SNAP_KEY = "cliche_admin_snapshot_v1"
+
   const loadAll = useCallback(async () => {
     setLoading(true)
     try {
@@ -221,6 +227,9 @@ export default function AdminPage() {
       const map: Record<string, string> = {}
       ;(setts || []).forEach((s: Setting) => { map[s.key] = s.value })
       setSettings(map)
+      try {
+        sessionStorage.setItem(SNAP_KEY, JSON.stringify({ orders: ords || [], products: prods || [], pageViews: views || [], settings: map }))
+      } catch { /* storage lleno o bloqueado: sin snapshot, sin drama */ }
     } catch {
       // Fallo de red/parseo: dejar el panel utilizable con datos vacíos.
       setLoadError("No se pudieron cargar los datos del panel.")
@@ -230,7 +239,20 @@ export default function AdminPage() {
     }
   }, [])
 
-  useEffect(() => { if (authed) loadAll() }, [authed, loadAll])
+  // Hidratar del snapshot ANTES del fetch: apertura instantánea.
+  useEffect(() => {
+    if (!authed) return
+    try {
+      const snap = sessionStorage.getItem(SNAP_KEY)
+      if (snap) {
+        const d = JSON.parse(snap)
+        setOrders(d.orders || []); setProducts(d.products || [])
+        setPageViews(d.pageViews || []); setSettings(d.settings || {})
+        setLoading(false)
+      }
+    } catch { /* snapshot corrupto: se ignora */ }
+    loadAll()
+  }, [authed, loadAll])
   // Precargar los datos de la otra tienda en segundo plano: el cambio de
   // tienda pinta al instante en vez de mostrar un spinner.
   useEffect(() => { if (authed) prefetchTiendas() }, [authed])
@@ -398,7 +420,9 @@ export default function AdminPage() {
   }
 
   // ── LOADING ────────────────────────────────────────────────────────────────
-  if (loading) {
+  // Solo bloquea la PRIMERA vez (sin snapshot): un refresco en segundo plano
+  // jamás tapa el panel que ya está pintado.
+  if (loading && orders.length === 0 && products.length === 0) {
     return (
       <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center">
         <div className="text-center">
