@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getSupabaseServer } from "@/lib/supabase/server"
-import { isAdminEmailAnywhere, otpSkipEmails, readAdminToken, signAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth"
+import { isAdminEmailAnywhere, otpSkipEmails, readAdminToken, signAdminToken, dbAdminEmails, ADMIN_COOKIE } from "@/lib/admin-auth"
 
 /**
  * GET /api/admin/whoami — dice al panel en qué estado está el visitante:
@@ -45,7 +45,11 @@ export async function GET(req: NextRequest) {
     unlocked: tokenData !== null,
   })
   // Sesión deslizante: cookie válida → se re-emite con vigencia completa.
-  if (tokenData) {
+  // Para admins de la lista en BD (claim d:1) solo se EXTIENDE si el correo
+  // sigue en la lista: quitarlo de admin_emails_extra mantiene la revocación
+  // en ≤8h aunque la pestaña quede abierta (el token vigente no se toca).
+  const renewable = tokenData && (!tokenData.viaDb || (await dbAdminEmails()).includes(tokenData.email))
+  if (renewable && tokenData) {
     res.cookies.set(ADMIN_COOKIE, signAdminToken(tokenData.email, undefined, tokenData.viaDb), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
