@@ -108,6 +108,7 @@ export default function AdminPage() {
 
   const [activeSection, setActiveSection] = useState<SectionId>("resumen")
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [newVersion, setNewVersion] = useState(false)
   const [storeView, setStoreView] = useState<StoreView>("cliche")
   const [storeDdOpen, setStoreDdOpen] = useState(false)
   const [peerTab, setPeerTab] = useState<PeerTab>("resumen")
@@ -291,6 +292,25 @@ export default function AdminPage() {
   // Precargar los datos de la otra tienda en segundo plano: el cambio de
   // tienda pinta al instante en vez de mostrar un spinner.
   useEffect(() => { if (authed) prefetchTiendas() }, [authed])
+
+  // Detector de versión: una pestaña abierta NUNCA se actualiza sola cuando
+  // se despliega — el JS viejo (con bugs ya corregidos) sigue corriendo por
+  // horas. Cada 5 min se compara el SHA desplegado y se ofrece recargar.
+  useEffect(() => {
+    if (!authed) return
+    let initial: string | null = null
+    const check = async () => {
+      try {
+        const { sha } = await fetch("/api/health", { cache: "no-store" }).then(r => r.json())
+        if (!sha) return
+        if (!initial) { initial = sha; return }
+        if (sha !== initial) setNewVersion(true)
+      } catch { /* sin red: se reintenta en el próximo tick */ }
+    }
+    void check()
+    const t = setInterval(check, 5 * 60_000)
+    return () => clearInterval(t)
+  }, [authed])
 
   // Con el panel ya interactivo, se descargan los chunks de las secciones en
   // tiempo muerto del navegador: al hacer clic ya están en caché (sin spinner)
@@ -683,6 +703,13 @@ export default function AdminPage() {
           </div>
         </main>
       </div>
+
+      {newVersion && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-3 bg-[#2D1A14] text-white text-sm rounded-2xl px-4 py-3 shadow-2xl">
+          Hay una versión nueva del panel.
+          <button onClick={() => window.location.reload()} className="bg-white text-[#2D1A14] text-xs font-bold rounded-xl px-3 py-1.5">Actualizar</button>
+        </div>
+      )}
 
       {/* Ayuda con IA: burbuja flotante, disponible en todas las secciones */}
       <ChatAyuda />
