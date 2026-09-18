@@ -13,7 +13,7 @@ import { Order, PageView } from "./types"
 import { adminFetch } from "@/lib/admin-client"
 
 import dynamic from "next/dynamic"
-import { prefetchTiendas } from "./sections/tiendas"
+import { prefetchTiendas, type PeerTab } from "./sections/tiendas"
 
 // Sections CODE-SPLIT: antes TODO el panel (editor Tiptap del blog, gráficas
 // Recharts, asistente, etc.) viajaba en UN solo bundle gigante — hasta que no
@@ -75,6 +75,18 @@ const SIDEBAR = [
   ]},
 ] as const
 
+// Sidebar cuando se administra BIENESTAR: sus propias secciones. Navegar aquí
+// NUNCA te saca de Bienestar (petición explícita de Andrés).
+const BIENESTAR_NAV = [
+  { section: "GENERAL", items: [
+    { id: "resumen", label: "Resumen", icon: LayoutDashboard },
+  ]},
+  { section: "OPERACIONES", items: [
+    { id: "pedidos", label: "Pedidos", icon: ShoppingBag },
+    { id: "productos", label: "Productos", icon: Package },
+  ]},
+] as const
+
 export default function AdminPage() {
   // Acceso en 2 factores: sesión de una cuenta admin (login aquí mismo si no
   // hay sesión) + código OTP de 6 dígitos enviado a su correo. Quién es admin
@@ -98,6 +110,7 @@ export default function AdminPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [storeView, setStoreView] = useState<StoreView>("cliche")
   const [storeDdOpen, setStoreDdOpen] = useState(false)
+  const [peerTab, setPeerTab] = useState<PeerTab>("resumen")
 
   const [products, setProducts] = useState<Product[]>([])
   const [orders, setOrders] = useState<Order[]>([])
@@ -318,6 +331,7 @@ export default function AdminPage() {
   function pickStore(v: StoreView) {
     setStoreView(v)
     setStoreDdOpen(false)
+    if (v === "bienestar") setPeerTab("resumen")
     if (v !== "comparar") setSidebarOpen(false)
   }
 
@@ -531,19 +545,19 @@ export default function AdminPage() {
         {/* Nav — en modo comparativa se ocultan las herramientas: esa vista
             solo muestra métricas lado a lado. */}
         <nav className={`flex-1 overflow-y-auto px-3 py-4 space-y-5 ${storeView === "comparar" ? "hidden" : ""}`}>
-          {SIDEBAR.map(group => (
+          {(storeView === "bienestar" ? BIENESTAR_NAV : SIDEBAR).map(group => (
             <div key={group.section}>
               <p className="text-[10px] font-bold uppercase tracking-widest text-[#2D1A14]/30 px-2 mb-1.5">{group.section}</p>
               <div className="space-y-0.5">
                 {group.items.map(({ id, label, icon: Icon }) => {
-                  const badge = navBadges[id]
-                  const active = activeSection === id
+                  const badge = storeView === "cliche" ? navBadges[id] : undefined
+                  const active = storeView === "bienestar" ? peerTab === id : activeSection === id
                   return (
                     <button
                       key={id}
-                      onClick={() => navigate(id as SectionId)}
+                      onClick={() => { if (storeView === "bienestar") { setPeerTab(id as PeerTab); setSidebarOpen(false) } else navigate(id as SectionId) }}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left ${
-                        active && storeView === "cliche"
+                        active
                           ? "bg-[#2D1A14] text-white"
                           : "text-[#2D1A14]/60 hover:bg-[#2D1A14]/5 hover:text-[#2D1A14]"
                       }`}
@@ -598,8 +612,11 @@ export default function AdminPage() {
             <Menu className="w-4 h-4 text-[#2D1A14]" />
           </button>
           <p className="font-semibold text-[#2D1A14] text-sm">
-            {(SIDEBAR.flatMap(g => [...g.items]) as Array<{ id: string; label: string; icon: unknown }>).find(i => i.id === activeSection)?.label || "Panel Admin"}
-            {storeView === "bienestar" ? " · Bienestar" : storeView === "comparar" ? " · Comparativa" : ""}
+            {storeView === "bienestar"
+              ? `Bienestar · ${({ resumen: "Resumen", pedidos: "Pedidos", productos: "Productos" } as Record<string, string>)[peerTab]}`
+              : storeView === "comparar"
+                ? "Comparar tiendas"
+                : (SIDEBAR.flatMap(g => [...g.items]) as Array<{ id: string; label: string; icon: unknown }>).find(i => i.id === activeSection)?.label || "Panel Admin"}
           </p>
           <button onClick={handleLogout} className="w-9 h-9 rounded-xl border border-[#2D1A14]/15 flex items-center justify-center">
             <LogOut className="w-4 h-4 text-[#2D1A14]/50" />
@@ -608,7 +625,7 @@ export default function AdminPage() {
 
         {/* Page content */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
-          <div key={`${storeView}-${activeSection}`} className="admin-view">
+          <div key={`${storeView}-${storeView === "bienestar" ? peerTab : activeSection}`} className="admin-view">
           {loadError && (
             <div className="mb-5 flex items-start gap-3 rounded-xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-900">
               <span className="text-base leading-none">⚠️</span>
@@ -658,7 +675,7 @@ export default function AdminPage() {
             <AsistenteSection />
           )}
           {storeView === "bienestar" && (
-            <BienestarSection />
+            <BienestarSection tab={peerTab} />
           )}
           {storeView === "comparar" && (
             <CompararTiendasSection />

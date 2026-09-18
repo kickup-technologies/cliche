@@ -165,10 +165,12 @@ function Retry({ error, onRetry, what }: { error: string; onRetry: () => void; w
 
 const PRODUCT_VACIO: Partial<BProduct> = { name: "", kind: "", benefit: "", price: 0, image: "", image2: "", badge: "", active: true, sort_order: 0 }
 
-/** Administración completa de Bienestar dentro del panel de Cliché. */
-export function BienestarSection() {
+export type PeerTab = "resumen" | "pedidos" | "productos"
+
+/** Administración completa de Bienestar dentro del panel de Cliché.
+ *  La pestaña activa la decide el SIDEBAR (secciones de Bienestar). */
+export function BienestarSection({ tab }: { tab: PeerTab }) {
   const [period, setPeriod] = useState<Period>("1m")
-  const [tab, setTab] = useState<"resumen" | "pedidos" | "productos">("resumen")
   const { data, loading, error, load } = useSummary("/api/admin/peer")
   const m = useMemo(() => (data ? metrics(data, period) : null), [data, period])
 
@@ -240,8 +242,6 @@ export function BienestarSection() {
   if (loading && !data) return <div className="py-24 grid place-items-center"><RefreshCw className="w-6 h-6 animate-spin text-[#A67163]" /></div>
   if (!data || !m) return <Retry error={error || "Sin conexión aún."} onRetry={() => void load(true)} what="la tienda Bienestar" />
 
-  const TABS = [{ id: "resumen", label: "Resumen" }, { id: "pedidos", label: "Pedidos" }, { id: "productos", label: "Productos" }] as const
-
   return (
     <div className="peer-skin space-y-5">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs pv-muted">
@@ -260,14 +260,6 @@ export function BienestarSection() {
             <ArrowUpRight className="w-3.5 h-3.5" />Abrir panel completo
           </button>
         </div>
-      </div>
-
-      <div className="pv-tabs" role="tablist">
-        <span className="pv-tab-thumb" style={{ transform: `translateX(${TABS.findIndex(t => t.id === tab) * 100}%)` }} aria-hidden />
-        {TABS.map(t => (
-          <button key={t.id} role="tab" aria-selected={tab === t.id} className={tab === t.id ? "on" : ""}
-            onClick={() => { setTab(t.id); if (t.id !== "resumen") void loadManage() }}>{t.label}</button>
-        ))}
       </div>
 
       {manageError && tab !== "resumen" && <p className="flex items-center gap-2 text-xs bg-red-50 text-red-600 rounded-xl p-3"><AlertCircle className="w-4 h-4 shrink-0" />{manageError}</p>}
