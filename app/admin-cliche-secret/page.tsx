@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase"
 import { getSupabaseBrowser } from "@/lib/supabase/client"
 import {
   LayoutDashboard, TrendingUp, BarChart3, Star, ShoppingBag, Zap,
-  Package, Settings, Lock, RefreshCw, AlertCircle, Eye, LogOut, Menu, X, Paintbrush, Flame, Ticket, MessageCircle, Users, Search, Newspaper, LayoutGrid,
+  Package, Settings, Lock, RefreshCw, AlertCircle, Eye, LogOut, Menu, X, Paintbrush, Flame, Ticket, MessageCircle, Users, Search, Newspaper, LayoutGrid, Store, Scale,
 } from "lucide-react"
 import type { Product } from "@/lib/supabase"
 import { Order, PageView } from "./types"
@@ -26,9 +26,10 @@ import { ClientesSection } from "./sections/clientes"
 import { SeoSection } from "./sections/seo"
 import { BlogsSection } from "./sections/blogs"
 import { CatalogoEditorSection } from "./sections/catalogo-editor"
+import { BienestarSection, CompararTiendasSection } from "./sections/tiendas"
 import { ChatAyuda } from "./components/chat-ayuda"
 
-type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "heatmaps" | "pedidos" | "clientes" | "descuentos" | "blogs" | "inventario" | "catalogo" | "seo" | "asistente"
+type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "heatmaps" | "pedidos" | "clientes" | "descuentos" | "blogs" | "inventario" | "catalogo" | "seo" | "asistente" | "tienda-bienestar" | "comparar-tiendas"
 
 interface Setting { key: string; value: string }
 
@@ -55,6 +56,11 @@ const SIDEBAR = [
     { id: "inventario", label: "Inventario", icon: Package },
     { id: "catalogo",   label: "Catálogo",   icon: LayoutGrid },
     { id: "seo",        label: "SEO",        icon: Search },
+  ]},
+  // Multi-tienda: la tienda hermana (Bienestar) en vivo y el comparador.
+  { section: "TIENDAS", items: [
+    { id: "tienda-bienestar", label: "Bienestar",        icon: Store },
+    { id: "comparar-tiendas", label: "Comparar tiendas", icon: Scale },
   ]},
 ] as const
 
@@ -543,6 +549,12 @@ export default function AdminPage() {
           )}
           {activeSection === "asistente" && (
             <AsistenteSection />
+          )}
+          {activeSection === "tienda-bienestar" && (
+            <BienestarSection />
+          )}
+          {activeSection === "comparar-tiendas" && (
+            <CompararTiendasSection />
           )}
         </main>
       </div>
