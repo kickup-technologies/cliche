@@ -243,8 +243,8 @@ export default function AdminPage() {
   }
 
   const STORE_META: Record<StoreView, { label: string; sub: string; dot: string; icon: typeof Store }> = {
-    cliche: { label: "Cliché Colombia", sub: "Panel administrativo", dot: "#A67163", icon: Store },
-    bienestar: { label: "Bienestar by Cliché", sub: "Tienda hermana · gestión en vivo", dot: "#6E7A6D", icon: Store },
+    cliche: { label: "Cliché", sub: "Panel administrativo", dot: "#A67163", icon: Store },
+    bienestar: { label: "Bienestar", sub: "Gestión en vivo", dot: "#6E7A6D", icon: Store },
     comparar: { label: "Comparar tiendas", sub: "Métricas lado a lado", dot: "#8b8b8b", icon: Scale },
   }
 
@@ -408,7 +408,9 @@ export default function AdminPage() {
 
   // ── MAIN LAYOUT ────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#FAF8F5] flex">
+    // skin-bienestar: al administrar Bienestar, TODO el panel (sidebar, fondos,
+    // acentos) adopta su paleta verde — ver los overrides en globals.css.
+    <div className={`min-h-screen bg-[#FAF8F5] flex ${storeView === "bienestar" ? "skin-bienestar" : ""}`}>
 
       {/* Mobile overlay */}
       {sidebarOpen && (

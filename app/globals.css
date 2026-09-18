@@ -558,3 +558,16 @@ html.lenis body {
 .admin-view { animation:admin-view-in .38s cubic-bezier(.22,1,.36,1); }
 @keyframes admin-view-in { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
 @media (prefers-reduced-motion:reduce) { .admin-view { animation:none; } .store-dd { transition:none; } }
+
+/* ── Re-skin verde: al administrar Bienestar, todo el panel toma su paleta.
+   Los selectores [class~=…] matchean el token EXACTO de Tailwind, así que las
+   variantes con opacidad (p. ej. text-[#2D1A14]/50) no se ven afectadas. ── */
+.skin-bienestar { background-color:#FAF8F2 !important; }
+.skin-bienestar [class~="bg-[#FAF8F5]"] { background-color:#FAF8F2 !important; }
+.skin-bienestar [class~="hover:bg-[#FAF8F5]"]:hover { background-color:#f1efe7 !important; }
+.skin-bienestar [class~="bg-[#2D1A14]"] { background-color:#232920 !important; }
+.skin-bienestar [class~="hover:bg-[#3D2A24]"]:hover { background-color:#394237 !important; }
+.skin-bienestar [class~="text-[#2D1A14]"] { color:#232920 !important; }
+.skin-bienestar [class~="bg-[#A67163]"] { background-color:#6E7A6D !important; }
+.skin-bienestar [class~="text-[#A67163]"] { color:#6E7A6D !important; }
+.skin-bienestar [class~="hover:text-[#A67163]"]:hover { color:#6E7A6D !important; }

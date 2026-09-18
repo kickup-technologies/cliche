@@ -44,7 +44,13 @@ export type PeerOrder = {
   total: number; status: string; status_label: string; confirmed: boolean; payment_method?: string;
 }
 
+/** Números EXACTOS calculados por la BD (admin_store_stats): todo el
+ *  histórico, no la muestra de 200 pedidos que viaja en `orders`. */
+export type PeerStatsWindow = { orders: number; revenue: number; prev_orders: number; prev_revenue: number }
+export type PeerStats = { unique_customers: number; windows: Record<"7d" | "30d" | "90d" | "all", PeerStatsWindow> }
+
 export type PeerSummary = {
+  stats?: PeerStats | null;
   store: string; name: string; url: string; currency: "COP"; generated_at: string;
   orders: PeerOrder[];
   products: { id: string; name: string; price: number; active: boolean; image?: string | null }[];

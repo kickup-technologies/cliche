@@ -14,7 +14,7 @@ import {
   Plus, Trash2, Save, ArrowUpRight,
 } from "lucide-react"
 import { adminFetch } from "@/lib/admin-client"
-import type { PeerSummary, PeerOrder } from "@/lib/peer"
+import type { PeerSummary, PeerOrder, PeerStats } from "@/lib/peer"
 
 const fmt = (n: number) => new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(n)
 
@@ -35,10 +35,16 @@ function metrics(s: PeerSummary, period: Period) {
   const confirmed = (s.orders || []).filter(o => o.confirmed)
   const curr = filterPeriod(confirmed, period)
   const prev = filterPeriod(confirmed, period, 1)
-  const revenue = curr.reduce((a, o) => a + (o.total || 0), 0)
-  const prevRevenue = prev.reduce((a, o) => a + (o.total || 0), 0)
-  const aov = curr.length ? revenue / curr.length : 0
-  const prevAov = prev.length ? prevRevenue / prev.length : 0
+  // Números EXACTOS desde la BD (admin_store_stats) cuando llegan; la muestra
+  // de 200 pedidos queda solo como respaldo y para top productos/tablas.
+  const key = (period === "1m" ? "30d" : period === "3m" ? "90d" : period) as keyof PeerStats["windows"]
+  const w = s.stats?.windows?.[key]
+  const ordersCount = w ? w.orders : curr.length
+  const prevOrders = w ? w.prev_orders : prev.length
+  const revenue = w ? w.revenue : curr.reduce((a, o) => a + (o.total || 0), 0)
+  const prevRevenue = w ? w.prev_revenue : prev.reduce((a, o) => a + (o.total || 0), 0)
+  const aov = ordersCount ? revenue / ordersCount : 0
+  const prevAov = prevOrders ? prevRevenue / prevOrders : 0
   const top = (() => {
     const map = new Map<string, { name: string; qty: number }>()
     for (const o of curr) for (const it of o.items || []) {
@@ -47,9 +53,9 @@ function metrics(s: PeerSummary, period: Period) {
     }
     return [...map.values()].sort((a, b) => b.qty - a.qty).slice(0, 6)
   })()
-  const clientes = new Set(confirmed.map(o => (o.email || o.phone || o.customer_name || "").toLowerCase())).size
+  const clientes = s.stats?.unique_customers ?? new Set(confirmed.map(o => (o.email || o.phone || o.customer_name || "").toLowerCase())).size
   const activos = (s.products || []).filter(p => p.active).length
-  return { curr, prev, revenue, prevRevenue, aov, prevAov, top, clientes, activos }
+  return { curr, prev, ordersCount, prevOrders, revenue, prevRevenue, aov, prevAov, top, clientes, activos }
 }
 
 function PeriodTabs({ period, onChange }: { period: Period; onChange: (p: Period) => void }) {
@@ -249,7 +255,7 @@ export function BienestarSection() {
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             <Card label="Ingresos" value={fmt(m.revenue)} change={pct(m.revenue, m.prevRevenue)} />
-            <Card label="Pedidos" value={m.curr.length} change={pct(m.curr.length, m.prev.length)} />
+            <Card label="Pedidos" value={m.ordersCount} change={pct(m.ordersCount, m.prevOrders)} />
             <Card label="Ticket promedio" value={fmt(m.aov)} change={pct(m.aov, m.prevAov)} />
             <Card label="Suscriptores" value={data.subscribers_count} sub="newsletter (total)" />
           </div>
@@ -413,7 +419,7 @@ export function CompararTiendasSection() {
   ]
   const rows: { label: string; vals: { f: string | number; v: number }[] }[] = [
     { label: "Ingresos del periodo", vals: stores.map(x => ({ f: fmt(x.m.revenue), v: x.m.revenue })) },
-    { label: "Pedidos del periodo", vals: stores.map(x => ({ f: x.m.curr.length, v: x.m.curr.length })) },
+    { label: "Pedidos del periodo", vals: stores.map(x => ({ f: x.m.ordersCount, v: x.m.ordersCount })) },
     { label: "Ticket promedio", vals: stores.map(x => ({ f: fmt(x.m.aov), v: x.m.aov })) },
     { label: "Clientes únicos (histórico)", vals: stores.map(x => ({ f: x.m.clientes, v: x.m.clientes })) },
     { label: "Suscriptores newsletter", vals: stores.map(x => ({ f: x.s.subscribers_count, v: x.s.subscribers_count })) },

@@ -8,27 +8,37 @@ import { isAdmin } from "@/lib/admin-auth"
  * Protegido por la cookie firmada del panel admin (isAdmin). Devuelve datos
  * personales de clientes, así que SIN auth no responde.
  */
-// PostgREST devuelve máximo 1.000 filas por consulta; se pagina con .range()
-// hasta agotar los registros del año para que ningún mes quede sin visitas.
+// PostgREST devuelve máximo 1.000 filas por consulta. Antes se paginaba EN
+// SERIE (una ida y vuelta por cada 1.000 filas → el panel tardaba varios
+// segundos en abrir). Ahora: un COUNT primero y todas las páginas EN PARALELO.
 async function fetchAllPageViews(
   supabase: ReturnType<typeof createServerClient>,
   since: string
 ): Promise<{ data: Array<{ path: string; created_at: string }> }> {
   const PAGE = 1000
+  const { count, error: countErr } = await supabase
+    .from("page_views")
+    .select("*", { count: "exact", head: true })
+    .gte("created_at", since)
+  if (countErr || !count) {
+    if (countErr) console.error("[admin/data] page_views count error:", countErr)
+    return { data: [] }
+  }
+  const pages = Math.ceil(count / PAGE)
+  const results = await Promise.all(
+    Array.from({ length: pages }, (_, i) =>
+      supabase
+        .from("page_views")
+        .select("path, created_at")
+        .gte("created_at", since)
+        .order("created_at", { ascending: false })
+        .range(i * PAGE, i * PAGE + PAGE - 1)
+    )
+  )
   const all: Array<{ path: string; created_at: string }> = []
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await supabase
-      .from("page_views")
-      .select("path, created_at")
-      .gte("created_at", since)
-      .order("created_at", { ascending: false })
-      .range(from, from + PAGE - 1)
-    if (error) {
-      console.error("[admin/data] page_views error:", error)
-      break
-    }
-    all.push(...(data || []))
-    if (!data || data.length < PAGE) break
+  for (const r of results) {
+    if (r.error) { console.error("[admin/data] page_views error:", r.error); continue }
+    all.push(...(r.data || []))
   }
   return { data: all }
 }

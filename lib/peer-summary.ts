@@ -13,7 +13,7 @@ const CONFIRMED = ["confirmed", "preparing", "shipped", "delivered", "paid"]
  */
 export async function buildSelfSummary(): Promise<PeerSummary> {
   const supabase = createServerClient()
-  const [ordersRes, productsRes, subsRes] = await Promise.all([
+  const [ordersRes, productsRes, subsRes, statsRes] = await Promise.all([
     supabase
       .from("orders")
       .select("id, created_at, customer_name, customer_email, customer_phone, shipping_address, items, total, status")
@@ -22,8 +22,12 @@ export async function buildSelfSummary(): Promise<PeerSummary> {
       .limit(200),
     supabase.from("products").select("id, name, price, is_active, image_url").order("name").limit(300),
     supabase.from("subscribers").select("email, created_at").order("created_at", { ascending: false }).limit(500),
+    // Métricas EXACTAS calculadas por la BD sobre todo el histórico
+    // (la lista de 200 pedidos es solo la muestra para las tablas).
+    supabase.rpc("admin_store_stats"),
   ])
   if (ordersRes.error) throw new Error(ordersRes.error.message)
+  if (statsRes.error) console.error("[peer-summary] stats:", statsRes.error.message)
 
   type Row = {
     id: string; created_at: string; customer_name: string | null; customer_email: string | null;
@@ -51,6 +55,7 @@ export async function buildSelfSummary(): Promise<PeerSummary> {
     url: "https://www.clichecolombia.com",
     currency: "COP",
     generated_at: new Date().toISOString(),
+    stats: statsRes.error ? null : (statsRes.data as PeerSummary["stats"]),
     orders,
     products: ((productsRes.data || []) as { id: string; name: string; price: number; is_active: boolean; image_url: string | null }[])
       .map(p => ({ id: p.id, name: p.name, price: p.price, active: p.is_active, image: p.image_url })),
