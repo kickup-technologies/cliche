@@ -555,8 +555,8 @@ html.lenis body {
 .store-dd.open { grid-template-rows:1fr; }
 .store-dd > div { overflow:hidden; min-height:0; }
 .store-dd.open > div { border-top:1px solid rgba(45,26,20,.06); }
-.admin-view { animation:admin-view-in .38s cubic-bezier(.22,1,.36,1); }
-@keyframes admin-view-in { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+.admin-view { animation:admin-view-in .22s ease-out; }
+@keyframes admin-view-in { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
 @media (prefers-reduced-motion:reduce) { .admin-view { animation:none; } .store-dd { transition:none; } }
 
 /* ── Re-skin verde: al administrar Bienestar, todo el panel toma su paleta.
@@ -571,3 +571,25 @@ html.lenis body {
 .skin-bienestar [class~="bg-[#A67163]"] { background-color:#6E7A6D !important; }
 .skin-bienestar [class~="text-[#A67163]"] { color:#6E7A6D !important; }
 .skin-bienestar [class~="hover:text-[#A67163]"]:hover { color:#6E7A6D !important; }
+
+/* ── Al administrar Bienestar, el panel se ve como SU propio panel:
+   sidebar verde-tinta oscuro con texto blanco, fondo claro, acentos sage. ── */
+aside { transition: background-color .35s ease, border-color .35s ease; }
+.skin-bienestar aside { background-color:#232920 !important; border-right-color:rgba(255,255,255,.08) !important; }
+.skin-bienestar aside [class~="border-[#2D1A14]/8"] { border-color:rgba(255,255,255,.1) !important; }
+.skin-bienestar aside [class~="text-[#2D1A14]"] { color:#fff !important; }
+.skin-bienestar aside [class~="text-[#2D1A14]/60"] { color:rgba(255,255,255,.6) !important; }
+.skin-bienestar aside [class~="text-[#2D1A14]/50"] { color:rgba(255,255,255,.5) !important; }
+.skin-bienestar aside [class~="text-[#2D1A14]/40"] { color:rgba(255,255,255,.45) !important; }
+.skin-bienestar aside [class~="text-[#2D1A14]/30"] { color:rgba(255,255,255,.35) !important; }
+.skin-bienestar aside [class~="hover:bg-[#2D1A14]/5"]:hover { background-color:rgba(255,255,255,.06) !important; }
+.skin-bienestar aside [class~="hover:bg-[#FAF8F5]"]:hover { background-color:rgba(255,255,255,.06) !important; }
+.skin-bienestar aside [class~="hover:text-[#2D1A14]"]:hover { color:#fff !important; }
+.skin-bienestar aside [class~="hover:bg-red-50"]:hover { background-color:rgba(239,68,68,.15) !important; }
+.skin-bienestar aside [class~="bg-[#A67163]/15"] { background-color:rgba(110,122,109,.3) !important; }
+.skin-bienestar .store-dd.open > div { border-top-color:rgba(255,255,255,.08); }
+/* Scroll del sidebar integrado cuando está oscuro */
+.skin-bienestar aside nav { scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.18) transparent; }
+.skin-bienestar aside nav::-webkit-scrollbar { width:5px; }
+.skin-bienestar aside nav::-webkit-scrollbar-track { background:transparent; }
+.skin-bienestar aside nav::-webkit-scrollbar-thumb { background:rgba(255,255,255,.15); border-radius:99px; }

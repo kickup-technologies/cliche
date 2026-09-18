@@ -107,6 +107,23 @@ const B_STATUS: Record<string, string> = {
   enviado: "Enviado", entregado: "Entregado", cancelado: "Cancelado",
 }
 
+// Caché en memoria del navegador: al volver a entrar a una vista, los datos
+// aparecen AL INSTANTE (y se refrescan en segundo plano). Sin esto, cada
+// cambio de tienda montaba la sección vacía y mostraba un spinner.
+const summaryCache: Record<string, PeerSummary> = {}
+const manageCache: { orders?: BOrder[]; products?: BProduct[] } = {}
+
+/** Precarga los resúmenes apenas se desbloquea el panel (fire-and-forget). */
+export function prefetchTiendas() {
+  for (const url of ["/api/admin/peer", "/api/admin/peer?self=1"]) {
+    if (summaryCache[url]) continue
+    adminFetch(url).then(async r => {
+      const d = await r.json().catch(() => null)
+      if (r.ok && d) summaryCache[url] = d
+    }).catch(() => {})
+  }
+}
+
 async function peerApi(path: string, init?: RequestInit) {
   const r = await adminFetch(`/api/admin/peer/${path}`, { ...init, headers: { "Content-Type": "application/json", ...(init?.headers || {}) } })
   const data = await r.json().catch(() => ({}))
@@ -115,7 +132,8 @@ async function peerApi(path: string, init?: RequestInit) {
 }
 
 function useSummary(url: string) {
-  const [data, setData] = useState<PeerSummary | null>(null)
+  // Arranca con la caché: la vista pinta al instante y se refresca detrás.
+  const [data, setData] = useState<PeerSummary | null>(summaryCache[url] || null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const load = useCallback(async (fresh = false) => {
@@ -124,6 +142,7 @@ function useSummary(url: string) {
       const r = await adminFetch(`${url}${fresh && !url.includes("?") ? "?fresh=1" : ""}`)
       const d = await r.json().catch(() => null)
       if (!r.ok || !d) throw new Error(d?.error || `Error ${r.status}`)
+      summaryCache[url] = d
       setData(d)
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error de conexión")
@@ -153,8 +172,8 @@ export function BienestarSection() {
   const { data, loading, error, load } = useSummary("/api/admin/peer")
   const m = useMemo(() => (data ? metrics(data, period) : null), [data, period])
 
-  const [orders, setOrders] = useState<BOrder[]>([])
-  const [products, setProducts] = useState<BProduct[]>([])
+  const [orders, setOrders] = useState<BOrder[]>(manageCache.orders || [])
+  const [products, setProducts] = useState<BProduct[]>(manageCache.products || [])
   const [busy, setBusy] = useState("")
   const [manageError, setManageError] = useState("")
   const [draft, setDraft] = useState<Partial<BProduct> | null>(null)
@@ -163,6 +182,8 @@ export function BienestarSection() {
     setManageError("")
     try {
       const [o, p] = await Promise.all([peerApi("orders"), peerApi("products")])
+      manageCache.orders = o.orders || []
+      manageCache.products = p.products || []
       setOrders(o.orders || [])
       setProducts(p.products || [])
     } catch (e) { setManageError(e instanceof Error ? e.message : "Error cargando la gestión") }

@@ -26,7 +26,7 @@ import { ClientesSection } from "./sections/clientes"
 import { SeoSection } from "./sections/seo"
 import { BlogsSection } from "./sections/blogs"
 import { CatalogoEditorSection } from "./sections/catalogo-editor"
-import { BienestarSection, CompararTiendasSection } from "./sections/tiendas"
+import { BienestarSection, CompararTiendasSection, prefetchTiendas } from "./sections/tiendas"
 import { ChatAyuda } from "./components/chat-ayuda"
 
 type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "heatmaps" | "pedidos" | "clientes" | "descuentos" | "blogs" | "inventario" | "catalogo" | "seo" | "asistente"
@@ -231,6 +231,9 @@ export default function AdminPage() {
   }, [])
 
   useEffect(() => { if (authed) loadAll() }, [authed, loadAll])
+  // Precargar los datos de la otra tienda en segundo plano: el cambio de
+  // tienda pinta al instante en vez de mostrar un spinner.
+  useEffect(() => { if (authed) prefetchTiendas() }, [authed])
 
   function handleOrderUpdate(updated: Order) {
     setOrders(prev => prev.map(o => o.id === updated.id ? updated : o))
