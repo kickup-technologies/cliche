@@ -19,9 +19,10 @@ export async function buildSelfSummary(): Promise<PeerSummary> {
       .select("id, created_at, customer_name, customer_email, customer_phone, shipping_address, items, total, status")
       .neq("status", "pending")
       .order("created_at", { ascending: false })
-      .limit(200),
+      .limit(60),
     supabase.from("products").select("id, name, price, is_active, image_url").order("name").limit(300),
-    supabase.from("subscribers").select("email, created_at").order("created_at", { ascending: false }).limit(500),
+    // Solo el CONTEO viaja (la lista de correos no la usa la otra tienda y pesaba)
+    supabase.from("subscribers").select("*", { count: "exact", head: true }),
     // Métricas EXACTAS calculadas por la BD sobre todo el histórico
     // (la lista de 200 pedidos es solo la muestra para las tablas).
     supabase.rpc("admin_store_stats"),
@@ -59,7 +60,7 @@ export async function buildSelfSummary(): Promise<PeerSummary> {
     orders,
     products: ((productsRes.data || []) as { id: string; name: string; price: number; is_active: boolean; image_url: string | null }[])
       .map(p => ({ id: p.id, name: p.name, price: p.price, active: p.is_active, image: p.image_url })),
-    subscribers_count: (subsRes.data || []).length,
-    subscribers: (subsRes.data || []) as { email: string; created_at: string }[],
+    subscribers_count: subsRes.count || 0,
+    subscribers: [],
   }
 }
