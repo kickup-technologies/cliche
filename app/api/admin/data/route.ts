@@ -10,35 +10,35 @@ import { isAdmin } from "@/lib/admin-auth"
  */
 // PostgREST devuelve máximo 1.000 filas por consulta. Antes se paginaba EN
 // SERIE (una ida y vuelta por cada 1.000 filas → el panel tardaba varios
-// segundos en abrir). Ahora: un COUNT primero y todas las páginas EN PARALELO.
+// segundos en abrir). Ahora la PRIMERA página trae el COUNT en la misma
+// consulta (una ida y vuelta menos) y las restantes van EN PARALELO.
 async function fetchAllPageViews(
   supabase: ReturnType<typeof createServerClient>,
   since: string
 ): Promise<{ data: Array<{ path: string; created_at: string }> }> {
   const PAGE = 1000
-  const { count, error: countErr } = await supabase
-    .from("page_views")
-    .select("*", { count: "exact", head: true })
-    .gte("created_at", since)
-  if (countErr || !count) {
-    if (countErr) console.error("[admin/data] page_views count error:", countErr)
+  const base = () =>
+    supabase
+      .from("page_views")
+      .select("path, created_at", { count: "exact" })
+      .gte("created_at", since)
+      .order("created_at", { ascending: false })
+  const first = await base().range(0, PAGE - 1)
+  if (first.error) {
+    console.error("[admin/data] page_views error:", first.error)
     return { data: [] }
   }
-  const pages = Math.ceil(count / PAGE)
-  const results = await Promise.all(
-    Array.from({ length: pages }, (_, i) =>
-      supabase
-        .from("page_views")
-        .select("path, created_at")
-        .gte("created_at", since)
-        .order("created_at", { ascending: false })
-        .range(i * PAGE, i * PAGE + PAGE - 1)
+  const all: Array<{ path: string; created_at: string }> = [...(first.data || [])]
+  const total = first.count || all.length
+  const pages = Math.ceil(total / PAGE)
+  if (pages > 1) {
+    const rest = await Promise.all(
+      Array.from({ length: pages - 1 }, (_, i) => base().range((i + 1) * PAGE, (i + 2) * PAGE - 1))
     )
-  )
-  const all: Array<{ path: string; created_at: string }> = []
-  for (const r of results) {
-    if (r.error) { console.error("[admin/data] page_views error:", r.error); continue }
-    all.push(...(r.data || []))
+    for (const r of rest) {
+      if (r.error) { console.error("[admin/data] page_views error:", r.error); continue }
+      all.push(...(r.data || []))
+    }
   }
   return { data: all }
 }

@@ -14,20 +14,36 @@ import { adminFetch } from "@/lib/admin-client"
 import { StoreCurtain, startStoreCurtain, storeCurtainReady } from "./components/store-curtain"
 
 import dynamic from "next/dynamic"
+import Image from "next/image"
 // Solo el TIPO: importar el módulo tiendas aquí lo metía en el bundle del
 // cascarón del panel (ver nota "desactivado parcialmente" más abajo).
 import type { PeerTab } from "./sections/tiendas"
+
+// Loader ÚNICO de marca (pedido de Andrés: nunca dos spinners a la vez ni
+// descentrados): logo Cliché + puntos respirando, centrado. Se usa en el
+// gate, en la primera carga de datos y mientras baja el chunk de una sección.
+const BrandLoader = ({ full = false }: { full?: boolean }) => (
+  <div className={`grid place-items-center ${full ? "min-h-screen bg-[#FAF8F5]" : "min-h-[65vh]"}`}>
+    <div className="text-center">
+      <Image src="/images/logo-cliche.png" alt="Cargando" width={152} height={128} sizes="120px" priority
+        className="mx-auto h-14 w-auto object-contain opacity-90 md:h-16" />
+      <div className="mt-5 flex items-center justify-center gap-1.5">
+        {[0, 1, 2].map(i => (
+          <span key={i} className="h-1.5 w-1.5 rounded-full bg-[#A67163]" style={{ animation: `admin-dot 1.1s ease-in-out ${i * 0.18}s infinite` }} />
+        ))}
+      </div>
+    </div>
+  </div>
+)
 
 // Sections CODE-SPLIT: antes TODO el panel (editor Tiptap del blog, gráficas
 // Recharts, asistente, etc.) viajaba en UN solo bundle gigante — hasta que no
 // bajaba y se ejecutaba, NINGÚN botón respondía (el selector de tiendas podía
 // tardar minutos en conexiones lentas). Ahora cada sección se descarga solo
 // al abrirla y el cascarón del panel hidrata en milisegundos.
-const SectionLoading = () => (
-  <div className="py-20 grid place-items-center"><RefreshCw className="w-6 h-6 animate-spin text-[#A67163]" /></div>
-)
-const lazy = <T,>(load: () => Promise<T>, pick: (m: T) => ComponentType<any>) =>
-  dynamic(() => load().then(m => ({ default: pick(m) })), { ssr: false, loading: SectionLoading })
+const SectionLoading = () => <BrandLoader />
+const lazy = <T,>(load: () => Promise<T>, pick: (m: T) => ComponentType<any>, opts?: { quiet?: boolean }) =>
+  dynamic(() => load().then(m => ({ default: pick(m) })), { ssr: false, ...(opts?.quiet ? {} : { loading: SectionLoading }) })
 
 const OverviewSection = lazy(() => import("./sections/overview"), m => m.OverviewSection)
 const VentasSection = lazy(() => import("./sections/ventas"), m => m.VentasSection)
@@ -44,7 +60,9 @@ const BlogsSection = lazy(() => import("./sections/blogs"), m => m.BlogsSection)
 const CatalogoEditorSection = lazy(() => import("./sections/catalogo-editor"), m => m.CatalogoEditorSection)
 const BienestarSection = lazy(() => import("./sections/tiendas"), m => m.BienestarSection)
 const CompararTiendasSection = lazy(() => import("./sections/tiendas"), m => m.CompararTiendasSection)
-const ChatAyuda = lazy(() => import("./components/chat-ayuda"), m => m.ChatAyuda)
+// quiet: la burbuja flotante de ayuda no debe mostrar un spinner suelto en la
+// esquina mientras baja su chunk (se veía un segundo loader descentrado).
+const ChatAyuda = lazy(() => import("./components/chat-ayuda"), m => m.ChatAyuda, { quiet: true })
 
 type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "heatmaps" | "pedidos" | "clientes" | "descuentos" | "blogs" | "inventario" | "catalogo" | "seo" | "asistente"
 // Multi-tienda: qué tienda se está administrando desde este panel.
@@ -177,6 +195,10 @@ export default function AdminPage() {
   const authed = gate === "unlocked"
 
   const [activeSection, setActiveSection] = useState<SectionId>("resumen")
+  // Secciones ya visitadas: quedan montadas (ocultas con CSS) para que volver
+  // a ellas sea instantáneo. Ver el bloque de render en <main>.
+  const visitedSections = useRef<Set<SectionId>>(new Set(["resumen"]))
+  visitedSections.current.add(activeSection)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [newVersion, setNewVersion] = useState(false)
   const [storeView, setStoreView] = useState<StoreView>("cliche")
@@ -307,14 +329,22 @@ export default function AdminPage() {
   }
 
   function handleLogout() {
-    try { sessionStorage.removeItem("cliche_admin_unlocked"); sessionStorage.removeItem("cliche_admin_snapshot_v1") } catch {}
+    try {
+      sessionStorage.removeItem("cliche_admin_unlocked")
+      sessionStorage.removeItem("cliche_admin_snapshot_v1")
+      localStorage.removeItem("cliche_admin_snapshot_v1")
+    } catch {}
     adminFetch("/api/admin/logout", { method: "POST" }).finally(() => window.location.replace("/"))
   }
 
   // ── Snapshot instantáneo ──────────────────────────────────────────────────
-  // La última foto de los datos queda en sessionStorage: al reabrir el panel
-  // pinta AL INSTANTE con ella y se refresca en segundo plano. La pantalla
-  // "Cargando datos..." solo aparece la primera vez en la pestaña.
+  // La última foto de los datos queda en localStorage (antes sessionStorage,
+  // que muere con la pestaña): el panel pinta AL INSTANTE también en pestañas
+  // y sesiones de navegador nuevas, y se refresca en segundo plano — los
+  // datos siguen siendo en tiempo real, solo que la espera no se ve. El
+  // loader bloqueante queda únicamente para el primerísimo uso del equipo.
+  // Solo se pinta tras verificar el acceso (gate desbloqueado) y el logout lo
+  // borra. Si otra persona usara el equipo sin sesión, no pasa del login.
   const SNAP_KEY = "cliche_admin_snapshot_v1"
 
   const loadAll = useCallback(async () => {
@@ -340,7 +370,8 @@ export default function AdminPage() {
       ;(setts || []).forEach((s: Setting) => { map[s.key] = s.value })
       setSettings(map)
       try {
-        sessionStorage.setItem(SNAP_KEY, JSON.stringify({ orders: ords || [], products: prods || [], pageViews: views || [], settings: map }))
+        localStorage.setItem(SNAP_KEY, JSON.stringify({ orders: ords || [], products: prods || [], pageViews: views || [], settings: map }))
+        sessionStorage.removeItem(SNAP_KEY) // migración desde el snapshot viejo por-pestaña
       } catch { /* storage lleno o bloqueado: sin snapshot, sin drama */ }
     } catch {
       // Fallo de red/parseo: dejar el panel utilizable con datos vacíos.
@@ -355,7 +386,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (!authed) return
     try {
-      const snap = sessionStorage.getItem(SNAP_KEY)
+      const snap = localStorage.getItem(SNAP_KEY) || sessionStorage.getItem(SNAP_KEY)
       if (snap) {
         const d = JSON.parse(snap)
         setOrders(d.orders || []); setProducts(d.products || [])
@@ -501,11 +532,7 @@ export default function AdminPage() {
 
   // ── VERIFICANDO IDENTIDAD ──────────────────────────────────────────────────
   if (gate === "checking") {
-    return (
-      <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center">
-        <RefreshCw className="w-7 h-7 animate-spin text-[#A67163]" />
-      </div>
-    )
+    return <BrandLoader full />
   }
 
   // ── INICIAR SESIÓN (1er factor, dentro del propio panel) ───────────────────
@@ -635,21 +662,18 @@ export default function AdminPage() {
   // Solo bloquea la PRIMERA vez (sin snapshot): un refresco en segundo plano
   // jamás tapa el panel que ya está pintado.
   if (loading && orders.length === 0 && products.length === 0) {
-    return (
-      <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center">
-        <div className="text-center">
-          <RefreshCw className="w-7 h-7 animate-spin text-[#A67163] mx-auto mb-3" />
-          <p className="text-sm text-[#2D1A14]/50">Cargando datos...</p>
-        </div>
-      </div>
-    )
+    return <BrandLoader full />
   }
 
   // ── MAIN LAYOUT ────────────────────────────────────────────────────────────
   return (
     // skin-bienestar: al administrar Bienestar, TODO el panel (sidebar, fondos,
     // acentos) adopta su paleta verde — ver los overrides en globals.css.
-    <div className={`min-h-screen bg-[#FAF8F5] flex ${storeView === "bienestar" ? "skin-bienestar" : ""}`}>
+    // overflow-x-clip + min-w-0 (abajo): el panel solo se mueve en VERTICAL.
+    // Sin el min-w-0, la columna de contenido (flex item) no podía encogerse
+    // por debajo del ancho intrínseco de las grillas/tablas y empujaba un
+    // scroll horizontal en toda la página (pedido de Andrés: solo vertical).
+    <div className={`min-h-screen bg-[#FAF8F5] flex overflow-x-clip ${storeView === "bienestar" ? "skin-bienestar" : ""}`}>
 
       {/* Mobile overlay */}
       {sidebarOpen && (
@@ -728,7 +752,7 @@ export default function AdminPage() {
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
+      <div className="flex-1 lg:ml-64 flex flex-col min-h-screen min-w-0">
         {/* Mobile top bar */}
         <div className="lg:hidden sticky top-0 z-20 bg-white border-b border-[#2D1A14]/8 px-4 py-3 flex items-center justify-between">
           <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 rounded-xl border border-[#2D1A14]/15 flex items-center justify-center">
@@ -748,7 +772,6 @@ export default function AdminPage() {
 
         {/* Page content */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
-          <div key={`${storeView}-${storeView === "bienestar" ? peerTab : activeSection}`} className="admin-view">
           {loadError && (
             <div className="mb-5 flex items-start gap-3 rounded-xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-900">
               <span className="text-base leading-none">⚠️</span>
@@ -758,52 +781,47 @@ export default function AdminPage() {
               </div>
             </div>
           )}
-          {storeView === "cliche" && activeSection === "resumen" && (
-            <OverviewSection orders={orders} pageViews={pageViews} products={products} />
-          )}
-          {storeView === "cliche" && activeSection === "ventas" && (
-            <VentasSection orders={orders} products={products} />
-          )}
-          {storeView === "cliche" && activeSection === "trafico" && (
-            <TraficoSection orders={orders} pageViews={pageViews} />
-          )}
-          {storeView === "cliche" && activeSection === "productos-stats" && (
-            <ProductosStatsSection orders={orders} products={products} pageViews={pageViews} />
-          )}
-          {storeView === "cliche" && activeSection === "heatmaps" && (
-            <HeatmapsSection pageViews={pageViews} />
-          )}
-          {storeView === "cliche" && activeSection === "pedidos" && (
-            <PedidosSection orders={orders} products={products} onOrdersUpdate={handleOrderUpdate} />
-          )}
-          {storeView === "cliche" && activeSection === "clientes" && (
-            <ClientesSection />
-          )}
-          {storeView === "cliche" && activeSection === "descuentos" && (
-            <DescuentosSection />
-          )}
-          {storeView === "cliche" && activeSection === "blogs" && (
-            <BlogsSection />
-          )}
-          {storeView === "cliche" && activeSection === "inventario" && (
-            <InventarioSection products={products} onRefresh={loadAll} />
-          )}
-          {storeView === "cliche" && activeSection === "catalogo" && (
-            <CatalogoEditorSection />
-          )}
-          {storeView === "cliche" && activeSection === "seo" && (
-            <SeoSection products={products} />
-          )}
-          {storeView === "cliche" && activeSection === "asistente" && (
-            <AsistenteSection />
-          )}
+          {/* Secciones de Cliché PERSISTENTES: cada sección visitada queda
+              montada y solo se oculta con display:none — volver a ella es
+              INSTANTÁNEO (antes el remount con key re-creaba las gráficas y
+              el cambio Blogs→Resumen tardaba segundos). Al re-mostrarse, la
+              animación .admin-view se reproduce sola (display none→block
+              reinicia animaciones CSS). Los datos siguen en tiempo real: las
+              secciones ocultas reciben los mismos props actualizados. */}
+          {(Object.entries({
+            resumen: <OverviewSection orders={orders} pageViews={pageViews} products={products} />,
+            ventas: <VentasSection orders={orders} products={products} />,
+            trafico: <TraficoSection orders={orders} pageViews={pageViews} />,
+            "productos-stats": <ProductosStatsSection orders={orders} products={products} pageViews={pageViews} />,
+            heatmaps: <HeatmapsSection pageViews={pageViews} />,
+            pedidos: <PedidosSection orders={orders} products={products} onOrdersUpdate={handleOrderUpdate} />,
+            clientes: <ClientesSection />,
+            descuentos: <DescuentosSection />,
+            blogs: <BlogsSection />,
+            inventario: <InventarioSection products={products} onRefresh={loadAll} />,
+            catalogo: <CatalogoEditorSection />,
+            seo: <SeoSection products={products} />,
+            asistente: <AsistenteSection />,
+          }) as [SectionId, React.ReactNode][])
+            .filter(([id]) => visitedSections.current.has(id))
+            .map(([id, el]) => {
+              const active = storeView === "cliche" && activeSection === id
+              return (
+                <div key={id} className="admin-view" style={active ? undefined : { display: "none" }}>
+                  {el}
+                </div>
+              )
+            })}
           {storeView === "bienestar" && (
-            <BienestarSection tab={peerTab} onReady={onViewReady} />
+            <div key={`bienestar-${peerTab}`} className="admin-view">
+              <BienestarSection tab={peerTab} onReady={onViewReady} />
+            </div>
           )}
           {storeView === "comparar" && (
-            <CompararTiendasSection onReady={onViewReady} />
+            <div className="admin-view">
+              <CompararTiendasSection onReady={onViewReady} />
+            </div>
           )}
-          </div>
         </main>
       </div>
 
