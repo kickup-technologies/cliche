@@ -414,6 +414,36 @@ export default function AdminPage() {
     return () => { clearInterval(t); document.removeEventListener("visibilitychange", tick) }
   }, [authed, loadAll])
 
+  // PRE-MONTAJE en segundo plano: con los datos ya cargados, las secciones se
+  // montan OCULTAS una por una en tiempo ocioso del navegador (las que traen
+  // datos propios, como Clientes o Blog, también los precargan). Así hasta el
+  // PRIMER clic a cualquier sección es instantáneo — el costo de montarla ya
+  // se pagó por detrás — y <Keep> la mantiene viva de ahí en adelante.
+  const [, bumpMounted] = useState(0)
+  const premounted = useRef(false)
+  useEffect(() => {
+    if (!authed || loading || premounted.current) return
+    premounted.current = true
+    const ALL: SectionId[] = ["ventas", "trafico", "productos-stats", "pedidos", "clientes", "descuentos", "inventario", "seo", "blogs", "heatmaps", "catalogo", "asistente"]
+    let i = 0
+    let cancel = false
+    const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }
+    const step = () => {
+      if (cancel) return
+      while (i < ALL.length && visitedSections.current.has(ALL[i])) i++
+      if (i >= ALL.length) return
+      visitedSections.current.add(ALL[i]); i++
+      bumpMounted(t => t + 1)
+      schedule()
+    }
+    const schedule = () => {
+      if (w.requestIdleCallback) w.requestIdleCallback(step, { timeout: 3000 })
+      else window.setTimeout(step, 700)
+    }
+    const start = window.setTimeout(schedule, 1500) // deja respirar el primer pintado
+    return () => { cancel = true; clearTimeout(start) }
+  }, [authed, loading])
+
   // Hidratar del snapshot ANTES del fetch: apertura instantánea.
   useEffect(() => {
     if (!authed) return
