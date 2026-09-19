@@ -108,6 +108,22 @@ const BIENESTAR_NAV = [
   ]},
 ] as const
 
+/** Mantiene montada una sección del panel. OCULTA, congela su último render:
+ *  los datos nuevos entran solo cuando vuelve a estar activa. Sin esto,
+ *  "Actualizar datos" (o el refresco en vivo) re-renderizaba TODAS las
+ *  secciones visitadas a la vez —gráficas incluidas— y el panel se congelaba
+ *  por segundos en equipos modestos. Así, refrescar solo re-renderiza la
+ *  sección visible; las demás se ponen al día al abrirlas. */
+const Keep = memo(function Keep({ active, children }: { active: boolean; children: React.ReactNode }) {
+  const last = useRef(children)
+  if (active) last.current = children
+  return (
+    <div className="admin-view" style={active ? undefined : { display: "none" }}>
+      {last.current}
+    </div>
+  )
+})
+
 const STORE_META: Record<StoreView, { label: string; sub: string; dot: string; icon: typeof Store }> = {
   cliche: { label: "Cliché", sub: "Panel administrativo", dot: "#A67163", icon: Store },
   bienestar: { label: "Bienestar", sub: "Gestión en vivo", dot: "#6E7A6D", icon: Store },
@@ -347,7 +363,10 @@ export default function AdminPage() {
   // borra. Si otra persona usara el equipo sin sesión, no pasa del login.
   const SNAP_KEY = "cliche_admin_snapshot_v1"
 
+  const inflight = useRef(false)
   const loadAll = useCallback(async () => {
+    if (inflight.current) return // ya hay un refresco en curso
+    inflight.current = true
     setLoading(true)
     try {
       // Use service-role API route — anon client cannot read orders/page_views (RLS)
@@ -378,9 +397,22 @@ export default function AdminPage() {
       setLoadError("No se pudieron cargar los datos del panel.")
       setOrders([]); setProducts([]); setPageViews([])
     } finally {
+      inflight.current = false
       setLoading(false)
     }
   }, [])
+
+  // Datos EN VIVO: con el panel abierto y la pestaña visible, se refresca
+  // solo cada 60s (payload ~15KB) y también al volver a la pestaña. Un pedido
+  // nuevo aparece en tarjetas, tablas y badges sin tocar nada. Gracias a
+  // <Keep>, cada refresco solo re-renderiza la sección visible.
+  useEffect(() => {
+    if (!authed) return
+    const tick = () => { if (document.visibilityState === "visible") void loadAll() }
+    const t = setInterval(tick, 60_000)
+    document.addEventListener("visibilitychange", tick)
+    return () => { clearInterval(t); document.removeEventListener("visibilitychange", tick) }
+  }, [authed, loadAll])
 
   // Hidratar del snapshot ANTES del fetch: apertura instantánea.
   useEffect(() => {
@@ -754,7 +786,7 @@ export default function AdminPage() {
             onClick={loadAll}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-[#2D1A14]/60 hover:bg-[#2D1A14]/5 hover:text-[#2D1A14] transition-all"
           >
-            <RefreshCw className="w-4 h-4" /> Actualizar datos
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> {loading ? "Actualizando…" : "Actualizar datos"}
           </button>
           <a
             href="/"
@@ -812,14 +844,9 @@ export default function AdminPage() {
               secciones ocultas reciben los mismos props actualizados. */}
           {(Object.entries(sectionEls) as [SectionId, React.ReactNode][])
             .filter(([id]) => visitedSections.current.has(id))
-            .map(([id, el]) => {
-              const active = storeView === "cliche" && activeSection === id
-              return (
-                <div key={id} className="admin-view" style={active ? undefined : { display: "none" }}>
-                  {el}
-                </div>
-              )
-            })}
+            .map(([id, el]) => (
+              <Keep key={id} active={storeView === "cliche" && activeSection === id}>{el}</Keep>
+            ))}
           {storeView === "bienestar" && (
             <div key={`bienestar-${peerTab}`} className="admin-view">
               <BienestarSection tab={peerTab} onReady={onViewReady} />
