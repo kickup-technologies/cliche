@@ -730,12 +730,16 @@ export function BlogsSection() {
           <p className="text-xs text-[#2D1A14]/40 mt-1">Escribe el primero con el botón «Nuevo artículo».</p>
         </div>
       ) : (
-        <div className="grid gap-3">
+        /* grid-cols-1 (minmax(0,1fr)) + min-w-0 en la tarjeta: sin esto, la
+           pista implícita del grid crecía hasta el ancho del título/resumen
+           en una sola línea y la tarjeta se salía del panel cortando los
+           botones. Así la tarjeta se encoge y los textos truncan con "…". */
+        <div className="grid grid-cols-1 gap-3">
           {posts.map(p => (
             <div
               key={p.id}
               onClick={() => setEditing({ post: p, originalSnapshot: "" })}
-              className="group bg-white rounded-2xl border border-[#2D1A14]/10 p-3 sm:p-4 flex items-center gap-4 cursor-pointer hover:border-[#A67163]/40 hover:shadow-sm transition-all"
+              className="group min-w-0 bg-white rounded-2xl border border-[#2D1A14]/10 p-3 sm:p-4 flex items-center gap-4 cursor-pointer hover:border-[#A67163]/40 hover:shadow-sm transition-all"
             >
               {p.cover_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
