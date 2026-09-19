@@ -21,8 +21,15 @@ export async function POST(req: NextRequest) {
   if (limited) return limited
 
   try {
-    const { items, email, discount_code, customer_name, customer_phone, customer_id_number, shipping_address } =
+    const { items, email, discount_code, customer_name, customer_phone, customer_id_number, shipping_address, fb_signals } =
       await req.json()
+
+    // Respaldo de atribución de Meta enviado por el cliente (getFbSignals):
+    // se usa SOLO si la cookie correspondiente no llegó en el request. Formato
+    // oficial "fb.1.<ms>.<id>" verificado para no guardar basura arbitraria.
+    const FB_COOKIE_RE = /^fb\.1\.\d{10,16}\.[\w.-]{4,400}$/
+    const fbSignal = (v: unknown): string | null =>
+      typeof v === "string" && FB_COOKIE_RE.test(v) ? v : null
 
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: "Carrito vacío" }, { status: 400 })
@@ -315,8 +322,8 @@ export async function POST(req: NextRequest) {
           req.cookies.get("cliche_marketing_consent")?.value === "0"
             ? null
             : {
-                fbp: req.cookies.get("_fbp")?.value || null,
-                fbc: req.cookies.get("_fbc")?.value || null,
+                fbp: req.cookies.get("_fbp")?.value || fbSignal(fb_signals?.fbp),
+                fbc: req.cookies.get("_fbc")?.value || fbSignal(fb_signals?.fbc),
                 ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null,
                 ua: req.headers.get("user-agent") || null,
               },

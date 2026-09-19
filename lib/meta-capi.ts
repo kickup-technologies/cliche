@@ -13,7 +13,7 @@ const PIXEL_ID = '1083378614065362'
 // SECRETO: solo desde variable de entorno. Nunca hardcodear el token aquí
 // (queda en git y es robable). Si falta, los eventos CAPI se omiten en silencio.
 const CAPI_TOKEN = process.env.META_CAPI_TOKEN
-const API_VERSION = 'v19.0'
+const API_VERSION = 'v23.0'
 
 /**
  * SHA-256 hash normalizado según los requisitos de Meta Advanced Matching.
@@ -75,7 +75,17 @@ export async function sendCAPIEvents(events: CAPIEvent[]) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ data: events }),
     })
-    return await res.json()
+    const json = await res.json()
+    // Sin esto, un token caducado (el actual vence 2026-11-03) o un payload
+    // rechazado mataría los eventos server-side EN SILENCIO: Meta responde 200
+    // el fetch pero con un objeto error. Queda en los logs de Vercel.
+    if (!res.ok || json?.error) {
+      console.error(
+        `[CAPI] Meta rechazó ${events.map((e) => e.event_name).join(',')}:`,
+        json?.error?.message || `HTTP ${res.status}`,
+      )
+    }
+    return json
   } catch (err) {
     console.error('[CAPI] Error sending event:', err)
     return null

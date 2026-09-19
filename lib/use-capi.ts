@@ -121,13 +121,18 @@ function getCookie(name: string): string | undefined {
  * fb.1.<ms>.<fbclid> y se conserva en sessionStorage para que TODO el embudo
  * de esa sesión (ViewContent → … → Purchase) viaje con el id del clic.
  */
-function ensureFbc(): string | undefined {
+export function ensureFbc(): string | undefined {
   const cookie = getCookie('_fbc')
   if (cookie) return cookie
   try {
     const fbclid = new URLSearchParams(window.location.search).get('fbclid')
     if (fbclid) {
       const built = `fb.1.${Date.now()}.${fbclid}`
+      // Cookie de primera parte con la misma vida que la _fbc oficial (90 días):
+      // así sobrevive a cerrar la pestaña (sessionStorage no) y /api/checkout la
+      // lee igual que la del píxel — el pedido queda atado al clic del anuncio
+      // aunque la compra ocurra días después.
+      document.cookie = `_fbc=${built}; max-age=7776000; path=/; SameSite=Lax`
       sessionStorage.setItem('_cliche_fbc', built)
       return built
     }
@@ -135,6 +140,15 @@ function ensureFbc(): string | undefined {
   } catch {
     return undefined
   }
+}
+
+/**
+ * Señales de navegador para atar un pedido al clic del anuncio. El checkout las
+ * manda en el body porque las cookies pueden faltar en el request (adblock
+ * bloqueó el píxel y el fbc solo existe reconstruido en sessionStorage).
+ */
+export function getFbSignals(): { fbc?: string; fbp?: string } {
+  return { fbc: ensureFbc(), fbp: getCookie('_fbp') }
 }
 
 function generateEventId(): string {

@@ -6,7 +6,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useCart } from "@/context/cart-context"
 import { useAuth } from "@/context/auth-context"
-import { useCAPI } from "@/lib/use-capi"
+import { useCAPI, getFbSignals } from "@/lib/use-capi"
 import { useSiteSettings } from "@/lib/use-site-settings"
 import { SHIPPING_COST, parseFreeShippingThreshold } from "@/lib/pricing"
 import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Lock, Truck, Leaf, RotateCcw, Tag, ChevronDown, ChevronUp, Mail, RefreshCw, Phone, MapPin, User, ShieldCheck } from "lucide-react"
@@ -215,6 +215,10 @@ export default function CheckoutPage() {
           customer_name: customerName.trim(),
           customer_phone: customerPhone.trim(),
           customer_id_number: customerIdNumber.trim() || null,
+          // Señales de Meta desde el navegador: respaldo cuando las cookies no
+          // llegan al request (fbc reconstruido de fbclid vive en storage, y
+          // adblock puede impedir que el píxel cree _fbp/_fbc como cookie).
+          fb_signals: getFbSignals(),
           shipping_address: {
             address: addressLine.trim(),
             city: addressCity.trim(),
