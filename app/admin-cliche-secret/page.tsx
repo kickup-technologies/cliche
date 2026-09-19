@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef, memo, type ComponentType } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef, memo, type ComponentType } from "react"
 // supabase anon client only used for mutations (settings save, order status update)
 import { supabase } from "@/lib/supabase"
 import { getSupabaseBrowser } from "@/lib/supabase/client"
@@ -475,9 +475,31 @@ export default function AdminPage() {
     window.scrollTo(0, 0)
   }, [storeView, activeSection, peerTab])
 
-  function handleOrderUpdate(updated: Order) {
+  const handleOrderUpdate = useCallback((updated: Order) => {
     setOrders(prev => prev.map(o => o.id === updated.id ? updated : o))
-  }
+  }, [])
+
+  // Elementos de sección MEMOIZADOS: mientras los datos no cambien, cada
+  // navegación reutiliza exactamente los mismos elementos y React se salta
+  // por completo el re-render de los subárboles (visibles u ocultos). Sin
+  // esto, cada clic del sidebar re-renderizaba TODAS las secciones ya
+  // visitadas —gráficas incluidas— y el cambio tardaba segundos en equipos
+  // modestos. Cambiar de sección ahora es solo alternar display:none.
+  const sectionEls = useMemo<Record<SectionId, React.ReactNode>>(() => ({
+    resumen: <OverviewSection orders={orders} pageViews={pageViews} products={products} />,
+    ventas: <VentasSection orders={orders} products={products} />,
+    trafico: <TraficoSection orders={orders} pageViews={pageViews} />,
+    "productos-stats": <ProductosStatsSection orders={orders} products={products} pageViews={pageViews} />,
+    heatmaps: <HeatmapsSection pageViews={pageViews} />,
+    pedidos: <PedidosSection orders={orders} products={products} onOrdersUpdate={handleOrderUpdate} />,
+    clientes: <ClientesSection />,
+    descuentos: <DescuentosSection />,
+    blogs: <BlogsSection />,
+    inventario: <InventarioSection products={products} onRefresh={loadAll} />,
+    catalogo: <CatalogoEditorSection />,
+    seo: <SeoSection products={products} />,
+    asistente: <AsistenteSection />,
+  }), [orders, pageViews, products, handleOrderUpdate, loadAll])
 
   // Aplica el cambio de tienda de inmediato (sin cortina): reduced-motion y
   // el momento en que la cortina ya cubrió la pantalla.
@@ -788,21 +810,7 @@ export default function AdminPage() {
               animación .admin-view se reproduce sola (display none→block
               reinicia animaciones CSS). Los datos siguen en tiempo real: las
               secciones ocultas reciben los mismos props actualizados. */}
-          {(Object.entries({
-            resumen: <OverviewSection orders={orders} pageViews={pageViews} products={products} />,
-            ventas: <VentasSection orders={orders} products={products} />,
-            trafico: <TraficoSection orders={orders} pageViews={pageViews} />,
-            "productos-stats": <ProductosStatsSection orders={orders} products={products} pageViews={pageViews} />,
-            heatmaps: <HeatmapsSection pageViews={pageViews} />,
-            pedidos: <PedidosSection orders={orders} products={products} onOrdersUpdate={handleOrderUpdate} />,
-            clientes: <ClientesSection />,
-            descuentos: <DescuentosSection />,
-            blogs: <BlogsSection />,
-            inventario: <InventarioSection products={products} onRefresh={loadAll} />,
-            catalogo: <CatalogoEditorSection />,
-            seo: <SeoSection products={products} />,
-            asistente: <AsistenteSection />,
-          }) as [SectionId, React.ReactNode][])
+          {(Object.entries(sectionEls) as [SectionId, React.ReactNode][])
             .filter(([id]) => visitedSections.current.has(id))
             .map(([id, el]) => {
               const active = storeView === "cliche" && activeSection === id
