@@ -6,14 +6,34 @@ import { Scale } from "lucide-react"
 
 /**
  * StoreCurtain — cortina de cambio de tienda del panel (misma cinemática que
- * la cortina de la tienda pública en components/page-transition.tsx): sube
- * desde abajo con el branding de la tienda DESTINO, el cambio real de vista
- * ocurre por debajo mientras cubre, y NO se levanta hasta que `ready` avisa
- * que los datos del destino terminaron de cargar. Así el cambio se percibe
- * como una sola transición fluida en vez de un swap con spinners.
+ * la cortina de la tienda pública en components/page-transition.tsx).
+ *
+ * DIRIGIDA POR EVENTOS (como navigateWithCurtain de la tienda): el clic en el
+ * selector solo dispara `startStoreCurtain(...)` — NINGÚN estado del AdminPage
+ * cambia, así que el árbol pesado del panel no se re-renderiza y la cortina
+ * arranca al instante (antes, el setState en la raíz re-renderizaba todo el
+ * panel ANTES de que la cortina pudiera moverse → "freeze" de segundos).
+ * El swap real de tienda ocurre en `onCovered`, ya con la pantalla cubierta:
+ * todo el render pesado del destino sucede POR DEBAJO de la cortina. Y no se
+ * levanta hasta que la vista destino avisa con `storeCurtainReady()`.
  */
 
 export type CurtainStore = "cliche" | "bienestar" | "comparar"
+
+const START_EVT = "cliche:store-curtain"
+const READY_EVT = "cliche:store-curtain-ready"
+
+/** Arranca la cortina hacia la tienda `target` (ignorado si ya hay una en curso). */
+export function startStoreCurtain(target: CurtainStore) {
+  if (typeof window === "undefined") return
+  window.dispatchEvent(new CustomEvent(START_EVT, { detail: { target } }))
+}
+
+/** La vista destino ya tiene datos (o su error) en pantalla: puede levantarse. */
+export function storeCurtainReady() {
+  if (typeof window === "undefined") return
+  window.dispatchEvent(new Event(READY_EVT))
+}
 
 // Tiempos idénticos a la cortina de la tienda: la firma de marca merece su
 // segundo y la carga corre en paralelo por debajo.
@@ -30,37 +50,56 @@ const THEME: Record<CurtainStore, { bg: string }> = {
   comparar: { bg: "#2D1A14" },
 }
 
-export function StoreCurtain({ target, ready, onCovered, onFinished }: {
-  /** Tienda destino: al pasar de null a un valor, la cortina arranca. */
-  target: CurtainStore | null
-  /** true cuando la vista destino ya tiene sus datos (o su error) en pantalla. */
-  ready: boolean
+export function StoreCurtain({ onCovered }: {
   /** La cortina terminó de cubrir: aquí el padre hace el cambio de vista. */
-  onCovered: () => void
-  /** La cortina salió por arriba y volvió a reposo. */
-  onFinished: () => void
+  onCovered: (target: CurtainStore) => void
 }) {
   const [phase, setPhase] = useState<"idle" | "cover" | "hold" | "exit">("idle")
-  // El tema se congela al arrancar: durante la salida `target` ya es null
-  // pero la cortina debe seguir mostrando la marca del destino.
+  const [ready, setReady] = useState(false)
+  // El tema se congela al arrancar: durante la salida debe seguir mostrando
+  // la marca del destino.
   const [shown, setShown] = useState<CurtainStore>("cliche")
+  const phaseRef = useRef(phase)
+  phaseRef.current = phase
+  const targetRef = useRef<CurtainStore>("cliche")
   const coveredAt = useRef(0)
+  const onCoveredRef = useRef(onCovered)
+  onCoveredRef.current = onCovered
 
+  // Arranque por evento: no toca ningún estado del panel.
   useEffect(() => {
-    if (!target) return
-    setShown(target)
-    setPhase("cover")
+    const onStart = (e: Event) => {
+      const target = (e as CustomEvent).detail?.target as CurtainStore | undefined
+      if (!target || phaseRef.current !== "idle") return
+      targetRef.current = target
+      setReady(false)
+      setShown(target)
+      setPhase("cover")
+    }
+    const onReady = () => setReady(true)
+    window.addEventListener(START_EVT, onStart as EventListener)
+    window.addEventListener(READY_EVT, onReady)
+    return () => {
+      window.removeEventListener(START_EVT, onStart as EventListener)
+      window.removeEventListener(READY_EVT, onReady)
+    }
+  }, [])
+
+  // Cubierta → se pinta primero el estado "hold" (con su animación de carga)
+  // y SOLO DESPUÉS se dispara el swap de tienda: el render pesado del destino
+  // ocurre en un tick aparte, ya tapado, sin congelar la animación.
+  useEffect(() => {
+    if (phase !== "cover") return
     const t = window.setTimeout(() => {
       coveredAt.current = performance.now()
-      onCovered()
       setPhase("hold")
+      window.setTimeout(() => onCoveredRef.current(targetRef.current), 50)
     }, COVER_MS)
     return () => clearTimeout(t)
-    // onCovered es estable (useCallback en el padre)
-  }, [target, onCovered])
+  }, [phase])
 
-  // Cubierta: espera a `ready` (respetando el hold mínimo) y sale. Si los
-  // datos llegaron antes de terminar de cubrir, solo se descuenta el tiempo.
+  // Espera a `ready` (respetando el hold mínimo) y sale. Si los datos
+  // llegaron antes de terminar de cubrir, solo se descuenta el tiempo.
   useEffect(() => {
     if (phase !== "hold") return
     if (ready) {
@@ -74,15 +113,15 @@ export function StoreCurtain({ target, ready, onCovered, onFinished }: {
 
   useEffect(() => {
     if (phase !== "exit") return
-    const t = window.setTimeout(() => { setPhase("idle"); onFinished() }, EXIT_MS)
+    const t = window.setTimeout(() => setPhase("idle"), EXIT_MS)
     return () => clearTimeout(t)
-  }, [phase, onFinished])
+  }, [phase])
 
   const covering = phase === "cover" || phase === "hold"
   const translateY = covering ? "0%" : phase === "exit" ? "-100%" : "100%"
   const transition = phase === "idle" ? "none" : `transform ${phase === "exit" ? EXIT_MS : COVER_MS}ms cubic-bezier(0.76,0,0.24,1)`
-  // El aviso de carga solo aparece si de verdad hay espera (evita el parpadeo
-  // cuando los datos están en caché y la cortina sale de inmediato).
+  // La animación de carga aparece apenas la cortina cubre y aún no hay datos
+  // (con un fade corto para no parpadear cuando la caché responde al toque).
   const waiting = phase === "hold" && !ready
 
   return (
@@ -126,10 +165,16 @@ export function StoreCurtain({ target, ready, onCovered, onFinished }: {
         )}
         {shown === "bienestar" && (
           <>
-            <p className="mb-4 text-[0.58rem] font-semibold uppercase tracking-[0.42em] text-white/65 md:text-[0.62rem]">
-              by Cliché
-            </p>
-            <p className="font-serif text-4xl font-bold text-white md:text-5xl">Bienestar</p>
+            {/* Logo oficial (crema, lockup completo con emblema y tagline):
+                sobre el sage se usa tal cual, sin filtros. */}
+            <Image
+              src="/images/logo-bienestar.png"
+              alt="Bienestar by Cliché"
+              width={318}
+              height={197}
+              sizes="320px"
+              className="mx-auto h-36 w-auto object-contain md:h-44"
+            />
             <div className="mx-auto my-5 h-px w-10 bg-white/40" />
             <p className="text-[0.62rem] uppercase tracking-[0.34em] text-white/70 md:text-xs">
               Gestión en vivo
@@ -148,24 +193,31 @@ export function StoreCurtain({ target, ready, onCovered, onFinished }: {
             </p>
           </>
         )}
-        {/* Aviso de carga: 3 puntos que respiran, solo si la espera es real */}
+        {/* Animación de carga: puntos que respiran + etiqueta. Las animaciones
+            son transform/opacity (compositor): siguen fluidas aunque el render
+            pesado del destino esté ocupando el hilo principal por debajo. */}
         <div
-          className="mt-6 flex items-center justify-center gap-1.5"
-          style={{ opacity: waiting ? 1 : 0, transition: "opacity 400ms ease 600ms" }}
+          className="mt-7"
+          style={{ opacity: waiting ? 1 : 0, transition: "opacity 350ms ease 250ms" }}
         >
-          {[0, 1, 2].map(i => (
-            <span
-              key={i}
-              className="h-1.5 w-1.5 rounded-full bg-white/70"
-              style={{ animation: waiting ? `curtain-dot 1.1s ease-in-out ${i * 0.18}s infinite` : "none" }}
-            />
-          ))}
+          <div className="flex items-center justify-center gap-2">
+            {[0, 1, 2].map(i => (
+              <span
+                key={i}
+                className="h-2 w-2 rounded-full bg-white/85"
+                style={{ animation: waiting ? `curtain-dot 1.1s ease-in-out ${i * 0.18}s infinite` : "none" }}
+              />
+            ))}
+          </div>
+          <p className="mt-3 text-[0.55rem] uppercase tracking-[0.3em] text-white/60">
+            Cargando la tienda
+          </p>
         </div>
       </div>
       <style jsx>{`
         @keyframes curtain-dot {
-          0%, 100% { opacity: 0.35; transform: translateY(0); }
-          50% { opacity: 1; transform: translateY(-3px); }
+          0%, 100% { opacity: 0.35; transform: translateY(0) scale(0.85); }
+          50% { opacity: 1; transform: translateY(-4px) scale(1); }
         }
       `}</style>
     </div>

@@ -11,7 +11,7 @@ import {
 import type { Product } from "@/lib/supabase"
 import { Order, PageView } from "./types"
 import { adminFetch } from "@/lib/admin-client"
-import { StoreCurtain } from "./components/store-curtain"
+import { StoreCurtain, startStoreCurtain, storeCurtainReady } from "./components/store-curtain"
 
 import dynamic from "next/dynamic"
 // Solo el TIPO: importar el módulo tiendas aquí lo metía en el bundle del
@@ -181,13 +181,6 @@ export default function AdminPage() {
   const [newVersion, setNewVersion] = useState(false)
   const [storeView, setStoreView] = useState<StoreView>("cliche")
   const [peerTab, setPeerTab] = useState<PeerTab>("resumen")
-  // Cortina de cambio de tienda: cubre con el branding del destino, el swap
-  // real ocurre por debajo y no se levanta hasta que la vista destino avisa
-  // (viewReady) que sus datos ya están en pantalla.
-  const [curtain, setCurtain] = useState<StoreView | null>(null)
-  const [viewReady, setViewReady] = useState(true)
-  const pendingStore = useRef<StoreView | null>(null)
-  const curtainBusy = useRef(false)
 
   const [products, setProducts] = useState<Product[]>([])
   const [orders, setOrders] = useState<Order[]>([])
@@ -443,6 +436,14 @@ export default function AdminPage() {
     else setTimeout(warm, 2500)
   }, [authed])
 
+  // Cada vista arranca ARRIBA: al cambiar de sección o de tienda se resetea
+  // el scroll de la ventana. Sin esto, el contenido nuevo se montaba con el
+  // scroll viejo (podías "aparecer" a mitad de página) y la barra de scroll
+  // quedaba desincronizada mostrando una posición que ya no era real.
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [storeView, activeSection, peerTab])
+
   function handleOrderUpdate(updated: Order) {
     setOrders(prev => prev.map(o => o.id === updated.id ? updated : o))
   }
@@ -455,18 +456,15 @@ export default function AdminPage() {
     if (v !== "comparar") setSidebarOpen(false)
   }, [])
 
+  // El clic solo dispara el EVENTO de la cortina: ningún estado del panel
+  // cambia, así que el árbol pesado no se re-renderiza y la animación arranca
+  // al instante. El swap real llega en onCurtainCovered, ya con todo tapado.
   const beginStoreSwitch = useCallback((v: StoreView) => {
-    if (curtainBusy.current) return // ya hay un cambio en curso
     if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       applyStore(v)
       return
     }
-    curtainBusy.current = true
-    pendingStore.current = v
-    // La vista de Cliché ya tiene sus datos en memoria: la cortina solo
-    // respeta su tiempo mínimo. Bienestar/Comparar esperan a onViewReady.
-    setViewReady(v === "cliche")
-    setCurtain(v)
+    startStoreCurtain(v)
   }, [applyStore])
 
   const pickStore = useCallback((v: StoreView) => {
@@ -474,17 +472,15 @@ export default function AdminPage() {
     beginStoreSwitch(v)
   }, [storeView, beginStoreSwitch])
 
-  const onCurtainCovered = useCallback(() => {
-    if (pendingStore.current) { applyStore(pendingStore.current); pendingStore.current = null }
+  const onCurtainCovered = useCallback((v: StoreView) => {
+    applyStore(v)
+    // La vista de Cliché ya tiene sus datos en memoria: lista de inmediato.
+    // Bienestar/Comparar avisan ellas mismas con onViewReady al tener datos.
+    if (v === "cliche") storeCurtainReady()
   }, [applyStore])
-  const onCurtainFinished = useCallback(() => {
-    curtainBusy.current = false
-    setCurtain(null)
-    setViewReady(true)
-  }, [])
   // Lo llaman BienestarSection/CompararTiendasSection cuando ya hay datos (o
   // el error con su Reintentar) en pantalla: la cortina puede levantarse.
-  const onViewReady = useCallback(() => setViewReady(true), [])
+  const onViewReady = useCallback(() => storeCurtainReady(), [])
   const closeSidebar = useCallback(() => setSidebarOpen(false), [])
 
   function navigate(id: SectionId) {
@@ -820,7 +816,7 @@ export default function AdminPage() {
 
       {/* Cortina de cambio de tienda (branding del destino, misma cinemática
           que la cortina de la tienda pública) */}
-      <StoreCurtain target={curtain} ready={viewReady} onCovered={onCurtainCovered} onFinished={onCurtainFinished} />
+      <StoreCurtain onCovered={onCurtainCovered} />
 
       {/* Ayuda con IA: burbuja flotante, disponible en todas las secciones */}
       <ChatAyuda />
