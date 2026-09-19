@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { getConsent } from "@/components/cookie-consent"
+import { getFbSignals } from "@/lib/use-capi"
 
 /**
  * PixelManager — carga Meta Pixel, TikTok, GA4 y Clarity.
@@ -121,6 +122,33 @@ export function PixelManager() {
     // No cargar pixels en el panel admin: evita ensuciar los datos de Meta
     // con la navegación interna del administrador.
     if (isAdminArea) return
+
+    // Rescate INMEDIATO del fbclid (antes del defer de 3.5s): los anuncios
+    // aterrizan en /catalogo y /arma-tu-kit, que no disparan eventos de embudo,
+    // y en la primera navegación SPA la URL pierde el fbclid. Sin esto, con
+    // adblock (que impide que fbevents.js cree la cookie _fbc) el clic del
+    // anuncio se perdía y Meta no podía atribuir NINGUNA compra a la pauta.
+    // ensureFbc (vía getFbSignals) persiste el fbclid como cookie _fbc de 90
+    // días. Además, si el aterrizaje trae fbclid, se avisa a Meta por CAPI:
+    // así el clic queda registrado server-side aunque el píxel nunca cargue.
+    const consentNow = getConsent()
+    if (!consentNow || consentNow.marketing) {
+      try {
+        const signals = getFbSignals()
+        if (signals.fbc && new URLSearchParams(window.location.search).has("fbclid")) {
+          fetch("/api/capi", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              event_name: "PageView",
+              event_source_url: window.location.href,
+              event_id: `landing_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+              user_data: signals,
+            }),
+          }).catch(() => {/* señal extra; nunca romper la carga */})
+        }
+      } catch { /* nunca romper la carga de la página */ }
+    }
     const apply = () => {
       const consent = getConsent()
       // Opt-out: sin decisión previa → se asume aceptado (consentimiento implícito).
