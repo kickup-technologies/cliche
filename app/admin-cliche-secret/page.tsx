@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, type ComponentType } from "react"
+import { useState, useEffect, useCallback, useRef, memo, type ComponentType } from "react"
 // supabase anon client only used for mutations (settings save, order status update)
 import { supabase } from "@/lib/supabase"
 import { getSupabaseBrowser } from "@/lib/supabase/client"
@@ -11,6 +11,7 @@ import {
 import type { Product } from "@/lib/supabase"
 import { Order, PageView } from "./types"
 import { adminFetch } from "@/lib/admin-client"
+import { StoreCurtain } from "./components/store-curtain"
 
 import dynamic from "next/dynamic"
 // Solo el TIPO: importar el módulo tiendas aquí lo metía en el bundle del
@@ -89,6 +90,73 @@ const BIENESTAR_NAV = [
   ]},
 ] as const
 
+const STORE_META: Record<StoreView, { label: string; sub: string; dot: string; icon: typeof Store }> = {
+  cliche: { label: "Cliché", sub: "Panel administrativo", dot: "#A67163", icon: Store },
+  bienestar: { label: "Bienestar", sub: "Gestión en vivo", dot: "#6E7A6D", icon: Store },
+  comparar: { label: "Comparar tiendas", sub: "Métricas lado a lado", dot: "#8b8b8b", icon: Scale },
+}
+
+/** Selector de tienda (esquina superior izquierda del sidebar).
+ *  Componente propio y memoizado: antes su estado abierto/cerrado vivía en el
+ *  AdminPage, así que CADA clic al botón re-renderizaba el árbol completo del
+ *  panel (sidebar + sección activa) — por eso el menú se sentía trabado pese
+ *  a que la animación en sí es solo transform/opacity. Ahora abrirlo solo
+ *  re-renderiza este componente diminuto. */
+const StoreSelector = memo(function StoreSelector({ storeView, onPick, onCloseSidebar }: {
+  storeView: StoreView
+  onPick: (v: StoreView) => void
+  onCloseSidebar: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  // Al ABRIR el menú (intención clara de cambiar de tienda) se precalientan el
+  // chunk de tiendas y los resúmenes peer: cuando el clic llega, ya vienen en
+  // camino y la cortina se levanta antes. La precarga al DESBLOQUEAR el panel
+  // sigue desactivada (pedido de Andrés: enlentecía el arranque).
+  const warmed = useRef(false)
+  useEffect(() => {
+    if (!open || warmed.current) return
+    warmed.current = true
+    import("./sections/tiendas").then(m => m.prefetchTiendas()).catch(() => {})
+  }, [open])
+
+  return (
+    <div className="relative border-b border-[#2D1A14]/8">
+      <div className="flex items-center">
+        <button onClick={() => setOpen(v => !v)} aria-expanded={open}
+          className="flex-1 flex items-center gap-3 px-5 py-4 text-left hover:bg-[#FAF8F5] transition-colors">
+          <span className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: STORE_META[storeView].dot }}>
+            {(() => { const I = STORE_META[storeView].icon; return <I className="w-4 h-4 text-white" /> })()}
+          </span>
+          <span className="min-w-0">
+            <p className="font-semibold text-[#2D1A14] text-sm leading-none truncate">{STORE_META[storeView].label}</p>
+            <p className="text-[10px] text-[#2D1A14]/40 mt-1 truncate">{STORE_META[storeView].sub}</p>
+          </span>
+          <ChevronDown className={`w-4 h-4 text-[#2D1A14]/40 ml-auto flex-shrink-0 transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
+        </button>
+        <button onClick={onCloseSidebar} className="lg:hidden w-7 h-7 mr-3 rounded-lg hover:bg-[#FAF8F5] flex items-center justify-center flex-shrink-0">
+          <X className="w-4 h-4 text-[#2D1A14]/50" />
+        </button>
+      </div>
+      <div className={`store-dd ${open ? "open" : ""}`}>
+        <div>
+          {(["cliche", "bienestar", "comparar"] as StoreView[]).filter(v => v !== storeView).map(v => (
+            <button key={v} onClick={() => { setOpen(false); onPick(v) }}
+              className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-[#FAF8F5] transition-colors">
+              <span className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: STORE_META[v].dot }}>
+                {(() => { const I = STORE_META[v].icon; return <I className="w-3.5 h-3.5 text-white" /> })()}
+              </span>
+              <span className="min-w-0">
+                <p className="text-sm font-medium text-[#2D1A14] leading-none truncate">{STORE_META[v].label}</p>
+                <p className="text-[10px] text-[#2D1A14]/40 mt-0.5 truncate">{STORE_META[v].sub}</p>
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+})
+
 export default function AdminPage() {
   // Acceso en 2 factores: sesión de una cuenta admin (login aquí mismo si no
   // hay sesión) + código OTP de 6 dígitos enviado a su correo. Quién es admin
@@ -112,8 +180,14 @@ export default function AdminPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [newVersion, setNewVersion] = useState(false)
   const [storeView, setStoreView] = useState<StoreView>("cliche")
-  const [storeDdOpen, setStoreDdOpen] = useState(false)
   const [peerTab, setPeerTab] = useState<PeerTab>("resumen")
+  // Cortina de cambio de tienda: cubre con el branding del destino, el swap
+  // real ocurre por debajo y no se levanta hasta que la vista destino avisa
+  // (viewReady) que sus datos ya están en pantalla.
+  const [curtain, setCurtain] = useState<StoreView | null>(null)
+  const [viewReady, setViewReady] = useState(true)
+  const pendingStore = useRef<StoreView | null>(null)
+  const curtainBusy = useRef(false)
 
   const [products, setProducts] = useState<Product[]>([])
   const [orders, setOrders] = useState<Order[]>([])
@@ -373,23 +447,52 @@ export default function AdminPage() {
     setOrders(prev => prev.map(o => o.id === updated.id ? updated : o))
   }
 
-  function navigate(id: SectionId) {
-    setActiveSection(id)
-    setStoreView("cliche") // las herramientas del sidebar son de la tienda Cliché
-    setSidebarOpen(false)
-  }
-
-  const STORE_META: Record<StoreView, { label: string; sub: string; dot: string; icon: typeof Store }> = {
-    cliche: { label: "Cliché", sub: "Panel administrativo", dot: "#A67163", icon: Store },
-    bienestar: { label: "Bienestar", sub: "Gestión en vivo", dot: "#6E7A6D", icon: Store },
-    comparar: { label: "Comparar tiendas", sub: "Métricas lado a lado", dot: "#8b8b8b", icon: Scale },
-  }
-
-  function pickStore(v: StoreView) {
+  // Aplica el cambio de tienda de inmediato (sin cortina): reduced-motion y
+  // el momento en que la cortina ya cubrió la pantalla.
+  const applyStore = useCallback((v: StoreView) => {
     setStoreView(v)
-    setStoreDdOpen(false)
     if (v === "bienestar") setPeerTab("resumen")
     if (v !== "comparar") setSidebarOpen(false)
+  }, [])
+
+  const beginStoreSwitch = useCallback((v: StoreView) => {
+    if (curtainBusy.current) return // ya hay un cambio en curso
+    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      applyStore(v)
+      return
+    }
+    curtainBusy.current = true
+    pendingStore.current = v
+    // La vista de Cliché ya tiene sus datos en memoria: la cortina solo
+    // respeta su tiempo mínimo. Bienestar/Comparar esperan a onViewReady.
+    setViewReady(v === "cliche")
+    setCurtain(v)
+  }, [applyStore])
+
+  const pickStore = useCallback((v: StoreView) => {
+    if (v === storeView) return
+    beginStoreSwitch(v)
+  }, [storeView, beginStoreSwitch])
+
+  const onCurtainCovered = useCallback(() => {
+    if (pendingStore.current) { applyStore(pendingStore.current); pendingStore.current = null }
+  }, [applyStore])
+  const onCurtainFinished = useCallback(() => {
+    curtainBusy.current = false
+    setCurtain(null)
+    setViewReady(true)
+  }, [])
+  // Lo llaman BienestarSection/CompararTiendasSection cuando ya hay datos (o
+  // el error con su Reintentar) en pantalla: la cortina puede levantarse.
+  const onViewReady = useCallback(() => setViewReady(true), [])
+  const closeSidebar = useCallback(() => setSidebarOpen(false), [])
+
+  function navigate(id: SectionId) {
+    setActiveSection(id)
+    setSidebarOpen(false)
+    // Las herramientas del sidebar son de la tienda Cliché: si se estaba
+    // administrando otra, el regreso también pasa por la cortina.
+    if (storeView !== "cliche") beginStoreSwitch("cliche")
   }
 
   // Badges: pedidos que requieren acción (pagados, sin despachar) + productos con stock bajo
@@ -562,42 +665,9 @@ export default function AdminPage() {
 
       {/* Sidebar */}
       <aside className={`fixed top-0 left-0 h-full w-64 bg-white border-r border-[#2D1A14]/8 z-40 flex flex-col transition-transform duration-200 lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
-        {/* Selector de tienda (esquina superior izquierda): se hunde y se
-            despliega la tienda opuesta + el comparador. */}
-        <div className="relative border-b border-[#2D1A14]/8">
-          <div className="flex items-center">
-            <button onClick={() => setStoreDdOpen(v => !v)} aria-expanded={storeDdOpen}
-              className="flex-1 flex items-center gap-3 px-5 py-4 text-left hover:bg-[#FAF8F5] transition-colors">
-              <span className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: STORE_META[storeView].dot }}>
-                {(() => { const I = STORE_META[storeView].icon; return <I className="w-4 h-4 text-white" /> })()}
-              </span>
-              <span className="min-w-0">
-                <p className="font-semibold text-[#2D1A14] text-sm leading-none truncate">{STORE_META[storeView].label}</p>
-                <p className="text-[10px] text-[#2D1A14]/40 mt-1 truncate">{STORE_META[storeView].sub}</p>
-              </span>
-              <ChevronDown className={`w-4 h-4 text-[#2D1A14]/40 ml-auto flex-shrink-0 transition-transform duration-300 ${storeDdOpen ? "rotate-180" : ""}`} />
-            </button>
-            <button onClick={() => setSidebarOpen(false)} className="lg:hidden w-7 h-7 mr-3 rounded-lg hover:bg-[#FAF8F5] flex items-center justify-center flex-shrink-0">
-              <X className="w-4 h-4 text-[#2D1A14]/50" />
-            </button>
-          </div>
-          <div className={`store-dd ${storeDdOpen ? "open" : ""}`}>
-            <div>
-              {(["cliche", "bienestar", "comparar"] as StoreView[]).filter(v => v !== storeView).map(v => (
-                <button key={v} onClick={() => pickStore(v)}
-                  className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-[#FAF8F5] transition-colors">
-                  <span className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: STORE_META[v].dot }}>
-                    {(() => { const I = STORE_META[v].icon; return <I className="w-3.5 h-3.5 text-white" /> })()}
-                  </span>
-                  <span className="min-w-0">
-                    <p className="text-sm font-medium text-[#2D1A14] leading-none truncate">{STORE_META[v].label}</p>
-                    <p className="text-[10px] text-[#2D1A14]/40 mt-0.5 truncate">{STORE_META[v].sub}</p>
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+        {/* Selector de tienda (esquina superior izquierda): componente
+            memoizado — abrirlo no re-renderiza el resto del panel. */}
+        <StoreSelector storeView={storeView} onPick={pickStore} onCloseSidebar={closeSidebar} />
 
         {/* Nav — en modo comparativa se ocultan las herramientas: esa vista
             solo muestra métricas lado a lado. */}
@@ -732,10 +802,10 @@ export default function AdminPage() {
             <AsistenteSection />
           )}
           {storeView === "bienestar" && (
-            <BienestarSection tab={peerTab} />
+            <BienestarSection tab={peerTab} onReady={onViewReady} />
           )}
           {storeView === "comparar" && (
-            <CompararTiendasSection />
+            <CompararTiendasSection onReady={onViewReady} />
           )}
           </div>
         </main>
@@ -747,6 +817,10 @@ export default function AdminPage() {
           <button onClick={() => window.location.reload()} className="bg-white text-[#2D1A14] text-xs font-bold rounded-xl px-3 py-1.5">Actualizar</button>
         </div>
       )}
+
+      {/* Cortina de cambio de tienda (branding del destino, misma cinemática
+          que la cortina de la tienda pública) */}
+      <StoreCurtain target={curtain} ready={viewReady} onCovered={onCurtainCovered} onFinished={onCurtainFinished} />
 
       {/* Ayuda con IA: burbuja flotante, disponible en todas las secciones */}
       <ChatAyuda />

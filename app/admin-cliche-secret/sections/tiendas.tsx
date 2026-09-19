@@ -168,11 +168,15 @@ const PRODUCT_VACIO: Partial<BProduct> = { name: "", kind: "", benefit: "", pric
 export type PeerTab = "resumen" | "pedidos" | "productos"
 
 /** Administración completa de Bienestar dentro del panel de Cliché.
- *  La pestaña activa la decide el SIDEBAR (secciones de Bienestar). */
-export function BienestarSection({ tab }: { tab: PeerTab }) {
+ *  La pestaña activa la decide el SIDEBAR (secciones de Bienestar).
+ *  onReady: avisa a la cortina de cambio de tienda que ya hay algo que
+ *  mostrar (datos o el error con su Reintentar) para que se levante. */
+export function BienestarSection({ tab, onReady }: { tab: PeerTab; onReady?: () => void }) {
   const [period, setPeriod] = useState<Period>("1m")
   const { data, loading, error, load } = useSummary("/api/admin/peer")
   const m = useMemo(() => (data ? metrics(data, period) : null), [data, period])
+
+  useEffect(() => { if ((data || error) && onReady) onReady() }, [data, error, onReady])
 
   const [orders, setOrders] = useState<BOrder[]>(manageCache.orders || [])
   const [products, setProducts] = useState<BProduct[]>(manageCache.products || [])
@@ -413,12 +417,16 @@ export function BienestarSection({ tab }: { tab: PeerTab }) {
 }
 
 /** Comparador lado a lado Cliché ↔ Bienestar. */
-export function CompararTiendasSection() {
+export function CompararTiendasSection({ onReady }: { onReady?: () => void }) {
   const [period, setPeriod] = useState<Period>("1m")
   const local = useSummary("/api/admin/peer?self=1")
   const peer = useSummary("/api/admin/peer")
   const a = useMemo(() => (local.data ? metrics(local.data, period) : null), [local.data, period])
   const b = useMemo(() => (peer.data ? metrics(peer.data, period) : null), [peer.data, period])
+
+  const localDone = Boolean(local.data || local.error)
+  const peerDone = Boolean(peer.data || peer.error)
+  useEffect(() => { if (localDone && peerDone && onReady) onReady() }, [localDone, peerDone, onReady])
 
   if ((local.loading && !local.data) || (peer.loading && !peer.data)) {
     return <div className="py-24 grid place-items-center"><RefreshCw className="w-6 h-6 animate-spin text-[#A67163]" /></div>
