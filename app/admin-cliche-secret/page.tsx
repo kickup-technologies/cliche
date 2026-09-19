@@ -403,13 +403,13 @@ export default function AdminPage() {
   }, [])
 
   // Datos EN VIVO: con el panel abierto y la pestaña visible, se refresca
-  // solo cada 60s (payload ~15KB) y también al volver a la pestaña. Un pedido
+  // solo cada 30s (payload ~15KB) y también al volver a la pestaña. Un pedido
   // nuevo aparece en tarjetas, tablas y badges sin tocar nada. Gracias a
   // <Keep>, cada refresco solo re-renderiza la sección visible.
   useEffect(() => {
     if (!authed) return
     const tick = () => { if (document.visibilityState === "visible") void loadAll() }
-    const t = setInterval(tick, 60_000)
+    const t = setInterval(tick, 30_000)
     document.addEventListener("visibilitychange", tick)
     return () => { clearInterval(t); document.removeEventListener("visibilitychange", tick) }
   }, [authed, loadAll])
