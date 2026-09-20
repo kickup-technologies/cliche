@@ -25,6 +25,8 @@ const footerLinks = {
     { name: "Marcas aliadas", href: "/#marcas" },
     { name: "Crea tu aroma", href: "/arma-tu-kit" },
     { name: "Distribuidores", href: "https://wa.me/573122838844?text=Hola!+Quiero+info+sobre+distribuidores" },
+    // Backlink cruzado con la tienda hermana (SEO: ambas marcas se refuerzan)
+    { name: "Bienestar by Cliché", href: "https://bienestar-by-cliche.vercel.app" },
   ],
   soporte: [
     { name: "WhatsApp: +57 312 283 8844", href: "https://wa.me/573122838844" },
