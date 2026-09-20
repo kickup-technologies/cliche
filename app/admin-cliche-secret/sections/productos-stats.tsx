@@ -172,7 +172,26 @@ export function ProductosStatsSection({ orders, products, pageViews }: { orders:
         <div className="px-5 py-4 border-b border-[#2D1A14]/8">
           <h3 className="text-sm font-semibold text-[#2D1A14]">Matriz de rendimiento</h3>
         </div>
-        <div className="overflow-x-auto">
+        {/* MÓVIL: filas-tarjeta compactas con lo esencial, sin scroll lateral. */}
+        <div className="sm:hidden divide-y divide-[#2D1A14]/5">
+          {productRows.map(p => (
+            <div key={p.id} className={`px-4 py-3 ${!p.is_active ? "opacity-40" : ""}`}>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-medium text-[#2D1A14] truncate min-w-0">{p.name}</p>
+                <span className="shrink-0">
+                  {p.trend === "up" && <TrendingUp className="w-4 h-4 text-green-500" />}
+                  {p.trend === "down" && <TrendingDown className="w-4 h-4 text-red-400" />}
+                  {p.trend === "same" && <Minus className="w-4 h-4 text-[#2D1A14]/20" />}
+                </span>
+              </div>
+              <p className="text-[11px] text-[#2D1A14]/50 mt-1">
+                {p.units} uds · {fmt(p.revenue)} · stock <span className={p.stock <= 5 ? "text-red-500 font-semibold" : ""}>{p.stock}</span>
+                {!p.is_active && " · inactivo"}
+              </p>
+            </div>
+          ))}
+        </div>
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[#2D1A14]/5">

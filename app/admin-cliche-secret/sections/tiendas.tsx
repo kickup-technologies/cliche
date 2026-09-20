@@ -449,12 +449,13 @@ export function CompararTiendasSection({ onReady }: { onReady?: () => void }) {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-[#2D1A14]/8 overflow-x-auto">
-        <table className="w-full text-sm min-w-[560px]">
+      {/* En móvil comprime paddings y envuelve etiquetas: cabe sin scroll lateral. */}
+      <div className="bg-white rounded-2xl border border-[#2D1A14]/8 overflow-x-clip">
+        <table className="w-full text-xs sm:text-sm sm:min-w-[560px]">
           <thead><tr className="border-b border-[#2D1A14]/8">
-            <th className="px-4 py-4 text-left text-[10px] uppercase tracking-wider text-[#2D1A14]/45">Métrica</th>
+            <th className="px-2 sm:px-4 py-4 text-left text-[10px] uppercase tracking-wider text-[#2D1A14]/45">Métrica</th>
             {stores.map(x => (
-              <th key={x.s.store} className="px-4 py-4">
+              <th key={x.s.store} className="px-2 sm:px-4 py-4">
                 <div className="flex items-center gap-2 justify-center">
                   <span className="w-2.5 h-2.5 rounded-full" style={{ background: x.accent }} />
                   <span className="font-bold text-[#2D1A14]">{x.s.name}</span>
@@ -467,9 +468,9 @@ export function CompararTiendasSection({ onReady }: { onReady?: () => void }) {
               const total = r.vals.reduce((s, x) => s + x.v, 0)
               return (
                 <tr key={r.label} className="border-b border-[#2D1A14]/5 last:border-0">
-                  <td className="px-4 py-3 text-[#2D1A14]/60">{r.label}</td>
+                  <td className="px-2 sm:px-4 py-3 text-[#2D1A14]/60">{r.label}</td>
                   {r.vals.map((x, i) => (
-                    <td key={i} className="px-4 py-3 text-center">
+                    <td key={i} className="px-2 sm:px-4 py-3 text-center">
                       <p className={`font-bold text-[#2D1A14] ${total > 0 && x.v >= total - x.v ? "" : "opacity-60"}`}>{x.f}</p>
                       <div className="mt-1.5 h-1 max-w-32 mx-auto bg-[#2D1A14]/8 rounded-full overflow-hidden">
                         <div className="h-full rounded-full" style={{ width: `${total > 0 ? (x.v / total) * 100 : 0}%`, background: stores[i].accent }} />

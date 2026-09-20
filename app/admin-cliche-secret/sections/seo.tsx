@@ -429,7 +429,7 @@ export function SeoSection({ products }: { products: Product[] }) {
             setReloadKey((k) => k + 1)
             load()
           }}
-          className="ml-auto inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[#2D1A14]/15 text-sm text-[#2D1A14]/60 hover:bg-[#2D1A14]/5 transition-colors"
+          className="ml-auto shrink-0 inline-flex items-center gap-2 px-2.5 py-2 rounded-xl border border-[#2D1A14]/15 text-sm text-[#2D1A14]/60 hover:bg-[#2D1A14]/5 transition-colors"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Recargar
         </button>

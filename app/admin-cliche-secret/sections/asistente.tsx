@@ -187,7 +187,7 @@ export function AsistenteSection() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 rounded-2xl border w-fit" style={{ borderColor: `${BROWN}14`, background: "white" }}>
+      <div className="flex flex-wrap gap-1 p-1 rounded-2xl border w-fit max-w-full" style={{ borderColor: `${BROWN}14`, background: "white" }}>
         {([
           ["conversaciones", "Conversaciones", MessageCircle],
           ["configuracion", "Configuración", Settings],

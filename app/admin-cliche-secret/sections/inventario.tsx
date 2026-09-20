@@ -310,7 +310,7 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
               </div>
 
               {/* Controles rápidos: no abren el editor. */}
-              <div className="mt-auto flex items-center justify-between gap-2" onClick={e => e.stopPropagation()}>
+              <div className="mt-auto flex flex-wrap items-center justify-between gap-2" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => bumpStock(product, -1)}

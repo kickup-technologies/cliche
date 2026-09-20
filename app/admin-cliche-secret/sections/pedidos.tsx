@@ -291,7 +291,7 @@ export function PedidosSection({
               : `${periodOrders.length} intentos de pago sin completar (nunca se cobraron)`}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto min-w-0">
           <PeriodSelector value={period} onChange={setPeriod} />
           <button
             onClick={reconcilePayments}

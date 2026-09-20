@@ -23,8 +23,21 @@ export function PeriodSelector({ value, onChange }: { value: Period; onChange: (
   const isMonth = monthParts(value) !== null
   const months = monthOptions()
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      <div className="flex items-center gap-0.5 bg-[#2D1A14]/5 rounded-xl p-1">
+    <div className="flex items-center gap-2 sm:flex-wrap min-w-0 max-w-full">
+      {/* MÓVIL: un solo selector nativo, limpio y sin desbordes ni pills
+          apiladas (mismo patrón del panel de Bienestar). */}
+      <select
+        value={value}
+        onChange={e => onChange(e.target.value as Period)}
+        aria-label="Periodo"
+        className="sm:hidden w-full min-w-0 px-3 py-2 rounded-xl text-xs font-semibold bg-white text-[#2D1A14] border border-[#2D1A14]/15 focus:outline-none"
+      >
+        {PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+        <optgroup label="Mes específico">
+          {months.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </optgroup>
+      </select>
+      <div className="hidden sm:flex items-center gap-0.5 bg-[#2D1A14]/5 rounded-xl p-1">
         {PERIODS.map(p => (
           <button
             key={p.value}
@@ -40,7 +53,7 @@ export function PeriodSelector({ value, onChange }: { value: Period; onChange: (
       <select
         value={isMonth ? value : ""}
         onChange={e => { if (e.target.value) onChange(e.target.value as Period) }}
-        className={`px-3 py-2 rounded-xl text-xs font-semibold border cursor-pointer transition-all focus:outline-none ${
+        className={`hidden sm:block px-3 py-2 rounded-xl text-xs font-semibold border cursor-pointer transition-all focus:outline-none ${
           isMonth
             ? "bg-[#2D1A14] text-white border-[#2D1A14]"
             : "bg-white text-[#2D1A14]/60 border-[#2D1A14]/15 hover:border-[#2D1A14]/30"

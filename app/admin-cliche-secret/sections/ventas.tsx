@@ -167,7 +167,28 @@ export function VentasSection({ orders, products }: { orders: Order[]; products:
         {topProducts.length === 0 ? (
           <p className="p-6 text-sm text-[#2D1A14]/40 text-center">Sin ventas en el periodo</p>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          {/* MÓVIL: filas-tarjeta compactas, sin scroll lateral. */}
+          <div className="sm:hidden divide-y divide-[#2D1A14]/5">
+            {topProducts.map((p, i) => (
+              <div key={i} className="px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="shrink-0 w-5 h-5 rounded-full bg-[#A67163]/15 flex items-center justify-center text-[10px] font-bold text-[#A67163]">{i + 1}</span>
+                    <p className="text-sm font-medium text-[#2D1A14] truncate">{p.name}</p>
+                  </div>
+                  <p className="text-sm font-semibold text-[#2D1A14] shrink-0">{fmt(p.revenue)}</p>
+                </div>
+                <div className="flex items-center gap-2 mt-1.5 pl-7">
+                  <div className="flex-1 h-1.5 bg-[#2D1A14]/8 rounded-full overflow-hidden">
+                    <div className="h-full bg-[#A67163] rounded-full" style={{ width: `${(p.revenue / totalRevenue) * 100}%` }} />
+                  </div>
+                  <span className="text-[11px] text-[#2D1A14]/50 shrink-0">{p.units} uds · {((p.revenue / totalRevenue) * 100).toFixed(0)}%</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#2D1A14]/5">
@@ -203,6 +224,7 @@ export function VentasSection({ orders, products }: { orders: Order[]; products:
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 
