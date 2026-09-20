@@ -15,9 +15,18 @@ import { StoreCurtain, startStoreCurtain, storeCurtainReady } from "./components
 
 import dynamic from "next/dynamic"
 import Image from "next/image"
-// Solo el TIPO: importar el módulo tiendas aquí lo metía en el bundle del
-// cascarón del panel (ver nota "desactivado parcialmente" más abajo).
-import type { PeerTab } from "./sections/tiendas"
+// La vista Bienestar ya no es la réplica de sections/tiendas: es el panel
+// REAL de Bienestar embebido (iframe con auto-login) — espejo exacto de cómo
+// el panel de Bienestar embebe a este. sections/tiendas queda solo para el
+// comparador.
+const BIENESTAR_PANEL_URL = "https://bienestar-by-cliche.vercel.app/admin"
+// Orígenes desde los que se aceptan los postMessage del panel embebido (su
+// selector de tiendas avisa aquí para "volver a Cliché"/"Comparar").
+const BIENESTAR_ORIGINS = [
+  "https://bienestar-by-cliche.vercel.app",
+  "https://bienestarbycliche.com",
+  "https://www.bienestarbycliche.com",
+]
 
 // Loader ÚNICO de marca (pedido de Andrés: nunca dos spinners a la vez ni
 // descentrados): logo Cliché + puntos respirando, centrado. Se usa en el
@@ -58,7 +67,6 @@ const ClientesSection = lazy(() => import("./sections/clientes"), m => m.Cliente
 const SeoSection = lazy(() => import("./sections/seo"), m => m.SeoSection)
 const BlogsSection = lazy(() => import("./sections/blogs"), m => m.BlogsSection)
 const CatalogoEditorSection = lazy(() => import("./sections/catalogo-editor"), m => m.CatalogoEditorSection)
-const BienestarSection = lazy(() => import("./sections/tiendas"), m => m.BienestarSection)
 const CompararTiendasSection = lazy(() => import("./sections/tiendas"), m => m.CompararTiendasSection)
 // quiet: la burbuja flotante de ayuda no debe mostrar un spinner suelto en la
 // esquina mientras baja su chunk (se veía un segundo loader descentrado).
@@ -96,18 +104,6 @@ const SIDEBAR = [
   ]},
 ] as const
 
-// Sidebar cuando se administra BIENESTAR: sus propias secciones. Navegar aquí
-// NUNCA te saca de Bienestar (petición explícita de Andrés).
-const BIENESTAR_NAV = [
-  { section: "GENERAL", items: [
-    { id: "resumen", label: "Resumen", icon: LayoutDashboard },
-  ]},
-  { section: "OPERACIONES", items: [
-    { id: "pedidos", label: "Pedidos", icon: ShoppingBag },
-    { id: "productos", label: "Productos", icon: Package },
-  ]},
-] as const
-
 /** Mantiene montada una sección del panel. OCULTA, congela su último render:
  *  los datos nuevos entran solo cuando vuelve a estar activa. Sin esto,
  *  "Actualizar datos" (o el refresco en vivo) re-renderizaba TODAS las
@@ -136,22 +132,26 @@ const STORE_META: Record<StoreView, { label: string; sub: string; dot: string; i
  *  panel (sidebar + sección activa) — por eso el menú se sentía trabado pese
  *  a que la animación en sí es solo transform/opacity. Ahora abrirlo solo
  *  re-renderiza este componente diminuto. */
-const StoreSelector = memo(function StoreSelector({ storeView, onPick, onCloseSidebar }: {
+const StoreSelector = memo(function StoreSelector({ storeView, onPick, onCloseSidebar, onOpen }: {
   storeView: StoreView
   onPick: (v: StoreView) => void
   onCloseSidebar: () => void
+  onOpen?: () => void
 }) {
   const [open, setOpen] = useState(false)
   // Al ABRIR el menú (intención clara de cambiar de tienda) se precalientan el
-  // chunk de tiendas y los resúmenes peer: cuando el clic llega, ya vienen en
-  // camino y la cortina se levanta antes. La precarga al DESBLOQUEAR el panel
-  // sigue desactivada (pedido de Andrés: enlentecía el arranque).
+  // chunk de tiendas (comparador), el token de auto-login de Bienestar
+  // (onOpen) y los resúmenes peer: cuando el clic llega, ya vienen en camino
+  // y la cortina se levanta antes. La precarga al DESBLOQUEAR el panel sigue
+  // desactivada (pedido de Andrés: enlentecía el arranque).
   const warmed = useRef(false)
   useEffect(() => {
-    if (!open || warmed.current) return
+    if (!open) return
+    onOpen?.()
+    if (warmed.current) return
     warmed.current = true
     import("./sections/tiendas").then(m => m.prefetchTiendas()).catch(() => {})
-  }, [open])
+  }, [open, onOpen])
 
   return (
     <div className="relative border-b border-[#2D1A14]/8">
@@ -218,7 +218,17 @@ export default function AdminPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [newVersion, setNewVersion] = useState(false)
   const [storeView, setStoreView] = useState<StoreView>("cliche")
-  const [peerTab, setPeerTab] = useState<PeerTab>("resumen")
+  // Panel de Bienestar EN VIVO: URL de un solo uso (token 2 min) que abre su
+  // panel real ya autenticado, embebido en un iframe (espejo del embed que
+  // Bienestar hace de este panel).
+  const [bienestarUrl, setBienestarUrl] = useState("")
+  const [bienestarErr, setBienestarErr] = useState("")
+  const bienestarAt = useRef(0)
+  const bienestarInflight = useRef(false)
+  // ¿El iframe ya cargó? Se conserva MONTADO (oculto) al salir: volver es
+  // instantáneo y sus datos siguen frescos (su propio pulso late oculto).
+  const bienestarLoaded = useRef(false)
+  const bienestarLoadedAt = useRef(0)
 
   const [products, setProducts] = useState<Product[]>([])
   const [orders, setOrders] = useState<Order[]>([])
@@ -531,7 +541,7 @@ export default function AdminPage() {
   // quedaba desincronizada mostrando una posición que ya no era real.
   useEffect(() => {
     window.scrollTo(0, 0)
-  }, [storeView, activeSection, peerTab])
+  }, [storeView, activeSection])
 
   const handleOrderUpdate = useCallback((updated: Order) => {
     setOrders(prev => prev.map(o => o.id === updated.id ? updated : o))
@@ -559,12 +569,41 @@ export default function AdminPage() {
     asistente: <AsistenteSection />,
   }), [orders, pageViews, products, handleOrderUpdate, loadAll])
 
+  // Auto-login al panel nativo de Bienestar: canjea la llave peer por una
+  // URL de acceso directo (peer-login → grant-admin → peer-unlock). El token
+  // vence a los 2 minutos: solo se considera fresco 90 s y hay guard
+  // anti-carreras (abrir el menú del selector PRECALIENTA el token).
+  const loadBienestar = useCallback(async (force = false) => {
+    if (bienestarInflight.current) return
+    if (!force && bienestarAt.current && Date.now() - bienestarAt.current < 90_000) return
+    // El primer contacto con el dominio de Bienestar paga DNS+TLS:
+    // precalentarlo en paralelo con el peer-login.
+    if (!document.getElementById("preconnect-bienestar")) {
+      const l = document.createElement("link")
+      l.id = "preconnect-bienestar"; l.rel = "preconnect"; l.href = new URL(BIENESTAR_PANEL_URL).origin
+      document.head.appendChild(l)
+    }
+    bienestarInflight.current = true
+    setBienestarErr("")
+    try {
+      const r = await adminFetch("/api/admin/peer-login", { method: "POST" })
+      const data = await r.json().catch(() => null)
+      if (!r.ok || !data?.url) throw new Error(data?.error || `Error ${r.status}`)
+      bienestarAt.current = Date.now()
+      setBienestarUrl(data.url)
+    } catch (e) {
+      setBienestarErr(e instanceof Error ? e.message : "No se pudo conectar con Bienestar")
+    } finally { bienestarInflight.current = false }
+  }, [])
+
   // Aplica el cambio de tienda de inmediato (sin cortina): reduced-motion y
   // el momento en que la cortina ya cubrió la pantalla.
   const applyStore = useCallback((v: StoreView) => {
     setStoreView(v)
-    if (v === "bienestar") setPeerTab("resumen")
     if (v !== "comparar") setSidebarOpen(false)
+    // OJO: al salir de Bienestar el iframe NO se desmonta — queda oculto y
+    // vivo para que volver sea instantáneo. Solo se limpia el error.
+    if (v !== "bienestar") setBienestarErr("")
   }, [])
 
   // El clic solo dispara el EVENTO de la cortina: ningún estado del panel
@@ -589,19 +628,56 @@ export default function AdminPage() {
       window.parent.postMessage({ type: "cliche-panel:pick-store", store: v }, "*")
       return
     }
+    // La carga del destino arranca YA (en paralelo con la cortina). Iframe de
+    // Bienestar vivo y con menos de 6 h: no hay nada que cargar (su cookie
+    // dura 8; con más de 6 se renueva con token fresco).
+    if (v === "bienestar") {
+      if (bienestarLoaded.current && Date.now() - bienestarLoadedAt.current > 6 * 3_600_000) {
+        bienestarLoaded.current = false
+        setBienestarUrl("")
+        bienestarAt.current = 0
+        void loadBienestar(true)
+      } else if (!bienestarLoaded.current) {
+        void loadBienestar()
+      }
+    }
     beginStoreSwitch(v)
-  }, [storeView, beginStoreSwitch])
+  }, [storeView, beginStoreSwitch, loadBienestar])
 
   const onCurtainCovered = useCallback((v: StoreView) => {
     applyStore(v)
     // La vista de Cliché ya tiene sus datos en memoria: lista de inmediato.
-    // Bienestar/Comparar avisan ellas mismas con onViewReady al tener datos.
-    if (v === "cliche") storeCurtainReady()
+    // El iframe de Bienestar, si quedó montado oculto, también. Comparar
+    // avisa con onViewReady al tener datos.
+    if (v === "cliche" || (v === "bienestar" && bienestarLoaded.current)) storeCurtainReady()
   }, [applyStore])
-  // Lo llaman BienestarSection/CompararTiendasSection cuando ya hay datos (o
-  // el error con su Reintentar) en pantalla: la cortina puede levantarse.
+  // Cortina de la vista Bienestar: la señal principal es el onLoad del
+  // iframe; aquí solo el error y un colchón de 10 s por si onLoad no dispara.
+  useEffect(() => {
+    if (storeView !== "bienestar") return
+    if (bienestarErr) { storeCurtainReady(); return }
+    const t = setTimeout(() => storeCurtainReady(), 10_000)
+    return () => clearTimeout(t)
+  }, [storeView, bienestarErr])
+  // El panel de Bienestar embebido no tiene barra propia: su selector de
+  // tiendas avisa por postMessage al elegir "Cliché" o "Comparar" y aquí se
+  // hace el cambio real (validando el origen).
+  useEffect(() => {
+    const onMsg = (e: MessageEvent) => {
+      if (!BIENESTAR_ORIGINS.includes(e.origin)) return
+      const d = e.data as { type?: string; store?: string } | null
+      if (d?.type !== "bienestar-panel:pick-store") return
+      if (d.store === "cliche" || d.store === "comparar") pickStore(d.store)
+    }
+    window.addEventListener("message", onMsg)
+    return () => window.removeEventListener("message", onMsg)
+  }, [pickStore])
+  // Lo llama CompararTiendasSection cuando ya hay datos (o el error con su
+  // Reintentar) en pantalla: la cortina puede levantarse.
   const onViewReady = useCallback(() => storeCurtainReady(), [])
   const closeSidebar = useCallback(() => setSidebarOpen(false), [])
+  // Abrir el menú del selector precalienta el token de Bienestar.
+  const onSelectorOpen = useCallback(() => { void loadBienestar() }, [loadBienestar])
 
   function navigate(id: SectionId) {
     setActiveSection(id)
@@ -776,22 +852,22 @@ export default function AdminPage() {
       <aside className={`fixed top-0 left-0 h-full w-64 bg-white border-r border-[#2D1A14]/8 z-40 flex flex-col transition-transform duration-200 lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         {/* Selector de tienda (esquina superior izquierda): componente
             memoizado — abrirlo no re-renderiza el resto del panel. */}
-        <StoreSelector storeView={storeView} onPick={pickStore} onCloseSidebar={closeSidebar} />
+        <StoreSelector storeView={storeView} onPick={pickStore} onCloseSidebar={closeSidebar} onOpen={onSelectorOpen} />
 
         {/* Nav — en modo comparativa se ocultan las herramientas: esa vista
             solo muestra métricas lado a lado. */}
         <nav className={`flex-1 overflow-y-auto px-3 py-4 space-y-5 ${storeView === "comparar" ? "hidden" : ""}`}>
-          {(storeView === "bienestar" ? BIENESTAR_NAV : SIDEBAR).map(group => (
+          {SIDEBAR.map(group => (
             <div key={group.section}>
               <p className="text-[10px] font-bold uppercase tracking-widest text-[#2D1A14]/30 px-2 mb-1.5">{group.section}</p>
               <div className="space-y-0.5">
                 {group.items.map(({ id, label, icon: Icon }) => {
                   const badge = storeView === "cliche" ? navBadges[id] : undefined
-                  const active = storeView === "bienestar" ? peerTab === id : activeSection === id
+                  const active = storeView === "cliche" && activeSection === id
                   return (
                     <button
                       key={id}
-                      onClick={() => { if (storeView === "bienestar") { setPeerTab(id as PeerTab); setSidebarOpen(false) } else navigate(id as SectionId) }}
+                      onClick={() => navigate(id as SectionId)}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left ${
                         active
                           ? "bg-[#2D1A14] text-white"
@@ -849,7 +925,7 @@ export default function AdminPage() {
           </button>
           <p className="font-semibold text-[#2D1A14] text-sm">
             {storeView === "bienestar"
-              ? `Bienestar · ${({ resumen: "Resumen", pedidos: "Pedidos", productos: "Productos" } as Record<string, string>)[peerTab]}`
+              ? "Bienestar · Panel en vivo"
               : storeView === "comparar"
                 ? "Comparar tiendas"
                 : (SIDEBAR.flatMap(g => [...g.items]) as Array<{ id: string; label: string; icon: unknown }>).find(i => i.id === activeSection)?.label || "Panel Admin"}
@@ -882,11 +958,6 @@ export default function AdminPage() {
             .map(([id, el]) => (
               <Keep key={id} active={storeView === "cliche" && activeSection === id}>{el}</Keep>
             ))}
-          {storeView === "bienestar" && (
-            <div key={`bienestar-${peerTab}`} className="admin-view">
-              <BienestarSection tab={peerTab} onReady={onViewReady} />
-            </div>
-          )}
           {storeView === "comparar" && (
             <div className="admin-view">
               <CompararTiendasSection onReady={onViewReady} />
@@ -899,6 +970,39 @@ export default function AdminPage() {
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-3 bg-[#2D1A14] text-white text-sm rounded-2xl px-4 py-3 shadow-2xl">
           Hay una versión nueva del panel.
           <button onClick={() => window.location.reload()} className="bg-white text-[#2D1A14] text-xs font-bold rounded-xl px-3 py-1.5">Actualizar</button>
+        </div>
+      )}
+
+      {/* Vista Bienestar = su panel REAL embebido con auto-login: réplica 1:1
+          por definición y edición de verdad. FUERA de .admin-view (su
+          animación usa transform y re-ancla los position:fixed). Una vez
+          cargado, el overlay NO se desmonta al salir: queda display:none con
+          el iframe vivo (su pulso lo mantiene fresco) y volver es
+          instantáneo. El regreso llega por postMessage desde su selector de
+          tiendas. */}
+      {(storeView === "bienestar" || bienestarUrl) && (
+        <div className={`fixed inset-0 z-[70] flex-col bg-[#FAF8F5] ${storeView === "bienestar" ? "flex" : "hidden"}`}>
+          {bienestarErr ? (
+            <div className="flex-1 grid place-items-center p-6">
+              <div className="bg-white rounded-2xl border border-[#2D1A14]/10 p-8 text-center max-w-sm">
+                <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-3" />
+                <p className="text-sm font-semibold text-[#2D1A14] mb-1">No se pudo abrir el panel de Bienestar</p>
+                <p className="text-xs text-[#2D1A14]/50 mb-4">{bienestarErr}</p>
+                <div className="flex items-center justify-center gap-2">
+                  <button onClick={() => void loadBienestar(true)} className="text-xs font-semibold bg-[#6E7A6D] text-white rounded-xl px-4 py-2">Reintentar</button>
+                  <button onClick={() => pickStore("cliche")} className="text-xs font-semibold border border-[#2D1A14]/15 text-[#2D1A14]/70 rounded-xl px-4 py-2">Volver a Cliché</button>
+                </div>
+                <a href={BIENESTAR_PANEL_URL} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-[11px] text-[#6E7A6D] hover:underline">
+                  Abrir el panel en una pestaña
+                </a>
+              </div>
+            </div>
+          ) : bienestarUrl ? (
+            <iframe src={bienestarUrl} title="Panel administrativo de Bienestar" className="flex-1 w-full border-0"
+              onLoad={() => { bienestarLoaded.current = true; bienestarLoadedAt.current = Date.now(); storeCurtainReady() }} />
+          ) : (
+            <div className="flex-1 grid place-items-center"><RefreshCw className="w-6 h-6 animate-spin text-[#6E7A6D]" /></div>
+          )}
         </div>
       )}
 

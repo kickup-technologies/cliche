@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getSupabaseServer } from "@/lib/supabase/server"
-import { isAdminEmailAnywhere, otpSkipEmails, readAdminToken, signAdminToken, dbAdminEmails, ADMIN_COOKIE } from "@/lib/admin-auth"
+import { isAdminEmailAnywhere, otpSkipEmails, readAdminToken, signAdminToken, dbAdminEmails, ADMIN_COOKIE, adminCookieOpts } from "@/lib/admin-auth"
 
 /**
  * GET /api/admin/whoami — dice al panel en qué estado está el visitante:
