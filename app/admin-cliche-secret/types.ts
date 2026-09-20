@@ -65,8 +65,13 @@ export const ORDER_STATUS_MAP: Record<string, { label: string; color: string; bg
 // no el UTC del servidor/navegador: un pago a las 8 p. m. del viernes debe
 // caer en la barra del viernes, no en la del sábado.
 export function bogotaDay(d: Date | string): string {
-  // "en-CA" formatea como YYYY-MM-DD, comparable lexicográficamente.
-  return new Date(d).toLocaleDateString("en-CA", { timeZone: "America/Bogota" })
+  // Colombia es UTC-5 FIJO (sin horario de verano): restar el offset y leer
+  // el día UTC da el mismo YYYY-MM-DD comparable lexicográficamente, pero
+  // ~100× más rápido que toLocaleDateString con timeZone — Intl creaba un
+  // formateador POR LLAMADA y, con miles de visitas × buckets del gráfico,
+  // la sección Tráfico llegó a bloquear el hilo 11,7 s (medido en prod).
+  const t = (d instanceof Date ? d : new Date(d)).getTime()
+  return new Date(t - BOGOTA_OFFSET_MS).toISOString().slice(0, 10)
 }
 
 const DAY_MS = 86400000
@@ -167,36 +172,43 @@ function periodShape(period: Period): { startMid: number; days: number; granular
 function buildRangeDailyData(
   orders: Order[], views: PageView[], startMid: number, days: number, granularity: number
 ): Array<{ label: string; revenue: number; orders: number; views: number }> {
-  const result: Array<{ label: string; revenue: number; orders: number; views: number }> = []
+  // UNA sola pasada por pedidos y visitas (mapa día→acumulados) y los buckets
+  // leen del mapa. Antes era buckets × re-filtrar TODO el arreglo (con
+  // bogotaDay recalculado por elemento en cada bucket): O(días × N) — el
+  // origen del bloqueo de 11,7 s de la sección Tráfico. Ahora es O(N + días).
+  const ordersByDay = new Map<string, { revenue: number; orders: number }>()
+  for (const o of orders) {
+    if (!CONFIRMED.includes(o.status)) continue
+    const d = bogotaDay(o.created_at)
+    const c = ordersByDay.get(d)
+    if (c) { c.revenue += o.total; c.orders++ } else ordersByDay.set(d, { revenue: o.total, orders: 1 })
+  }
+  const viewsByDay = new Map<string, number>()
+  for (const v of views) {
+    const d = bogotaDay(v.created_at)
+    viewsByDay.set(d, (viewsByDay.get(d) || 0) + 1)
+  }
 
+  const result: Array<{ label: string; revenue: number; orders: number; views: number }> = []
   for (let i = 0; i < days; i += granularity) {
     const from = new Date(startMid + i * DAY_MS)
     const to = new Date(startMid + Math.min(i + granularity - 1, days - 1) * DAY_MS)
     // Buckets por día calendario de Bogotá (antes era UTC: las ventas de la
     // noche caían en el día siguiente y "Hoy" no cuadraba con los KPIs).
     // `from`/`to` ya son fechas de pared, por eso se formatean como UTC.
-    const fromStr = from.toISOString().slice(0, 10)
-    const toStr = to.toISOString().slice(0, 10)
-
-    const periodOrders = orders.filter(o => {
-      const d = bogotaDay(o.created_at)
-      return d >= fromStr && d <= toStr && CONFIRMED.includes(o.status)
-    })
-    const periodViews = views.filter(v => {
-      const d = bogotaDay(v.created_at)
-      return d >= fromStr && d <= toStr
-    })
+    let revenue = 0, ordersN = 0, viewsN = 0
+    for (let j = 0; j < granularity && i + j < days; j++) {
+      const key = new Date(startMid + (i + j) * DAY_MS).toISOString().slice(0, 10)
+      const oc = ordersByDay.get(key)
+      if (oc) { revenue += oc.revenue; ordersN += oc.orders }
+      viewsN += viewsByDay.get(key) || 0
+    }
 
     const label = granularity === 1
       ? to.toLocaleDateString("es-CO", { month: "short", day: "numeric", timeZone: "UTC" })
       : `${from.toLocaleDateString("es-CO", { month: "short", day: "numeric", timeZone: "UTC" })} – ${to.toLocaleDateString("es-CO", { day: "numeric", timeZone: "UTC" })}`
 
-    result.push({
-      label,
-      revenue: periodOrders.reduce((s, o) => s + o.total, 0),
-      orders: periodOrders.length,
-      views: periodViews.length,
-    })
+    result.push({ label, revenue, orders: ordersN, views: viewsN })
   }
   return result
 }
