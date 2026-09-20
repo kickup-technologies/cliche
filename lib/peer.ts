@@ -47,7 +47,9 @@ export type PeerOrder = {
 /** Números EXACTOS calculados por la BD (admin_store_stats): todo el
  *  histórico, no la muestra de 200 pedidos que viaja en `orders`. */
 export type PeerStatsWindow = { orders: number; revenue: number; prev_orders: number; prev_revenue: number }
-export type PeerStats = { unique_customers: number; windows: Record<"7d" | "30d" | "90d" | "all", PeerStatsWindow> }
+// Ventanas de CALENDARIO Bogotá — las mismas definiciones que usan los
+// paneles de las dos tiendas, para que las cifras coincidan 1:1.
+export type PeerStats = { unique_customers: number; windows: Record<"1d" | "7d" | "1m" | "3m" | "6m" | "1y" | "all", PeerStatsWindow> }
 
 export type PeerSummary = {
   stats?: PeerStats | null;

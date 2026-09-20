@@ -15,30 +15,21 @@ import {
 } from "lucide-react"
 import { adminFetch } from "@/lib/admin-client"
 import type { PeerSummary, PeerOrder, PeerStats } from "@/lib/peer"
+import { Period, PERIODS, filterPeriod, filterPrevPeriod, monthParts } from "../types"
 
 const fmt = (n: number) => new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(n)
-
-type Period = "7d" | "1m" | "3m" | "all"
-const PERIOD_MS: Record<Period, number> = { "7d": 7 * 864e5, "1m": 30 * 864e5, "3m": 90 * 864e5, all: Number.POSITIVE_INFINITY }
-
-function filterPeriod(rows: PeerOrder[], period: Period, offset = 0): PeerOrder[] {
-  if (period === "all") return offset === 0 ? rows : []
-  const ms = PERIOD_MS[period]
-  const hi = Date.now() - offset * ms
-  const lo = hi - ms
-  return rows.filter(r => { const t = new Date(r.created_at).getTime(); return t > lo && t <= hi })
-}
 
 const pct = (curr: number, prev: number): number | null => (prev === 0 ? null : ((curr - prev) / prev) * 100)
 
 function metrics(s: PeerSummary, period: Period) {
   const confirmed = (s.orders || []).filter(o => o.confirmed)
   const curr = filterPeriod(confirmed, period)
-  const prev = filterPeriod(confirmed, period, 1)
-  // Números EXACTOS desde la BD (admin_store_stats) cuando llegan; la muestra
-  // de 200 pedidos queda solo como respaldo y para top productos/tablas.
-  const key = (period === "1m" ? "30d" : period === "3m" ? "90d" : period) as keyof PeerStats["windows"]
-  const w = s.stats?.windows?.[key]
+  const prev = filterPrevPeriod(confirmed, period)
+  // Números EXACTOS desde la BD (admin_store_stats): mismas ventanas de
+  // CALENDARIO Bogotá que usa el panel propio de Bienestar — por eso lo que
+  // se ve aquí coincide 1:1 con lo que muestra su panel. La muestra de
+  // pedidos queda como respaldo y para top productos/tablas.
+  const w = monthParts(period) ? undefined : s.stats?.windows?.[period as keyof PeerStats["windows"]]
   const ordersCount = w ? w.orders : curr.length
   const prevOrders = w ? w.prev_orders : prev.length
   const revenue = w ? w.revenue : curr.reduce((a, o) => a + (o.total || 0), 0)
@@ -58,15 +49,14 @@ function metrics(s: PeerSummary, period: Period) {
   return { curr, prev, ordersCount, prevOrders, revenue, prevRevenue, aov, prevAov, top, clientes, activos }
 }
 
+// Los MISMOS periodos de calendario del panel de Bienestar (Hoy / 7 días /
+// Este mes / 3 meses / 6 meses / 1 año): las cifras coinciden 1:1.
 function PeriodTabs({ period, onChange }: { period: Period; onChange: (p: Period) => void }) {
-  const opts: { id: Period; label: string }[] = [
-    { id: "7d", label: "7 días" }, { id: "1m", label: "30 días" }, { id: "3m", label: "90 días" }, { id: "all", label: "Todo" },
-  ]
   return (
     <div className="flex gap-1 bg-white border border-[#2D1A14]/10 rounded-xl p-1 overflow-x-auto max-w-full">
-      {opts.map(o => (
-        <button key={o.id} onClick={() => onChange(o.id)}
-          className={`px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-semibold rounded-lg transition whitespace-nowrap ${period === o.id ? "bg-[#6E7A6D] text-white" : "text-[#2D1A14]/60 hover:bg-[#2D1A14]/5"}`}>
+      {PERIODS.map(o => (
+        <button key={o.value} onClick={() => onChange(o.value)}
+          className={`px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-semibold rounded-lg transition whitespace-nowrap ${period === o.value ? "bg-[#6E7A6D] text-white" : "text-[#2D1A14]/60 hover:bg-[#2D1A14]/5"}`}>
           {o.label}
         </button>
       ))}

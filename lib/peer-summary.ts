@@ -19,7 +19,7 @@ export async function buildSelfSummary(): Promise<PeerSummary> {
       .select("id, created_at, customer_name, customer_email, customer_phone, shipping_address, items, total, status")
       .neq("status", "pending")
       .order("created_at", { ascending: false })
-      .limit(60),
+      .limit(200),
     supabase.from("products").select("id, name, price, is_active, image_url").order("name").limit(300),
     // Solo el CONTEO viaja (la lista de correos no la usa la otra tienda y pesaba)
     supabase.from("subscribers").select("*", { count: "exact", head: true }),
