@@ -18,6 +18,25 @@ import { createServerClient } from "@/lib/supabase"
 export const ADMIN_COOKIE = "cliche_admin"
 const TOKEN_TTL_MS = 8 * 60 * 60 * 1000 // 8 horas
 
+/** Atributos de la cookie del panel, IGUALES en todos los puntos que la
+ *  escriben (otp request/verify, whoami deslizante, peer-unlock). En prod es
+ *  SameSite=None porque el panel también vive embebido dentro del panel de
+ *  Bienestar (iframe cross-site: con Lax el navegador no enviaría la cookie y
+ *  el panel embebido quedaría deslogueado tras la primera renovación). El
+ *  CSRF sigue cubierto: las mutaciones van con Content-Type JSON (preflight
+ *  CORS) y el framing está limitado por frame-ancestors en next.config. En
+ *  dev (http) None sin Secure sería rechazado, así que se conserva Lax. */
+export function adminCookieOpts() {
+  const prod = process.env.NODE_ENV === "production"
+  return {
+    httpOnly: true,
+    secure: prod,
+    sameSite: (prod ? "none" : "lax") as "none" | "lax",
+    path: "/",
+    maxAge: 8 * 60 * 60,
+  }
+}
+
 /** Secreto para firmar el token: dedicado si existe, si no la service_role key (server-only). */
 function signingSecret(): string | null {
   return process.env.ADMIN_SESSION_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || null

@@ -50,6 +50,21 @@ const ContentSecurityPolicy = [
   "upgrade-insecure-requests",
 ].join("; ")
 
+// El panel admin puede embeberse SOLO desde el panel de Bienestar (misma
+// dueña): su selector de tiendas muestra este panel en vivo dentro de un
+// iframe con auto-login (peer-unlock). localhost:3000 = desarrollo local de
+// Bienestar. El resto del sitio sigue sin poder embeberse (frame-ancestors
+// 'self'). OJO: en la entrada del panel NO va X-Frame-Options — su SAMEORIGIN
+// contradiría esta lista (los navegadores priorizan frame-ancestors, pero
+// mejor no enviar señales en conflicto).
+const PANEL_FRAME_ANCESTORS = [
+  "'self'",
+  "https://bienestar-by-cliche.vercel.app",
+  "https://bienestarbycliche.com",
+  "https://www.bienestarbycliche.com",
+  "http://localhost:3000",
+].join(" ")
+
 const securityHeaders = [
   { key: "Content-Security-Policy", value: ContentSecurityPolicy },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
@@ -81,7 +96,17 @@ const nextConfig = {
     ],
   },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }]
+    const panelHeaders = securityHeaders
+      .filter(h => h.key !== "X-Frame-Options")
+      .map(h => h.key === "Content-Security-Policy"
+        ? { key: h.key, value: h.value.replace("frame-ancestors 'self'", `frame-ancestors ${PANEL_FRAME_ANCESTORS}`) }
+        : h)
+    return [
+      // Todo el sitio MENOS el panel: cabeceras estrictas de siempre.
+      { source: "/((?!admin-cliche-secret).*)", headers: securityHeaders },
+      // El panel: embebible únicamente desde el panel de Bienestar.
+      { source: "/admin-cliche-secret", headers: panelHeaders },
+    ]
   },
   // Alias del API del panel SIN la palabra "admin" en la URL: extensiones de
   // adblock/antivirus bloquean silenciosamente peticiones a rutas */admin/* y

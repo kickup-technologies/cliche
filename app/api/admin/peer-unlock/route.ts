@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { ADMIN_COOKIE, signAdminToken, verifyAdminToken } from "@/lib/admin-auth"
+import { ADMIN_COOKIE, adminCookieOpts, signAdminToken, verifyAdminToken } from "@/lib/admin-auth"
 
 export const dynamic = "force-dynamic"
 
@@ -13,12 +13,6 @@ export async function GET(req: NextRequest) {
   const panel = new URL("/admin-cliche-secret", req.nextUrl.origin)
   if (!verifyAdminToken(token)) return NextResponse.redirect(panel)
   const res = NextResponse.redirect(panel)
-  res.cookies.set(ADMIN_COOKIE, signAdminToken("panel@bienestar-peer", undefined, true), {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: 60 * 60 * 8,
-    path: "/",
-  })
+  res.cookies.set(ADMIN_COOKIE, signAdminToken("panel@bienestar-peer", undefined, true), adminCookieOpts())
   return res
 }

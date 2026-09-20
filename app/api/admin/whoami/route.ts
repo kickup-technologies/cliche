@@ -50,13 +50,7 @@ export async function GET(req: NextRequest) {
   // en ≤8h aunque la pestaña quede abierta (el token vigente no se toca).
   const renewable = tokenData && (!tokenData.viaDb || (await dbAdminEmails()).includes(tokenData.email))
   if (renewable && tokenData) {
-    res.cookies.set(ADMIN_COOKIE, signAdminToken(tokenData.email, undefined, tokenData.viaDb), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 8 * 60 * 60,
-    })
+    res.cookies.set(ADMIN_COOKIE, signAdminToken(tokenData.email, undefined, tokenData.viaDb), adminCookieOpts())
   }
   return res
 }

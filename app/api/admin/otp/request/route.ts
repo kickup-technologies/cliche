@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { randomInt } from "crypto"
 import { getSupabaseServer } from "@/lib/supabase/server"
 import { createServerClient } from "@/lib/supabase"
-import { isAdminEmail, isAdminEmailAnywhere, otpSkipEmails, sha256, signAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth"
+import { isAdminEmail, isAdminEmailAnywhere, otpSkipEmails, sha256, signAdminToken, ADMIN_COOKIE, adminCookieOpts } from "@/lib/admin-auth"
 import { sendAdminOtpEmail } from "@/lib/mailer"
 import { rateLimit } from "@/lib/rate-limit"
 
@@ -31,13 +31,7 @@ export async function POST(req: NextRequest) {
   if ((await otpSkipEmails()).includes(email)) {
     const token = signAdminToken(email, undefined, !isAdminEmail(email))
     const res = NextResponse.json({ ok: true, skipped: true })
-    res.cookies.set(ADMIN_COOKIE, token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 8 * 60 * 60,
-    })
+    res.cookies.set(ADMIN_COOKIE, token, adminCookieOpts())
     return res
   }
   const code = String(randomInt(100000, 1000000)) // 6 dígitos (100000–999999) → 1M combinaciones

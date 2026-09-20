@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getSupabaseServer } from "@/lib/supabase/server"
 import { createServerClient } from "@/lib/supabase"
-import { isAdminEmail, isAdminEmailAnywhere, sha256, signAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth"
+import { isAdminEmail, isAdminEmailAnywhere, sha256, signAdminToken, ADMIN_COOKIE, adminCookieOpts } from "@/lib/admin-auth"
 import { rateLimit } from "@/lib/rate-limit"
 
 /**
@@ -59,12 +59,6 @@ export async function POST(req: NextRequest) {
   // el token lleva el claim d:1 para que isAdmin() (sync) lo acepte sin BD.
   const token = signAdminToken(email, undefined, !isAdminEmail(email))
   const res = NextResponse.json({ ok: true })
-  res.cookies.set(ADMIN_COOKIE, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 8 * 60 * 60,
-  })
+  res.cookies.set(ADMIN_COOKIE, token, adminCookieOpts())
   return res
 }
