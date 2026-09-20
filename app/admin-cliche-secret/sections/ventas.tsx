@@ -138,8 +138,8 @@ export function VentasSection({ orders, products }: { orders: Order[]; products:
             <YAxis tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 10, fill: "#2D1A14", opacity: 0.4 }} tickLine={false} axisLine={false} />
             <Tooltip content={<CurrencyTooltip />} />
             <Legend wrapperStyle={{ fontSize: 12, paddingTop: 16 }} />
-            <Area type="monotone" dataKey="revenue" name="Ingresos" stroke="#A67163" strokeWidth={2} fill="url(#colorRevV)" />
-            {compare && <Area type="monotone" dataKey="prevRevenue" name="Ingresos anteriores" stroke="#9ca3af" strokeWidth={1.5} strokeDasharray="4 2" fill="url(#colorPrevV)" />}
+            <Area isAnimationActive={false} type="monotone" dataKey="revenue" name="Ingresos" stroke="#A67163" strokeWidth={2} fill="url(#colorRevV)" />
+            {compare && <Area isAnimationActive={false} type="monotone" dataKey="prevRevenue" name="Ingresos anteriores" stroke="#9ca3af" strokeWidth={1.5} strokeDasharray="4 2" fill="url(#colorPrevV)" />}
           </AreaChart>
         </ResponsiveContainer>
       </div>
@@ -153,7 +153,7 @@ export function VentasSection({ orders, products }: { orders: Order[]; products:
             <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#2D1A14", opacity: 0.4 }} tickLine={false} axisLine={false} />
             <YAxis tick={{ fontSize: 10, fill: "#2D1A14", opacity: 0.4 }} tickLine={false} axisLine={false} allowDecimals={false} />
             <Tooltip content={<CurrencyTooltip />} />
-            <Bar dataKey="orders" name="Pedidos" fill="#A67163" radius={[4, 4, 0, 0]} />
+            <Bar isAnimationActive={false} dataKey="orders" name="Pedidos" fill="#A67163" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

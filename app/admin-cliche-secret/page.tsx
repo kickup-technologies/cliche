@@ -402,16 +402,33 @@ export default function AdminPage() {
     }
   }, [])
 
-  // Datos EN VIVO: con el panel abierto y la pestaña visible, se refresca
-  // solo cada 30s (payload ~15KB) y también al volver a la pestaña. Un pedido
-  // nuevo aparece en tarjetas, tablas y badges sin tocar nada. Gracias a
-  // <Keep>, cada refresco solo re-renderiza la sección visible.
+  // Datos EN VIVO por PULSO: cada 8s (pestaña visible) se consulta
+  // /api/admin/pulse (~100 B: cuántos pedidos y cuándo llegó el último) y
+  // SOLO si cambió se recarga todo — una compra aparece sola en segundos y
+  // los ticks sin novedades no cuestan casi nada (antes: recarga ciega de
+  // ~15 KB cada 30 s). El refresco completo de respaldo queda cada 2 min por
+  // si cambia algo que el pulso no ve (stock, settings). Gracias a <Keep>,
+  // cada refresco solo re-renderiza la sección visible.
+  const pulseRef = useRef<string | null>(null)
   useEffect(() => {
     if (!authed) return
-    const tick = () => { if (document.visibilityState === "visible") void loadAll() }
-    const t = setInterval(tick, 30_000)
-    document.addEventListener("visibilitychange", tick)
-    return () => { clearInterval(t); document.removeEventListener("visibilitychange", tick) }
+    let stop = false
+    const pulse = async () => {
+      if (stop || document.visibilityState !== "visible") return
+      try {
+        const r = await adminFetch("/api/admin/pulse")
+        if (!r.ok) return
+        const d = (await r.json()) as { n: number; last: string | null }
+        const sig = `${d.n}|${d.last || ""}`
+        if (pulseRef.current !== null && pulseRef.current !== sig) void loadAll()
+        pulseRef.current = sig
+      } catch { /* sin red: siguiente tick */ }
+    }
+    const onVisible = () => { if (document.visibilityState === "visible") { void pulse(); void loadAll() } }
+    const t = setInterval(pulse, 8_000)
+    const full = setInterval(() => { if (document.visibilityState === "visible") void loadAll() }, 120_000)
+    document.addEventListener("visibilitychange", onVisible)
+    return () => { stop = true; clearInterval(t); clearInterval(full); document.removeEventListener("visibilitychange", onVisible) }
   }, [authed, loadAll])
 
   // PRE-MONTAJE ELIMINADO (2026-09-20, queja real de lentitud): montar las 12

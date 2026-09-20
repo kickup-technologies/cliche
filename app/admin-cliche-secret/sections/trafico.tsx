@@ -89,8 +89,8 @@ export function TraficoSection({ orders, pageViews }: { orders: Order[]; pageVie
             <YAxis tick={{ fontSize: 10, fill: "#2D1A14", opacity: 0.4 }} tickLine={false} axisLine={false} allowDecimals={false} />
             <Tooltip content={<ViewsTooltip />} />
             <Legend wrapperStyle={{ fontSize: 12, paddingTop: 16 }} />
-            <Line type="monotone" dataKey="views" name="Visitas" stroke="#6366f1" strokeWidth={2} dot={false} />
-            {compare && <Line type="monotone" dataKey="prevViews" name="Visitas anteriores" stroke="#9ca3af" strokeWidth={1.5} strokeDasharray="4 2" dot={false} />}
+            <Line isAnimationActive={false} type="monotone" dataKey="views" name="Visitas" stroke="#6366f1" strokeWidth={2} dot={false} />
+            {compare && <Line isAnimationActive={false} type="monotone" dataKey="prevViews" name="Visitas anteriores" stroke="#9ca3af" strokeWidth={1.5} strokeDasharray="4 2" dot={false} />}
           </LineChart>
         </ResponsiveContainer>
       </div>

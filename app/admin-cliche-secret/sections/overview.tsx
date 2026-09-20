@@ -131,8 +131,8 @@ export function OverviewSection({ orders, pageViews, products }: { orders: Order
             <YAxis yAxisId="orders" orientation="right" tick={{ fontSize: 10, fill: "#2D1A14", opacity: 0.4 }} tickLine={false} axisLine={false} />
             <Tooltip content={<CurrencyTooltip />} />
             <Legend wrapperStyle={{ fontSize: 12, paddingTop: 16 }} />
-            <Area yAxisId="revenue" type="monotone" dataKey="revenue" name="Ingresos" stroke="#A67163" strokeWidth={2} fill="url(#colorRevOv)" />
-            <Area yAxisId="orders" type="monotone" dataKey="orders" name="Pedidos" stroke="#6366f1" strokeWidth={2} fill="url(#colorOrdOv)" />
+            <Area isAnimationActive={false} yAxisId="revenue" type="monotone" dataKey="revenue" name="Ingresos" stroke="#A67163" strokeWidth={2} fill="url(#colorRevOv)" />
+            <Area isAnimationActive={false} yAxisId="orders" type="monotone" dataKey="orders" name="Pedidos" stroke="#6366f1" strokeWidth={2} fill="url(#colorOrdOv)" />
           </AreaChart>
         </ResponsiveContainer>
       </div>
