@@ -32,6 +32,12 @@ export function adminCookieOpts() {
     httpOnly: true,
     secure: prod,
     sameSite: (prod ? "none" : "lax") as "none" | "lax",
+    // CHIPS: en contexto embebido (panel dentro del panel de Bienestar) los
+    // navegadores que bloquean cookies de terceros (Chrome móvil, Safari)
+    // RECHAZABAN la cookie y el panel pedía credenciales otra vez. Con
+    // Partitioned la aceptan, aislada por sitio de arriba — exactamente lo
+    // que queremos: la sesión del embed vive en su propia partición.
+    partitioned: prod,
     path: "/",
     maxAge: 8 * 60 * 60,
   }

@@ -392,7 +392,8 @@ export function SeoSection({ products }: { products: Product[] }) {
         </div>
       )}
 
-      <div className="flex items-center gap-2">
+      {/* flex-wrap: en móvil las 3 pestañas + Recargar no caben en una línea. */}
+      <div className="flex flex-wrap items-center gap-2">
         {/* Pulsar la pestaña que ya está activa no hace nada: antes colapsaba
             el editor abierto (y hasta preguntaba por cambios sin guardar). */}
         <button
