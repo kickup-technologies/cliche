@@ -5,6 +5,7 @@ import { ShoppingBag, X, RefreshCw, CheckCircle, Truck, ChevronRight, Search, Do
 import { Order, Period, filterPeriod, fmt, ORDER_STATUS_MAP } from "../types"
 import { PeriodSelector } from "../components/period-selector"
 import { adminFetch } from "@/lib/admin-client"
+import { downloadInvoice } from "@/lib/invoice-download"
 import { CARRIERS } from "@/lib/carriers"
 import type { Product } from "@/lib/supabase"
 
@@ -89,6 +90,9 @@ export function PedidosSection({
   const [trackingInput, setTrackingInput] = useState("")
   const [carrierInput, setCarrierInput] = useState("")
   const [orderSaving, setOrderSaving] = useState(false)
+  // Descarga de la factura en PDF (y su error, si el servidor no la genera).
+  const [facturaBajando, setFacturaBajando] = useState(false)
+  const [facturaError, setFacturaError] = useState("")
   const [sortKey, setSortKey] = useState<SortKey>("date")
   const [sortAsc, setSortAsc] = useState(false)
   const [query, setQuery] = useState("")
@@ -652,6 +656,30 @@ export function PedidosSection({
               </div>
               )}
 
+              {/* Factura en PDF: se DESCARGA como archivo (el rótulo de abajo
+                  sí se imprime, porque va pegado a la caja). Solo pedidos
+                  reales: un intento de pago no se factura. */}
+              {selectedOrder.status !== "pending" && (
+                <>
+                  <button
+                    onClick={async () => {
+                      setFacturaBajando(true); setFacturaError("")
+                      const err = await downloadInvoice(selectedOrder.id)
+                      setFacturaBajando(false)
+                      if (err) setFacturaError(err)
+                    }}
+                    disabled={facturaBajando}
+                    className="w-full h-11 rounded-xl bg-[#A67163] hover:bg-[#8F5D50] text-white font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                  >
+                    {facturaBajando ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                    Descargar factura (PDF)
+                  </button>
+                  {facturaError && (
+                    <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{facturaError}</p>
+                  )}
+                </>
+              )}
+
               {/* Imprimir rótulo: abre una ventana con SOLO el rótulo y lanza el
                   diálogo de impresión — exactamente una hoja, sin trucos CSS
                   sobre el panel (window.print() sobre el admin generaba páginas
@@ -662,7 +690,7 @@ export function PedidosSection({
                   className="w-full h-11 rounded-xl border border-[#2D1A14]/15 text-[#2D1A14] font-semibold flex items-center justify-center gap-2 hover:bg-[#FAF8F5] transition-colors"
                 >
                   <Printer className="w-4 h-4" />
-                  Imprimir rótulo
+                  Imprimir rótulo de envío
                 </button>
               )}
 
