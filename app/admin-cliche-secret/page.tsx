@@ -676,6 +676,17 @@ export default function AdminPage() {
   // Reintentar) en pantalla: la cortina puede levantarse.
   const onViewReady = useCallback(() => storeCurtainReady(), [])
   const closeSidebar = useCallback(() => setSidebarOpen(false), [])
+
+  // Drawer móvil abierto = página de fondo BLOQUEADA. Sin esto, el gesto de
+  // scroll sobre el sidebar "se escapaba" y movía el contenido de atrás
+  // (scroll chaining) — solo funcionaba pegado al borde. sidebarOpen solo es
+  // true en móvil, así que en escritorio no cambia nada.
+  useEffect(() => {
+    if (!sidebarOpen) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => { document.body.style.overflow = prev }
+  }, [sidebarOpen])
   // Abrir el menú del selector precalienta el token de Bienestar.
   const onSelectorOpen = useCallback(() => { void loadBienestar() }, [loadBienestar])
 
@@ -856,7 +867,7 @@ export default function AdminPage() {
 
         {/* Nav — en modo comparativa se ocultan las herramientas: esa vista
             solo muestra métricas lado a lado. */}
-        <nav className={`flex-1 overflow-y-auto px-3 py-4 space-y-5 ${storeView === "comparar" ? "hidden" : ""}`}>
+        <nav className={`flex-1 overflow-y-auto overscroll-contain px-3 py-4 space-y-5 ${storeView === "comparar" ? "hidden" : ""}`}>
           {SIDEBAR.map(group => (
             <div key={group.section}>
               <p className="text-[10px] font-bold uppercase tracking-widest text-[#2D1A14]/30 px-2 mb-1.5">{group.section}</p>
