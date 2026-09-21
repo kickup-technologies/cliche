@@ -2,7 +2,7 @@
 import { useState } from "react"
 import { DollarSign, ShoppingBag, BarChart3, Users, Star, MapPin, Tag } from "lucide-react"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts"
-import { Order, PageView, Period, CONFIRMED, filterPeriod, filterPrevPeriod, pctChange, fmt, buildDailyData, ORDER_STATUS_MAP } from "../types"
+import { Order, PageView, Period, CONFIRMED, filterPeriod, filterPrevPeriod, pctChange, fmt, buildDailyData, ORDER_STATUS_MAP, contarVistas } from "../types"
 import { PeriodSelector } from "../components/period-selector"
 import { StatCard } from "../components/stat-card"
 import type { Product } from "@/lib/supabase"
@@ -44,7 +44,10 @@ export function OverviewSection({ orders, pageViews, products }: { orders: Order
   const prevRevenue = prev.reduce((s, o) => s + o.total, 0)
   const aov = curr.length > 0 ? revenue / curr.length : 0
   const prevAov = prev.length > 0 ? prevRevenue / prev.length : 0
-  const convRate = currViews.length > 0 ? (curr.length / currViews.length * 100) : 0
+  // Sumar pesos, no contar filas: agregadas por la base, cada fila son muchas.
+  const nVistas = contarVistas(currViews)
+  const nVistasPrev = contarVistas(prevViews)
+  const convRate = nVistas > 0 ? (curr.length / nVistas * 100) : 0
 
   const chartData = buildDailyData(orders, pageViews, period)
 
@@ -107,7 +110,7 @@ export function OverviewSection({ orders, pageViews, products }: { orders: Order
         <StatCard label="Ingresos" value={fmt(revenue)} icon={DollarSign} iconColor="text-green-600" change={pctChange(revenue, prevRevenue)} />
         <StatCard label="Pedidos" value={curr.length} icon={ShoppingBag} iconColor="text-blue-600" change={pctChange(curr.length, prev.length)} />
         <StatCard label="Ticket promedio" value={aov > 0 ? fmt(aov) : "—"} sub="por pedido confirmado" icon={BarChart3} iconColor="text-[#A67163]" change={pctChange(aov, prevAov)} />
-        <StatCard label="Visitas" value={currViews.length.toLocaleString("es-CO")} sub={`${convRate.toFixed(1)}% conversión`} icon={Users} iconColor="text-purple-600" change={pctChange(currViews.length, prevViews.length)} />
+        <StatCard label="Visitas" value={nVistas.toLocaleString("es-CO")} sub={`${convRate.toFixed(1)}% conversión`} icon={Users} iconColor="text-purple-600" change={pctChange(nVistas, nVistasPrev)} />
       </div>
 
       {/* Revenue + Orders chart */}

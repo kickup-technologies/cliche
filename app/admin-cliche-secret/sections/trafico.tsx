@@ -2,7 +2,7 @@
 import { useState } from "react"
 import { Users, TrendingUp, Eye, ShoppingBag, Info } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts"
-import { Order, PageView, Period, CONFIRMED, filterPeriod, filterPrevPeriod, pctChange, buildDailyData, buildPrevDailyData } from "../types"
+import { Order, PageView, Period, CONFIRMED, filterPeriod, filterPrevPeriod, pctChange, buildDailyData, buildPrevDailyData, contarVistas } from "../types"
 import { PeriodSelector } from "../components/period-selector"
 import { StatCard } from "../components/stat-card"
 
@@ -30,9 +30,12 @@ export function TraficoSection({ orders, pageViews }: { orders: Order[]; pageVie
   const currViews = filterPeriod(pageViews, period)
   const prevViews = filterPrevPeriod(pageViews, period)
 
-  const convRate = currViews.length > 0 ? (curr.length / currViews.length * 100) : 0
-  const checkoutViews = currViews.filter(v => v.path.includes("checkout")).length
-  const checkoutRate = currViews.length > 0 ? (checkoutViews / currViews.length * 100) : 0
+  // Sumar pesos, no contar filas: agregadas por la base, cada fila son muchas.
+  const nVistas = contarVistas(currViews)
+  const nVistasPrev = contarVistas(prevViews)
+  const convRate = nVistas > 0 ? (curr.length / nVistas * 100) : 0
+  const checkoutViews = contarVistas(currViews.filter(v => v.path.includes("checkout")))
+  const checkoutRate = nVistas > 0 ? (checkoutViews / nVistas * 100) : 0
   const orderRate = checkoutViews > 0 ? (curr.length / checkoutViews * 100) : 0
 
   // Build chart data
@@ -73,7 +76,7 @@ export function TraficoSection({ orders, pageViews }: { orders: Order[]; pageVie
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Visitas totales" value={currViews.length.toLocaleString("es-CO")} icon={Eye} iconColor="text-blue-600" change={pctChange(currViews.length, prevViews.length)} />
+        <StatCard label="Visitas totales" value={nVistas.toLocaleString("es-CO")} icon={Eye} iconColor="text-blue-600" change={pctChange(nVistas, nVistasPrev)} />
         <StatCard label="Pedidos" value={curr.length} icon={ShoppingBag} iconColor="text-[#A67163]" change={pctChange(curr.length, filterPrevPeriod(orders, period).filter(o => CONFIRMED.includes(o.status)).length)} />
         <StatCard label="Conversión" value={`${convRate.toFixed(1)}%`} sub="visitas → pedidos" icon={TrendingUp} iconColor="text-green-600" />
         <StatCard label="Llegan al checkout" value={`${checkoutRate.toFixed(1)}%`} sub={`${checkoutViews} sesiones`} icon={Users} iconColor="text-purple-600" />
@@ -100,7 +103,7 @@ export function TraficoSection({ orders, pageViews }: { orders: Order[]; pageVie
         <h3 className="text-sm font-semibold text-[#2D1A14] mb-5">Embudo de conversión</h3>
         <div className="space-y-3">
           {[
-            { label: "Visitas a la tienda", value: currViews.length, pct: 100, color: "bg-blue-400" },
+            { label: "Visitas a la tienda", value: nVistas, pct: 100, color: "bg-blue-400" },
             { label: "Llegan al checkout", value: checkoutViews, pct: checkoutRate, color: "bg-[#A67163]" },
             { label: "Pedidos confirmados", value: curr.length, pct: orderRate, color: "bg-green-500" },
           ].map((step, i) => (

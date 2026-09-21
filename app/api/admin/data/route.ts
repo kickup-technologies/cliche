@@ -12,10 +12,46 @@ import { isAdmin } from "@/lib/admin-auth"
 // SERIE (una ida y vuelta por cada 1.000 filas → el panel tardaba varios
 // segundos en abrir). Ahora la PRIMERA página trae el COUNT en la misma
 // consulta (una ida y vuelta menos) y las restantes van EN PARALELO.
+/**
+ * Visitas SUMADAS POR LA BASE: una fila por (día, página) con su cuenta en `n`,
+ * vía la función visitas_por_dia. El tamaño ya no depende del tráfico —con mil
+ * visitas o con diez millones pesa lo mismo— y el número es exacto.
+ *
+ * Devuelve null si la función no existe o falla, y entonces se usa el método
+ * anterior (filas sueltas). Cada fila se sella a MEDIANOCHE de Bogotá (05:00
+ * UTC): los filtros del panel exigen created_at < ahora, y un sello de
+ * mediodía haría desaparecer las visitas de hoy hasta pasadas las 12.
+ */
+async function fetchAggregatedPageViews(
+  supabase: ReturnType<typeof createServerClient>,
+  since: string
+): Promise<{ data: Array<{ path: string; created_at: string; n: number }> } | null> {
+  const PAGE = 1000
+  type Fila = { dia: string; path: string; visitas: number }
+  const pagina = (desde: number, conTotal: boolean) =>
+    supabase.rpc("visitas_por_dia", { desde: since }, conTotal ? { count: "exact" } : undefined).range(desde, desde + PAGE - 1)
+  const first = await pagina(0, true)
+  if (first.error) return null
+  const filas: Fila[] = [...((first.data as Fila[]) || [])]
+  const total = first.count || filas.length
+  const pages = Math.ceil(total / PAGE)
+  if (pages > 1) {
+    const rest = await Promise.all(Array.from({ length: pages - 1 }, (_, i) => pagina((i + 1) * PAGE, false)))
+    for (const r of rest) if (!r.error) filas.push(...((r.data as Fila[]) || []))
+  }
+  return {
+    data: filas.map(f => ({ path: f.path, created_at: `${f.dia}T05:00:00.000Z`, n: Number(f.visitas) || 0 })),
+  }
+}
+
 async function fetchAllPageViews(
   supabase: ReturnType<typeof createServerClient>,
   since: string
-): Promise<{ data: Array<{ path: string; created_at: string }> }> {
+): Promise<{ data: Array<{ path: string; created_at: string; n?: number }> }> {
+  // Primero la suma en la base; solo si no está disponible se descargan las
+  // visitas sueltas como antes.
+  const agregado = await fetchAggregatedPageViews(supabase, since).catch(() => null)
+  if (agregado) return agregado
   const PAGE = 1000
   const base = () =>
     supabase

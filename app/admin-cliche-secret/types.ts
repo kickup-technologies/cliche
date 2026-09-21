@@ -35,7 +35,18 @@ export interface Order {
   carrier: string | null
 }
 
-export interface PageView { path: string; created_at: string }
+/**
+ * Una visita. Si viene AGREGADA desde la base (una fila por dia y pagina), `n`
+ * dice cuantas visitas representa; si es una fila suelta, vale 1. Por eso NADIE
+ * debe contar visitas con .length: hay que sumar pesos (contarVistas).
+ */
+export interface PageView { path: string; created_at: string; n?: number }
+
+/** Cuantas visitas representa una fila (1 si es suelta). */
+export const pesoVista = (v: PageView): number => (typeof v.n === "number" ? v.n : 1)
+
+/** Total de visitas de una lista, venga agregada o suelta. */
+export const contarVistas = (vs: PageView[]): number => { let s = 0; for (const v of vs) s += pesoVista(v); return s }
 
 export const PERIODS: { value: Period; label: string }[] = [
   { value: "1d", label: "Hoy" },
@@ -186,7 +197,7 @@ function buildRangeDailyData(
   const viewsByDay = new Map<string, number>()
   for (const v of views) {
     const d = bogotaDay(v.created_at)
-    viewsByDay.set(d, (viewsByDay.get(d) || 0) + 1)
+    viewsByDay.set(d, (viewsByDay.get(d) || 0) + pesoVista(v))
   }
 
   const result: Array<{ label: string; revenue: number; orders: number; views: number }> = []

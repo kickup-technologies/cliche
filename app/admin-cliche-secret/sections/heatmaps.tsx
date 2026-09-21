@@ -8,7 +8,7 @@ import {
   Smartphone, Monitor, MoveVertical, FileText,
 } from "lucide-react"
 import { adminFetch } from "@/lib/admin-client"
-import type { PageView } from "../types"
+import { contarVistas, pesoVista, type PageView } from "../types"
 
 /**
  * Sección "Mapas de Calor" del panel admin.
@@ -124,12 +124,12 @@ export function HeatmapsSection({ pageViews }: { pageViews: PageView[] }) {
     const counts = new Map<string, number>()
     for (const pv of pageViews) {
       const path = (pv.path || "/").split("?")[0]
-      counts.set(path, (counts.get(path) || 0) + 1)
+      counts.set(path, (counts.get(path) || 0) + pesoVista(pv))
     }
     const arr = Array.from(counts.entries())
       .map(([path, views]) => ({ path, views }))
       .sort((a, b) => b.views - a.views)
-    return { arr: arr.slice(0, 12), max: arr.length ? arr[0].views : 0, total: pageViews.length }
+    return { arr: arr.slice(0, 12), max: arr.length ? arr[0].views : 0, total: contarVistas(pageViews) }
   }, [pageViews])
 
   const heatColor = (views: number) => {

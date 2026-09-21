@@ -2,7 +2,7 @@
 import { useState } from "react"
 import Image from "next/image"
 import { TrendingUp, TrendingDown, Minus, AlertCircle, Package, Trophy, MousePointerClick, ImageOff } from "lucide-react"
-import { Order, PageView, Period, CONFIRMED, filterPeriod, filterPrevPeriod, fmt } from "../types"
+import { Order, PageView, Period, CONFIRMED, filterPeriod, filterPrevPeriod, fmt, pesoVista } from "../types"
 import { PeriodSelector } from "../components/period-selector"
 import type { Product } from "@/lib/supabase"
 
@@ -95,7 +95,7 @@ export function ProductosStatsSection({ orders, products, pageViews }: { orders:
   const visitsBySlug: Record<string, number> = {}
   for (const v of pageViews || []) {
     const m = v.path?.match(/^\/productos\/([^/?#]+)/)
-    if (m) visitsBySlug[m[1]] = (visitsBySlug[m[1]] || 0) + 1
+    if (m) visitsBySlug[m[1]] = (visitsBySlug[m[1]] || 0) + pesoVista(v)
   }
   const mostVisited = [...products]
     .map(p => ({ p, visits: visitsBySlug[p.slug] || 0 }))
