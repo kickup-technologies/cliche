@@ -64,6 +64,38 @@ export function invoiceNumber(o: Order): string {
   return `CL-${String(o.id).replace(/-/g, "").slice(0, 8).toUpperCase()}`
 }
 
+/** Día del pedido en Bogotá (UTC-5 fijo, sin horario de verano) como AAAA-MM-DD. */
+function bogotaDay(iso: string): string {
+  const t = new Date(iso).getTime()
+  if (!Number.isFinite(t)) return ""
+  return new Date(t - 5 * 60 * 60 * 1000).toISOString().slice(0, 10)
+}
+
+/** Versión sin tildes ni signos, apta para el nombre de un archivo. */
+function asciiSlug(s: string): string {
+  return String(s || "")
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^A-Za-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60)
+}
+
+/**
+ * Nombre del archivo: la persona y la fecha del pedido, que es como se busca
+ * una factura después. Se devuelven las dos formas porque la cabecera HTTP
+ * solo admite ASCII: `ascii` para el atributo clásico y `utf8` (con tildes)
+ * para `filename*`, que es el que usan los navegadores modernos.
+ */
+export function invoiceFileName(o: Order): { ascii: string; utf8: string } {
+  const fecha = bogotaDay(o.created_at)
+  const nombre = (o.customer_name || "").trim() || "Cliente"
+  const cola = [asciiSlug(nombre) || "Cliente", fecha].filter(Boolean).join("-")
+  return {
+    ascii: `Factura-${cola}.pdf`,
+    utf8: `Factura ${nombre}${fecha ? ` ${fecha}` : ""}.pdf`,
+  }
+}
+
 export function InvoiceDocument({ order: o }: { order: Order }) {
   const numero = invoiceNumber(o)
   const fecha = new Date(o.created_at).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" })

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { renderToBuffer } from "@react-pdf/renderer"
 import { isAdmin } from "@/lib/admin-auth"
 import { createServerClient } from "@/lib/supabase"
-import { InvoiceDocument, invoiceNumber } from "@/lib/invoice-pdf"
+import { InvoiceDocument, invoiceFileName } from "@/lib/invoice-pdf"
 import type { Order } from "@/app/admin-cliche-secret/types"
 
 /**
@@ -31,7 +31,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return new NextResponse(new Uint8Array(pdf), {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="Factura-${invoiceNumber(order)}.pdf"`,
+        // filename= (ASCII, respaldo) + filename*= (UTF-8, con tildes): la
+        // cabecera HTTP no admite caracteres no-ASCII en el atributo clásico.
+        "Content-Disposition": `attachment; filename="${invoiceFileName(order).ascii}"; filename*=UTF-8''${encodeURIComponent(invoiceFileName(order).utf8)}`,
         "Cache-Control": "no-store",
       },
     })
