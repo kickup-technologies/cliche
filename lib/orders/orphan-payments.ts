@@ -36,6 +36,33 @@ export type MpPaymentLike = {
 
 export type OrphanSummary = { scanned: number; registered: string[] }
 
+/** Referencia de un pedido de la tienda propia de Bienestar: su id, un UUID. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * ¿Este pago es de Bienestar y no de Cliché?
+ *
+ * Antes se reconocía SOLO por metadata.platform = "Shopify", que era cierto
+ * mientras Bienestar vivía en Shopify. Desde que tiene tienda propia sus pagos
+ * ya no traen esa marca, así que el filtro dejó de reconocerlos y Cliché se
+ * los apropiaba: el pago de prueba de $2.000 del 2026-09-21 apareció aquí como
+ * pedido de Cliché. Ahora se reconocen por tres señales independientes, y
+ * basta una:
+ *   1. metadata.store = "bienestar" — la marca que pone la tienda nueva.
+ *   2. metadata.platform = "Shopify" — los pagos de la tienda vieja.
+ *   3. referencia externa con forma de UUID — Bienestar usa el id de su
+ *      pedido; Cliché NUNCA, sus referencias son "cliche_<fecha>_<código>".
+ *      Esta cubre incluso los pagos que se crearon antes de existir la marca.
+ */
+export function esPagoDeBienestar(p: MpPaymentLike): boolean {
+  const store = p.metadata?.store
+  if (typeof store === "string" && store.toLowerCase() === "bienestar") return true
+  const platform = p.metadata?.platform
+  if (typeof platform === "string" && platform.toLowerCase() === "shopify") return true
+  const ref = p.external_reference || ""
+  return UUID.test(ref)
+}
+
 /**
  * Registra UN pago aprobado sin pedido local: crea el pedido sintético
  * (status "confirmed" → visible en la vista principal del panel) y avisa a la
@@ -47,14 +74,11 @@ export async function registerOrphanPayment(
 ): Promise<string | null> {
   if (!p.id || p.status !== "approved") return null
 
-  // La cuenta de Mercado Pago es COMPARTIDA con "Bienestar" (otro negocio del
-  // mismo dueño, tienda Shopify bienestarbycliche.com). Sus ventas llegan con
-  // metadata.platform = "Shopify" y tienen su propio panel/operación allá:
-  // registrarlas aquí mezclaría las ventas de los dos negocios en el panel de
-  // Cliché. Se omiten (confirmado con el pago $74.000 del 2026-07-20).
-  const platform = p.metadata?.platform
-  if (typeof platform === "string" && platform.toLowerCase() === "shopify") {
-    console.log(`[orphan-payments] pago ${p.id} es de Shopify/Bienestar — se omite (otro negocio)`)
+  // La cuenta de Mercado Pago es COMPARTIDA con Bienestar (otro negocio del
+  // mismo dueño). Lo que vende Bienestar es de Bienestar: registrarlo aquí
+  // mezcla las ventas de los dos negocios en el panel de Cliché.
+  if (esPagoDeBienestar(p)) {
+    console.log(`[orphan-payments] pago ${p.id} es de Bienestar — se omite (otro negocio)`)
     return null
   }
 
