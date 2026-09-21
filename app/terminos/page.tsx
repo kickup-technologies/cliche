@@ -87,8 +87,8 @@ export default function TerminosPage() {
               <div className="space-y-3 text-muted-foreground leading-relaxed">
                 <p>Los envíos se realizan a todo el territorio nacional colombiano mediante operadores logísticos autorizados.</p>
                 <ul className="list-disc list-inside space-y-2">
-                  <li><strong>Ciudades principales:</strong> 2–4 días hábiles</li>
-                  <li><strong>Municipios y zonas apartadas:</strong> 4–8 días hábiles</li>
+                  <li><strong>Todo el país:</strong> de 7 a 9 días hábiles</li>
+                  <li><strong>Municipios y zonas apartadas:</strong> puede tomar algunos días más</li>
                   <li><strong>Envío gratis</strong> en compras mayores a $300.000 COP</li>
                 </ul>
                 <p>Los tiempos de entrega son estimados y pueden variar por causas externas (festivos, condiciones climáticas, fuerza mayor). Cliché Aromas no se hace responsable por demoras atribuibles al operador logístico, una vez el paquete haya sido despachado.</p>

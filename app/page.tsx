@@ -7,6 +7,7 @@ import { WhatsAppButton } from "@/components/whatsapp-button"
 
 // ── Capa editorial (estructura estilo renesmehair, marca Cliché) ──
 import { EditorialHero } from "@/components/editorial/editorial-hero"
+import { getHeroOverrides } from "@/lib/editorial-hero-server"
 import { Marquee } from "@/components/editorial/marquee"
 import { EditorialStory } from "@/components/editorial/editorial-story"
 import { ImageTextOverlay } from "@/components/editorial/image-text-overlay"
@@ -81,14 +82,17 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default function Home() {
+export default async function Home() {
+  // Diapositivas del hero editadas desde el panel (sección Portada); la API
+  // revalida "/" al guardar, así que el cambio entra al instante.
+  const heroOverrides = await getHeroOverrides()
   return (
     <main className="min-h-screen">
       <AnnouncementBar />
       <Header />
 
       {/* 1. ATENCIÓN — hero con CTA y confianza inmediata */}
-      <EditorialHero />
+      <EditorialHero overrides={heroOverrides} />
 
       {/* 1b. CONFIANZA INMEDIATA — reseñas + nº de marcas pegado al hero
           (pedido del cliente 2026-08-26: prueba social más arriba) */}

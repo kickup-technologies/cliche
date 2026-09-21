@@ -30,20 +30,24 @@ export function PeriodSelector({ value, onChange }: { value: Period; onChange: (
         value={value}
         onChange={e => onChange(e.target.value as Period)}
         aria-label="Periodo"
-        className="sm:hidden w-full min-w-0 px-3 py-2 rounded-xl text-xs font-semibold bg-white text-[#2D1A14] border border-[#2D1A14]/15 focus:outline-none"
+        className="sm:hidden w-full min-w-0 h-10 px-3.5 rounded-full text-xs font-semibold bg-white text-[#2D1A14] border border-[#2D1A14]/14 shadow-[0_6px_16px_-12px_rgba(45,26,20,.4)] focus:outline-none focus:border-[#A67163]/60"
       >
         {PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
         <optgroup label="Mes específico">
           {months.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </optgroup>
       </select>
-      <div className="hidden sm:flex items-center gap-0.5 bg-[#2D1A14]/5 rounded-xl p-1">
+      {/* Control segmentado: una sola pastilla con el periodo activo en
+          blanco elevado — el patrón de los paneles de Shopify/Stripe. */}
+      <div className="hidden sm:flex items-center gap-1 bg-[#2D1A14]/[0.055] rounded-full p-1 ring-1 ring-inset ring-[#2D1A14]/[0.06]">
         {PERIODS.map(p => (
           <button
             key={p.value}
             onClick={() => onChange(p.value)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              !isMonth && value === p.value ? "bg-white text-[#2D1A14] shadow-sm" : "text-[#2D1A14]/50 hover:text-[#2D1A14]"
+            className={`px-3.5 h-8 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${
+              !isMonth && value === p.value
+                ? "bg-white text-[#2D1A14] shadow-[0_2px_8px_-2px_rgba(45,26,20,.25)]"
+                : "text-[#2D1A14]/50 hover:text-[#2D1A14] hover:bg-white/60"
             }`}
           >
             {p.label}
@@ -53,10 +57,10 @@ export function PeriodSelector({ value, onChange }: { value: Period; onChange: (
       <select
         value={isMonth ? value : ""}
         onChange={e => { if (e.target.value) onChange(e.target.value as Period) }}
-        className={`hidden sm:block px-3 py-2 rounded-xl text-xs font-semibold border cursor-pointer transition-all focus:outline-none ${
+        className={`hidden sm:block h-10 px-3.5 rounded-full text-xs font-semibold border cursor-pointer transition-all focus:outline-none ${
           isMonth
-            ? "bg-[#2D1A14] text-white border-[#2D1A14]"
-            : "bg-white text-[#2D1A14]/60 border-[#2D1A14]/15 hover:border-[#2D1A14]/30"
+            ? "bg-[#2D1A14] text-white border-[#2D1A14] shadow-[0_14px_28px_-16px_rgba(45,26,20,.65)]"
+            : "bg-white text-[#2D1A14]/65 border-[#2D1A14]/14 shadow-[0_6px_16px_-12px_rgba(45,26,20,.4)] hover:border-[#A67163]/60"
         }`}
       >
         <option value="">Mes específico…</option>

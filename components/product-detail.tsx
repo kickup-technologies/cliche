@@ -903,7 +903,7 @@ export function ProductDetail({ product, related }: Props) {
                 content: (
                   <div className="space-y-3 text-muted-foreground">
                     {[
-                      { icon: Truck,    title: "Envío estándar", desc: "3–5 días hábiles. Costo según zona." },
+                      { icon: Truck,    title: "Envío estándar", desc: "7 a 9 días hábiles. Costo según zona." },
                       { icon: Gift,     title: "Envío gratis",   desc: "En compras mayores a $300.000 COP a todo Colombia." },
                       { icon: Package,  title: "Empaque",        desc: "Embalaje protegido y sellado para garantizar la calidad." },
                       { icon: RotateCcw,title: "Devoluciones",   desc: "30 días para cambios o devoluciones sin preguntas." },

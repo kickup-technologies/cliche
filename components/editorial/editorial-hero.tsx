@@ -1,72 +1,15 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { applyHeroOverrides, type HeroOverride } from "@/lib/editorial-hero"
 
-// mobileSrc (imagen vertical) activa el layout "split" en celular para cualquier
-// tipo de media: en PC se muestra el video/imagen de fondo; en móvil, esa imagen.
-type SlideMedia = {
-  type: "video" | "image"
-  src: string
-  poster?: string
-  mobileSrc?: string
-  objectPosition?: string
-  mobileObjectPosition?: string
-  // desktopContain: en PC muestra la imagen COMPLETA (object-contain) en vez de
-  // recortarla; las barras que quedan usan `bg` (color del fondo de la foto) para
-  // que se vea integrado. Útil cuando el producto se corta arriba/abajo.
-  desktopContain?: boolean
-  bg?: string
-  // Zoom fino por dispositivo (transform scale sobre la imagen). >1 acerca,
-  // <1 aleja. mobileBg rellena el hueco que deja un zoom-out en móvil con el
-  // color del fondo de la foto para que se vea integrado.
-  desktopScale?: number
-  mobileScale?: number
-  mobileBg?: string
-}
-
-interface Slide {
-  media: SlideMedia
-  eyebrow?: string
-  title: string
-  subtitle?: string
-  cta?: { label: string; href: string }
-  microcopy?: string
-  align?: "center" | "left"
-}
-
-const SLIDES: Slide[] = [
-  {
-    media: { type: "image", src: "/images/segments/bano.png", mobileSrc: "/images/segments/bano-mobile.png" },
-    eyebrow: "Vestidos de baño & playa",
-    title: "Tu marca también\nhuele a verano",
-    subtitle: "MAHAI impregna tus prendas de baño con frutas exóticas que duran todo el día y no manchan la tela.",
-    cta: { label: "Comprar MAHAI", href: "/productos/aroma-mahai" },
-    microcopy: "Frutas exóticas · No mancha · Larga duración",
-    align: "left",
-  },
-  {
-    media: { type: "image", src: "/images/segments/best-friends.png", mobileSrc: "/images/segments/best-friends-mobile.png", desktopContain: true, bg: "#f2dac1", mobileObjectPosition: "center 42%", objectPosition: "64% center", desktopScale: 1.1, mobileScale: 0.92, mobileBg: "#fce4ca" },
-    eyebrow: "Mascotas & sus espacios",
-    title: "Que su rincón huela\ntan bien como ellos",
-    subtitle: "Best Friends refresca las camas, mantas y espacios de tus mascotas con frambuesa, flores dulces y azúcar suave. Limpio, seguro y de larga duración.",
-    cta: { label: "Comprar Best Friends", href: "/productos/aroma-best-friends" },
-    microcopy: "Frambuesa · Flores dulces · Seguro para sus espacios",
-    align: "left",
-  },
-  {
-    media: { type: "image", src: "/images/segments/gym-v2.png", mobileSrc: "/images/segments/gym-mobile-v2.png" },
-    eyebrow: "Ropa deportiva & activewear",
-    title: "Tres aromas que\nvisten tu marca",
-    subtitle: "Lycra de Verano, Brillos de Seda y Eternamente Índigo: frescura que acompaña cada prenda, entrenamiento tras entrenamiento.",
-    cta: { label: "Ver la colección", href: "/catalogo" },
-    microcopy: "Frescura duradera · No mancha · Ideal para activewear",
-    align: "left",
-  },
-]
-
-export function EditorialHero() {
+// Los datos y tipos de las diapositivas viven en lib/editorial-hero.ts (los
+// comparte el editor 1:1 del panel). `overrides` llega del servidor con lo
+// guardado en la sección Portada del admin.
+export function EditorialHero({ overrides }: { overrides?: HeroOverride[] }) {
+  const SLIDES = useMemo(() => applyHeroOverrides(overrides), [overrides])
   const [active, setActive] = useState(0)
   // null durante SSR/hidratación: aún no conocemos el ancho real. Con matchMedia
   // renderizamos UNA sola variante (desktop o móvil) — display:none NO evita la

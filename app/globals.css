@@ -597,3 +597,20 @@ aside { transition: background-color .35s ease, border-color .35s ease; }
 .skin-bienestar aside nav::-webkit-scrollbar-track { background:transparent; }
 .skin-bienestar aside nav::-webkit-scrollbar-thumb { background:rgba(255,255,255,.15); border-radius:99px; }
 .skin-bienestar .store-dd { background:#2b322a; border-color:rgba(255,255,255,.12); }
+
+/* ── Botones premium del panel: pastilla, peso medio, sombra suave y
+   micro-feedback al pulsar. Variantes: dark (primaria), ghost (secundaria),
+   danger (destructiva) y -sm (compacta). Mismo sistema que en Bienestar,
+   con la paleta café de Cliché. ── */
+.btnp { display:inline-flex; align-items:center; justify-content:center; gap:8px; height:40px; padding:0 20px; border:1px solid transparent; border-radius:999px; font-size:13px; font-weight:600; letter-spacing:.01em; white-space:nowrap; transition:transform .16s ease, box-shadow .25s ease, background .25s ease, color .25s ease, border-color .25s ease; }
+.btnp:active { transform:scale(.965); }
+.btnp:disabled { opacity:.5; pointer-events:none; }
+.btnp svg { width:15px; height:15px; }
+.btnp-dark { background:#2D1A14; color:#fff; box-shadow:0 14px 28px -16px rgba(45,26,20,.65); }
+.btnp-dark:hover { background:#3D2A24; box-shadow:0 18px 34px -16px rgba(45,26,20,.7); }
+.btnp-ghost { background:#fff; color:#2D1A14; border-color:rgba(45,26,20,.14); box-shadow:0 6px 16px -12px rgba(45,26,20,.4); }
+.btnp-ghost:hover { border-color:rgba(166,113,99,.6); background:#FAF8F5; }
+.btnp-danger { background:#fff; color:#b91c1c; border-color:rgba(185,28,28,.22); }
+.btnp-danger:hover { background:#fef2f2; border-color:rgba(185,28,28,.4); }
+.btnp-sm { height:34px; padding:0 15px; font-size:12px; }
+.btnp-sm svg { width:13.5px; height:13.5px; }

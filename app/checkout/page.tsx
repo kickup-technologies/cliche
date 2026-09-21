@@ -635,7 +635,7 @@ export default function CheckoutPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="flex items-start gap-2">
                 <Truck className="w-3.5 h-3.5 text-[#A67163]/60 mt-0.5 flex-shrink-0" />
-                <p className="text-[#FAF8F5]/30 text-[10px] leading-relaxed">Envío en 2–5 días hábiles a todo Colombia</p>
+                <p className="text-[#FAF8F5]/30 text-[10px] leading-relaxed">Entrega estimada de 7 a 9 días hábiles a todo Colombia</p>
               </div>
               <div className="flex items-start gap-2">
                 <ShieldCheck className="w-3.5 h-3.5 text-[#A67163]/60 mt-0.5 flex-shrink-0" />

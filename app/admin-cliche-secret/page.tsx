@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase"
 import { getSupabaseBrowser } from "@/lib/supabase/client"
 import {
   LayoutDashboard, TrendingUp, BarChart3, Star, ShoppingBag, Zap,
-  Package, Settings, Lock, RefreshCw, AlertCircle, Eye, LogOut, Menu, X, Paintbrush, Flame, Ticket, MessageCircle, Users, Search, Newspaper, LayoutGrid, Store, Scale, ChevronDown,
+  Package, Settings, Lock, RefreshCw, AlertCircle, Eye, LogOut, Menu, X, Paintbrush, Flame, Ticket, MessageCircle, Users, Search, Newspaper, LayoutGrid, Presentation, Store, Scale, ChevronDown,
 } from "lucide-react"
 import type { Product } from "@/lib/supabase"
 import { Order, PageView } from "./types"
@@ -67,12 +67,13 @@ const ClientesSection = lazy(() => import("./sections/clientes"), m => m.Cliente
 const SeoSection = lazy(() => import("./sections/seo"), m => m.SeoSection)
 const BlogsSection = lazy(() => import("./sections/blogs"), m => m.BlogsSection)
 const CatalogoEditorSection = lazy(() => import("./sections/catalogo-editor"), m => m.CatalogoEditorSection)
+const PortadaSection = lazy(() => import("./sections/portada"), m => m.PortadaSection)
 const CompararTiendasSection = lazy(() => import("./sections/tiendas"), m => m.CompararTiendasSection)
 // quiet: la burbuja flotante de ayuda no debe mostrar un spinner suelto en la
 // esquina mientras baja su chunk (se veía un segundo loader descentrado).
 const ChatAyuda = lazy(() => import("./components/chat-ayuda"), m => m.ChatAyuda, { quiet: true })
 
-type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "heatmaps" | "pedidos" | "clientes" | "descuentos" | "blogs" | "inventario" | "catalogo" | "seo" | "asistente"
+type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "heatmaps" | "pedidos" | "clientes" | "descuentos" | "blogs" | "inventario" | "catalogo" | "portada" | "seo" | "asistente"
 // Multi-tienda: qué tienda se está administrando desde este panel.
 type StoreView = "cliche" | "bienestar" | "comparar"
 
@@ -100,6 +101,7 @@ const SIDEBAR = [
   { section: "CONFIGURACIÓN", items: [
     { id: "inventario", label: "Inventario", icon: Package },
     { id: "catalogo",   label: "Catálogo",   icon: LayoutGrid },
+    { id: "portada",    label: "Portada",    icon: Presentation },
     { id: "seo",        label: "SEO",        icon: Search },
   ]},
 ] as const
@@ -565,6 +567,7 @@ export default function AdminPage() {
     blogs: <BlogsSection />,
     inventario: <InventarioSection products={products} onRefresh={loadAll} />,
     catalogo: <CatalogoEditorSection />,
+    portada: <PortadaSection />,
     seo: <SeoSection products={products} />,
     asistente: <AsistenteSection />,
   }), [orders, pageViews, products, handleOrderUpdate, loadAll])

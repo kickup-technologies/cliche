@@ -92,12 +92,12 @@ export function VentasSection({ orders, products }: { orders: Order[]; products:
           <h2 className="font-serif text-2xl font-bold text-[#2D1A14]">Ventas</h2>
           <p className="text-sm text-[#2D1A14]/50 mt-0.5">Análisis detallado de ingresos y productos</p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2.5 flex-wrap">
           <button
             onClick={() => setCompare(!compare)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${compare ? "bg-[#2D1A14] text-white border-[#2D1A14]" : "bg-white text-[#2D1A14]/60 border-[#2D1A14]/15 hover:border-[#2D1A14]/30"}`}
+            className={`btnp btnp-sm ${compare ? "btnp-dark" : "btnp-ghost"}`}
           >
-            {compare ? <TrendingDown className="w-3 h-3" /> : <TrendingUp className="w-3 h-3" />}
+            {compare ? <TrendingDown /> : <TrendingUp />}
             {compare ? "Ocultar comparación" : "Comparar periodo anterior"}
           </button>
           <PeriodSelector value={period} onChange={setPeriod} />

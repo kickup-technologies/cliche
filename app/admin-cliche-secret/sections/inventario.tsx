@@ -1,6 +1,6 @@
 "use client"
 import { useState, useRef, useEffect } from "react"
-import { Plus, Pencil, Minus, RefreshCw, Save, X, AlertCircle, ToggleLeft, ToggleRight, Upload, ImageIcon, Trash2, LayoutTemplate } from "lucide-react"
+import { Plus, Pencil, Minus, RefreshCw, Save, X, AlertCircle, Upload, ImageIcon, Trash2, LayoutTemplate } from "lucide-react"
 import { fmt } from "../types"
 import type { Product } from "@/lib/supabase"
 import { adminFetch } from "@/lib/admin-client"
@@ -54,7 +54,8 @@ function snapshot(p: Partial<Product> | null): string {
 export function InventarioSection({ products, onRefresh }: { products: Product[]; onRefresh: () => Promise<void> }) {
   const [modal, setModal] = useState<{ open: boolean; product: Partial<Product> | null }>({ open: false, product: null })
   // Editor visual de la página de ventas (réplica 1:1); sustituye la parrilla.
-  const [pageEditor, setPageEditor] = useState<Product | null>(null)
+  // nuevo=true: la réplica es una DEMO y el primer Guardar crea el producto.
+  const [pageEditor, setPageEditor] = useState<{ product: Product; nuevo: boolean } | null>(null)
   // Huella del producto tal como se abrió: contra esto se compara al cerrar.
   const originalRef = useRef("")
   const [modalSaving, setModalSaving] = useState(false)
@@ -83,11 +84,15 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
     originalRef.current = snapshot(product)
     setModal({ open: true, product: { ...product } })
   }
+  /** Producto nuevo: abre la réplica 1:1 como DEMO (misma página que "editar
+   *  página") con valores de arranque; sobre ella se escribe y el primer
+   *  Guardar lo crea. La ficha rápida (popup) queda para el lápiz. */
   function openNew() {
-    setModalError("")
-    const blank: Partial<Product> = { name: "", slug: "", price: 78000, original_price: null, description: "", category: "", image_urls: [], stock: 50, rating: 4.8, reviews: 0, is_active: true }
-    originalRef.current = snapshot(blank)
-    setModal({ open: true, product: blank })
+    const demo = {
+      id: "", name: "", slug: "", price: 78000, original_price: null, description: "", description_title: "",
+      category: "", image_urls: [], image_url: "", page_content: "", stock: 50, rating: 4.8, reviews: 0, is_active: true,
+    } as unknown as Product
+    setPageEditor({ product: demo, nuevo: true })
   }
   function closeModal() { setModal({ open: false, product: null }); setModalError("") }
   /** Cierre pedido por la dueña (clic fuera, ✕ o Cancelar): si hay cambios sin
@@ -233,7 +238,8 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
   if (pageEditor) {
     return (
       <EditorPaginaProducto
-        product={pageEditor}
+        product={pageEditor.product}
+        nuevo={pageEditor.nuevo}
         onClose={() => setPageEditor(null)}
         onSaved={onRefresh}
       />
@@ -249,11 +255,8 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
             {products.length} productos · {products.filter(p => p.stock <= 5).length} con stock bajo
           </p>
         </div>
-        <button
-          onClick={openNew}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-[#2D1A14] text-white hover:bg-[#3D2A24] transition-colors"
-        >
-          <Plus className="w-3.5 h-3.5" /> Nuevo producto
+        <button onClick={openNew} className="btnp btnp-dark">
+          <Plus /> Nuevo producto
         </button>
       </div>
 
@@ -273,12 +276,14 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
           return (
           <div
             key={product.id}
-            onClick={() => openEdit(product)}
+            /* Toda la tarjeta abre la página de ventas 1:1 (lo que antes hacía
+               "Editar página"); la ficha rápida vive en el lápiz. */
+            onClick={() => setPageEditor({ product, nuevo: false })}
             role="button"
             tabIndex={0}
             /* Solo el cuadro abre el editor: si el foco está en un control
                rápido (stock, visible/oculto), Enter/Espacio son suyos. */
-            onKeyDown={e => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openEdit(product) } }}
+            onKeyDown={e => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); setPageEditor({ product, nuevo: false }) } }}
             className="group text-left flex flex-col bg-white rounded-2xl border border-[#2D1A14]/8 overflow-hidden hover:border-[#A67163]/40 hover:shadow-[0_18px_40px_-26px_rgba(45,26,20,0.45)] transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#A67163]/40"
           >
             <div className="relative aspect-[4/5] w-full bg-[#FAF8F5] overflow-hidden">
@@ -298,8 +303,17 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500 text-white">Stock bajo</span>
                 ) : null}
               </div>
-              <span className="absolute top-2 right-2 w-7 h-7 rounded-lg bg-white/90 border border-[#2D1A14]/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <Pencil className="w-3.5 h-3.5 text-[#2D1A14]/60" />
+              {/* Lápiz = ficha rápida (datos técnicos: categoría, stock, eliminar…) */}
+              <button
+                onClick={e => { e.stopPropagation(); openEdit(product) }}
+                title="Editar la ficha (categoría, stock, eliminar…)"
+                className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/95 border border-[#2D1A14]/10 shadow-sm flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:border-[#A67163]/50"
+              >
+                <Pencil className="w-3.5 h-3.5 text-[#2D1A14]/65" />
+              </button>
+              {/* Pista al pasar el mouse: la tarjeta entera abre la página 1:1 */}
+              <span className="absolute inset-x-0 bottom-0 hidden sm:flex items-end justify-center pb-3 pt-10 bg-gradient-to-t from-[#2D1A14]/55 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white tracking-wide"><LayoutTemplate className="w-3.5 h-3.5" /> Editar página</span>
               </span>
             </div>
 
@@ -309,46 +323,43 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
                 <p className="text-sm text-[#A67163] mt-0.5">{fmt(product.price)}</p>
               </div>
 
-              {/* Controles rápidos: no abren el editor. */}
-              <div className="mt-auto flex flex-wrap items-center justify-between gap-2" onClick={e => e.stopPropagation()}>
-                <div className="flex items-center gap-1">
+              {/* Controles rápidos: no abren el editor. Stepper de stock en
+                  pastilla segmentada + interruptor real para visible/oculto —
+                  espaciados con aire, sin botones apilados. */}
+              <div className="mt-auto pt-3 flex flex-wrap items-center justify-between gap-x-2.5 gap-y-2 border-t border-[#2D1A14]/6" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center h-8 rounded-full border border-[#2D1A14]/12 bg-[#FAF8F5]/70 overflow-hidden shadow-[inset_0_1px_2px_rgba(45,26,20,0.04)]">
                   <button
                     onClick={() => bumpStock(product, -1)}
                     disabled={stock === 0}
-                    className="w-7 h-7 rounded-lg border border-[#2D1A14]/15 hover:bg-[#FAF8F5] flex items-center justify-center disabled:opacity-40"
+                    className="w-8 h-full grid place-items-center text-[#2D1A14]/70 hover:bg-[#2D1A14]/5 transition-colors disabled:opacity-35"
                     title="Quitar una unidad"
                   >
-                    <Minus className="w-3 h-3 text-[#2D1A14]" />
+                    <Minus className="w-3 h-3" />
                   </button>
-                  <span className={`w-7 text-center font-bold text-sm ${stock <= 5 ? "text-red-500" : "text-[#2D1A14]"}`}>
+                  <span className={`min-w-[30px] text-center font-semibold text-[13px] tabular-nums ${stock <= 5 ? "text-red-500" : "text-[#2D1A14]"}`}>
                     {stock}
                   </span>
                   <button
                     onClick={() => bumpStock(product, 1)}
-                    className="w-7 h-7 rounded-lg border border-[#2D1A14]/15 hover:bg-[#FAF8F5] flex items-center justify-center"
+                    className="w-8 h-full grid place-items-center text-[#2D1A14]/70 hover:bg-[#2D1A14]/5 transition-colors"
                     title="Agregar una unidad"
                   >
-                    <Plus className="w-3 h-3 text-[#2D1A14]" />
+                    <Plus className="w-3 h-3" />
                   </button>
                 </div>
                 <button
                   onClick={() => toggleProduct(product.id, !product.is_active)}
-                  className={`flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border transition-colors ${product.is_active ? "bg-green-50 text-green-700 border-green-200" : "bg-[#2D1A14]/5 text-[#2D1A14]/40 border-[#2D1A14]/10"}`}
+                  className="flex items-center gap-2"
                   title={product.is_active ? "Ocultar de la tienda" : "Mostrar en la tienda"}
                 >
-                  {product.is_active ? <ToggleRight className="w-3.5 h-3.5" /> : <ToggleLeft className="w-3.5 h-3.5" />}
-                  {product.is_active ? "Activo" : "Oculto"}
+                  <span className={`relative w-9 h-[22px] rounded-full transition-colors ${product.is_active ? "bg-[#A67163]" : "bg-[#2D1A14]/15"}`}>
+                    <span className={`absolute top-[3px] w-4 h-4 rounded-full bg-white shadow transition-all ${product.is_active ? "left-[18px]" : "left-[3px]"}`} />
+                  </span>
+                  <span className={`text-[11px] font-semibold ${product.is_active ? "text-[#A67163]" : "text-[#2D1A14]/40"}`}>
+                    {product.is_active ? "Activo" : "Oculto"}
+                  </span>
                 </button>
               </div>
-
-              {/* Editor visual: réplica 1:1 de la página de ventas. */}
-              <button
-                onClick={e => { e.stopPropagation(); setPageEditor(product) }}
-                className="w-full mt-1 flex items-center justify-center gap-1.5 text-[11px] font-semibold px-2 py-1.5 rounded-lg border border-[#A67163]/30 text-[#A67163] hover:bg-[#A67163]/8 transition-colors"
-                title="Editar los textos de la página de ventas tal como se ve"
-              >
-                <LayoutTemplate className="w-3.5 h-3.5" /> Editar página
-              </button>
             </div>
           </div>
           )
@@ -585,31 +596,19 @@ export function InventarioSection({ products, onRefresh }: { products: Product[]
               )}
 
               <div className="flex gap-3 pt-2">
-                <button
-                  className="flex-1 h-11 rounded-xl border border-[#2D1A14]/15 text-sm font-semibold text-[#2D1A14] hover:bg-[#FAF8F5] transition-colors"
-                  onClick={requestClose}
-                  disabled={modalSaving || deleting}
-                >
+                <button className="btnp btnp-ghost flex-1" onClick={requestClose} disabled={modalSaving || deleting}>
                   Cancelar
                 </button>
-                <button
-                  className="flex-[1.4] h-11 rounded-xl bg-[#2D1A14] hover:bg-[#3D2A24] text-white text-sm font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
-                  onClick={saveProduct}
-                  disabled={modalSaving || deleting}
-                >
-                  {modalSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                <button className="btnp btnp-dark flex-[1.4]" onClick={saveProduct} disabled={modalSaving || deleting}>
+                  {modalSaving ? <RefreshCw className="animate-spin" /> : <Save />}
                   {modal.product.id ? "Guardar cambios" : "Crear producto"}
                 </button>
               </div>
 
               {/* Eliminar producto (solo al editar) */}
               {modal.product.id && (
-                <button
-                  onClick={deleteProduct}
-                  disabled={deleting || modalSaving}
-                  className="w-full h-11 rounded-xl border border-red-200 text-sm font-semibold text-red-600 hover:bg-red-50 flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
-                >
-                  {deleting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                <button onClick={deleteProduct} disabled={deleting || modalSaving} className="btnp btnp-danger w-full">
+                  {deleting ? <RefreshCw className="animate-spin" /> : <Trash2 />}
                   Eliminar producto de la tienda
                 </button>
               )}
