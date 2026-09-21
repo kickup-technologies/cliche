@@ -932,21 +932,22 @@ export default function AdminPage() {
 
       {/* Main content */}
       <div className="flex-1 lg:ml-64 flex flex-col min-h-screen min-w-0">
-        {/* Mobile top bar */}
-        <div className="lg:hidden sticky top-0 z-20 bg-white border-b border-[#2D1A14]/8 px-4 py-3 flex items-center justify-between">
-          <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 rounded-xl border border-[#2D1A14]/15 flex items-center justify-center">
+        {/* Cabecera clara del panel. El logo de la marca vive AQUÍ y no cambia
+            al navegar: cada sección pinta su propio título debajo, así que la
+            referencia visual de marca es fija en cualquier sección. */}
+        <div className="lg:hidden sticky top-0 z-20 bg-white border-b border-[#2D1A14]/8 px-4 py-3 flex items-center justify-between gap-3">
+          <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 rounded-xl border border-[#2D1A14]/15 flex items-center justify-center shrink-0">
             <Menu className="w-4 h-4 text-[#2D1A14]" />
           </button>
-          <p className="font-semibold text-[#2D1A14] text-sm">
-            {storeView === "bienestar"
-              ? "Bienestar · Panel en vivo"
-              : storeView === "comparar"
-                ? "Comparar tiendas"
-                : (SIDEBAR.flatMap(g => [...g.items]) as Array<{ id: string; label: string; icon: unknown }>).find(i => i.id === activeSection)?.label || "Panel Admin"}
-          </p>
-          <button onClick={handleLogout} className="w-9 h-9 rounded-xl border border-[#2D1A14]/15 flex items-center justify-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/images/logo-cliche.png" alt="Cliché" className="h-7 w-auto object-contain" />
+          <button onClick={handleLogout} className="w-9 h-9 rounded-xl border border-[#2D1A14]/15 flex items-center justify-center shrink-0">
             <LogOut className="w-4 h-4 text-[#2D1A14]/50" />
           </button>
+        </div>
+        <div className="hidden lg:flex sticky top-0 z-20 bg-white border-b border-[#2D1A14]/8 px-8 py-3 items-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/images/logo-cliche.png" alt="Cliché" className="h-8 w-auto object-contain" />
         </div>
 
         {/* Page content */}
