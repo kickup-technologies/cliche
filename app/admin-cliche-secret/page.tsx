@@ -19,7 +19,7 @@ import Image from "next/image"
 // REAL de Bienestar embebido (iframe con auto-login) — espejo exacto de cómo
 // el panel de Bienestar embebe a este. sections/tiendas queda solo para el
 // comparador.
-const BIENESTAR_PANEL_URL = "https://bienestar-by-cliche.vercel.app/admin"
+const BIENESTAR_PANEL_URL = "https://www.bienestarbycliche.com/admin"
 // Orígenes desde los que se aceptan los postMessage del panel embebido (su
 // selector de tiendas avisa aquí para "volver a Cliché"/"Comparar").
 const BIENESTAR_ORIGINS = [

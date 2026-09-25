@@ -372,7 +372,7 @@ export function BienestarSection({ tab, onReady }: { tab: PeerTab; onReady?: () 
                   <tr key={p.id} className="pv-row">
                     <td>
                       <div className="flex items-center gap-3">
-                        {p.image && <img src={`https://bienestar-by-cliche.vercel.app${p.image}`} alt="" className="w-9 h-9 rounded-lg object-cover" style={{ background: "rgba(35,41,32,.06)" }} />}
+                        {p.image && <img src={`https://www.bienestarbycliche.com${p.image}`} alt="" className="w-9 h-9 rounded-lg object-cover" style={{ background: "rgba(35,41,32,.06)" }} />}
                         <div><p className="pv-ink font-medium">{p.name}</p><p className="pv-muted text-[11px]">{p.id}</p></div>
                       </div>
                     </td>

@@ -15,7 +15,7 @@ import { createHmac, timingSafeEqual } from "crypto"
 export const PEER_STORE = {
   id: "bienestar",
   name: "Bienestar by Cliché",
-  url: process.env.PEER_STORE_URL || "https://bienestar-by-cliche.vercel.app",
+  url: process.env.PEER_STORE_URL || "https://www.bienestarbycliche.com",
 }
 
 export const SELF_STORE = { id: "cliche", name: "Cliché Colombia" }
