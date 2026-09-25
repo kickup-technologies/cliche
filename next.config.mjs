@@ -120,7 +120,15 @@ const nextConfig = {
   // Rutas legales antiguas/huérfanas → redirigen (301) a las canónicas que enlaza
   // el footer. Evita contenido duplicado en Google y enlaces externos rotos.
   async redirects() {
+    // El alias de Vercel no debe verse nunca: toda PÁGINA pedida en
+    // cliche-nine.vercel.app salta con 308 al dominio propio. /api/* se sigue
+    // sirviendo ahí a propósito: webhooks de Mercado Pago, jobs pg_cron y el
+    // puente con Bienestar hacen POST de servidor, y un 308 los tumba
+    // (incidente del 2026-07-28).
+    const aliasHost = [{ type: "host", value: "cliche-nine.vercel.app" }]
     return [
+      { source: "/", has: aliasHost, destination: "https://www.clichecolombia.com/", permanent: true },
+      { source: "/:path((?!api/).*)", has: aliasHost, destination: "https://www.clichecolombia.com/:path", permanent: true },
       { source: "/politica-privacidad", destination: "/privacidad", permanent: true },
       { source: "/terminos-condiciones", destination: "/terminos", permanent: true },
       // /productos sin slug no existe como página (las fichas viven en
