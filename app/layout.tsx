@@ -18,6 +18,7 @@ import { LeadPopup } from '@/components/lead-popup'
 import { CartSync } from '@/components/cart-sync'
 import { StickyCta } from '@/components/sticky-cta'
 import { FilmGrain } from '@/components/editorial/film-grain'
+import { KickupCredit } from '@/components/kickup-credit'
 import Script from 'next/script'
 import './globals.css'
 
@@ -123,6 +124,7 @@ export default function RootLayout({
         <CartProvider>
           <FavoritesProvider>
             {children}
+            <KickupCredit />
             <CartDrawer />
             <LeadPopup />
             <CartSync />
