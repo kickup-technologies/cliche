@@ -16,7 +16,7 @@ export function KickupCredit() {
         target="_blank"
         rel="noopener"
         aria-label="Desarrollado por KickUp Technologies"
-        className="mx-auto grid max-w-7xl justify-items-center gap-0.5 px-4 pb-24 pt-8 text-center transition-opacity duration-300 hover:opacity-75 sm:pb-12"
+        className="mx-auto grid max-w-7xl justify-items-center gap-0.5 px-4 pb-24 pt-8 text-center transition-opacity duration-300 hover:opacity-75"
       >
         <span className="text-[9.5px] uppercase tracking-[0.34em] text-background/40">
           Desarrollado por
