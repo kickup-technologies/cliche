@@ -27,6 +27,15 @@ export const PRODUCT_MODELS: Record<string, string> = {
   "navidad": "/models/navidad.glb",
 }
 
+/**
+ * Productos que se muestran SOLO con su foto: sin el frasco 3D genérico ni el
+ * botón "Vista 3D" (pedido de Andrés 2026-09-28 para Sugar Pop, línea for girls,
+ * que no usa el frasco de la línea clásica).
+ */
+export const SIN_3D = new Set<string>(["sugar-pop"])
+
+export const sin3D = (slug: string | null | undefined) => !!slug && SIN_3D.has(slug.replace(/^aroma-/, ""))
+
 /** Devuelve la URL del modelo 3D para un slug (tolera el prefijo "aroma-"). */
 export function modelForSlug(slug: string | null | undefined): string | null {
   if (!slug) return null

@@ -31,7 +31,7 @@ const MeshyViewer = dynamic(
   )}
 )
 
-import { PRODUCT_MODELS } from "@/lib/product-models"
+import { PRODUCT_MODELS, sin3D } from "@/lib/product-models"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -256,7 +256,7 @@ export function ProductDetail({ product, related }: Props) {
   // cargan 3D (la foto se queda — igual que si el modelo falla).
   const galleryTouched = useRef(false)
   useEffect(() => {
-    if (typeof window === "undefined" || !introPhoto) return
+    if (typeof window === "undefined" || !introPhoto || sin3D(product.slug)) return
     const conn = (navigator as { connection?: { saveData?: boolean; effectiveType?: string } }).connection
     if (conn && (conn.saveData === true || /2g/.test(conn.effectiveType || ""))) return
     let cancelled = false
@@ -477,8 +477,8 @@ export function ProductDetail({ product, related }: Props) {
                     transition: 'opacity 500ms ease 200ms, transform 500ms ease 200ms',
                   }}
                 >
-                  {/* 3D render thumbnail */}
-                  <button
+                  {/* 3D render thumbnail (no aplica a productos que van solo con foto) */}
+                  {!sin3D(product.slug) && <button
                     onClick={() => { galleryTouched.current = true; setSelectedImage(null); setIntroPhase((p) => (p === "foto" ? "caida" : p)) }}
                     className={`flex-shrink-0 w-16 h-16 rounded-xl border-2 bg-muted/40 flex items-center justify-center transition-all ${
                       selectedImage === null ? "border-primary shadow-md" : "border-border hover:border-primary/50"
@@ -486,7 +486,7 @@ export function ProductDetail({ product, related }: Props) {
                     title="Ver vista 3D"
                   >
                     <span className="text-[10px] font-bold text-muted-foreground text-center leading-tight px-1">Vista<br/>3D</span>
-                  </button>
+                  </button>}
 
                   {/* Admin photos or blank placeholders */}
                   {(galleryImages.length > 0 ? galleryImages : product.image_url ? [product.image_url] : []).length > 0
