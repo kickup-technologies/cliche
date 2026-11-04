@@ -57,6 +57,8 @@ export function StickyCta() {
     <div
       className="fixed bottom-6 left-6 z-30 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
       style={{
+        // Sube sobre la barra de cookies mientras está visible (--cookie-bar-h).
+        marginBottom: "var(--cookie-bar-h, 0px)",
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(24px)",
         pointerEvents: visible ? "auto" : "none",

@@ -435,6 +435,8 @@ function CatalogoInner() {
       <button
         onClick={scrollTop}
         aria-label="Volver arriba"
+        // Sube sobre la barra de cookies mientras está visible (--cookie-bar-h).
+        style={{ marginBottom: "var(--cookie-bar-h, 0px)" }}
         className={`fixed bottom-6 right-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-foreground text-background shadow-xl transition-all duration-300 hover:bg-primary ${
           showTop ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-4 opacity-0"
         }`}

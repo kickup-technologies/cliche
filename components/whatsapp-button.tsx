@@ -26,10 +26,15 @@ export function WhatsAppButton({ raisedClass }: { raisedClass?: string } = {}) {
   if (isDrawerOpen) return null
 
   return (
-    <div className={cn(
-      "fixed right-6 z-50 transition-all duration-300",
-      raisedClass ?? (itemCount > 0 ? "bottom-24" : "bottom-6")
-    )}>
+    // marginBottom: sube sobre la barra de cookies mientras está visible
+    // (components/cookie-consent.tsx publica --cookie-bar-h).
+    <div
+      className={cn(
+        "fixed right-6 z-50 transition-all duration-300",
+        raisedClass ?? (itemCount > 0 ? "bottom-24" : "bottom-6")
+      )}
+      style={{ marginBottom: "var(--cookie-bar-h, 0px)" }}
+    >
       {/* Tooltip */}
       <div
         className={cn(
