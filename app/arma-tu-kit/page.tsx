@@ -1,28 +1,22 @@
-import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
 import { KitLanding } from "@/components/kit-landing/kit-landing"
-import { kitFontClass } from "@/components/kit-landing/kit-fonts"
+import { DEFAULT_WHATSAPP } from "@/components/landing-maqueta/parts"
 import { supabase, isSupabaseConfigured, type Product } from "@/lib/supabase"
 import { CATALOG_AS_PRODUCTS } from "@/lib/catalog-data"
 import { parseFreeShippingThreshold } from "@/lib/pricing"
-import {
-  isKitEligible,
-  reviewerDisplayName,
-  shortAromaName,
-  toKitAroma,
-  type KitAroma,
-  type KitReview,
-} from "@/lib/kit-landing"
+import { isKitEligible, shortAromaName, toKitAroma, type KitAroma } from "@/lib/kit-landing"
+import { CHRISTMAS_DEADLINE } from "@/lib/kit-landing-content"
 
 /**
  * /arma-tu-kit — landing del kit personalizado (mezclar aromas al precio fijo
- * del kit). Server component: lee aromas, envío gratis, WhatsApp y reseñas
- * reales de la BD; el armador interactivo vive en <KitLanding/>.
+ * del kit) con el diseño de la maqueta de Cliché, tal cual. Sin el Header ni
+ * el Footer de la tienda: la maqueta trae su propia cabecera (logo + WhatsApp)
+ * y su pie legal, y es una página de destino de pauta.
+ *
+ * Server component: lee aromas, envío gratis, WhatsApp y calificaciones reales
+ * de la BD; el armador interactivo vive en <KitLanding/>.
  * ISR cada 5 min (igual que el layout) para no consultar la BD por visita.
  */
 export const revalidate = 300
-
-const DEFAULT_WHATSAPP = "573122838844"
 
 async function loadAromas(): Promise<KitAroma[]> {
   let products: Product[] = []
@@ -40,7 +34,11 @@ async function loadAromas(): Promise<KitAroma[]> {
   }
   // Mismo respaldo que /api/products: catálogo local si la BD falla o está vacía.
   if (!products.length) products = CATALOG_AS_PRODUCTS
-  return products.filter(isKitEligible).map(toKitAroma)
+  // Orden alfabético, como la cuadrícula de la maqueta (Agua, Air Fresh, Aire…).
+  return products
+    .filter(isKitEligible)
+    .map(toKitAroma)
+    .sort((a, b) => a.name.localeCompare(b.name, "es"))
 }
 
 async function loadSettings(): Promise<{ freeShippingThreshold: number; whatsappNumber: string }> {
@@ -68,55 +66,53 @@ async function loadSettings(): Promise<{ freeShippingThreshold: number; whatsapp
 }
 
 /**
- * Testimonios: SOLO reseñas reales aprobadas de la tabla `reviews` (nunca las
- * semilla de lib/seed-reviews). Se exige comentario con contenido y 4★ o más.
+ * Calificación por aroma (la línea "★ 4,8 · 12 reseñas" de la maqueta) SOLO
+ * con reseñas reales aprobadas de la tabla `reviews`. Nunca las semilla de
+ * lib/seed-reviews ni las columnas rating/reviews de `products`: la maqueta
+ * traía cifras de referencia y aquí no se publica un número que no exista.
+ * Un aroma sin reseñas reales no muestra la línea.
  */
-async function loadReviews(aromas: KitAroma[]): Promise<KitReview[]> {
-  if (!isSupabaseConfigured) return []
+async function loadRatings(aromas: KitAroma[]): Promise<KitAroma[]> {
+  if (!isSupabaseConfigured || !aromas.length) return aromas
   try {
     const { data } = await supabase
       .from("reviews")
-      .select("id, product_id, reviewer_name, rating, comment")
+      .select("product_id, rating")
       .eq("is_approved", true)
-      .gte("rating", 4)
-      .order("created_at", { ascending: false })
-      .limit(40)
-    const nameById = new Map(aromas.map((a) => [a.id, a.name]))
-    return (data ?? [])
-      .filter((r) => typeof r.comment === "string" && r.comment.trim().length >= 40)
-      .slice(0, 6)
-      .map((r) => ({
-        id: String(r.id),
-        name: reviewerDisplayName(String(r.reviewer_name ?? "")),
-        rating: Number(r.rating) || 5,
-        comment: String(r.comment).trim(),
-        aroma: nameById.get(String(r.product_id)) ?? null,
-      }))
+      .in("product_id", aromas.map((a) => a.id))
+      .limit(5000)
+    const acc = new Map<string, { sum: number; n: number }>()
+    for (const r of data ?? []) {
+      const v = Number(r.rating)
+      if (!Number.isFinite(v) || v < 1 || v > 5) continue
+      const k = String(r.product_id)
+      const cur = acc.get(k) ?? { sum: 0, n: 0 }
+      acc.set(k, { sum: cur.sum + v, n: cur.n + 1 })
+    }
+    return aromas.map((a) => {
+      const s = acc.get(a.id)
+      return s ? { ...a, rating: Math.round((s.sum / s.n) * 10) / 10, ratingCount: s.n } : a
+    })
   } catch {
-    return []
+    return aromas
   }
 }
 
 export default async function ArmaTuKitPage() {
-  const [aromas, settings] = await Promise.all([loadAromas(), loadSettings()])
-  const reviews = await loadReviews(aromas)
+  const [baseAromas, settings] = await Promise.all([loadAromas(), loadSettings()])
+  const aromas = await loadRatings(baseAromas)
   const christmas = aromas.find((a) => a.slug.replace(/^aroma-/, "") === "navidad") ?? null
+  // Se evalúa en cada regeneración (ISR 5 min): la fecha límite se apaga sola.
+  const beforeChristmasDeadline = Date.now() <= Date.parse(CHRISTMAS_DEADLINE)
 
   return (
-    <>
-      <Header />
-      {/* Tipografías de la landing (Cormorant Garamond + Manrope) solo aquí */}
-      <div className={kitFontClass}>
-        <KitLanding
-          aromas={aromas}
-          reviews={reviews}
-          freeShippingThreshold={settings.freeShippingThreshold}
-          whatsappNumber={settings.whatsappNumber}
-          christmasAromaId={christmas?.id ?? null}
-          christmasAromaName={christmas ? shortAromaName(christmas.fullName) : null}
-        />
-      </div>
-      <Footer />
-    </>
+    <KitLanding
+      aromas={aromas}
+      freeShippingThreshold={settings.freeShippingThreshold}
+      whatsappNumber={settings.whatsappNumber}
+      christmasAromaId={christmas?.id ?? null}
+      christmasAromaName={christmas ? shortAromaName(christmas.fullName) : null}
+      showChristmasDeadline={beforeChristmasDeadline}
+    />
   )
 }

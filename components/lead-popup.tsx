@@ -61,7 +61,10 @@ export function LeadPopup() {
     pathname.startsWith("/productos") ||
     // Landing B2B de pauta: el popup del newsletter competía con el formulario
     // de cotización y su "Lead" contaminaba la conversión de cliente potencial.
-    pathname.startsWith("/empresas")
+    pathname.startsWith("/empresas") ||
+    // Landing de pauta del kit: el popup tapaba el armador y la bandeja de
+    // compra justo mientras la persona elige sus aromas.
+    pathname.startsWith("/arma-tu-kit")
   )
 
   const open = useCallback(() => {

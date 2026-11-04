@@ -1,78 +1,81 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import {
-  ArrowRight, BadgePercent, Check, Droplets, Gift, MessageCircle, Minus, Plus,
-  ShoppingBag, Shuffle, Star, Truck,
-} from "lucide-react"
 import { useCart, type PackComponent } from "@/context/cart-context"
 import { useCAPI } from "@/lib/use-capi"
-import { PRICE_TIERS, SHIPPING_COST, TIER_BY_ID, UNIT_PRICE, tierSavings } from "@/lib/pricing"
-import { SEGMENTS } from "@/lib/segments"
-import { BrandLogos } from "@/components/editorial/brand-logos"
-import { WhatsAppButton } from "@/components/whatsapp-button"
-import { CHRISTMAS_COMBO, USAGE_TIPS, type KitAroma, type KitReview } from "@/lib/kit-landing-content"
-import { useKitMotion } from "./use-kit-motion"
+import { PRICE_TIERS, SHIPPING_COST, TIER_BY_ID, UNIT_PRICE, type PriceTier } from "@/lib/pricing"
+import {
+  CHRISTMAS_COMBO,
+  CHRISTMAS_DEADLINE_LABEL,
+  USAGE_TIPS,
+  USOS,
+  type KitAroma,
+} from "@/lib/kit-landing-content"
+import { MqBrands, MqFooter, MqTests, waDisplay, waHref, type TestimonioId } from "@/components/landing-maqueta/parts"
 import "./kit-landing.css"
 
 /**
- * Landing "Arma tu kit" (estructura de la maqueta de la agencia, datos reales).
- * El kit se agrega con `addPack` (dispara AddToCart) y el pago va por el
- * `checkout()` del carrito (dispara InitiateCheckout con content_ids del
- * catálogo) → /checkout → Mercado Pago. Mismo flujo que el PackBuilder.
+ * Landing "Arma tu kit" — la maqueta de Cliché (landings/kits-cliche) TAL CUAL:
+ * mismo orden de secciones, textos, imágenes y armador (tamaño, uso, aromas y
+ * bandeja fija). Decisión del cliente: ese diseño vende más que el rediseño.
  *
- * Capa visual: estilos y animaciones propios en ./kit-landing.css (todo bajo
- * `.kit-root`) y revelado/parallax en ./use-kit-motion.ts.
+ * Lo que cambia frente a la maqueta es lo que la maqueta simulaba:
+ * - El pedido NO es contra entrega (Cliché no lo ofrece): el panel "Confirma
+ *   tu pedido" resume el kit y lleva al pago real. El kit entra al carrito con
+ *   `addPack` (dispara AddToCart) y se paga con el `checkout()` del carrito
+ *   (dispara InitiateCheckout) → /checkout → Mercado Pago. Mismo flujo que el
+ *   PackBuilder de la ficha; el pedido lleva los aromas elegidos.
+ * - Medios y condiciones reales: tarjeta, PSE o Nequi; envío de SHIPPING_COST,
+ *   gratis desde el umbral del panel; entrega de 7 a 9 días hábiles; garantía
+ *   y retracto de los términos.
+ * - Aromas, notas, fotos, insignias, stock y calificaciones salen de la BD.
  */
 
 const KIT_TIERS = PRICE_TIERS.filter((t) => t.units > 1)
 const DEFAULT_TIER = KIT_TIERS[0]
-const fmt = (n: number) => `$${Math.round(n).toLocaleString("es-CO")}`
-const perBottle = (t: { price: number; units: number }) => Math.round(t.price / t.units)
+const fmt = (n: number) => `$${new Intl.NumberFormat("es-CO").format(Math.round(n))}`
+const perBottle = (t: PriceTier) => Math.round(t.price / t.units)
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many)
-const focusRing = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-/** Retardo escalonado para el revelado (`--kr-d`). */
-const delay = (ms: number) => ({ "--kr-d": `${ms}ms` }) as CSSProperties
-/** Retardo para la entrada CSS del héroe (`--kit-d`). */
-const heroDelay = (ms: number) => ({ "--kit-d": `${ms}ms` }) as CSSProperties
 
-/** "A, B y C" (o "A, B o C" con conj = "o") */
-function joinNames(names: string[], conj = "y"): string {
-  if (names.length <= 1) return names.join("")
-  return `${names.slice(0, -1).join(", ")} ${conj} ${names[names.length - 1]}`
-}
+/**
+ * Etiqueta de cada tamaño. El x4 dice "Recomendado" y no "Más popular" (el
+ * badge de lib/pricing): no hay datos de ventas que respalden "más popular".
+ */
+const flagFor = (t: PriceTier) => (t.id === "x4" ? "Recomendado" : t.badge)
 
-/** Rótulo de paso: "Paso 1" en serif itálica + "Tamaño" en versalitas, con filete. */
-function StepLabel({ n, label, className = "" }: { n: number; label: string; className?: string }) {
-  return (
-    <p className={`kit-step ${className}`}>
-      <span className="font-serif text-lg italic text-primary sm:text-xl">Paso {n}</span>
-      <span aria-hidden className="h-px w-5 bg-primary/40" />
-      <span className="kit-caps text-foreground/80">{label}</span>
-    </p>
-  )
+/** Testimonios de la maqueta de kits, en su orden. */
+const TESTS: readonly TestimonioId[] = ["mariana", "catalina", "andres", "laura", "daniela", "camila", "valentina"]
+
+/** Desplaza a una sección respetando el scroll suave de Lenis si está activo. */
+function scrollToId(id: string) {
+  const el = document.getElementById(id)
+  if (!el) return
+  const lenis = (window as unknown as { __lenis?: { scrollTo: (t: HTMLElement) => void } }).__lenis
+  if (lenis) lenis.scrollTo(el)
+  else el.scrollIntoView({ behavior: "smooth", block: "start" })
 }
 
 interface Props {
   aromas: KitAroma[]
-  reviews: KitReview[]
   freeShippingThreshold: number
   whatsappNumber: string
   christmasAromaId: string | null
   christmasAromaName: string | null
+  /** false después de la fecha límite de Navidad (la calcula el servidor) */
+  showChristmasDeadline: boolean
 }
 
 export function KitLanding({
   aromas,
-  reviews,
   freeShippingThreshold,
   whatsappNumber,
   christmasAromaId,
   christmasAromaName,
+  showChristmasDeadline,
 }: Props) {
-  const { addPack, openDrawer, checkout, items } = useCart()
+  const { addPack, openDrawer, checkout, items, total: cartTotal } = useCart()
   const { track } = useCAPI()
 
   const [tierId, setTierId] = useState(DEFAULT_TIER.id)
@@ -80,18 +83,14 @@ export function KitLanding({
   const [filter, setFilter] = useState("todos")
   const [toast, setToast] = useState<string | null>(null)
   const [trayOn, setTrayOn] = useState(false)
+  const [panelOpen, setPanelOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [goPay, setGoPay] = useState(false)
-  const [added, setAdded] = useState(false)
-  const rootRef = useRef<HTMLElement>(null)
   const armarRef = useRef<HTMLElement>(null)
+  const payRef = useRef<HTMLButtonElement>(null)
+  const lastFocus = useRef<HTMLElement | null>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const addedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const viewSent = useRef(false)
-  /** Dirección del último cambio por aroma (solo para animar el contador). */
-  const dirRef = useRef<Record<string, 1 | -1>>({})
-
-  useKitMotion(rootRef)
 
   const tier = TIER_BY_ID[tierId] ?? DEFAULT_TIER
   const byId = useMemo(() => new Map(aromas.map((a) => [a.id, a])), [aromas])
@@ -102,17 +101,16 @@ export function KitLanding({
   }, [picks])
   const missing = tier.units - picks.length
   const complete = missing === 0
-  const maxSavingsTier = KIT_TIERS[KIT_TIERS.length - 1]
 
-  const segments = useMemo(
-    () => SEGMENTS.filter((s) => aromas.some((a) => a.segments.includes(s.key))),
+  const usos = useMemo(
+    () => USOS.filter((u) => u.key === "todos" || aromas.some((a) => a.uses.includes(u.key))),
     [aromas],
   )
   const visible = useMemo(
-    () => (filter === "todos" ? aromas : aromas.filter((a) => a.segments.includes(filter))),
+    () => (filter === "todos" ? aromas : aromas.filter((a) => a.uses.includes(filter))),
     [aromas, filter],
   )
-  const bestSellers = useMemo(() => aromas.filter((a) => a.bestSeller), [aromas])
+  const bestSellers = useMemo(() => aromas.filter((a) => a.bestSeller).map((a) => a.id), [aromas])
   const christmasCombo = useMemo(() => {
     if (!christmasAromaId) return []
     const bySlug = new Map(aromas.map((a) => [a.slug.replace(/^aroma-/, ""), a.id]))
@@ -122,11 +120,10 @@ export function KitLanding({
   const showToast = useCallback((msg: string) => {
     setToast(msg)
     if (toastTimer.current) clearTimeout(toastTimer.current)
-    toastTimer.current = setTimeout(() => setToast(null), 3200)
+    toastTimer.current = setTimeout(() => setToast(null), 2600)
   }, [])
   useEffect(() => () => {
     if (toastTimer.current) clearTimeout(toastTimer.current)
-    if (addedTimer.current) clearTimeout(addedTimer.current)
   }, [])
 
   // ── ViewContent al cargar (navegador + servidor, mismo event_id) ──
@@ -146,21 +143,22 @@ export function KitLanding({
   }, [aromas, track])
 
   // ── Selección ──
-  const addPick = useCallback((id: string) => {
+  const addPick = (id: string) => {
     const a = byId.get(id)
     if (!a) return
     if (picks.length >= tier.units) {
       showToast(`Tu kit x${tier.units} ya está completo. Quita un aroma o elige un kit más grande.`)
       return
     }
+    // Stock real: no se puede pedir más frascos de los que hay de ese aroma.
     if ((counts.get(id) ?? 0) >= a.stock) {
       showToast(`No hay más unidades disponibles de ${a.name}.`)
       return
     }
     setPicks((prev) => [...prev, id])
-  }, [byId, counts, picks.length, showToast, tier.units])
+  }
 
-  const removePick = useCallback((id: string) => {
+  const removePick = (id: string) => {
     setPicks((prev) => {
       const i = prev.lastIndexOf(id)
       if (i < 0) return prev
@@ -168,33 +166,57 @@ export function KitLanding({
       next.splice(i, 1)
       return next
     })
-  }, [])
+  }
 
-  const fillWith = useCallback((ids: string[]) => {
-    const next: string[] = []
-    for (const id of ids) {
-      if (next.length >= tier.units) break
-      if (byId.has(id)) next.push(id)
-    }
+  const fillWith = (ids: string[]) => {
+    const next = ids.filter((id) => byId.has(id)).slice(0, tier.units)
     if (!next.length) return
     setPicks(next)
     const falta = tier.units - next.length
-    const names = joinNames(next.map((id) => byId.get(id)!.name))
+    const nombres = next.map((id) => byId.get(id)!.name).join(", ")
     showToast(
-      `Tu kit ahora tiene ${names}.` +
-        (falta > 0 ? ` Te ${plural(falta, "falta 1 aroma", `faltan ${falta} aromas`)}.` : ""),
+      `Tu kit ahora tiene ${nombres}` +
+        (falta > 0 ? `. Te ${plural(falta, "falta 1 aroma", `faltan ${falta} aromas`)}.` : "."),
     )
-  }, [byId, showToast, tier.units])
+  }
 
-  const selectTier = (id: string) => {
-    const t = TIER_BY_ID[id]
-    if (!t) return
-    setTierId(id)
+  const selectTier = (t: PriceTier) => {
+    setTierId(t.id)
     if (picks.length > t.units) {
       setPicks((prev) => prev.slice(0, t.units))
       showToast(`Ajustamos tu selección al kit x${t.units}.`)
     }
   }
+
+  // ── Panel "Confirma tu pedido" ──
+  const openPanel = () => {
+    if (!complete) return
+    lastFocus.current = document.activeElement as HTMLElement | null
+    setPanelOpen(true)
+  }
+  const closePanel = useCallback(() => {
+    setPanelOpen(false)
+    lastFocus.current?.focus()
+  }, [])
+
+  // Mientras el panel está abierto: sin scroll del fondo (incluye Lenis),
+  // Escape cierra y el foco arranca en el botón de pago.
+  useEffect(() => {
+    if (!panelOpen) return
+    const lenis = (window as unknown as { __lenis?: { stop: () => void; start: () => void } }).__lenis
+    lenis?.stop()
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closePanel() }
+    document.addEventListener("keydown", onKey)
+    const t = setTimeout(() => payRef.current?.focus(), 50)
+    return () => {
+      clearTimeout(t)
+      document.removeEventListener("keydown", onKey)
+      document.body.style.overflow = prevOverflow
+      lenis?.start()
+    }
+  }, [panelOpen, closePanel])
 
   // ── Agregar al carrito / pagar ──
   const buildComponents = (): PackComponent[] => {
@@ -216,12 +238,9 @@ export function KitLanding({
       setGoPay(true)
     } else {
       setBusy(false)
+      setPanelOpen(false)
       openDrawer()
       showToast("Kit agregado al carrito.")
-      // Solo visual: el botón confirma con un check unos segundos.
-      setAdded(true)
-      if (addedTimer.current) clearTimeout(addedTimer.current)
-      addedTimer.current = setTimeout(() => setAdded(false), 2200)
     }
   }
 
@@ -236,7 +255,7 @@ export function KitLanding({
     checkout()
   }, [goPay, checkout, items])
 
-  // ── Barra de resumen: visible al llegar al armador o con aromas elegidos ──
+  // ── Bandeja: visible al llegar al armador o con aromas elegidos ──
   useEffect(() => {
     let raf = 0
     const update = () => {
@@ -256,460 +275,255 @@ export function KitLanding({
   }, [picks.length])
 
   const hint = complete
-    ? "¡Kit completo!"
+    ? "Kit completo"
     : picks.length
       ? `Llevas ${picks.length} de ${tier.units} · elige ${missing} más`
       : `Elige ${tier.units} aromas`
 
-  const waHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent("Hola, quiero un aroma propio para mi marca")}`
+  // Totales del panel con la misma regla del checkout: envío gratis si el
+  // carrito completo (lo que ya había + este kit) llega al umbral.
+  const subtotal = cartTotal + tier.price
+  const shipping = subtotal >= freeShippingThreshold ? 0 : SHIPPING_COST
+  const otherItems = items.length > 0
 
-  const benefits = [
+  const waNum = whatsappNumber
+  const faqs: { q: string; a: React.ReactNode }[] = [
+    { q: "¿Puedo mezclar aromas?", a: "Sí. Combina los que quieras, incluso repetidos, y el precio del kit se mantiene." },
     {
-      Icon: Shuffle,
-      t: "Tú eliges la mezcla",
-      d: "Combina aromas distintos o repite tu favorito: el precio del kit no cambia.",
+      q: "¿Cómo pago?",
+      a: "Pagas en línea al confirmar tu pedido, con tarjeta, PSE o Nequi, a través de Mercado Pago.",
     },
     {
-      Icon: BadgePercent,
-      t: `Ahorras hasta ${fmt(tierSavings(maxSavingsTier))}`,
-      d: `Con el ${maxSavingsTier.label.toLowerCase()} pagas ${fmt(perBottle(maxSavingsTier))} por frasco en vez de ${fmt(UNIT_PRICE)}.`,
+      q: "¿Cuándo llega?",
+      a: `Lo despachamos el siguiente día hábil y llega de 7 a 9 días hábiles. El envío cuesta ${fmt(SHIPPING_COST)} y es gratis desde ${fmt(freeShippingThreshold)}.`,
+    },
+    ...(showChristmasDeadline
+      ? [{ q: "¿Llega para Navidad?", a: `Sí, si lo pides hasta ${CHRISTMAS_DEADLINE_LABEL}.` }]
+      : []),
+    {
+      q: "¿Se puede usar sobre la ropa?",
+      a: "Sí. La fórmula es sin aceites grasos ni colorantes, así que puedes aplicarla sobre telas y muebles claros.",
     },
     {
-      Icon: Droplets,
-      t: "No mancha",
-      d: "La fórmula no contiene aceites grasos ni colorantes: úsala en prendas, telas, empaques y espacios.",
+      q: "¿Y si quiero cambiarlo?",
+      a: (
+        <>
+          Tienes 5 días hábiles desde que lo recibes para retractarte de la compra, con el producto sin usar y en su
+          empaque, y 30 días de garantía. Las condiciones están en los{" "}
+          <Link href="/terminos" target="_blank" rel="noopener">términos</Link>.
+        </>
+      ),
     },
     {
-      Icon: Truck,
-      t: "Envío a todo Colombia",
-      d: `Gratis en compras desde ${fmt(freeShippingThreshold)}. Entrega estimada de 7 a 9 días hábiles.`,
+      q: "¿Hacen aromas personalizados?",
+      a: "Sí, para marcas, tiendas, hoteles y spas. Escríbenos por WhatsApp y te contamos cómo funciona.",
     },
   ]
 
-  const shortcutBtn = `kit-press rounded-full border border-primary/35 bg-card px-3.5 py-1.5 text-[13px] text-accent hover:border-primary hover:bg-secondary ${focusRing}`
-
   return (
-    <>
-      <main
-        ref={rootRef}
-        className="kit-root min-h-screen overflow-x-clip bg-background pb-44 pt-24 text-foreground sm:pb-32 sm:pt-28"
-      >
-        {/* ── Navidad (solo si el Aroma Navidad está activo) ── */}
+    <div className="mq-kits">
+      <div className="wrap">
+        {/* Condiciones reales: sin pago contra entrega (la maqueta decía "Pagas al
+            recibir"); el despacho es al siguiente día hábil, como en la ficha.
+            Textos cortos para que la franja quepa en dos líneas en el celular. */}
+        <div className="topbar" aria-label="Condiciones">
+          <span>Tarjeta, PSE o Nequi</span>
+          <span>Despacho en 1 día hábil</span>
+          <span>Gratis desde {fmt(freeShippingThreshold)}</span>
+          <span>Hecho en Medellín</span>
+        </div>
+        <header className="brand">
+          <Link href="/" aria-label="Cliché, ir a la tienda">
+            <Image src="/images/logo-cliche.png" alt="Cliché" width={92} height={78} priority />
+          </Link>
+          <a className="wa-link" href={waHref(waNum)} target="_blank" rel="noopener noreferrer">
+            WhatsApp {waDisplay(waNum)}
+          </a>
+        </header>
         {christmasAromaId && (
-          <div className="container mx-auto px-4">
-            <div className="kr flex flex-col gap-3 rounded-2xl border border-[var(--kit-line)] bg-secondary/70 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:px-5">
-              <p className="flex items-start gap-3">
-                <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full border border-primary/30 bg-card text-primary">
-                  <Gift className="h-3.5 w-3.5" aria-hidden />
-                </span>
-                <span className="pt-1">
-                  <strong className="font-semibold">Edición especial de Navidad:</strong> el Aroma{" "}
-                  {christmasAromaName} ya está disponible para tu kit.
-                </span>
-              </p>
-              <button
-                type="button"
-                onClick={() => addPick(christmasAromaId)}
-                className={`kit-press self-start rounded-full border border-foreground/25 bg-card px-4 py-1.5 text-xs font-semibold hover:border-foreground sm:self-auto ${focusRing}`}
-              >
-                Sumarlo a mi kit
-              </button>
-            </div>
+          <div className="season">
+            <span className="dot" aria-hidden />
+            <span>
+              <b>Navidad:</b> llegó el Aroma {christmasAromaName}, edición especial.
+              {showChristmasDeadline && <> Pide hasta {CHRISTMAS_DEADLINE_LABEL}.</>}
+            </span>
           </div>
         )}
 
-        {/* ── Héroe ── */}
-        <section aria-labelledby="t-hero" className="container mx-auto px-4 pb-16 pt-6 sm:pb-20 lg:pb-24 lg:pt-10">
-          <div className="grid gap-7 lg:grid-cols-[1.08fr_1fr] lg:grid-rows-[auto_1fr] lg:gap-x-16 lg:gap-y-8">
-            {/* Titular */}
-            <div className="min-w-0 lg:col-start-2 lg:row-start-1 lg:self-end">
-              <p className="kit-rise flex items-center gap-3 text-primary" style={heroDelay(0)}>
-                <span aria-hidden className="kit-line-grow h-px w-8 bg-primary" />
-                <span className="kit-caps">Kits de aromas · Cliché Colombia</span>
-              </p>
-              <h1
-                id="t-hero"
-                className="kit-rise mt-5 font-serif text-[2.95rem] leading-[0.98] tracking-[-0.01em] text-balance sm:text-[4.25rem] lg:text-[4rem] xl:text-[4.6rem]"
-                style={heroDelay(90)}
-              >
-                Arma tu kit con los aromas que <em className="italic text-primary">tú eliges</em>
-              </h1>
+        <section className="hero" aria-label="Kits de aromas">
+          <Image
+            className="hero-img"
+            src="/images/category-kits-marca.png"
+            alt="Caja de regalo con tres sprays de aroma Cliché"
+            width={1024}
+            height={1536}
+            priority
+            sizes="(min-width: 900px) 520px, 100vw"
+          />
+          <div className="info">
+            <span className="eyebrow">Kits de aromas · Cliché Colombia</span>
+            <h1>Arma tu kit con los aromas que tú eliges</h1>
+            <p className="sub" style={{ fontSize: 18 }}>
+              Combina {KIT_TIERS.map((t) => t.units).join(", ").replace(/, (\d+)$/, " o $1")} aromas para tu tienda, tu
+              casa o tu ropa. Sprays de 250 ml de alta concentración, hechos en Medellín.
+            </p>
+            <div className="price">
+              <b>{fmt(DEFAULT_TIER.price)}</b>
+              <span className="per">{DEFAULT_TIER.label} · {fmt(perBottle(DEFAULT_TIER))} por frasco</span>
             </div>
-
-            {/* Imagen (LCP: prioridad, visible sin JS, sin máscara inicial) */}
-            <figure className="relative lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:self-center">
-              <div className="relative aspect-[4/3] overflow-hidden rounded-[1.75rem] bg-secondary shadow-[var(--kit-shadow-lg)]">
-                <div data-kit-parallax className="absolute inset-0 will-change-transform">
-                  <Image
-                    src="/images/category-kits-marca.png"
-                    alt="Caja de regalo con tres sprays de 250 ml: Aire, Agua y Sello de Dios"
-                    fill
-                    priority
-                    sizes="(max-width: 1024px) 100vw, 55vw"
-                    className="kit-hero-img object-cover"
-                    // Encuadre en los frascos (la tapa de la caja trae texto ajeno a Cliché).
-                    style={{ objectPosition: "50% 68%" }}
-                  />
-                </div>
-                <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#2D1A14]/45 via-transparent to-transparent" />
-                <figcaption className="kit-rise absolute bottom-4 left-4 right-4 flex items-center gap-3 text-[#FAF8F5] sm:bottom-6 sm:left-6" style={heroDelay(500)}>
-                  <span aria-hidden className="h-px w-6 bg-[#FAF8F5]/70" />
-                  <span className="kit-caps text-[9.5px] tracking-[0.18em] sm:text-[11px] sm:tracking-[0.28em]">Sprays de 250 ml · Hechos en Colombia</span>
-                </figcaption>
-              </div>
-            </figure>
-
-            {/* Cuerpo: propuesta, precio, beneficios, CTA */}
-            <div className="flex min-w-0 flex-col gap-7 lg:col-start-2 lg:row-start-2">
-              <p className="kit-rise max-w-[52ch] text-base leading-relaxed text-muted-foreground sm:text-lg" style={heroDelay(180)}>
-                Combina {joinNames(KIT_TIERS.map((t) => String(t.units)), "o")} aromas para tu marca, tu tienda,
-                tu casa o tu ropa. Sprays de 250 ml de alta concentración, hechos en Colombia.
-              </p>
-
-              <div className="kit-rise border-y border-[var(--kit-line)] py-5" style={heroDelay(260)}>
-                <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
-                  <span className="kit-num text-[2.5rem] font-medium leading-none sm:text-5xl">{fmt(DEFAULT_TIER.price)}</span>
-                  <span className="rounded-full border border-primary/30 px-3 py-1 text-[13px] text-accent">
-                    {DEFAULT_TIER.label} · <span className="kit-num">{fmt(perBottle(DEFAULT_TIER))}</span> por frasco
-                  </span>
-                </div>
-                <p className="mt-3 text-sm text-muted-foreground">
-                  Por separado, {DEFAULT_TIER.units} aromas cuestan {fmt(DEFAULT_TIER.units * UNIT_PRICE)}: ahorras{" "}
-                  <strong className="kit-num font-semibold text-foreground">{fmt(tierSavings(DEFAULT_TIER))}</strong>.
-                </p>
-              </div>
-
-              <ul className="kit-rise grid gap-3 text-[15px] leading-snug" style={heroDelay(340)}>
-                {[
-                  "Mezcla los aromas que quieras al mismo precio del kit",
-                  "Pago seguro en línea con Mercado Pago: tarjetas, PSE y billeteras digitales",
-                  `Envío a todo Colombia, gratis en compras desde ${fmt(freeShippingThreshold)}`,
-                  "Alta concentración, no mancha y sin parabenos",
-                ].map((t) => (
-                  <li key={t} className="flex items-start gap-3">
-                    <span className="mt-px flex h-5 w-5 flex-none items-center justify-center rounded-full border border-primary/40 text-primary">
-                      <Check className="h-3 w-3" strokeWidth={2.5} aria-hidden />
-                    </span>
-                    {t}
-                  </li>
-                ))}
-              </ul>
-
-              <div className="kit-rise" style={heroDelay(420)}>
-                <a
-                  href="#armar"
-                  className={`kit-press kit-sheen group inline-flex w-full items-center justify-center gap-2.5 rounded-full bg-foreground px-9 py-4 text-sm font-semibold tracking-wide text-background shadow-[var(--kit-shadow-md)] hover:shadow-[var(--kit-shadow-lg)] sm:w-auto ${focusRing}`}
-                >
-                  Armar mi kit <ArrowRight className="kit-arrow h-4 w-4" aria-hidden />
-                </a>
-              </div>
-            </div>
+            <p className="cta-note" style={{ textAlign: "left", marginTop: -8 }}>
+              Por separado, {DEFAULT_TIER.units} aromas cuestan {fmt(DEFAULT_TIER.units * UNIT_PRICE)}.
+            </p>
+            <ul className="assure">
+              <li>Pagas en línea con tarjeta, PSE o Nequi</li>
+              <li>Mezcla los aromas que quieras al mismo precio</li>
+              <li>Se aplica sobre telas y muebles: fórmula sin aceites grasos ni colorantes</li>
+              <li>30 días de garantía desde que lo recibes</li>
+            </ul>
+            <a
+              className="btn btn-primary btn-wide"
+              href="#armar"
+              onClick={(e) => { e.preventDefault(); scrollToId("armar") }}
+            >
+              Armar mi kit
+            </a>
+            <p className="cta-note">Elige tus aromas y pide en un minuto.</p>
           </div>
         </section>
 
-        {/* ── Beneficios ── */}
-        <section aria-label="Beneficios del kit" className="container mx-auto px-4 pb-16 sm:pb-20">
-          <ul className="grid border-t border-[var(--kit-line)] sm:grid-cols-2 lg:grid-cols-4">
-            {benefits.map(({ Icon, t, d }, i) => (
-              <li
-                key={t}
-                className={`kr flex gap-4 border-b border-[var(--kit-line)] py-6 sm:flex-col sm:gap-0 sm:px-6 sm:py-8 lg:border-b-0 ${
-                  i % 2 === 1 ? "sm:border-l" : ""
-                } ${i > 0 ? "lg:border-l" : ""} lg:first:pl-0`}
-                style={delay(i * 90)}
-              >
-                <span className="flex h-11 w-11 flex-none items-center justify-center rounded-full border border-primary/30 text-primary">
-                  <Icon className="h-[18px] w-[18px]" strokeWidth={1.5} aria-hidden />
-                </span>
-                <div className="min-w-0 sm:mt-5">
-                  <span aria-hidden className="kit-caps text-[10px] text-primary/80">0{i + 1}</span>
-                  <p className="mt-1 font-serif text-[1.45rem] leading-[1.15]">{t}</p>
-                  <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{d}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <MqBrands label="Marcas colombianas que usan aromas Cliché" />
 
-        <BrandLogos />
-
-        {/* ── Armador ── */}
-        <section
-          id="armar"
-          ref={armarRef}
-          aria-labelledby="t-armar"
-          className="container mx-auto scroll-mt-24 px-4 py-16 sm:py-24"
-        >
-          <div className="kr max-w-2xl">
-            <p className="kit-caps text-primary">Tu selección</p>
-            <h2 id="t-armar" className="mt-3 font-serif text-[2.9rem] leading-[0.98] tracking-[-0.01em] sm:text-[4.25rem]">
-              Arma <em className="italic text-primary">tu kit</em>
-            </h2>
-          </div>
-
-          {/* Paso 1 */}
-          <StepLabel n={1} label="Tamaño" className="kr mt-10 sm:mt-14" />
-          <div role="group" aria-label="Tamaño del kit" className="mt-7 grid grid-cols-3 gap-2.5 sm:gap-5 lg:gap-6">
-            {KIT_TIERS.map((t, i) => {
-              const active = t.id === tier.id
+        <section className="block" id="armar" ref={armarRef} aria-labelledby="t-armar">
+          <span className="eyebrow">Paso 1 · Tamaño</span>
+          <h2 id="t-armar">Arma tu kit</h2>
+          <div className="sizes" role="group" aria-label="Tamaño del kit">
+            {KIT_TIERS.map((t) => {
+              const flag = flagFor(t)
+              const separado = t.units * UNIT_PRICE
               return (
-                <div key={t.id} className="kr" style={delay(i * 80)}>
-                  <button
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => selectTier(t.id)}
-                    className={`kit-tier relative flex h-full w-full flex-col items-center rounded-[1.25rem] border px-1.5 pb-4 pt-6 text-center sm:items-start sm:px-6 sm:pb-6 sm:pt-8 sm:text-left ${focusRing} ${
-                      active
-                        ? "border-foreground bg-foreground text-background"
-                        : "border-[var(--kit-line)] bg-card text-foreground"
-                    }`}
-                  >
-                    {t.badge && (
-                      <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-primary px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-primary-foreground shadow-[var(--kit-shadow-sm)] sm:left-6 sm:translate-x-0 sm:text-[10px]">
-                        {t.badge}
-                      </span>
-                    )}
-                    <span
-                      aria-hidden
-                      className="kit-tier-check absolute right-3 top-3 hidden h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground sm:flex"
-                    >
-                      <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
-                    </span>
-                    <span className={`kit-caps text-[9.5px] sm:text-[10.5px] ${active ? "text-background/70" : "text-muted-foreground"}`}>
-                      {t.label}
-                    </span>
-                    <span className="mt-1.5 flex items-baseline gap-1.5 sm:mt-3">
-                      <span className="font-serif text-[2.9rem] leading-[0.85] sm:text-[4.25rem]">{t.units}</span>
-                      <span className={`hidden font-serif text-lg italic sm:inline ${active ? "text-background/70" : "text-muted-foreground"}`}>
-                        aromas
-                      </span>
-                    </span>
-                    <span aria-hidden className={`my-3 h-px w-full sm:my-5 ${active ? "bg-background/20" : "bg-[var(--kit-line)]"}`} />
-                    <span className="kit-num text-[15px] font-semibold leading-tight sm:text-xl">{fmt(t.price)}</span>
-                    <span className={`mt-0.5 text-[11px] sm:text-xs ${active ? "text-background/75" : "text-accent"}`}>
-                      <span className="kit-num">{fmt(perBottle(t))}</span> c/u
-                    </span>
-                    <span className={`text-[10.5px] sm:text-xs ${active ? "text-background/55" : "text-muted-foreground"}`}>
-                      <span className="sr-only">Precio por separado: </span>
-                      <s className="kit-num">{fmt(t.units * UNIT_PRICE)}</s>
-                    </span>
-                    <span className={`kit-num mt-2 text-[10.5px] font-semibold sm:text-xs ${active ? "text-[#E8C9B8]" : "text-primary"}`}>
-                      Ahorras {fmt(tierSavings(t))}
-                    </span>
-                  </button>
-                </div>
+                <button
+                  key={t.id}
+                  className="size"
+                  type="button"
+                  aria-pressed={t.id === tier.id}
+                  onClick={() => selectTier(t)}
+                >
+                  {flag && <span className="flag">{flag}</span>}
+                  <span className="t">{t.label}</span>
+                  <b>{fmt(t.price)}</b>
+                  <s aria-label={`Por separado ${fmt(separado)}`}>Por separado {fmt(separado)}</s>
+                  <span className="u">{fmt(perBottle(t))} c/u</span>
+                </button>
               )
             })}
           </div>
 
-          {/* Paso 2 */}
-          <StepLabel n={2} label="¿Para qué lo quieres?" className="kr mt-14 sm:mt-16" />
-          <div
-            role="group"
-            aria-label="Filtrar aromas por uso"
-            className="kit-noscroll kr -mx-4 mt-5 flex gap-2 overflow-x-auto px-4 pb-1 [mask-image:linear-gradient(to_right,#000_88%,transparent)] sm:mx-0 sm:flex-wrap sm:px-0 sm:[mask-image:none]"
-          >
-            {[{ key: "todos", label: "Todos" }, ...segments].map((s) => (
+          <span className="eyebrow" style={{ marginTop: 8 }}>Paso 2 · ¿Para qué lo quieres?</span>
+          <div className="chips" role="group" aria-label="Filtrar aromas por uso">
+            {usos.map((u) => (
               <button
-                key={s.key}
+                key={u.key}
                 type="button"
-                aria-pressed={filter === s.key}
-                onClick={() => setFilter(s.key)}
-                className={`kit-press flex-none rounded-full border px-4 py-2 text-sm ${focusRing} ${
-                  filter === s.key
-                    ? "border-foreground bg-foreground text-background shadow-[var(--kit-shadow-sm)]"
-                    : "border-[var(--kit-line-strong)] bg-card hover:border-foreground"
-                }`}
+                className="chip"
+                aria-pressed={filter === u.key}
+                onClick={() => setFilter(u.key)}
               >
-                {s.label}
+                {u.label}
               </button>
             ))}
           </div>
-
-          <div className="kr mt-5 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            <span className="kit-caps mr-1 text-[10px]">Atajos</span>
+          <div className="picks">
+            <span>Atajos:</span>
             {bestSellers.length > 0 && (
-              <button type="button" onClick={() => fillWith(bestSellers.map((a) => a.id))} className={shortcutBtn}>
-                Los más vendidos
-              </button>
-            )}
-            {filter !== "todos" && visible.length > 0 && (
-              <button type="button" onClick={() => fillWith(visible.map((a) => a.id))} className={`kit-fade ${shortcutBtn}`}>
-                Sugerencia para {segments.find((s) => s.key === filter)?.label.toLowerCase()}
-              </button>
+              <button className="pick" type="button" onClick={() => fillWith(bestSellers)}>Los más vendidos</button>
             )}
             {christmasCombo.length > 0 && (
-              <button type="button" onClick={() => fillWith(christmasCombo)} className={shortcutBtn}>
-                Sugerencia de Navidad
-              </button>
+              <button className="pick" type="button" onClick={() => fillWith(christmasCombo)}>Sugerencia de Navidad</button>
             )}
-            {picks.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setPicks([])}
-                className={`kit-fade link-underline rounded px-1 text-accent ${focusRing}`}
-              >
-                Vaciar kit
-              </button>
-            )}
+            <button className="linkish" type="button" onClick={() => setPicks([])}>Vaciar kit</button>
           </div>
 
-          {/* Paso 3 */}
-          <div className="kr mt-14 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 sm:mt-16">
-            <StepLabel n={3} label="Elige tus aromas" className="min-w-[16rem] flex-1" />
-            <span className="text-sm text-muted-foreground">
-              <span className="kit-num font-semibold text-foreground">{picks.length}</span> de {tier.units} elegidos · puedes repetir
-            </span>
-          </div>
-
-          {visible.length === 0 ? (
-            <p className="mt-6 text-sm text-muted-foreground">No hay aromas disponibles en este filtro.</p>
-          ) : (
-            <ul className="mt-7 grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4 lg:gap-6">
-              {visible.map((a, i) => {
+          <span className="eyebrow" style={{ marginTop: 8 }}>Paso 3 · Elige tus aromas</span>
+          <div className="grid" aria-live="polite">
+            {visible.length === 0 ? (
+              <p className="empty">Sin aromas en este filtro.</p>
+            ) : (
+              visible.map((a) => {
                 const n = counts.get(a.id) ?? 0
                 const canAddMore = picks.length < tier.units && n < a.stock
-                const d = (i % 4) * 70
                 return (
-                  <li key={a.id} className="kr" style={delay(d)}>
-                    <div
-                      data-on={n > 0 ? "" : undefined}
-                      className="kit-card kit-aroma group flex h-full flex-col overflow-hidden rounded-[1.25rem] border border-[var(--kit-line)] bg-card"
-                    >
-                      <div className="km relative aspect-[4/5] overflow-hidden bg-secondary" style={delay(d + 90)}>
-                        <div className="km-img absolute inset-0">
-                          <div className="kit-zoom absolute inset-0">
-                            <Image
-                              src={a.image}
-                              alt={`Spray de aroma ${a.name}`}
-                              fill
-                              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 320px"
-                              className="object-cover"
-                            />
-                          </div>
-                        </div>
-                        <div
-                          aria-hidden
-                          className={`pointer-events-none absolute inset-0 bg-gradient-to-t from-[#2D1A14]/25 to-transparent transition-opacity duration-500 ${
-                            n > 0 ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                          }`}
-                        />
-                        {a.badge && (
-                          <span className="absolute left-2.5 top-2.5 rounded-full bg-card/90 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-foreground shadow-[var(--kit-shadow-sm)] backdrop-blur sm:left-3 sm:top-3 sm:text-[9.5px]">
-                            {a.badge}
-                          </span>
-                        )}
-                        {n > 0 && (
-                          <span
-                            aria-hidden
-                            className="kit-pop absolute right-2.5 top-2.5 flex h-8 min-w-8 items-center justify-center overflow-hidden rounded-full bg-foreground px-2 kit-num text-sm font-semibold text-background shadow-[var(--kit-shadow-md)] sm:right-3 sm:top-3"
+                  <article key={a.id} className={`card${n ? " on" : ""}`}>
+                    <div className="ph">
+                      <Image
+                        src={a.image}
+                        alt={`Spray aroma ${a.name}`}
+                        width={640}
+                        height={640}
+                        sizes="(min-width: 900px) 240px, 50vw"
+                      />
+                      {a.badge && <span className="bdg">{a.badge}</span>}
+                      {n > 0 && <span className="n-on" aria-label={`${n} en tu kit`}>{n}</span>}
+                    </div>
+                    <div className="txt">
+                      <h3>{a.name}</h3>
+                      {a.notes.length > 0 && <p className="notes">{a.notes.join(" · ")}</p>}
+                      {a.idealLine && <p className="ideal">{a.idealLine}</p>}
+                      {a.rating !== null && a.ratingCount > 0 && (
+                        <span className="rt">
+                          <b>★</b> {String(a.rating).replace(".", ",")} · {a.ratingCount}{" "}
+                          {plural(a.ratingCount, "reseña", "reseñas")}
+                        </span>
+                      )}
+                      <div className="ctrl">
+                        {n === 0 ? (
+                          <button
+                            type="button"
+                            className="add"
+                            aria-label={`Agregar ${a.name} al kit`}
+                            onClick={() => addPick(a.id)}
                           >
-                            <span key={n} className="kit-tick" style={{ "--kit-dir": dirRef.current[a.id] ?? 1 } as CSSProperties}>
-                              {n}
-                            </span>
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex flex-1 flex-col gap-1.5 p-3 sm:p-5">
-                        <h3 className="font-serif text-[1.35rem] leading-[1.05] sm:text-[1.65rem]">{a.name}</h3>
-                        {a.notes.length > 0 && (
-                          <p className="font-serif text-[14.5px] italic leading-snug text-foreground/75 sm:text-[15.5px]">
-                            <span className="sr-only">Notas: </span>
-                            {a.notes.join(" · ")}
-                          </p>
-                        )}
-                        {a.idealFor && (
-                          <p className="text-[11px] leading-snug text-muted-foreground sm:text-xs">Ideal para: {a.idealFor}</p>
-                        )}
-                        {a.family && (
-                          <span className="mt-1 self-start rounded-full border border-[var(--kit-line)] px-2.5 py-0.5 text-[10.5px] text-accent">
-                            Familia: {a.family}
-                          </span>
-                        )}
-                        <div className="mt-auto pt-3">
-                          {n === 0 ? (
+                            Agregar
+                          </button>
+                        ) : (
+                          <div className="step">
+                            <button type="button" aria-label={`Quitar ${a.name}`} onClick={() => removePick(a.id)}>−</button>
+                            <span>{n} en tu kit</span>
                             <button
                               type="button"
-                              onClick={() => { dirRef.current[a.id] = 1; addPick(a.id) }}
-                              aria-label={`Agregar ${a.name} al kit`}
-                              className={`kit-press flex h-11 w-full items-center justify-center gap-1.5 rounded-full border border-foreground text-sm font-semibold hover:bg-foreground hover:text-background ${focusRing}`}
+                              aria-label={`Agregar otro ${a.name}`}
+                              disabled={!canAddMore}
+                              onClick={() => addPick(a.id)}
                             >
-                              <Plus className="h-3.5 w-3.5" aria-hidden /> Agregar
+                              +
                             </button>
-                          ) : (
-                            <div className="kit-fade flex h-11 items-center justify-between rounded-full bg-foreground text-background shadow-[var(--kit-shadow-sm)]">
-                              <button
-                                type="button"
-                                onClick={() => { dirRef.current[a.id] = -1; removePick(a.id) }}
-                                aria-label={`Quitar un ${a.name}`}
-                                className={`kit-press flex h-11 w-10 items-center justify-center rounded-full hover:bg-background/10 sm:w-11 ${focusRing}`}
-                              >
-                                <Minus className="h-4 w-4" aria-hidden />
-                              </button>
-                              <span className="flex items-baseline gap-1 overflow-hidden whitespace-nowrap">
-                                <span
-                                  key={n}
-                                  className="kit-tick kit-num text-sm font-semibold"
-                                  style={{ "--kit-dir": dirRef.current[a.id] ?? 1 } as CSSProperties}
-                                >
-                                  {n}
-                                </span>
-                                <span className="text-[11px] text-background/75 sm:text-xs">en tu kit</span>
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => { dirRef.current[a.id] = 1; addPick(a.id) }}
-                                disabled={!canAddMore}
-                                aria-label={`Agregar otro ${a.name}`}
-                                className={`kit-press flex h-11 w-10 items-center justify-center rounded-full hover:bg-background/10 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent sm:w-11 ${focusRing}`}
-                              >
-                                <Plus className="h-4 w-4" aria-hidden />
-                              </button>
-                            </div>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </li>
+                  </article>
                 )
-              })}
-            </ul>
-          )}
+              })
+            )}
+          </div>
         </section>
 
-        {/* ── Cómo se usa (mismo texto que la ficha de producto) ── */}
-        <section aria-labelledby="t-uso" className="border-t border-[var(--kit-line)]">
-          <div className="container mx-auto grid items-center gap-10 px-4 py-16 sm:py-24 md:grid-cols-2 md:gap-16">
-            <div className="km relative aspect-[4/3] overflow-hidden rounded-[1.75rem] bg-secondary shadow-[var(--kit-shadow-md)] md:aspect-[4/5]">
-              <div className="km-img absolute inset-0">
-                <Image
-                  src="/images/category-ropa.png"
-                  alt="Spray Eternamente Índigo sobre un mostrador de una tienda de ropa"
-                  fill
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  className="object-cover"
-                />
-              </div>
-            </div>
-            <div className="flex flex-col">
-              <div className="kr">
-                <p className="kit-caps text-primary">Cómo se usa</p>
-                <h2 id="t-uso" className="mt-3 font-serif text-[2.6rem] leading-[1] sm:text-[3.4rem]">
-                  Unos puf y el espacio <em className="italic text-primary">cambia</em>
-                </h2>
-              </div>
-              <dl className="mt-8 border-t border-[var(--kit-line)]">
-                {USAGE_TIPS.map((u, i) => (
-                  <div
-                    key={u.title}
-                    className="kr grid grid-cols-[2.25rem_1fr] gap-x-3 border-b border-[var(--kit-line)] py-5"
-                    style={delay(i * 80)}
-                  >
-                    <span aria-hidden className="pt-1 font-serif text-base italic text-primary">0{i + 1}</span>
-                    <div>
-                      <dt className="font-serif text-[1.45rem] leading-tight">{u.title}</dt>
-                      <dd className="mt-1 text-muted-foreground">{u.desc}</dd>
-                    </div>
+        <section className="block" aria-labelledby="t-uso">
+          <div className="use">
+            <Image
+              src="/images/category-ropa.png"
+              alt="Spray Eternamente Índigo en una tienda de ropa"
+              width={1024}
+              height={1536}
+              sizes="(min-width: 900px) 540px, 100vw"
+            />
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <span className="eyebrow">Cómo se usa</span>
+              <h2 id="t-uso">Unos puf y el espacio cambia</h2>
+              <dl>
+                {USAGE_TIPS.map((u) => (
+                  <div key={u.title}>
+                    <dt>{u.title}</dt>
+                    <dd>{u.desc}</dd>
                   </div>
                 ))}
               </dl>
@@ -717,275 +531,140 @@ export function KitLanding({
           </div>
         </section>
 
-        {/* ── Reseñas reales aprobadas (tabla `reviews`) ── */}
-        {reviews.length > 0 && (
-          <section aria-labelledby="t-resenas" className="border-t border-[var(--kit-line)] bg-secondary/40">
-            <div className="container mx-auto px-4 py-16 sm:py-24">
-              <div className="kr">
-                <p className="kit-caps text-primary">Reseñas de clientes</p>
-                <h2 id="t-resenas" className="mt-3 font-serif text-[2.6rem] leading-[1] sm:text-[3.4rem]">
-                  Lo que dicen quienes <em className="italic text-primary">ya lo usan</em>
-                </h2>
-              </div>
-              <ul className="mt-10 grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
-                {reviews.map((r, i) => (
-                  <li key={r.id} className="kr" style={delay((i % 3) * 90)}>
-                    <figure className="kit-card relative flex h-full flex-col gap-4 rounded-[1.25rem] border border-[var(--kit-line)] bg-card p-6 sm:p-7">
-                      <span aria-hidden className="absolute right-6 top-3 font-serif text-7xl leading-none text-primary/15">“</span>
-                      <p className="flex gap-0.5 text-primary" aria-label={`${r.rating} de 5 estrellas`}>
-                        {Array.from({ length: 5 }).map((_, j) => (
-                          <Star key={j} className={`h-3.5 w-3.5 ${j < r.rating ? "fill-current" : "opacity-25"}`} aria-hidden />
-                        ))}
-                      </p>
-                      <blockquote className="whitespace-pre-line font-serif text-[1.3rem] leading-[1.3]">“{r.comment}”</blockquote>
-                      <figcaption className="mt-auto flex items-center gap-3 border-t border-[var(--kit-line)] pt-4 text-sm text-muted-foreground">
-                        <span className="text-foreground">{r.name}</span>
-                        {r.aroma && <span className="kit-caps text-[10px] text-accent">{r.aroma}</span>}
-                      </figcaption>
-                    </figure>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </section>
-        )}
+        <section className="block" aria-labelledby="t-tests">
+          <span className="eyebrow">Negocios que ya tienen su aroma</span>
+          <h2 id="t-tests">Lo que cuentan nuestros clientes</h2>
+          <MqTests ids={TESTS} />
+        </section>
 
-        {/* ── B2B: aroma exclusivo ── */}
-        <section aria-labelledby="t-propio" className="container mx-auto px-4 py-16 sm:py-24">
-          <div className="kr grid overflow-hidden rounded-[1.75rem] bg-foreground text-background shadow-[var(--kit-shadow-lg)] md:grid-cols-2">
-            <div className="km group relative aspect-[4/3] overflow-hidden md:aspect-auto md:min-h-[440px]">
-              <div className="km-img absolute inset-0">
-                <div className="kit-zoom absolute inset-0 group-hover:scale-[1.04]">
-                  <Image
-                    src="/images/category-hoteles.png"
-                    alt="Spray de aroma Aire en la recepción de un hotel"
-                    fill
-                    sizes="(max-width: 768px) 100vw, 50vw"
-                    className="object-cover"
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-col justify-center gap-5 px-6 py-10 sm:px-12 sm:py-14">
-              <p className="kit-caps flex items-center gap-3 text-[#E8C9B8]">
-                <span aria-hidden className="h-px w-6 bg-[#E8C9B8]/70" />
-                Para marcas, hoteles y spas
-              </p>
-              <h2 id="t-propio" className="font-serif text-[2.45rem] leading-[1] text-white sm:text-[3.4rem]">
-                ¿Quieres un aroma <em className="italic text-[#E8C9B8]">exclusivo</em> para tu marca?
-              </h2>
-              <p className="max-w-[46ch] leading-relaxed text-background/75">
-                Diseñamos identidades olfativas a la medida para marcas, tiendas, hoteles y spas. Cuéntanos sobre tu
-                marca y lo coordinamos con el equipo.
+        <section className="block" aria-labelledby="t-propio">
+          <div className="custom">
+            <Image
+              src="/images/category-hoteles.png"
+              alt="Spray de aroma Cliché en la recepción de un hotel"
+              width={1023}
+              height={1537}
+              sizes="(min-width: 900px) 560px, 100vw"
+            />
+            <div className="txt">
+              <span className="eyebrow">Para marcas, hoteles y spas</span>
+              <h2 id="t-propio">¿Quieres un aroma exclusivo para tu marca?</h2>
+              <p>
+                Creamos la identidad olfativa de tu tienda, tu hotel o tu spa, y la llevamos a tus espacios, tus
+                empaques y tus prendas.
               </p>
               <a
-                href={waHref}
+                className="btn"
+                href={waHref(waNum, "Hola, quiero un aroma propio para mi marca")}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`kit-press kit-sheen group mt-2 inline-flex items-center justify-center gap-2 self-start rounded-full bg-background px-7 py-4 text-sm font-semibold text-foreground hover:bg-white focus-visible:ring-offset-foreground ${focusRing}`}
               >
-                <MessageCircle className="h-4 w-4" aria-hidden /> Cotizar mi aroma por WhatsApp
-                <ArrowRight className="kit-arrow h-4 w-4" aria-hidden />
+                Cotizar mi aroma por WhatsApp
               </a>
             </div>
           </div>
         </section>
 
-        {/* ── Preguntas frecuentes ── */}
-        <section aria-labelledby="t-faq" className="container mx-auto max-w-3xl px-4 pb-16 pt-4 sm:pb-24">
-          <div className="kr">
-            <p className="kit-caps text-primary">Dudas</p>
-            <h2 id="t-faq" className="mt-3 font-serif text-[2.6rem] leading-[1] sm:text-[3.4rem]">Preguntas frecuentes</h2>
-          </div>
-          <div className="mt-8 border-t border-[var(--kit-line)]">
-            {[
-              {
-                q: "¿Puedo mezclar aromas?",
-                a: <>Sí. Combina los que quieras, incluso repetidos, y el precio del kit se mantiene.</>,
-              },
-              {
-                q: "¿Cuánto cuesta cada kit?",
-                a: (
-                  <>
-                    {KIT_TIERS.map((t) => `${t.label}: ${fmt(t.price)} (${fmt(perBottle(t))} por frasco)`).join(" · ")}.
-                    {" "}Por unidad, cada frasco cuesta {fmt(UNIT_PRICE)}.
-                  </>
-                ),
-              },
-              {
-                q: "¿Cómo pago?",
-                a: (
-                  <>
-                    Pagas en línea al finalizar tu pedido, con Mercado Pago: tarjetas de crédito y débito (Visa,
-                    Mastercard, American Express), PSE y billeteras digitales según disponibilidad. No manejamos pago
-                    contra entrega.
-                  </>
-                ),
-              },
-              {
-                q: "¿Cuánto cuesta el envío y cuándo llega?",
-                a: (
-                  <>
-                    Enviamos a todo Colombia. Es gratis en compras desde {fmt(freeShippingThreshold)}; por debajo de
-                    ese valor cuesta {fmt(SHIPPING_COST)}. La entrega estimada es de 7 a 9 días hábiles (municipios y
-                    zonas apartadas pueden tardar algunos días más) y recibes un número de guía para rastrear tu pedido.
-                  </>
-                ),
-              },
-              {
-                q: "¿Se puede usar sobre la ropa?",
-                a: (
-                  <>
-                    Sí. La fórmula no contiene aceites grasos ni colorantes: puedes rociarla sobre prendas, telas,
-                    empaques y mobiliario claro sin dejar residuo.
-                  </>
-                ),
-              },
-              {
-                q: "¿Y si hay un problema con mi pedido?",
-                a: (
-                  <>
-                    Tienes garantía de 30 días calendario desde que recibes el producto y, por ser una compra en línea,
-                    derecho de retracto dentro de los 5 días hábiles siguientes a la entrega. Revisa las condiciones en
-                    nuestros{" "}
-                    <Link href="/terminos" className="underline underline-offset-4">términos y condiciones</Link>.
-                  </>
-                ),
-              },
-              {
-                q: "¿Hacen aromas personalizados?",
-                a: (
-                  <>
-                    Sí, para marcas, tiendas, hoteles y spas.{" "}
-                    <a href={waHref} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
-                      Escríbenos por WhatsApp
-                    </a>{" "}
-                    y te contamos cómo funciona.
-                  </>
-                ),
-              },
-            ].map((f, i) => (
-              <details key={f.q} className="kit-faq kr group border-b border-[var(--kit-line)]" style={delay(Math.min(i, 4) * 50)}>
-                <summary
-                  className={`flex cursor-pointer list-none items-center justify-between gap-4 rounded-md py-5 font-serif text-[1.3rem] leading-snug transition-colors hover:text-primary sm:text-[1.45rem] [&::-webkit-details-marker]:hidden ${focusRing}`}
-                >
-                  {f.q}
-                  <span className="flex h-8 w-8 flex-none items-center justify-center rounded-full border border-[var(--kit-line-strong)] text-primary transition-[transform,background-color,border-color] duration-500 ease-[cubic-bezier(.22,1,.36,1)] group-open:rotate-45 group-open:border-primary group-open:bg-primary group-open:text-primary-foreground">
-                    <Plus className="h-4 w-4" aria-hidden />
-                  </span>
-                </summary>
-                <p className="kit-faq-a max-w-[62ch] pb-6 pr-10 text-[15px] leading-relaxed text-muted-foreground">{f.a}</p>
+        <section className="block" aria-labelledby="t-faq">
+          <h2 id="t-faq">Preguntas frecuentes</h2>
+          <div>
+            {faqs.map((f) => (
+              <details key={f.q}>
+                <summary>{f.q}</summary>
+                <p>{f.a}</p>
               </details>
             ))}
           </div>
         </section>
-      </main>
 
-      {/* ── Resumen fijo del kit ── */}
-      <div
-        role="region"
-        aria-label="Resumen de tu kit"
-        data-complete={complete ? "" : undefined}
-        className={`kit-root kit-tray fixed inset-x-0 bottom-0 z-40 border-t border-[var(--kit-line)] bg-card/90 shadow-[0_-12px_32px_-12px_rgba(45,26,20,0.18)] backdrop-blur-xl ${
-          trayOn ? "visible translate-y-0" : "invisible translate-y-full"
-        }`}
-        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-      >
-        {/* Barra de progreso del kit (decorativa; la accesible son los círculos) */}
-        <div aria-hidden className="absolute inset-x-0 top-0 h-[2px] bg-[var(--kit-line)]">
-          <div
-            className={`kit-progress h-full ${complete ? "bg-primary" : "bg-primary/70"}`}
-            style={{ transform: `scaleX(${tier.units ? picks.length / tier.units : 0})` }}
-          />
-        </div>
-        <div className="container mx-auto flex flex-col gap-2.5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:py-4">
-          <div className="flex min-w-0 items-center justify-between gap-3">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-baseline gap-x-2">
-                <span className="font-serif text-xl leading-tight sm:text-[1.4rem]">{tier.label}</span>
-                <span className="kit-num text-[15px] font-semibold">{fmt(tier.price)}</span>
-                <span className="hidden text-xs text-primary sm:inline">Ahorras <span className="kit-num">{fmt(tierSavings(tier))}</span></span>
-              </div>
-              <p
-                className={`flex items-center gap-1.5 text-xs ${complete ? "font-semibold text-primary" : "text-muted-foreground"}`}
-                aria-live="polite"
-              >
-                {complete && <Check key="ok" className="kit-pop h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />}
-                <span key={hint} className="kit-fade">{hint}</span>
-              </p>
-            </div>
-            <div
-              className="flex flex-none gap-1 sm:gap-1.5"
-              role="progressbar"
-              aria-label="Aromas elegidos"
-              aria-valuemin={0}
-              aria-valuemax={tier.units}
-              aria-valuenow={picks.length}
-            >
+        <MqFooter whatsappNumber={waNum} />
+      </div>
+
+      {/* ── Bandeja fija con el avance del kit ── */}
+      <div className={`tray${trayOn ? " on" : ""}`} role="region" aria-label="Resumen de tu kit" inert={!trayOn}>
+        <div className="tray-in">
+          <div className="st">
+            <b>{tier.label} · {fmt(tier.price)}</b>
+            <small aria-live="polite">{hint}</small>
+            <div className="dots" aria-hidden>
               {Array.from({ length: tier.units }).map((_, i) => {
                 const a = picks[i] ? byId.get(picks[i]) : null
                 return (
-                  <span
-                    key={i}
-                    className={`kit-slot relative block h-7 w-7 overflow-hidden rounded-full bg-secondary sm:h-8 sm:w-8 ${
-                      a ? "border border-foreground/80" : "border border-dashed border-primary/60"
-                    }`}
-                    style={{ transitionDelay: `${i * 40}ms` }}
-                  >
-                    {a && (
-                      <span key={`${picks[i]}-${i}`} className="kit-pop absolute inset-0 block">
-                        <Image src={a.image} alt="" fill sizes="32px" className="object-cover" />
-                      </span>
-                    )}
-                  </span>
+                  <i key={i} className={a ? "f" : undefined}>
+                    {a && <Image src={a.image} alt="" width={44} height={44} sizes="22px" />}
+                  </i>
                 )
               })}
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-none">
-            <button
-              type="button"
-              onClick={() => handleAdd(false)}
-              disabled={!complete || busy}
-              className={`kit-press inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-foreground px-3 py-3 text-sm font-semibold enabled:hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40 sm:px-5 ${
-                added ? "disabled:opacity-100" : ""
-              } ${focusRing}`}
-            >
-              {added ? (
-                <span key="ok" className="kit-fade inline-flex items-center gap-1.5">
-                  <Check className="h-4 w-4 text-primary" strokeWidth={2.5} aria-hidden /> Agregado
-                </span>
-              ) : (
-                <>
-                  <ShoppingBag className="hidden h-4 w-4 sm:block" aria-hidden /> Agregar al carrito
-                </>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={() => handleAdd(true)}
-              disabled={!complete || busy}
-              data-ready={complete ? "" : undefined}
-              className={`kit-press kit-sheen group inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-foreground px-3 py-3 text-sm font-semibold text-background enabled:hover:shadow-[var(--kit-shadow-md)] disabled:cursor-not-allowed disabled:opacity-40 sm:px-6 ${focusRing}`}
-            >
-              {busy ? "Procesando…" : <>Ir a pagar <ArrowRight className="kit-arrow hidden h-4 w-4 sm:block" aria-hidden /></>}
-            </button>
-          </div>
+          <button className="btn btn-primary" type="button" disabled={!complete} onClick={openPanel}>
+            Pedir mi kit
+          </button>
         </div>
       </div>
 
-      {/* Avisos (kit lleno, atajos, agregado) */}
-      <div
-        role="status"
-        aria-live="polite"
-        className={`kit-root kit-toast pointer-events-none fixed left-1/2 z-50 w-max max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-full bg-foreground px-5 py-3 text-center text-sm text-background shadow-[var(--kit-shadow-lg)] ${
-          toast ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0"
-        } ${trayOn ? "bottom-[13.5rem] sm:bottom-44" : "bottom-6"}`}
-      >
-        {toast}
-      </div>
+      <div className="toast" role="status" hidden={!toast}>{toast}</div>
 
-      <WhatsAppButton raisedClass={trayOn ? "bottom-36 sm:bottom-28" : undefined} />
-    </>
+      {/* ── Panel "Confirma tu pedido": resumen y paso al pago real ── */}
+      {panelOpen && (
+        <div
+          className="overlay"
+          onClick={(e) => { if (e.target === e.currentTarget) closePanel() }}
+        >
+          <div className="panel" role="dialog" aria-modal="true" aria-labelledby="t-panel" data-lenis-prevent>
+            <div className="panel-head">
+              <h2 id="t-panel">Confirma tu pedido</h2>
+              <button className="x" type="button" aria-label="Cerrar" onClick={closePanel}>×</button>
+            </div>
+            <div className="sum">
+              <div className="row"><b>{tier.label}</b><b>{fmt(tier.price)}</b></div>
+              <ul>
+                {[...counts].map(([id, n]) => {
+                  const a = byId.get(id)
+                  if (!a) return null
+                  return (
+                    <li key={id}>
+                      <Image src={a.image} alt="" width={72} height={72} sizes="36px" />
+                      <span>{a.name}{n > 1 ? ` × ${n}` : ""}</span>
+                    </li>
+                  )
+                })}
+              </ul>
+              <button
+                className="linkish"
+                type="button"
+                onClick={() => { closePanel(); scrollToId("armar") }}
+              >
+                Cambiar aromas
+              </button>
+            </div>
+            <div className="totals" aria-live="polite">
+              <div><span>Kit</span><b>{fmt(tier.price)}</b></div>
+              {otherItems && <div><span>Lo que ya tenías en el carrito</span><span>{fmt(cartTotal)}</span></div>}
+              <div>
+                <span>Envío</span>
+                <span>{shipping === 0 ? "Gratis" : `${fmt(shipping)} · gratis desde ${fmt(freeShippingThreshold)}`}</span>
+              </div>
+              <div className="grand"><span>Total</span><b>{fmt(subtotal + shipping)}</b></div>
+            </div>
+            <p className="pay-note">
+              Pagas en línea con tarjeta, PSE o Nequi. En el siguiente paso escribes tus datos de envío.
+            </p>
+            <button
+              ref={payRef}
+              className="btn btn-primary btn-wide"
+              type="button"
+              disabled={busy}
+              onClick={() => handleAdd(true)}
+            >
+              {busy ? "Procesando…" : "Continuar al pago"}
+            </button>
+            <button className="btn btn-ghost btn-wide" type="button" disabled={busy} onClick={() => handleAdd(false)}>
+              Agregar al carrito y seguir viendo
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }

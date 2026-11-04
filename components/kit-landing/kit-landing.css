@@ -1,310 +1,187 @@
 /*
- * /arma-tu-kit — capa visual y de movimiento (solo esta landing).
- * Todo va bajo `.kit-root` para no tocar el resto del sitio.
- * Easing editorial único; duraciones 150–900 ms; respeta reduced-motion.
+ * /arma-tu-kit — estilos de la maqueta de Cliché (landings/kits-cliche),
+ * portados casi literal: mismos tokens, tamaños y espacios. Decisión del
+ * cliente: el diseño de la maqueta vende más que el rediseño editorial, así
+ * que aquí se copia, no se "mejora".
+ *
+ * Todo va bajo `.mq-kits` para no tocar el resto del sitio. Son reglas SIN
+ * capa (@layer): ganan a las bases de Tailwind (preflight) sin !important.
+ * Lo que la maqueta dejaba al navegador y el preflight resetea (subrayado de
+ * enlaces) se repone explícitamente.
+ *
+ * Tipografías: Playfair Display + Inter, las mismas del layout raíz
+ * (--font-serif / --font-sans de next/font): sin descargas extra.
+ *
+ * `--cookie-bar-h` lo publica components/cookie-consent.tsx mientras la barra
+ * de cookies está visible: la bandeja y el aviso suben esa altura para que la
+ * barra nunca tape el botón "Pedir mi kit".
  */
 
-.kit-root {
-  --kit-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --kit-ink: var(--foreground);
-  --kit-line: color-mix(in oklab, var(--foreground) 12%, transparent);
-  --kit-line-strong: color-mix(in oklab, var(--foreground) 22%, transparent);
-  --kit-shadow-sm: 0 1px 2px rgba(45, 26, 20, 0.04), 0 4px 12px -6px rgba(45, 26, 20, 0.1);
-  --kit-shadow-md: 0 1px 2px rgba(45, 26, 20, 0.04), 0 10px 28px -14px rgba(45, 26, 20, 0.22);
-  --kit-shadow-lg: 0 2px 4px rgba(45, 26, 20, 0.05), 0 24px 48px -22px rgba(45, 26, 20, 0.38);
+.mq-kits {
+  --cream: #faf8f5; --paper: #ffffff; --brown: #2d1a14; --brown-2: #4a2f25; --rose: #a67163; --rose-dark: #8f5e51;
+  --rose-soft: #f3eae1; --gold: #c9944f; --line: #ece2dc; --muted: #7a6a63;
+  --display: var(--font-serif), "Playfair Display", Georgia, "Times New Roman", serif;
+  --body: var(--font-sans), "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+  background: var(--cream); color: var(--brown); font-family: var(--body); font-size: 16px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 120px;
 }
+.mq-kits *, .mq-kits *::before, .mq-kits *::after { box-sizing: border-box }
+.mq-kits [hidden] { display: none !important }
+.mq-kits img { max-width: 100%; display: block }
+.mq-kits h1, .mq-kits h2, .mq-kits h3 { font-family: var(--display); font-weight: 600; margin: 0; line-height: 1.15; text-wrap: balance }
+.mq-kits h1 { font-size: clamp(34px, 6vw, 52px) }
+.mq-kits h2 { font-size: clamp(26px, 4.4vw, 36px) }
+.mq-kits h3 { font-size: 18px }
+.mq-kits p { margin: 0 }
+.mq-kits a { color: inherit; text-decoration: underline }
+.mq-kits :focus-visible { outline: 3px solid var(--rose); outline-offset: 2px }
+.mq-kits .wrap { max-width: 1120px; margin: 0 auto }
+.mq-kits .topbar { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 16px; font-size: 13px; color: var(--brown-2); padding: 10px 0; border-bottom: 1px solid var(--line) }
+.mq-kits .topbar span { white-space: nowrap }
+.mq-kits .topbar span::before { content: "✓"; margin-right: 6px; color: var(--rose) }
+.mq-kits header.brand { display: flex; justify-content: space-between; align-items: center; padding: 12px 0 }
+.mq-kits header.brand img { width: 92px; height: auto }
+.mq-kits .wa-link { font-size: 14px; text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; background: var(--paper) }
+.mq-kits .season { background: var(--rose-soft); border-radius: 12px; padding: 10px 14px; font-size: 14.5px; display: flex; gap: 10px; align-items: center }
+.mq-kits .season .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--rose); flex: none }
+/* .eyebrow también existe en app/globals.css (píldora con fondo y negrita):
+   aquí se anula todo lo que la maqueta no tiene. */
+.mq-kits .eyebrow { display: block; gap: 0; padding: 0; margin: 0; border-radius: 0; background: none; font-weight: 400; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--rose-dark) }
+.mq-kits .sub { color: var(--brown-2); max-width: 62ch }
 
-/* ── Tipografía de la landing: Cormorant Garamond (display) + Manrope (texto/UI).
-   Las variables las pone <div class="kit-fonts"> (components/kit-landing/kit-fonts.ts).
-   Se gana a .font-serif/.font-sans por especificidad, sin tocar el tema global. ── */
-.kit-fonts {
-  font-family: var(--font-kit-sans), "Inter", system-ui, sans-serif;
-}
-.kit-fonts .font-sans {
-  font-family: var(--font-kit-sans), "Inter", system-ui, sans-serif;
-}
-.kit-fonts .font-serif {
-  font-family: var(--font-kit-display), "Playfair Display", Georgia, serif;
-  font-weight: 500;
-  font-feature-settings: "lnum" 1;
-}
-/* Cifras de datos (precios, contadores, ahorro): Manrope tabular */
-.kit-num {
-  font-family: var(--font-kit-sans), "Inter", system-ui, sans-serif;
-  font-variant-numeric: tabular-nums lining-nums;
-  letter-spacing: -0.01em;
-}
+/* héroe */
+.mq-kits .hero { display: grid; gap: 24px; padding-block: 18px 10px }
+.mq-kits .hero-img { border-radius: 18px; width: 100%; height: auto; aspect-ratio: 4/5; object-fit: cover }
+.mq-kits .info { display: flex; flex-direction: column; gap: 14px; min-width: 0 }
+.mq-kits .price { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap }
+.mq-kits .price b { font-family: var(--display); font-size: 40px; font-weight: 700; font-variant-numeric: tabular-nums }
+.mq-kits .price .per { font-size: 14px; color: var(--rose-dark); background: var(--rose-soft); border-radius: 999px; padding: 2px 10px }
+.mq-kits ul.assure { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px }
+.mq-kits ul.assure li { display: flex; gap: 10px; align-items: flex-start; font-size: 15.5px }
+.mq-kits ul.assure li::before { content: "✓"; flex: none; width: 20px; height: 20px; border-radius: 50%; background: var(--rose-soft); color: var(--rose-dark); font-size: 12px; display: flex; align-items: center; justify-content: center; margin-top: 2px }
+.mq-kits .btn { appearance: none; border: 0; cursor: pointer; font-family: var(--body); font-weight: 600; font-size: 16.5px; border-radius: 12px; padding: 15px 22px; text-align: center; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: background .2s, opacity .2s }
+.mq-kits .btn-primary { background: var(--brown); color: var(--cream) }
+.mq-kits .btn-primary:hover { background: var(--brown-2) }
+.mq-kits .btn-primary[disabled] { opacity: .45; cursor: not-allowed }
+.mq-kits .btn-ghost { background: var(--paper); color: var(--brown); border: 1px solid var(--line) }
+.mq-kits .btn-ghost[disabled] { opacity: .45; cursor: not-allowed }
+.mq-kits .btn-wide { width: 100% }
+.mq-kits .cta-note { font-size: 13.5px; color: var(--muted); text-align: center }
+.mq-kits .brands { display: flex; flex-direction: column; gap: 12px; padding-top: 10px }
+.mq-kits .brands p { font-size: 13.5px; color: var(--muted); text-align: center }
+.mq-kits .logos { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; justify-content: flex-start }
+.mq-kits .logos span { flex: none; background: var(--paper); border: 1px solid var(--line); border-radius: 10px; width: 118px; height: 58px; display: flex; align-items: center; justify-content: center; padding: 8px }
+.mq-kits .logos img { max-height: 40px; width: auto }
+.mq-kits section.block { display: flex; flex-direction: column; gap: 18px; padding-block: 44px; border-top: 1px solid var(--line) }
 
-/* Versalitas con tracking (eyebrows y rótulos). En capa `components` para
-   que las utilidades de Tailwind (text-[10px], tracking-…) puedan ajustarla. */
-@layer components {
-  .kit-caps {
-    font-size: 0.6875rem;
-    font-weight: 600;
-    letter-spacing: 0.28em;
-    text-transform: uppercase;
-  }
-}
+/* armador */
+.mq-kits .sizes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px }
+.mq-kits .size { appearance: none; font-family: var(--body); color: var(--brown); background: var(--paper); border: 2px solid var(--line); border-radius: 14px; padding: 14px 8px 12px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; position: relative; text-align: center }
+.mq-kits .size[aria-pressed="true"] { border-color: var(--brown); background: var(--rose-soft) }
+.mq-kits .size .t { font-size: 13px; color: var(--muted) }
+.mq-kits .size b { font-family: var(--display); font-size: 22px; font-variant-numeric: tabular-nums }
+/* "Por separado" es referencia, NUNCA un precio tachado de "antes". */
+.mq-kits .size s { font-size: 11.5px; color: var(--muted); text-decoration: none }
+.mq-kits .size .u { font-size: 12px; color: var(--rose-dark) }
+.mq-kits .size .flag { position: absolute; top: -10px; background: var(--rose); color: #fff; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; border-radius: 999px; padding: 2px 8px; white-space: nowrap }
+.mq-kits .chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px }
+.mq-kits .chip { appearance: none; flex: none; font-family: var(--body); font-size: 14px; color: var(--brown); background: var(--paper); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; cursor: pointer }
+.mq-kits .chip[aria-pressed="true"] { background: var(--brown); color: var(--cream); border-color: var(--brown) }
+.mq-kits .picks { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 14px; color: var(--muted) }
+.mq-kits .pick { appearance: none; font-family: var(--body); font-size: 14px; background: none; border: 1px dashed var(--rose); color: var(--rose-dark); border-radius: 999px; padding: 6px 12px; cursor: pointer }
+.mq-kits .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap: 12px }
+.mq-kits .card { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column }
+.mq-kits .card.on { border-color: var(--brown); box-shadow: 0 0 0 1px var(--brown) }
+.mq-kits .card .ph { position: relative; background: var(--rose-soft) }
+.mq-kits .card .ph img { width: 100%; height: auto; aspect-ratio: 1/1; object-fit: cover }
+.mq-kits .card .bdg { position: absolute; top: 8px; left: 8px; background: var(--brown); color: var(--cream); font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase; border-radius: 999px; padding: 2px 8px }
+.mq-kits .card .n-on { position: absolute; top: 8px; right: 8px; background: var(--rose); color: #fff; font-weight: 600; font-size: 13px; border-radius: 999px; min-width: 26px; height: 26px; display: flex; align-items: center; justify-content: center }
+.mq-kits .card .txt { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 4px; flex: 1 }
+.mq-kits .card h3 { font-size: 17px }
+.mq-kits .card .notes { font-size: 12.5px; color: var(--brown-2); line-height: 1.4 }
+.mq-kits .card .ideal { font-size: 12px; color: var(--muted); line-height: 1.4 }
+.mq-kits .card .rt { font-size: 12px; color: var(--muted) }
+.mq-kits .card .rt b { color: var(--gold); font-weight: 500 }
+.mq-kits .card .ctrl { margin-top: auto; padding-top: 8px }
+.mq-kits .add { appearance: none; width: 100%; font-family: var(--body); font-weight: 600; font-size: 14px; border-radius: 10px; border: 1px solid var(--brown); background: var(--paper); color: var(--brown); padding: 9px; cursor: pointer }
+.mq-kits .add:hover { background: var(--rose-soft) }
+.mq-kits .add[disabled] { opacity: .4; cursor: not-allowed }
+.mq-kits .step { display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--brown); border-radius: 10px }
+.mq-kits .step button { appearance: none; border: 0; background: none; font-size: 20px; width: 40px; height: 38px; cursor: pointer; color: var(--brown) }
+.mq-kits .step button[disabled] { opacity: .3; cursor: not-allowed }
+.mq-kits .step span { font-weight: 600 }
+.mq-kits .empty { color: var(--muted); font-size: 14.5px }
 
-/* Rótulo de paso: "01 — Tamaño" con línea fina */
-.kit-step {
-  display: flex;
-  align-items: center;
-  gap: 0.875rem;
-}
-.kit-step::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background: var(--kit-line);
-}
+/* uso */
+.mq-kits .use { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); align-items: center }
+.mq-kits .use img { border-radius: 16px; width: 100%; height: auto; aspect-ratio: 4/5; object-fit: cover }
+.mq-kits .use dl { margin: 0; display: grid; gap: 14px }
+.mq-kits .use dt { font-family: var(--display); font-size: 19px; font-weight: 500 }
+.mq-kits .use dd { margin: 2px 0 0; color: var(--brown-2) }
+.mq-kits .tests { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)) }
+.mq-kits .test { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 10px }
+/* La maqueta solo carga Playfair 500/600/700: lo que en su CSS es peso normal
+   se ve en 500. Con la fuente variable del sitio hay que pedirlo explícito. */
+.mq-kits .test q { font-family: var(--display); font-size: 18px; font-weight: 500; line-height: 1.35; quotes: "“" "”" }
+.mq-kits .test .who { font-size: 13.5px; color: var(--muted) }
+.mq-kits .test .ar { font-size: 12.5px; color: var(--rose-dark) }
+.mq-kits .custom { display: grid; gap: 0; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); background: var(--brown); color: var(--cream); border-radius: 18px; overflow: hidden }
+.mq-kits .custom img { width: 100%; height: 100%; min-height: 260px; object-fit: cover }
+.mq-kits .custom .txt { padding: 28px 24px; display: flex; flex-direction: column; gap: 14px; justify-content: center }
+.mq-kits .custom h2 { color: #fff }
+.mq-kits .custom .eyebrow { color: #e8c9b8 }
+.mq-kits .custom .btn { background: var(--cream); color: var(--brown); align-self: flex-start }
+.mq-kits details { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 0 18px }
+.mq-kits details + details { margin-top: 10px }
+.mq-kits summary { cursor: pointer; font-size: 16px; font-weight: 500; padding: 16px 0; list-style: none; display: flex; justify-content: space-between; gap: 12px }
+.mq-kits summary::-webkit-details-marker { display: none }
+.mq-kits summary::after { content: "+"; font-size: 22px; line-height: 1; color: var(--rose) }
+.mq-kits details[open] summary::after { content: "–" }
+.mq-kits details p { padding: 0 0 16px; color: var(--brown-2); font-size: 15.5px }
+.mq-kits footer { border-top: 1px solid var(--line); padding-block: 28px; font-size: 13.5px; color: var(--muted); display: flex; flex-direction: column; gap: 8px }
+.mq-kits footer nav { display: flex; flex-wrap: wrap; gap: 6px 16px }
 
-/* ── Héroe: entrada CSS (sin esperar JS; la imagen nunca arranca oculta) ── */
-@keyframes kit-rise {
-  from { opacity: 0; transform: translate3d(0, 18px, 0); }
-  to   { opacity: 1; transform: none; }
-}
-@keyframes kit-settle {
-  from { transform: scale(1.16); }
-  to   { transform: scale(1.08); }
-}
-@keyframes kit-line-grow {
-  from { transform: scaleX(0); }
-  to   { transform: scaleX(1); }
-}
-.kit-rise {
-  animation: kit-rise 0.7s var(--kit-ease) both;
-  animation-delay: var(--kit-d, 0ms);
-}
-.kit-hero-img {
-  /* escala base 1.08: deja holgura para el parallax sin destapar la tapa de la caja */
-  transform: scale(1.08);
-  animation: kit-settle 1.6s var(--kit-ease) both;
-}
-.kit-line-grow {
-  transform-origin: left;
-  animation: kit-line-grow 1.1s var(--kit-ease) 0.35s both;
-}
+/* bandeja */
+.mq-kits .tray { position: fixed; left: 0; right: 0; bottom: var(--cookie-bar-h, 0px); z-index: 20; transform: translateY(110%); transition: transform .25s, bottom .25s; background: var(--paper); border-top: 1px solid var(--line); box-shadow: 0 -8px 24px rgba(45, 26, 20, .08);
+  padding: 10px max(16px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)) }
+.mq-kits .tray.on { transform: none }
+.mq-kits .tray-in { max-width: 1120px; margin: 0 auto; display: flex; align-items: center; gap: 12px; justify-content: space-between }
+.mq-kits .tray .st { display: flex; flex-direction: column; line-height: 1.25; min-width: 0 }
+.mq-kits .tray .st b { font-family: var(--display); font-size: 19px }
+.mq-kits .tray .st small { font-size: 12.5px; color: var(--muted) }
+.mq-kits .tray .dots { display: flex; gap: 4px; margin-top: 4px }
+.mq-kits .tray .dots i { width: 22px; height: 22px; border-radius: 50%; background: var(--rose-soft); border: 1px dashed var(--rose); overflow: hidden; display: block }
+.mq-kits .tray .dots i img { width: 100%; height: 100%; object-fit: cover }
+.mq-kits .tray .dots i.f { border: 1px solid var(--brown) }
+.mq-kits .tray .btn { padding: 13px 16px; font-size: 15.5px; flex: none }
+.mq-kits .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(88px + env(safe-area-inset-bottom, 0px) + var(--cookie-bar-h, 0px)); z-index: 30; background: var(--brown); color: var(--cream); font-size: 14px; border-radius: 10px; padding: 10px 14px; max-width: calc(100% - 32px); text-align: center }
 
-/* ── Revelado al hacer scroll (solo con JS activo; sin JS todo queda visible) ── */
-[data-kit-motion] .kr:not([data-in]) {
-  opacity: 0;
-  transform: translate3d(0, var(--kr-y, 18px), 0);
-}
-[data-kit-motion] .kr {
-  transition:
-    opacity 0.6s var(--kit-ease) var(--kr-d, 0ms),
-    transform 0.7s var(--kit-ease) var(--kr-d, 0ms);
-}
+/* panel */
+.mq-kits .overlay { position: fixed; inset: 0; z-index: 40; background: rgba(45, 26, 20, .45); display: flex; align-items: flex-end; justify-content: center }
+.mq-kits .panel { background: var(--cream); width: 100%; max-width: 520px; max-height: 92vh; overflow: auto; border-radius: 18px 18px 0 0;
+  padding: 18px max(18px, env(safe-area-inset-left, 0px)) calc(22px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 14px }
+.mq-kits .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 10px }
+.mq-kits .panel-head h2 { font-size: 22px }
+.mq-kits .x { appearance: none; border: 0; background: var(--rose-soft); width: 36px; height: 36px; border-radius: 50%; font-size: 20px; cursor: pointer; color: var(--brown) }
+.mq-kits .sum { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px }
+.mq-kits .sum .row { display: flex; justify-content: space-between; gap: 10px; align-items: baseline }
+.mq-kits .sum ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px }
+.mq-kits .sum li { display: flex; align-items: center; gap: 10px; font-size: 14.5px }
+.mq-kits .sum li img { width: 36px; height: 36px; border-radius: 8px; object-fit: cover }
+.mq-kits .linkish { appearance: none; background: none; border: 0; padding: 0; color: var(--rose-dark); text-decoration: underline; font: inherit; font-size: 13.5px; cursor: pointer; align-self: flex-start }
+.mq-kits .totals { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 6px; font-size: 15px }
+.mq-kits .totals div { display: flex; justify-content: space-between; gap: 10px }
+.mq-kits .totals .grand { font-size: 18px; border-top: 1px solid var(--line); padding-top: 8px }
+.mq-kits .totals .grand b { font-family: var(--display) }
+/* Medios de pago reales (Mercado Pago): reemplaza el formulario contra entrega de la maqueta. */
+.mq-kits .pay-note { font-size: 13.5px; color: var(--brown-2); text-align: center }
 
-/* Máscara de revelado en imágenes: telón de abajo hacia arriba + leve zoom.
-   El clip va en el hijo (.km-img), no en .km: un objetivo recortado por
-   clip-path no intersecta para IntersectionObserver. */
-[data-kit-motion] .km .km-img {
-  transition:
-    clip-path 1s var(--kit-ease) var(--kr-d, 0ms),
-    transform 1.3s var(--kit-ease) var(--kr-d, 0ms);
+@media (min-width: 900px) {
+  .mq-kits .hero { grid-template-columns: 1fr 1.05fr; gap: 52px; padding-top: 28px; align-items: center }
+  .mq-kits .grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) }
+  .mq-kits .overlay { align-items: stretch; justify-content: flex-end }
+  .mq-kits .panel { border-radius: 0; max-height: none; height: 100%; max-width: 460px }
 }
-[data-kit-motion] .km:not([data-in]) .km-img {
-  clip-path: inset(100% 0 0 0);
-  transform: scale(1.12);
-}
-[data-kit-motion] .km[data-in] .km-img {
-  clip-path: inset(0 0 0 0);
-}
-
-/* ── Tarjetas ── */
-.kit-card {
-  transition:
-    transform 0.45s var(--kit-ease),
-    box-shadow 0.45s var(--kit-ease),
-    border-color 0.3s var(--kit-ease),
-    background-color 0.3s var(--kit-ease);
-}
-@media (hover: hover) {
-  .kit-card:hover {
-    transform: translate3d(0, -4px, 0);
-    box-shadow: var(--kit-shadow-md);
-  }
-  .kit-card:hover .kit-zoom {
-    transform: scale(1.06);
-  }
-}
-.kit-zoom {
-  transition: transform 0.9s var(--kit-ease);
-}
-
-/* Botones: presión táctil */
-.kit-press {
-  transition:
-    transform 0.18s var(--kit-ease),
-    background-color 0.3s var(--kit-ease),
-    color 0.3s var(--kit-ease),
-    border-color 0.3s var(--kit-ease),
-    box-shadow 0.3s var(--kit-ease),
-    opacity 0.3s var(--kit-ease);
-}
-.kit-press:not(:disabled):active {
-  transform: scale(0.97);
-}
-
-/* Flecha que avanza al pasar el cursor */
-.kit-arrow {
-  transition: transform 0.35s var(--kit-ease);
-}
-.group:hover .kit-arrow,
-.group:focus-visible .kit-arrow {
-  transform: translateX(4px);
-}
-
-/* Brillo diagonal (CTA principal y botón de pagar al completar el kit) */
-.kit-sheen {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-}
-.kit-sheen::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.22) 50%, transparent 70%);
-  transform: translateX(-120%);
-  pointer-events: none;
-}
-@media (hover: hover) {
-  .kit-sheen:not(:disabled):hover::after {
-    transform: translateX(120%);
-    transition: transform 0.9s var(--kit-ease);
-  }
-}
-.kit-sheen[data-ready]::after {
-  animation: kit-sheen-once 1.1s var(--kit-ease) 0.25s both;
-}
-@keyframes kit-sheen-once {
-  from { transform: translateX(-120%); }
-  to   { transform: translateX(120%); }
-}
-
-/* ── Selector de tamaño ── */
-.kit-tier {
-  transition:
-    transform 0.5s var(--kit-ease),
-    box-shadow 0.5s var(--kit-ease),
-    background-color 0.45s var(--kit-ease),
-    color 0.45s var(--kit-ease),
-    border-color 0.45s var(--kit-ease);
-}
-.kit-tier[aria-pressed="true"] {
-  transform: translate3d(0, -6px, 0);
-  box-shadow: var(--kit-shadow-lg);
-}
-@media (hover: hover) {
-  .kit-tier[aria-pressed="false"]:hover {
-    transform: translate3d(0, -3px, 0);
-    box-shadow: var(--kit-shadow-md);
-    border-color: var(--kit-line-strong);
-  }
-}
-.kit-tier-check {
-  transition: transform 0.45s var(--kit-ease), opacity 0.3s var(--kit-ease);
-}
-.kit-tier[aria-pressed="false"] .kit-tier-check {
-  opacity: 0;
-  transform: scale(0.5);
-}
-
-/* ── Contador por aroma: el número entra desde arriba o desde abajo ── */
-@keyframes kit-tick {
-  from { opacity: 0; transform: translate3d(0, calc(var(--kit-dir, 1) * 9px), 0); }
-  to   { opacity: 1; transform: none; }
-}
-.kit-tick {
-  display: inline-block;
-  animation: kit-tick 0.38s var(--kit-ease) both;
-}
-@keyframes kit-pop {
-  0%   { transform: scale(0.4); opacity: 0; }
-  60%  { transform: scale(1.12); opacity: 1; }
-  100% { transform: scale(1); }
-}
-.kit-pop {
-  animation: kit-pop 0.45s var(--kit-ease) both;
-}
-@keyframes kit-fade {
-  from { opacity: 0; transform: translate3d(0, 4px, 0); }
-  to   { opacity: 1; transform: none; }
-}
-.kit-fade {
-  animation: kit-fade 0.35s var(--kit-ease) both;
-}
-
-/* Anillo del aroma elegido */
-.kit-aroma[data-on] {
-  border-color: var(--foreground);
-  box-shadow: 0 0 0 1px var(--foreground), var(--kit-shadow-md);
-}
-
-/* ── Resumen fijo ── */
-.kit-tray {
-  /* Tailwind v4 usa la propiedad `translate` (no `transform`) */
-  transition:
-    translate 0.55s var(--kit-ease),
-    visibility 0.55s,
-    box-shadow 0.4s var(--kit-ease);
-}
-.kit-progress {
-  transition: transform 0.6s var(--kit-ease), background-color 0.4s var(--kit-ease);
-  transform-origin: left;
-}
-.kit-slot {
-  transition: border-color 0.3s var(--kit-ease), transform 0.4s var(--kit-ease);
-}
-.kit-tray[data-complete] .kit-slot {
-  transform: translate3d(0, -2px, 0);
-}
-.kit-toast {
-  transition:
-    opacity 0.35s var(--kit-ease),
-    translate 0.45s var(--kit-ease),
-    bottom 0.45s var(--kit-ease);
-}
-
-/* Preguntas frecuentes: respuesta con revelado suave */
-.kit-faq[open] .kit-faq-a {
-  animation: kit-fade 0.4s var(--kit-ease) both;
-}
-
-/* Filtros: scroll horizontal sin barra */
-.kit-noscroll {
-  scrollbar-width: none;
-}
-.kit-noscroll::-webkit-scrollbar {
-  display: none;
-}
-
-/* ── Movimiento reducido: todo visible, sin desplazamientos ── */
-@media (prefers-reduced-motion: reduce) {
-  .kit-rise,
-  .kit-hero-img,
-  .kit-line-grow,
-  .kit-tick,
-  .kit-pop,
-  .kit-fade,
-  .kit-faq[open] .kit-faq-a {
-    animation: none !important;
-  }
-  [data-kit-motion] .kr:not([data-in]),
-  [data-kit-motion] .km:not([data-in]) .km-img {
-    opacity: 1;
-    transform: none;
-    clip-path: none;
-  }
-  .kit-card:hover,
-  .kit-tier[aria-pressed="true"],
-  .kit-tier:hover,
-  .kit-card:hover .kit-zoom,
-  .kit-press:active {
-    transform: none !important;
-  }
-}
+@media (prefers-reduced-motion: reduce) { .mq-kits * { transition: none !important } }
