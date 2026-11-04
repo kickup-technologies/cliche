@@ -1,0 +1,545 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Landing B2B /empresas — capa editorial y de movimiento.
+   Todo va bajo .emp (raíz <main> de la página) para no tocar el resto del sitio.
+   Paleta de la marca (globals.css): café #2D1A14, terracota #A67163, crema #FAF8F5.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.emp {
+  --emp-ink: #2d1a14;
+  --emp-ink-2: #4a2f25;
+  --emp-mute: #7a6a63;
+  --emp-terra: #a67163;
+  --emp-terra-d: #8f5e51;
+  --emp-blush: #e8c9b8;
+  --emp-cream: #faf8f5;
+  --emp-sand: #f3eae1;
+  --emp-line: rgba(45, 26, 20, 0.12);
+  --emp-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --emp-shadow: 0 1px 2px rgba(45, 26, 20, 0.04), 0 10px 28px -14px rgba(45, 26, 20, 0.16),
+    0 36px 72px -40px rgba(45, 26, 20, 0.22);
+  --emp-serif: var(--font-emp-display), "Cormorant Garamond", Georgia, serif;
+  --emp-sans: var(--font-emp-sans), "Manrope", system-ui, sans-serif;
+  font-family: var(--emp-sans);
+}
+
+/* Pareja premium solo en la landing: Cormorant Garamond (display) + Manrope.
+   (.emp .font-serif gana a la utilidad global, que apunta a Playfair.) */
+.emp .font-serif,
+.emp-serif {
+  font-family: var(--emp-serif);
+}
+.emp-num {
+  font-family: var(--emp-sans);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* ── Tipografía ─────────────────────────────────────────────────────────────── */
+
+.emp-eyebrow {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  line-height: 1.4;
+}
+
+.emp-display {
+  font-family: var(--emp-serif);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+.emp-display em {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--emp-terra);
+}
+
+/* Etiqueta con filete fino delante */
+.emp-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--emp-terra-d);
+}
+.emp-kicker::before {
+  content: "";
+  width: 28px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.7;
+}
+
+/* Marco de imagen: radio y sombra consistentes */
+.emp-frame {
+  border-radius: 6px;
+  background: var(--emp-sand);
+  isolation: isolate;
+}
+
+/* ── Botones ────────────────────────────────────────────────────────────────── */
+
+.emp-btn {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  transition: transform 220ms var(--emp-ease), box-shadow 320ms var(--emp-ease), background-color 200ms ease,
+    color 200ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.emp-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(45, 26, 20, 0.06), 0 16px 32px -14px rgba(45, 26, 20, 0.38);
+}
+.emp-btn:active {
+  transform: translateY(0) scale(0.98);
+  transition-duration: 120ms;
+}
+.emp .emp-btn:focus-visible {
+  outline: 2px solid var(--emp-terra);
+  outline-offset: 3px;
+  border-radius: 9999px;
+}
+.emp-btn .emp-arrow {
+  transition: transform 260ms var(--emp-ease);
+}
+.emp-btn:hover .emp-arrow {
+  transform: translateX(4px);
+}
+
+/* Enlace de texto con subrayado que se dibuja */
+.emp-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 4px;
+  font-weight: 600;
+  color: var(--emp-ink);
+}
+.emp-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0.35);
+  transform-origin: left;
+  transition: transform 420ms var(--emp-ease);
+}
+.emp-link:hover::after,
+.emp-link:focus-visible::after {
+  transform: scaleX(1);
+}
+.emp-link .emp-arrow {
+  transition: transform 260ms var(--emp-ease);
+}
+.emp-link:hover .emp-arrow {
+  transform: translateX(4px);
+}
+
+/* Chips de aroma */
+.emp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--emp-line);
+  border-radius: 9999px;
+  padding: 3px 14px 3px 3px;
+  font-size: 13px;
+  color: var(--emp-ink);
+  background: rgba(255, 255, 255, 0.6);
+  transition: background-color 200ms ease, border-color 200ms ease, transform 200ms var(--emp-ease);
+}
+.emp-chip:hover {
+  background: var(--emp-sand);
+  border-color: rgba(45, 26, 20, 0.25);
+  transform: translateY(-1px);
+}
+.emp-chip:active {
+  transform: scale(0.97);
+}
+.emp .emp-chip:focus-visible {
+  border-radius: 9999px;
+}
+
+/* ── Héroe: entrada al cargar (solo CSS; la imagen nunca se oculta) ────────── */
+
+@keyframes emp-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* El titular solo se desplaza (sin opacidad) para no retrasar el LCP. */
+@keyframes emp-rise-solid {
+  from {
+    transform: translate3d(0, 22px, 0);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes emp-settle {
+  from {
+    transform: scale(1.06);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.emp-intro > * {
+  animation: emp-rise 600ms var(--emp-ease) both;
+  animation-delay: calc(var(--i, 0) * 90ms + 80ms);
+}
+.emp-intro > h1 {
+  animation-name: emp-rise-solid;
+}
+.emp-hero-img {
+  animation: emp-settle 1600ms var(--emp-ease) both;
+}
+
+/* ── Revelado al hacer scroll (solo con JS: .emp-js lo agrega MotionRoot) ───── */
+
+.emp-js [data-reveal] {
+  opacity: 0;
+  transform: translate3d(0, var(--rv-y, 20px), 0);
+  transition: opacity 600ms var(--emp-ease), transform 600ms var(--emp-ease);
+  transition-delay: calc(var(--i, 0) * 90ms);
+}
+.emp-js [data-reveal].is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* Máscara: la imagen se descubre de abajo hacia arriba y se asienta */
+.emp-js [data-reveal="mask"] {
+  opacity: 1;
+  transform: none;
+  clip-path: inset(100% 0 0 0 round 6px);
+  transition: clip-path 600ms var(--emp-ease);
+  transition-delay: calc(var(--i, 0) * 90ms);
+}
+.emp-js [data-reveal="mask"].is-in {
+  clip-path: inset(0 0 0 0 round 6px);
+}
+.emp-js [data-reveal="mask"] img {
+  transform: scale(1.1);
+  transition: transform 600ms var(--emp-ease);
+}
+.emp-js [data-reveal="mask"].is-in img {
+  transform: none;
+}
+
+/* Filete que se dibuja de izquierda a derecha */
+.emp-js [data-reveal="line"] {
+  opacity: 1;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 600ms var(--emp-ease);
+  transition-delay: calc(var(--i, 0) * 120ms);
+}
+.emp-js [data-reveal="line"].is-in {
+  transform: scaleX(1);
+}
+
+[data-parallax] {
+  will-change: transform;
+}
+
+/* ── Marquesinas ────────────────────────────────────────────────────────────── */
+
+@keyframes emp-marquee {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-100%, 0, 0);
+  }
+}
+.emp-marquee {
+  display: flex;
+  width: 100%;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 7%, #000 93%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 7%, #000 93%, transparent);
+}
+.emp-marquee-track {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  width: max-content;
+  animation: emp-marquee var(--emp-dur, 40s) linear infinite;
+}
+.emp-marquee:hover .emp-marquee-track {
+  animation-play-state: paused;
+}
+
+.emp-logo {
+  height: 34px;
+  width: auto;
+  max-width: 150px;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+  filter: grayscale(1);
+  opacity: 0.62;
+  transition: opacity 300ms ease, filter 300ms ease;
+}
+.emp-logo:hover {
+  opacity: 1;
+  filter: none;
+}
+@media (min-width: 768px) {
+  .emp-logo {
+    height: 46px;
+    max-width: 200px;
+  }
+}
+
+/* ── Índice "Para quién" ─────────────────────────────────────────────────────── */
+
+.emp-seg-title {
+  transition: transform 420ms var(--emp-ease), color 300ms ease;
+}
+@media (min-width: 768px) {
+  .emp-seg[data-active] .emp-seg-title {
+    transform: translateX(8px);
+    color: var(--emp-terra-d);
+  }
+}
+
+/* ── Formulario ─────────────────────────────────────────────────────────────── */
+
+.emp-field {
+  width: 100%;
+  min-height: 50px;
+  border: 1px solid rgba(45, 26, 20, 0.14);
+  border-radius: 12px;
+  background: #fff;
+  padding: 12px 14px;
+  font-size: 16px;
+  color: var(--emp-ink);
+  outline: none;
+  transition: border-color 200ms ease, box-shadow 240ms var(--emp-ease), background-color 200ms ease;
+}
+.emp-field::placeholder {
+  color: rgba(45, 26, 20, 0.35);
+}
+.emp-field:hover {
+  border-color: rgba(45, 26, 20, 0.28);
+}
+.emp .emp-field:focus,
+.emp .emp-field:focus-visible {
+  border-color: var(--emp-terra);
+  box-shadow: 0 0 0 4px rgba(166, 113, 99, 0.16);
+  outline: none;
+}
+.emp-field[aria-invalid="true"] {
+  border-color: var(--emp-terra-d);
+  background: #fffaf8;
+}
+select.emp-field {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 40px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1.5 6 6.5l5-5' stroke='%232D1A14' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  cursor: pointer;
+}
+textarea.emp-field {
+  min-height: 104px;
+  resize: vertical;
+}
+
+.emp-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(45, 26, 20, 0.7);
+}
+
+@keyframes emp-err-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -4px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.emp-err {
+  animation: emp-err-in 240ms var(--emp-ease) both;
+}
+
+/* Opciones "¿Qué necesitas?" */
+.emp-opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(45, 26, 20, 0.14);
+  border-radius: 9999px;
+  background: var(--emp-cream);
+  padding: 9px 16px;
+  font-size: 14px;
+  color: var(--emp-ink);
+  transition: background-color 220ms ease, color 220ms ease, border-color 220ms ease, transform 160ms var(--emp-ease);
+}
+.emp-opt:hover {
+  border-color: rgba(45, 26, 20, 0.35);
+}
+.emp-opt-in:active + .emp-opt {
+  transform: scale(0.97);
+}
+.emp-opt-in:checked + .emp-opt {
+  background: var(--emp-ink);
+  border-color: var(--emp-ink);
+  color: var(--emp-cream);
+}
+.emp-opt-in:focus-visible + .emp-opt {
+  outline: 2px solid var(--emp-terra);
+  outline-offset: 3px;
+}
+.emp-opt-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: currentColor;
+  opacity: 0;
+  transform: scale(0);
+  transition: opacity 200ms ease, transform 260ms var(--emp-ease);
+}
+.emp-opt-in:checked + .emp-opt .emp-opt-dot {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Estado de éxito */
+@keyframes emp-success-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes emp-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.emp-success > * {
+  animation: emp-success-in 560ms var(--emp-ease) both;
+  animation-delay: calc(var(--i, 0) * 80ms);
+}
+.emp-check-circle {
+  stroke-dasharray: 152;
+  stroke-dashoffset: 152;
+  animation: emp-draw 600ms var(--emp-ease) 120ms forwards;
+}
+.emp-check-mark {
+  stroke-dasharray: 36;
+  stroke-dashoffset: 36;
+  animation: emp-draw 360ms var(--emp-ease) 560ms forwards;
+}
+
+/* ── Preguntas frecuentes ───────────────────────────────────────────────────── */
+
+.emp-faq summary {
+  transition: color 200ms ease;
+}
+.emp-faq summary:hover {
+  color: var(--emp-terra-d);
+}
+.emp-faq-icon {
+  position: relative;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--emp-line);
+  border-radius: 9999px;
+  transition: transform 360ms var(--emp-ease), background-color 240ms ease, border-color 240ms ease;
+}
+.emp-faq-icon::before,
+.emp-faq-icon::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 11px;
+  height: 1.5px;
+  margin: -0.75px 0 0 -5.5px;
+  background: var(--emp-ink);
+  transition: background-color 240ms ease;
+}
+.emp-faq-icon::after {
+  transform: rotate(90deg);
+}
+.emp-faq details[open] .emp-faq-icon {
+  transform: rotate(135deg);
+  background: var(--emp-ink);
+  border-color: var(--emp-ink);
+}
+.emp-faq details[open] .emp-faq-icon::before,
+.emp-faq details[open] .emp-faq-icon::after {
+  background: var(--emp-cream);
+}
+.emp-faq details[open] .emp-faq-a {
+  animation: emp-rise 420ms var(--emp-ease) both;
+}
+
+/* ── Movimiento reducido: todo quieto y visible ─────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .emp-intro > *,
+  .emp-hero-img,
+  .emp-marquee-track,
+  .emp-success > *,
+  .emp-err,
+  .emp-faq details[open] .emp-faq-a {
+    animation: none !important;
+  }
+  .emp-check-circle,
+  .emp-check-mark {
+    animation: none !important;
+    stroke-dashoffset: 0;
+  }
+  .emp [data-reveal],
+  .emp [data-reveal] img {
+    opacity: 1 !important;
+    transform: none !important;
+    clip-path: none !important;
+  }
+  .emp [data-parallax] {
+    transform: none !important;
+  }
+  .emp-btn:hover,
+  .emp-chip:hover,
+  .emp-seg[data-active] .emp-seg-title {
+    transform: none !important;
+  }
+}
+
+/* ── Secciones oscuras ──────────────────────────────────────────────────────── */
+
+.emp-on-dark .emp-kicker {
+  color: var(--emp-blush);
+}
+.emp-on-dark .emp-display em {
+  color: var(--emp-blush);
+}
+.emp-on-dark .emp-btn:hover {
+  box-shadow: 0 18px 36px -16px rgba(0, 0, 0, 0.55);
+}

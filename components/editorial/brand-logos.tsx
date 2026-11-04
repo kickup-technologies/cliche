@@ -6,7 +6,7 @@
  * logos se funden con la sección vía mix-blend). Logos oficiales de
  * clichecolombia.com. Respeta prefers-reduced-motion (queda estático centrado).
  */
-const BRANDS = [
+export const BRANDS = [
   { src: "/images/brands/agua-bendita.webp", alt: "Agua Bendita" },
   { src: "/images/brands/seven-seven.webp", alt: "Seven Seven" },
   { src: "/images/brands/entreaguas.webp", alt: "Entreaguas" },
