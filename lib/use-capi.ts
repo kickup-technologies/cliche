@@ -75,6 +75,7 @@ export interface CAPIEventPayload {
     | 'AddPaymentInfo'
     | 'Purchase'
     | 'Lead'
+    | 'Contact'
     | 'Subscribe'
     | 'CompleteRegistration'
     | 'Search'
