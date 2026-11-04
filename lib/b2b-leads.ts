@@ -11,10 +11,12 @@
 // Lo que la maqueta de la agencia traía y NO está publicado ni comprobado en el
 // sitio/BD queda apagado aquí. Para activarlo basta cambiar el flag.
 
-/** Programa de distribuidores: la maqueta lo ofrecía (opción del formulario,
- *  nota y pregunta frecuente), pero el sitio no publica condiciones para
- *  distribuidores. Activar solo cuando la clienta lo confirme. */
-export const OFRECER_DISTRIBUIDORES = false
+/** Programa de distribuidores: opción del formulario, nota y pregunta
+ *  frecuente de la maqueta de Cliché. Activo porque /empresas copia la maqueta
+ *  tal cual y su formulario no pierde campos. No publica condiciones: la
+ *  respuesta es "te contamos las condiciones" (las da el equipo comercial).
+ *  Apagarlo quita la opción en el formulario, el servidor y la landing. */
+export const OFRECER_DISTRIBUIDORES = true
 
 // ── Opciones del formulario ──────────────────────────────────────────────────
 

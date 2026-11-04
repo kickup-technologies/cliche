@@ -1,10 +1,9 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
-import { ArrowRight, Loader2, MessageCircle } from "lucide-react"
 import { useCAPI, generateEventId, getFbSignals } from "@/lib/use-capi"
 import { useSiteSettings } from "@/lib/use-site-settings"
-import { cn } from "@/lib/utils"
+import { DEFAULT_WHATSAPP, waDisplay, waHref } from "@/components/landing-maqueta/parts"
 import {
   BUSINESS_TYPES,
   LIMITS,
@@ -21,15 +20,15 @@ import {
 } from "@/lib/b2b-leads"
 
 /**
- * Piezas interactivas de la landing B2B /empresas: captura del origen al
+ * Piezas interactivas de la landing B2B /empresas (marcado y clases de la
+ * maqueta de Cliché; estilos en ./empresas.css): captura del origen al
  * aterrizar, ViewContent, enlaces de WhatsApp (evento Contact), botones que
  * llevan al formulario preseleccionando la necesidad, el formulario de
- * cotización (Lead navegador + servidor con el mismo event_id) y la barra
- * fija móvil.
+ * cotización (Lead navegador + servidor con el mismo event_id, SOLO cuando el
+ * servidor guardó el contacto) y la barra fija.
  */
 
 const CONTENT_NAME = "Cliché para empresas"
-const DEFAULT_WA = "573122838844"
 export const WA_COTIZAR_TEXT = "Hola, quiero cotizar un aroma para mi negocio"
 const NEED_EVENT = "cliche:b2b-need"
 
@@ -72,19 +71,15 @@ function captureOrigin(): LeadOrigin {
 function useWaNumber(): string {
   const settings = useSiteSettings()
   const n = settings.whatsapp_number ? String(settings.whatsapp_number).replace(/\D/g, "") : ""
-  return n || DEFAULT_WA
-}
-
-function waHref(num: string, text: string) {
-  return `https://wa.me/${num}?text=${encodeURIComponent(text)}`
+  return n || DEFAULT_WHATSAPP
 }
 
 /** Desplaza al formulario (respeta el scroll suave de Lenis si está activo). */
 function scrollToForm() {
   const el = document.getElementById("cotizar")
   if (!el) return
-  const lenis = (window as unknown as { __lenis?: { scrollTo: (t: HTMLElement, o?: { offset?: number }) => void } }).__lenis
-  if (lenis) lenis.scrollTo(el, { offset: -96 })
+  const lenis = (window as unknown as { __lenis?: { scrollTo: (t: HTMLElement) => void } }).__lenis
+  if (lenis) lenis.scrollTo(el)
   else el.scrollIntoView({ behavior: "smooth", block: "start" })
 }
 
@@ -104,16 +99,19 @@ export function EmpresasTracker() {
 
 // ── Enlaces ──────────────────────────────────────────────────────────────────
 
+/** Enlace de WhatsApp con el mensaje de cotización armado; dispara Contact. */
 export function WaLink({
   className,
   children,
   text = WA_COTIZAR_TEXT,
   tabIndex,
+  style,
 }: {
   className?: string
   children: ReactNode
   text?: string
   tabIndex?: number
+  style?: React.CSSProperties
 }) {
   const num = useWaNumber()
   const { track } = useCAPI()
@@ -124,11 +122,17 @@ export function WaLink({
       rel="noopener noreferrer"
       tabIndex={tabIndex}
       className={className}
+      style={style}
       onClick={() => track({ event_name: "Contact", custom_data: { content_name: CONTENT_NAME } })}
     >
       {children}
     </a>
   )
+}
+
+/** Texto del número de WhatsApp vigente ("312 283 8844"), del panel admin. */
+export function WaNumberText() {
+  return <>{waDisplay(useWaNumber())}</>
 }
 
 /** Enlace a #cotizar que, si trae `need`, preselecciona esa opción. */
@@ -160,12 +164,12 @@ export function CotizarLink({
   )
 }
 
-// ── Barra fija móvil ─────────────────────────────────────────────────────────
+// ── Barra fija ───────────────────────────────────────────────────────────────
 
 /** Aparece al pasar los botones del héroe y se esconde sobre el formulario
- *  (allí ya están los dos caminos de contacto). Solo en móvil: en escritorio
- *  queda el botón flotante de WhatsApp del sitio. */
-export function MobileBar() {
+ *  (allí ya están los dos caminos de contacto). Como en la maqueta, en todos
+ *  los tamaños de pantalla. */
+export function StickyBar() {
   const [on, setOn] = useState(false)
   useEffect(() => {
     let tick = false
@@ -186,32 +190,19 @@ export function MobileBar() {
       }
     }
     window.addEventListener("scroll", onScroll, { passive: true })
+    window.addEventListener("resize", onScroll)
     check()
-    return () => window.removeEventListener("scroll", onScroll)
+    return () => {
+      window.removeEventListener("scroll", onScroll)
+      window.removeEventListener("resize", onScroll)
+    }
   }, [])
 
   return (
-    <div
-      aria-hidden={!on}
-      className={cn(
-        "fixed inset-x-0 bottom-0 z-40 border-t border-[#2D1A14]/10 bg-[#FAF8F5]/92 px-4 pt-2.5 shadow-[0_-10px_30px_-12px_rgba(45,26,20,0.18)] backdrop-blur-md transition-transform duration-500 ease-[cubic-bezier(.22,1,.36,1)] motion-reduce:transition-none md:hidden",
-        "pb-[calc(10px+env(safe-area-inset-bottom,0px))]",
-        on ? "translate-y-0" : "translate-y-[110%]",
-      )}
-    >
-      <div className="mx-auto flex max-w-6xl gap-2.5">
-        <WaLink
-          tabIndex={on ? 0 : -1}
-          className="flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-full bg-[#1F7A4D] px-3 text-[15px] font-semibold text-white transition-transform duration-150 active:scale-[0.97]"
-        >
-          <MessageCircle className="h-4 w-4" /> WhatsApp
-        </WaLink>
-        <CotizarLink
-          tabIndex={on ? 0 : -1}
-          className="flex min-h-[48px] flex-1 items-center justify-center rounded-full bg-[#2D1A14] px-3 text-[15px] font-semibold text-[#FAF8F5] transition-transform duration-150 active:scale-[0.97]"
-        >
-          Pedir cotización
-        </CotizarLink>
+    <div className={`bar${on ? " on" : ""}`} aria-hidden={!on}>
+      <div className="bar-in">
+        <WaLink className="btn btn-wa" tabIndex={on ? 0 : -1}>WhatsApp</WaLink>
+        <CotizarLink className="btn btn-primary" tabIndex={on ? 0 : -1}>Pedir cotización</CotizarLink>
       </div>
     </div>
   )
@@ -221,6 +212,7 @@ export function MobileBar() {
 
 type FieldKey = "nombre" | "empresa" | "tipo_negocio" | "ciudad" | "telefono" | "email" | "consentimiento"
 
+/** Campos que acepta /api/empresas/lead (mismos nombres). */
 interface FormState {
   necesidad: string
   nombre: string
@@ -251,6 +243,7 @@ const INITIAL: FormState = {
   website: "",
 }
 
+// Mismas reglas y mensajes que la maqueta y que el servidor (que revalida todo).
 function validate(f: FormState): Partial<Record<FieldKey, string>> {
   const e: Partial<Record<FieldKey, string>> = {}
   if (f.nombre.trim().length < 2) e.nombre = "Escribe tu nombre."
@@ -264,11 +257,6 @@ function validate(f: FormState): Partial<Record<FieldKey, string>> {
 }
 
 const FIELD_ORDER: FieldKey[] = ["nombre", "empresa", "tipo_negocio", "ciudad", "telefono", "email", "consentimiento"]
-
-// Estilos en app/empresas/empresas.css (.emp-field, .emp-label, .emp-opt…).
-const inputCls = "emp-field"
-const labelCls = "emp-label"
-const errCls = "emp-err text-[12.5px] text-[#8F5E51]"
 
 export function LeadForm() {
   const { track } = useCAPI()
@@ -372,174 +360,138 @@ export function LeadForm() {
 
   if (done) {
     return (
-      <div className="emp-success flex flex-col items-start gap-4 py-2">
-        <svg viewBox="0 0 52 52" className="h-14 w-14 text-[#A67163]" aria-hidden style={{ ["--i" as string]: 0 }}>
-          <circle className="emp-check-circle" cx="26" cy="26" r="24" fill="none" stroke="currentColor" strokeWidth="1.5" />
-          <path className="emp-check-mark" d="M15.5 26.5l7 7 14-15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        <h3
-          ref={doneRef}
-          tabIndex={-1}
-          style={{ ["--i" as string]: 1 }}
-          className="font-serif text-[clamp(32px,3.4vw,42px)] font-medium leading-[1] tracking-[-0.01em] text-[#2D1A14] outline-none"
-        >
-          Recibimos tu solicitud
-        </h3>
-        <p style={{ ["--i" as string]: 2 }} className="text-[15.5px] leading-relaxed text-[#2D1A14]/75">
+      <div className="done">
+        <div className="ok" aria-hidden>✓</div>
+        <h3 ref={doneRef} tabIndex={-1}>Recibimos tu solicitud</h3>
+        <p className="sub">
           Te escribimos por WhatsApp en horario hábil con una propuesta. Si quieres adelantar la conversación, envíanos
           este resumen:
         </p>
-        <div style={{ ["--i" as string]: 3 }} className="w-full whitespace-pre-line rounded-2xl border border-[#2D1A14]/10 bg-[#FAF8F5] p-4 text-sm leading-relaxed text-[#2D1A14]">
-          {done}
-        </div>
+        <div className="summary">{done}</div>
         <a
+          className="btn btn-wa"
           href={waHref(waNum, done)}
           target="_blank"
           rel="noopener noreferrer"
           onClick={() => track({ event_name: "Contact", custom_data: { content_name: CONTENT_NAME } })}
-          style={{ ["--i" as string]: 4 }}
-          className="emp-btn inline-flex min-h-[54px] items-center justify-center gap-2 rounded-full bg-[#1F7A4D] px-6 font-semibold text-white hover:bg-[#17633E]"
         >
-          <MessageCircle className="h-4 w-4" /> Enviar el resumen por WhatsApp
+          Enviar el resumen por WhatsApp
         </a>
       </div>
     )
   }
 
   const err = (k: FieldKey) =>
-    errors[k] ? (
-      <span id={`l-${k}-err`} className={errCls}>
-        {errors[k]}
-      </span>
-    ) : null
+    errors[k] ? <span id={`l-${k}-err`} className="err">{errors[k]}</span> : null
   const aria = (k: FieldKey) => ({
     "aria-invalid": errors[k] ? true : undefined,
     "aria-describedby": errors[k] ? `l-${k}-err` : undefined,
   })
 
   return (
-    <form onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
-      <fieldset className="flex flex-col gap-2">
-        <legend className={cn(labelCls, "mb-3")}>¿Qué necesitas?</legend>
-        <div className="flex flex-wrap gap-2">
-          {NEED_OPTIONS.map((n) => (
-            <label key={n.key} className="relative cursor-pointer">
-              <input
-                type="radio"
-                name="necesidad"
-                value={n.value}
-                checked={f.necesidad === n.value}
-                onChange={() => set("necesidad", n.value)}
-                className="emp-opt-in absolute h-px w-px opacity-0"
-              />
-              <span className="emp-opt">
-                <span aria-hidden className="emp-opt-dot" />
-                {n.label}
-              </span>
-            </label>
-          ))}
+    <form onSubmit={onSubmit} noValidate>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <fieldset>
+          <legend>¿Qué necesitas?</legend>
+          <div className="opts">
+            {NEED_OPTIONS.map((n) => (
+              <label key={n.key} className="opt">
+                <input
+                  type="radio"
+                  name="necesidad"
+                  value={n.value}
+                  checked={f.necesidad === n.value}
+                  onChange={() => set("necesidad", n.value)}
+                />
+                <span>{n.label}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <div className="grid2">
+          <div className="field">
+            <label className="lbl" htmlFor="l-nombre">Tu nombre</label>
+            <input id="l-nombre" autoComplete="name" maxLength={LIMITS.nombre} value={f.nombre}
+              onChange={(e) => set("nombre", e.target.value)} {...aria("nombre")} />
+            {err("nombre")}
+          </div>
+          <div className="field">
+            <label className="lbl" htmlFor="l-empresa">Empresa o marca</label>
+            <input id="l-empresa" autoComplete="organization" maxLength={LIMITS.empresa} value={f.empresa}
+              onChange={(e) => set("empresa", e.target.value)} {...aria("empresa")} />
+            {err("empresa")}
+          </div>
+          <div className="field">
+            <label className="lbl" htmlFor="l-tipo_negocio">Tipo de negocio</label>
+            <select id="l-tipo_negocio" value={f.tipo_negocio} onChange={(e) => set("tipo_negocio", e.target.value)}
+              {...aria("tipo_negocio")}>
+              <option value="">Elige</option>
+              {BUSINESS_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+            {err("tipo_negocio")}
+          </div>
+          <div className="field">
+            <label className="lbl" htmlFor="l-ciudad">Ciudad</label>
+            <input id="l-ciudad" autoComplete="address-level2" maxLength={LIMITS.ciudad} value={f.ciudad}
+              onChange={(e) => set("ciudad", e.target.value)} {...aria("ciudad")} />
+            {err("ciudad")}
+          </div>
+          <div className="field">
+            <label className="lbl" htmlFor="l-cantidad">Cantidad aproximada</label>
+            <select id="l-cantidad" value={f.cantidad} onChange={(e) => set("cantidad", e.target.value)}>
+              {QUANTITY_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+          <div className="field">
+            <label className="lbl" htmlFor="l-para_cuando">¿Para cuándo?</label>
+            <select id="l-para_cuando" value={f.para_cuando} onChange={(e) => set("para_cuando", e.target.value)}>
+              {WHEN_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+          <div className="field">
+            <label className="lbl" htmlFor="l-telefono">Celular con WhatsApp</label>
+            <input id="l-telefono" type="tel" inputMode="numeric" autoComplete="tel-national" placeholder="300 123 4567"
+              maxLength={20} value={f.telefono} onChange={(e) => set("telefono", e.target.value)} {...aria("telefono")} />
+            {err("telefono")}
+          </div>
+          <div className="field">
+            <label className="lbl" htmlFor="l-email">Correo (opcional)</label>
+            <input id="l-email" type="email" autoComplete="email" maxLength={LIMITS.email} value={f.email}
+              onChange={(e) => set("email", e.target.value)} {...aria("email")} />
+            {err("email")}
+          </div>
+          <div className="field full">
+            <label className="lbl" htmlFor="l-mensaje">Cuéntanos más (opcional)</label>
+            <textarea id="l-mensaje" rows={3} maxLength={LIMITS.mensaje} value={f.mensaje}
+              onChange={(e) => set("mensaje", e.target.value)}
+              placeholder="Espacios, número de tiendas, fechas, lo que imaginas para tu marca…" />
+          </div>
         </div>
-      </fieldset>
 
-      <div className="grid grid-cols-1 gap-x-4 gap-y-5 sm:grid-cols-2">
-        <div className="flex min-w-0 flex-col gap-2">
-          <label htmlFor="l-nombre" className={labelCls}>Tu nombre</label>
-          <input id="l-nombre" autoComplete="name" maxLength={LIMITS.nombre} value={f.nombre}
-            onChange={(e) => set("nombre", e.target.value)} className={inputCls} {...aria("nombre")} />
-          {err("nombre")}
+        {/* Honeypot anti-spam: invisible para personas y lectores de pantalla. */}
+        <div aria-hidden className="hp">
+          <label htmlFor="l-website">No llenes este campo</label>
+          <input id="l-website" tabIndex={-1} autoComplete="off" value={f.website} onChange={(e) => set("website", e.target.value)} />
         </div>
-        <div className="flex min-w-0 flex-col gap-2">
-          <label htmlFor="l-empresa" className={labelCls}>Empresa o marca</label>
-          <input id="l-empresa" autoComplete="organization" maxLength={LIMITS.empresa} value={f.empresa}
-            onChange={(e) => set("empresa", e.target.value)} className={inputCls} {...aria("empresa")} />
-          {err("empresa")}
-        </div>
-        <div className="flex min-w-0 flex-col gap-2">
-          <label htmlFor="l-tipo_negocio" className={labelCls}>Tipo de negocio</label>
-          <select id="l-tipo_negocio" value={f.tipo_negocio} onChange={(e) => set("tipo_negocio", e.target.value)}
-            className={inputCls} {...aria("tipo_negocio")}>
-            <option value="">Elige</option>
-            {BUSINESS_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
-          {err("tipo_negocio")}
-        </div>
-        <div className="flex min-w-0 flex-col gap-2">
-          <label htmlFor="l-ciudad" className={labelCls}>Ciudad</label>
-          <input id="l-ciudad" autoComplete="address-level2" maxLength={LIMITS.ciudad} value={f.ciudad}
-            onChange={(e) => set("ciudad", e.target.value)} className={inputCls} {...aria("ciudad")} />
-          {err("ciudad")}
-        </div>
-        <div className="flex min-w-0 flex-col gap-2">
-          <label htmlFor="l-cantidad" className={labelCls}>Cantidad aproximada</label>
-          <select id="l-cantidad" value={f.cantidad} onChange={(e) => set("cantidad", e.target.value)} className={inputCls}>
-            {QUANTITY_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
-        </div>
-        <div className="flex min-w-0 flex-col gap-2">
-          <label htmlFor="l-para_cuando" className={labelCls}>¿Para cuándo?</label>
-          <select id="l-para_cuando" value={f.para_cuando} onChange={(e) => set("para_cuando", e.target.value)} className={inputCls}>
-            {WHEN_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
-        </div>
-        <div className="flex min-w-0 flex-col gap-2">
-          <label htmlFor="l-telefono" className={labelCls}>Celular con WhatsApp</label>
-          <input id="l-telefono" type="tel" inputMode="numeric" autoComplete="tel-national" placeholder="300 123 4567"
-            maxLength={20} value={f.telefono} onChange={(e) => set("telefono", e.target.value)} className={inputCls}
-            {...aria("telefono")} />
-          {err("telefono")}
-        </div>
-        <div className="flex min-w-0 flex-col gap-2">
-          <label htmlFor="l-email" className={labelCls}>Correo (opcional)</label>
-          <input id="l-email" type="email" autoComplete="email" maxLength={LIMITS.email} value={f.email}
-            onChange={(e) => set("email", e.target.value)} className={inputCls} {...aria("email")} />
-          {err("email")}
-        </div>
-        <div className="flex min-w-0 flex-col gap-2 sm:col-span-2">
-          <label htmlFor="l-mensaje" className={labelCls}>Cuéntanos más (opcional)</label>
-          <textarea id="l-mensaje" rows={3} maxLength={LIMITS.mensaje} value={f.mensaje}
-            onChange={(e) => set("mensaje", e.target.value)}
-            placeholder="Espacios, número de tiendas, fechas, lo que imaginas para tu marca…" className={inputCls} />
-        </div>
-      </div>
 
-      {/* Honeypot anti-spam: invisible para personas y lectores de pantalla. */}
-      <div aria-hidden className="absolute -left-[9999px] h-px w-px overflow-hidden">
-        <label htmlFor="l-website">No llenes este campo</label>
-        <input id="l-website" tabIndex={-1} autoComplete="off" value={f.website} onChange={(e) => set("website", e.target.value)} />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label className="flex cursor-pointer items-start gap-3 text-[13.5px] leading-snug text-[#2D1A14]/75">
+        {/* "a tratar mis datos" no estaba en la maqueta: la autorización de
+            tratamiento la exige la Ley 1581 y es lo que guarda `consentimiento`. */}
+        <label className="consent">
           <input id="l-consentimiento" type="checkbox" checked={f.consentimiento}
-            onChange={(e) => set("consentimiento", e.target.checked)}
-            className="mt-0.5 h-5 w-5 flex-none cursor-pointer accent-[#2D1A14]" {...aria("consentimiento")} />
+            onChange={(e) => set("consentimiento", e.target.checked)} {...aria("consentimiento")} />
           <span>
-            Autorizo a Cliché S.A.S. a tratar mis datos y a contactarme por WhatsApp o correo sobre esta cotización,
-            según la{" "}
-            <a href="/privacidad" target="_blank" rel="noopener" className="underline underline-offset-2">
-              política de tratamiento de datos
-            </a>{" "}
-            (Ley 1581 de 2012).
+            Autorizo a Cliché S.A.S. a tratar mis datos y contactarme por WhatsApp o correo sobre esta cotización,
+            según la <a href="/privacidad" target="_blank" rel="noopener">política de privacidad</a>.
           </span>
         </label>
         {err("consentimiento")}
+
+        {serverError && <p role="alert" className="err-box">{serverError}</p>}
+
+        <button className="btn btn-primary" type="submit" disabled={sending}>
+          {sending ? "Enviando…" : "Enviar solicitud"}
+        </button>
       </div>
-
-      {serverError && (
-        <p role="alert" className="emp-err rounded-2xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          {serverError}
-        </p>
-      )}
-
-      <button
-        type="submit"
-        disabled={sending}
-        className="emp-btn group inline-flex min-h-[58px] items-center justify-center gap-2.5 rounded-full bg-[#2D1A14] px-6 text-[16px] font-semibold tracking-[0.01em] text-[#FAF8F5] hover:bg-[#4A2F25] disabled:pointer-events-none disabled:opacity-70"
-      >
-        {sending && <Loader2 className="h-4 w-4 animate-spin" />}
-        {sending ? "Enviando…" : "Enviar solicitud"}
-        {!sending && <ArrowRight className="emp-arrow h-4 w-4" aria-hidden />}
-      </button>
     </form>
   )
 }
