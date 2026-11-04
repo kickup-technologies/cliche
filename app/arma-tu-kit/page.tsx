@@ -1,6 +1,7 @@
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { KitLanding } from "@/components/kit-landing/kit-landing"
+import { kitFontClass } from "@/components/kit-landing/kit-fonts"
 import { supabase, isSupabaseConfigured, type Product } from "@/lib/supabase"
 import { CATALOG_AS_PRODUCTS } from "@/lib/catalog-data"
 import { parseFreeShippingThreshold } from "@/lib/pricing"
@@ -104,14 +105,17 @@ export default async function ArmaTuKitPage() {
   return (
     <>
       <Header />
-      <KitLanding
-        aromas={aromas}
-        reviews={reviews}
-        freeShippingThreshold={settings.freeShippingThreshold}
-        whatsappNumber={settings.whatsappNumber}
-        christmasAromaId={christmas?.id ?? null}
-        christmasAromaName={christmas ? shortAromaName(christmas.fullName) : null}
-      />
+      {/* Tipografías de la landing (Cormorant Garamond + Manrope) solo aquí */}
+      <div className={kitFontClass}>
+        <KitLanding
+          aromas={aromas}
+          reviews={reviews}
+          freeShippingThreshold={settings.freeShippingThreshold}
+          whatsappNumber={settings.whatsappNumber}
+          christmasAromaId={christmas?.id ?? null}
+          christmasAromaName={christmas ? shortAromaName(christmas.fullName) : null}
+        />
+      </div>
       <Footer />
     </>
   )
