@@ -72,6 +72,13 @@ export const SEO_PAGES = [
       "Crea tu kit de aromas a tu medida: elige tus esencias favoritas para el hogar y la ropa y ahorra con precios por combo. Aromas artesanales colombianos con envío a todo el país.",
   },
   {
+    path: "/empresas",
+    label: "Empresas (B2B)",
+    title: "Marketing olfativo para empresas y marcas",
+    description:
+      "Un aroma propio para tu tienda, hotel, spa u oficina, y para tus prendas y pedidos. Aroma exclusivo a la medida, kits y regalos corporativos. Cotiza con Cliché.",
+  },
+  {
     path: "/blog",
     label: "Blog",
     title: "Blog de Aromas y Bienestar",

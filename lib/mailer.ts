@@ -726,3 +726,107 @@ export async function sendStockAlertEmail(alert: {
     console.error("[mailer] Stock alert failed:", err)
   }
 }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 9. Nuevo contacto B2B (/empresas) → equipo comercial — motivo: ficha del
+//    contacto con su ORIGEN, para responderle por WhatsApp cuanto antes.
+//    Va al mismo destino que las demás alertas internas (ADMIN_EMAIL, o
+//    SMTP_USER si falta). Todo lo que escribió la persona se escapa.
+// ═════════════════════════════════════════════════════════════════════════════
+const escHtml = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;")
+
+export async function sendB2BLeadAlert(lead: {
+  created_at: string
+  necesidad: string
+  nombre: string
+  empresa: string
+  tipo_negocio: string
+  ciudad: string
+  cantidad: string | null
+  para_cuando: string | null
+  telefono: string
+  email: string | null
+  mensaje: string | null
+  origen: string
+  utm_source: string | null
+  utm_medium: string | null
+  utm_campaign: string | null
+  utm_content: string | null
+  utm_term: string | null
+  gclid: string | null
+  fbclid: string | null
+  landing_page: string | null
+}): Promise<void> {
+  const transport = createTransport()
+  const adminEmail = process.env.ADMIN_EMAIL || process.env.SMTP_USER
+  if (!transport || !adminEmail) {
+    console.warn("[mailer] B2B lead alert skipped — SMTP or ADMIN_EMAIL not configured")
+    return
+  }
+
+  const ORIGEN: Record<string, string> = {
+    google: "Google Ads",
+    meta: "Meta (Facebook/Instagram)",
+    otra_campana: "Otra campaña (UTM)",
+    referido: "Otro sitio / buscador",
+    directo: "Directo",
+  }
+  const row = (label: string, value: string) => `
+    <tr>
+      <td style="padding:9px 0;border-bottom:1px solid ${C.line};font-family:Arial,sans-serif;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:${C.faint};white-space:nowrap;padding-right:18px;vertical-align:top;">${label}</td>
+      <td align="right" style="padding:9px 0;border-bottom:1px solid ${C.line};font-family:Georgia,serif;font-size:14px;color:${C.ink};">${value}</td>
+    </tr>`
+  const opt = (label: string, v: string | null) => (v ? row(label, escHtml(v)) : "")
+
+  const utm = [lead.utm_source, lead.utm_medium, lead.utm_campaign].filter(Boolean).join(" / ")
+  const fecha = new Date(lead.created_at).toLocaleString("es-CO", { timeZone: "America/Bogota", dateStyle: "medium", timeStyle: "short" })
+  const waText = encodeURIComponent(`Hola ${lead.nombre}, te escribimos de Cliché por tu solicitud de cotización para ${lead.empresa}.`)
+  const waUrl = `https://wa.me/57${lead.telefono}?text=${waText}`
+
+  const content = `
+    <div style="text-align:center;">
+      ${kicker("Nueva solicitud de cotizaci&oacute;n")}
+      <p style="margin:0 0 4px;font-family:Georgia,serif;font-size:26px;color:${C.ink};">${escHtml(lead.empresa)}</p>
+      <p style="margin:0 0 6px;font-family:Arial,sans-serif;font-size:13px;color:${C.faint};">${escHtml(lead.necesidad)}</p>
+    </div>
+    ${hr}
+    <table width="100%" cellpadding="0" cellspacing="0">
+      ${row("Nombre", escHtml(lead.nombre))}
+      ${row("Celular", `<a href="${waUrl}" style="color:${C.accent};">${escHtml(lead.telefono)}</a>`)}
+      ${opt("Correo", lead.email)}
+      ${row("Negocio", escHtml(lead.tipo_negocio))}
+      ${row("Ciudad", escHtml(lead.ciudad))}
+      ${opt("Cantidad", lead.cantidad)}
+      ${opt("Para cu&aacute;ndo", lead.para_cuando)}
+      ${opt("Mensaje", lead.mensaje)}
+    </table>
+    <p style="margin:26px 0 2px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:${C.faint};text-align:center;">Origen</p>
+    <table width="100%" cellpadding="0" cellspacing="0">
+      ${row("Canal", escHtml(ORIGEN[lead.origen] ?? lead.origen))}
+      ${utm ? row("UTM", escHtml(utm)) : ""}
+      ${opt("Anuncio", lead.utm_content)}
+      ${opt("T&eacute;rmino", lead.utm_term)}
+      ${lead.gclid ? row("gclid", "s&iacute;") : ""}
+      ${lead.fbclid ? row("fbclid", "s&iacute;") : ""}
+      ${opt("Aterriz&oacute; en", lead.landing_page)}
+      ${row("Fecha", escHtml(fecha))}
+    </table>
+    <div style="height:30px;"></div>
+    ${button(waUrl, "Responder por WhatsApp")}
+    <div style="height:12px;"></div>
+    ${button(`${appUrl()}/admin-cliche-secret`, "Ver en el panel")}`
+
+  try {
+    await transport.sendMail({
+      from: FROM,
+      to: adminEmail,
+      ...(lead.email ? { replyTo: lead.email } : {}),
+      subject: `Nueva cotización empresas — ${lead.empresa.slice(0, 60)} (${ORIGEN[lead.origen] ?? lead.origen})`,
+      html: shell(content, "Generado autom&aacute;ticamente desde el formulario de clichecolombia.com/empresas."),
+    })
+    console.log("[mailer] B2B lead alert sent")
+  } catch (err) {
+    console.error("[mailer] B2B lead alert failed:", err)
+  }
+}

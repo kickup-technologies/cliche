@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase"
 import { getSupabaseBrowser } from "@/lib/supabase/client"
 import {
   LayoutDashboard, TrendingUp, BarChart3, Star, ShoppingBag, Zap,
-  Package, Settings, Lock, RefreshCw, AlertCircle, Eye, LogOut, Menu, X, Paintbrush, Flame, Ticket, MessageCircle, Users, Search, Newspaper, LayoutGrid, Presentation, Store, Scale, ChevronDown,
+  Package, Settings, Lock, RefreshCw, AlertCircle, Eye, LogOut, Menu, X, Paintbrush, Flame, Ticket, MessageCircle, Users, Briefcase, Search, Newspaper, LayoutGrid, Presentation, Store, Scale, ChevronDown,
 } from "lucide-react"
 import type { Product } from "@/lib/supabase"
 import { Order, PageView } from "./types"
@@ -64,6 +64,7 @@ const HeatmapsSection = lazy(() => import("./sections/heatmaps"), m => m.Heatmap
 const DescuentosSection = lazy(() => import("./sections/descuentos"), m => m.DescuentosSection)
 const AsistenteSection = lazy(() => import("./sections/asistente"), m => m.AsistenteSection)
 const ClientesSection = lazy(() => import("./sections/clientes"), m => m.ClientesSection)
+const EmpresasSection = lazy(() => import("./sections/empresas"), m => m.EmpresasSection)
 const SeoSection = lazy(() => import("./sections/seo"), m => m.SeoSection)
 const BlogsSection = lazy(() => import("./sections/blogs"), m => m.BlogsSection)
 const CatalogoEditorSection = lazy(() => import("./sections/catalogo-editor"), m => m.CatalogoEditorSection)
@@ -73,7 +74,7 @@ const CompararTiendasSection = lazy(() => import("./sections/tiendas"), m => m.C
 // esquina mientras baja su chunk (se veía un segundo loader descentrado).
 const ChatAyuda = lazy(() => import("./components/chat-ayuda"), m => m.ChatAyuda, { quiet: true })
 
-type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "heatmaps" | "pedidos" | "clientes" | "descuentos" | "blogs" | "inventario" | "catalogo" | "portada" | "seo" | "asistente"
+type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "heatmaps" | "pedidos" | "clientes" | "empresas" | "descuentos" | "blogs" | "inventario" | "catalogo" | "portada" | "seo" | "asistente"
 // Multi-tienda: qué tienda se está administrando desde este panel.
 type StoreView = "cliche" | "bienestar" | "comparar"
 
@@ -92,6 +93,7 @@ const SIDEBAR = [
   { section: "OPERACIONES", items: [
     { id: "pedidos",   label: "Pedidos",              icon: ShoppingBag },
     { id: "clientes",  label: "Clientes",             icon: Users },
+    { id: "empresas",  label: "Empresas (B2B)",       icon: Briefcase },
     { id: "descuentos", label: "Códigos de descuento", icon: Ticket },
     { id: "blogs",      label: "Blog",                 icon: Newspaper },
   ]},
@@ -525,7 +527,7 @@ export default function AdminPage() {
       void import("./sections/trafico"); void import("./sections/productos-stats")
       void import("./sections/pedidos"); void import("./sections/inventario")
       void import("./sections/heatmaps"); void import("./sections/descuentos")
-      void import("./sections/asistente"); void import("./sections/clientes")
+      void import("./sections/asistente"); void import("./sections/clientes"); void import("./sections/empresas")
       void import("./sections/seo"); void import("./sections/blogs")
       // sections/tiendas NO se precalienta (multi-tienda parcialmente
       // desactivado): su chunk baja solo si se entra a Bienestar/Comparar.
@@ -563,6 +565,7 @@ export default function AdminPage() {
     heatmaps: <HeatmapsSection pageViews={pageViews} />,
     pedidos: <PedidosSection orders={orders} products={products} onOrdersUpdate={handleOrderUpdate} />,
     clientes: <ClientesSection />,
+    empresas: <EmpresasSection />,
     descuentos: <DescuentosSection />,
     blogs: <BlogsSection />,
     inventario: <InventarioSection products={products} onRefresh={loadAll} />,

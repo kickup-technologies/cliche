@@ -58,7 +58,10 @@ export function LeadPopup() {
     pathname.startsWith("/admin") ||
     // Fichas de producto: el popup interrumpía justo cuando la persona está
     // decidiendo la compra (feedback del cliente, 2026-08-26).
-    pathname.startsWith("/productos")
+    pathname.startsWith("/productos") ||
+    // Landing B2B de pauta: el popup del newsletter competía con el formulario
+    // de cotización y su "Lead" contaminaba la conversión de cliente potencial.
+    pathname.startsWith("/empresas")
   )
 
   const open = useCallback(() => {
