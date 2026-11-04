@@ -45,7 +45,10 @@ const ContentSecurityPolicy = [
   "worker-src 'self' blob:",                            // blob: → decodificadores 3D (NO quitar)
   "object-src 'none'",
   "base-uri 'self'",
-  "form-action 'self'",
+  // facebook.com: el píxel envía los eventos grandes (Purchase/InitiateCheckout
+  // con muchos content_ids) como un <form> POST a facebook.com/tr; con solo
+  // 'self' el navegador los bloqueaba y esos eventos llegaban solo por CAPI.
+  "form-action 'self' https://www.facebook.com https://*.facebook.com",
   "frame-ancestors 'self'",
   "upgrade-insecure-requests",
 ].join("; ")
