@@ -9,7 +9,11 @@ import { useSiteSettings } from "@/lib/use-site-settings"
 const DEFAULT_PHONE = "573122838844"
 const DEFAULT_MESSAGE = "Hola! Vi sus productos en la tienda online y me gustaría saber más"
 
-export function WhatsAppButton() {
+/**
+ * `raisedClass`: clase de `bottom` para subir el botón cuando la página tiene
+ * su propia barra fija abajo (p. ej. el resumen del kit en /arma-tu-kit).
+ */
+export function WhatsAppButton({ raisedClass }: { raisedClass?: string } = {}) {
   const settings = useSiteSettings()
   const [isHovered, setIsHovered] = useState(false)
   const { itemCount, isDrawerOpen } = useCart()
@@ -24,7 +28,7 @@ export function WhatsAppButton() {
   return (
     <div className={cn(
       "fixed right-6 z-50 transition-all duration-300",
-      itemCount > 0 ? "bottom-24" : "bottom-6"
+      raisedClass ?? (itemCount > 0 ? "bottom-24" : "bottom-6")
     )}>
       {/* Tooltip */}
       <div
