@@ -30,4 +30,7 @@ export const NOTES_MAP: Record<string, string[]> = {
   "aroma-watermelon": ["Sandía", "Candy Dulce"],
   "aroma-air-fresh": ["Notas Limpias", "Frescor Neutro"],
   "aroma-seda-del-lejano-oriente": ["Vainilla", "Cedro", "Almizcle", "Cardamomo"],
+  // Tomadas de la descripción del producto en la BD ("Pitaya, lychée, flor de
+  // Jamaica y vainilla…"), línea Cliché for girls.
+  "aroma-sugar-pop": ["Pitaya", "Lychée", "Flor de Jamaica", "Vainilla"],
 }

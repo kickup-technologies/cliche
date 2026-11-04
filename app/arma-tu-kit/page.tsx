@@ -1,110 +1,118 @@
-"use client"
-
-import { useState } from "react"
-import Link from "next/link"
-import { Sparkles, ArrowRight } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
-import { WhatsAppButton } from "@/components/whatsapp-button"
-import { PackBuilder } from "@/components/pack-builder"
-import { PRICE_TIERS, UNIT_PRICE } from "@/lib/pricing"
+import { KitLanding } from "@/components/kit-landing/kit-landing"
+import { supabase, isSupabaseConfigured, type Product } from "@/lib/supabase"
+import { CATALOG_AS_PRODUCTS } from "@/lib/catalog-data"
+import { parseFreeShippingThreshold } from "@/lib/pricing"
+import {
+  isKitEligible,
+  reviewerDisplayName,
+  shortAromaName,
+  toKitAroma,
+  type KitAroma,
+  type KitReview,
+} from "@/lib/kit-landing"
 
-const CREMA = "#FAF8F5"
-const CAFE = "#2D1A14"
-const TERRA = "#A67163"
+/**
+ * /arma-tu-kit — landing del kit personalizado (mezclar aromas al precio fijo
+ * del kit). Server component: lee aromas, envío gratis, WhatsApp y reseñas
+ * reales de la BD; el armador interactivo vive en <KitLanding/>.
+ * ISR cada 5 min (igual que el layout) para no consultar la BD por visita.
+ */
+export const revalidate = 300
 
-const KIT_TIERS = PRICE_TIERS.filter((t) => t.units > 1)
-const fmt = (n: number) => `$${n.toLocaleString("es-CO")}`
+const DEFAULT_WHATSAPP = "573122838844"
 
-const STEPS = [
-  { n: "01", t: "Elige el tamaño", d: "Kit de 3, 4 o 6 frascos." },
-  { n: "02", t: "Combina aromas", d: "Mezcla tus favoritos, sin repetir si no quieres." },
-  { n: "03", t: "Mismo precio del kit", d: "El precio especial se mantiene, elijas lo que elijas." },
-]
+async function loadAromas(): Promise<KitAroma[]> {
+  let products: Product[] = []
+  if (isSupabaseConfigured) {
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("is_active", true)
+        .order("created_at", { ascending: true })
+      if (!error && data?.length) products = data as Product[]
+    } catch {
+      /* respaldo abajo */
+    }
+  }
+  // Mismo respaldo que /api/products: catálogo local si la BD falla o está vacía.
+  if (!products.length) products = CATALOG_AS_PRODUCTS
+  return products.filter(isKitEligible).map(toKitAroma)
+}
 
-export default function ArmaTuKitPage() {
-  const [open, setOpen] = useState(false)
+async function loadSettings(): Promise<{ freeShippingThreshold: number; whatsappNumber: string }> {
+  let threshold: unknown = null
+  let whatsapp: unknown = null
+  if (isSupabaseConfigured) {
+    try {
+      const { data } = await supabase
+        .from("site_settings")
+        .select("key, value")
+        .in("key", ["free_shipping_threshold", "whatsapp_number"])
+      for (const row of data ?? []) {
+        if (row.key === "free_shipping_threshold") threshold = row.value
+        if (row.key === "whatsapp_number") whatsapp = row.value
+      }
+    } catch {
+      /* defaults */
+    }
+  }
+  const digits = typeof whatsapp === "string" ? whatsapp.replace(/\D/g, "") : ""
+  return {
+    freeShippingThreshold: parseFreeShippingThreshold(threshold),
+    whatsappNumber: digits.length >= 10 ? digits : DEFAULT_WHATSAPP,
+  }
+}
+
+/**
+ * Testimonios: SOLO reseñas reales aprobadas de la tabla `reviews` (nunca las
+ * semilla de lib/seed-reviews). Se exige comentario con contenido y 4★ o más.
+ */
+async function loadReviews(aromas: KitAroma[]): Promise<KitReview[]> {
+  if (!isSupabaseConfigured) return []
+  try {
+    const { data } = await supabase
+      .from("reviews")
+      .select("id, product_id, reviewer_name, rating, comment")
+      .eq("is_approved", true)
+      .gte("rating", 4)
+      .order("created_at", { ascending: false })
+      .limit(40)
+    const nameById = new Map(aromas.map((a) => [a.id, a.name]))
+    return (data ?? [])
+      .filter((r) => typeof r.comment === "string" && r.comment.trim().length >= 40)
+      .slice(0, 6)
+      .map((r) => ({
+        id: String(r.id),
+        name: reviewerDisplayName(String(r.reviewer_name ?? "")),
+        rating: Number(r.rating) || 5,
+        comment: String(r.comment).trim(),
+        aroma: nameById.get(String(r.product_id)) ?? null,
+      }))
+  } catch {
+    return []
+  }
+}
+
+export default async function ArmaTuKitPage() {
+  const [aromas, settings] = await Promise.all([loadAromas(), loadSettings()])
+  const reviews = await loadReviews(aromas)
+  const christmas = aromas.find((a) => a.slug.replace(/^aroma-/, "") === "navidad") ?? null
 
   return (
-    <main className="min-h-screen" style={{ backgroundColor: CREMA }}>
+    <>
       <Header />
-
-      <section className="px-5 pb-24 pt-28 sm:pt-36">
-        <div className="mx-auto max-w-4xl text-center">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border px-4 py-1.5" style={{ borderColor: `${CAFE}1F` }}>
-            <Sparkles className="h-3.5 w-3.5" style={{ color: TERRA }} />
-            <span className="text-[10px] font-semibold uppercase tracking-[0.34em]" style={{ color: TERRA }}>
-              Kit personalizado
-            </span>
-          </div>
-
-          <h1 className="font-serif text-5xl leading-[1.03] sm:text-7xl" style={{ color: CAFE }}>
-            Arma el kit
-            <br />
-            <span style={{ color: TERRA }}>que es solo tuyo</span>
-          </h1>
-
-          <p className="mx-auto mt-6 max-w-xl text-sm leading-relaxed sm:text-base" style={{ color: `${CAFE}99` }}>
-            Combina diferentes aromas en un solo kit y llévate el precio especial.
-            Tú decides la mezcla; nosotros la preparamos.
-          </p>
-
-          <button
-            onClick={() => setOpen(true)}
-            className="group mt-9 inline-flex items-center gap-2 rounded-full px-9 py-4 text-sm font-semibold transition-all hover:gap-3"
-            style={{ backgroundColor: CAFE, color: CREMA }}
-          >
-            Empezar a armar mi kit
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-          </button>
-        </div>
-
-        {/* Tamaños */}
-        <div className="mx-auto mt-16 grid max-w-3xl gap-4 sm:grid-cols-3">
-          {KIT_TIERS.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setOpen(true)}
-              className="rounded-3xl border bg-white p-7 text-left transition-all hover:-translate-y-1 hover:shadow-lg"
-              style={{ borderColor: `${CAFE}14` }}
-            >
-              {t.badge && (
-                <span className="mb-3 inline-block rounded-full px-2.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide" style={{ backgroundColor: TERRA, color: CREMA }}>
-                  {t.badge}
-                </span>
-              )}
-              <p className="font-serif text-4xl" style={{ color: CAFE }}>Kit x{t.units}</p>
-              <p className="mt-2 text-lg font-semibold" style={{ color: CAFE }}>{fmt(t.price)}</p>
-              <p className="mt-1 text-xs line-through" style={{ color: `${CAFE}66` }}>{fmt(t.units * UNIT_PRICE)}</p>
-              <p className="mt-3 text-[11px] font-semibold uppercase tracking-wide" style={{ color: TERRA }}>
-                {t.units} aromas a elegir →
-              </p>
-            </button>
-          ))}
-        </div>
-
-        {/* Cómo funciona */}
-        <div className="mx-auto mt-20 grid max-w-4xl gap-8 sm:grid-cols-3">
-          {STEPS.map((s) => (
-            <div key={s.n}>
-              <p className="font-serif text-3xl" style={{ color: TERRA }}>{s.n}</p>
-              <p className="mt-2 font-semibold" style={{ color: CAFE }}>{s.t}</p>
-              <p className="mt-1 text-sm" style={{ color: `${CAFE}99` }}>{s.d}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-16 text-center">
-          <Link href="/catalogo" className="text-xs uppercase tracking-widest underline-offset-4 hover:underline" style={{ color: `${CAFE}80` }}>
-            Ver todos los aromas
-          </Link>
-        </div>
-      </section>
-
+      <KitLanding
+        aromas={aromas}
+        reviews={reviews}
+        freeShippingThreshold={settings.freeShippingThreshold}
+        whatsappNumber={settings.whatsappNumber}
+        christmasAromaId={christmas?.id ?? null}
+        christmasAromaName={christmas ? shortAromaName(christmas.fullName) : null}
+      />
       <Footer />
-      <WhatsAppButton />
-
-      <PackBuilder open={open} onClose={() => setOpen(false)} />
-    </main>
+    </>
   )
 }

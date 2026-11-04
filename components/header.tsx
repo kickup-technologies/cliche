@@ -76,6 +76,7 @@ export function Header() {
     // Landings de pauta: fondo crema — el modo transparente (letras blancas)
     // dejaba el menú invisible.
     (pathname?.startsWith("/marcas") ?? false) ||
+    pathname === "/arma-tu-kit" ||
     // El blog es fondo crema: en modo transparente el menú quedaba invisible.
     (pathname?.startsWith("/blog") ?? false)
 
