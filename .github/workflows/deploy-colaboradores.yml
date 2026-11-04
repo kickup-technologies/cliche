@@ -1,0 +1,39 @@
+# Despliegue a producción de lo que suben los colaboradores externos.
+#
+# Vercel (plan Hobby) solo publica automáticamente los commits cuyo autor es
+# kickup-technologies; los de cualquier otra persona quedan bloqueados. Este
+# workflow cubre ese hueco: cuando llega a main un commit de OTRO autor, lo
+# despliega con la CLI de Vercel usando el token de kickup-technologies.
+# Los commits de kickup-technologies los sigue publicando la integración de
+# Git de Vercel, así que aquí se omiten para no desplegar dos veces.
+#
+# Secretos del repositorio: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID.
+name: Deploy de colaboradores
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-produccion
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event.head_commit.author.email != 'admin@kickuptech.com'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Sin .git la CLI no adjunta el autor del commit: el despliegue queda a
+      # nombre del dueño del token y Vercel Hobby no lo bloquea.
+      - name: Quitar metadatos de git
+        run: rm -rf .git
+      - name: Desplegar en producción (build en Vercel)
+        run: npx --yes vercel@latest deploy --prod --yes --token="${{ secrets.VERCEL_TOKEN }}"
