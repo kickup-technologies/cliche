@@ -13,6 +13,7 @@ import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
 import { useCart } from "@/context/cart-context"
 import { useCAPI } from "@/lib/use-capi"
+import { catalogContentIds } from "@/lib/content-ids"
 
 // Carrusel 3D "Seguir comprando" — solo cliente (WebGL), se carga aparte.
 const Gracias3DCarousel = dynamic(() => import("@/components/gracias-carousel"), {
@@ -138,7 +139,7 @@ function GraciasContent() {
               // inflar el Purchase de Meta con pedidos pendientes/fallidos.
               const PAID = ["confirmed", "paid", "preparing", "shipped", "delivered"]
               if (PAID.includes(order.status)) {
-                const items = (order.items as Array<{ product_id: string; quantity: number }>) || []
+                const items = (order.items as Array<{ product_id: string; quantity: number; components?: Array<{ product_id?: string }> }>) || []
                 track({
                   event_name: "Purchase",
                   // Mismo event_id que usa el servidor (lib/capi-server envía
@@ -148,7 +149,7 @@ function GraciasContent() {
                   custom_data: {
                     currency: "COP",
                     value: Number(order.total) || 0,
-                    content_ids: items.map((i) => i.product_id),
+                    content_ids: catalogContentIds(items.map((i) => ({ id: i.product_id, components: i.components }))),
                     content_type: "product",
                     num_items: items.reduce((n, i) => n + (i.quantity || 1), 0),
                   },

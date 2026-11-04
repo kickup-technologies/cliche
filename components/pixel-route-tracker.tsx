@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react"
 import { usePathname } from "next/navigation"
 import { getConsent } from "@/components/cookie-consent"
+import { sendMetaEvent } from "@/lib/use-capi"
 
 /**
  * PixelRouteTracker — avisa a los píxeles en cada cambio de ruta de la SPA
@@ -28,8 +29,10 @@ export function PixelRouteTracker() {
 
     const consent = getConsent()
 
-    if (!(consent && !consent.marketing) && typeof window.fbq === "function") {
-      window.fbq("track", "PageView")
+    // PageView por navegador Y servidor con el mismo event_id (sendMetaEvent
+    // respeta el consentimiento de marketing y no espera a que cargue fbq).
+    if (!(consent && !consent.marketing)) {
+      sendMetaEvent({ event_name: "PageView" }).catch(() => {})
     }
 
     // GA4: page_view por evento (repetir gtag('config') duplicaría métricas).

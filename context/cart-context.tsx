@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
 import type { Product } from "@/lib/supabase"
 import { useCAPI } from "@/lib/use-capi"
+import { catalogContentIds } from "@/lib/content-ids"
 import type { PriceTier } from "@/lib/pricing"
 import { PRODUCT_PLACEHOLDER } from "@/lib/placeholder"
 
@@ -169,9 +170,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       custom_data: {
         currency: "COP",
         value: items.reduce((s, i) => s + i.product.price * i.quantity, 0),
-        content_ids: items.map((i) => i.product.id),
+        content_ids: catalogContentIds(items.map((i) => ({ id: i.product.id, components: i.pack?.components }))),
         content_type: "product",
-        num_items: items.reduce((s, i) => s + i.quantity, 0),
+        num_items: items.reduce((s, i) => s + i.quantity * (i.pack?.units || 1), 0),
       },
     })
     // Redirigir a la página de resumen de checkout

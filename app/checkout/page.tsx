@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 import { useCart } from "@/context/cart-context"
 import { useAuth } from "@/context/auth-context"
 import { useCAPI, getFbSignals } from "@/lib/use-capi"
+import { catalogContentIds } from "@/lib/content-ids"
 import { useSiteSettings } from "@/lib/use-site-settings"
 import { SHIPPING_COST, parseFreeShippingThreshold } from "@/lib/pricing"
 import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Lock, Truck, Leaf, RotateCcw, Tag, ChevronDown, ChevronUp, Mail, RefreshCw, Phone, MapPin, User, ShieldCheck } from "lucide-react"
@@ -183,7 +184,7 @@ export default function CheckoutPage() {
       custom_data: {
         currency: "COP",
         value: total,
-        content_ids: selectedItems.map((i) => i.product.id),
+        content_ids: catalogContentIds(selectedItems.map((i) => ({ id: i.product.id, components: i.pack?.components }))),
         content_type: "product",
         num_items: selectedItems.reduce((n, i) => n + i.quantity, 0),
       },

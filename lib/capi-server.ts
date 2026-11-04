@@ -15,6 +15,7 @@
 
 import { sendCAPIEvents, hashValue, normalizePhone, type CAPIUserData } from "@/lib/meta-capi"
 import { siteUrl } from "@/lib/site-url"
+import { catalogContentIds } from "@/lib/content-ids"
 
 type OrderItem = {
   product_id?: string
@@ -55,11 +56,9 @@ export async function sendPurchaseCAPI(order: PurchaseOrder): Promise<void> {
     if (order.browser?.ua) user_data.client_user_agent = order.browser.ua
 
     const items = Array.isArray(order.items) ? order.items : []
-    // Mismos content_ids que envía el navegador desde /gracias (product_id por
-    // línea, incluidos los "pack-*"), para que ambos eventos sean equivalentes.
-    const content_ids = items
-      .map((i) => i.product_id)
-      .filter((id): id is string => typeof id === "string" && id.length > 0)
+    // Mismos content_ids que envía el navegador desde /gracias: los UUID del
+    // catálogo (/api/meta-feed). Los kits se traducen a sus aromas.
+    const content_ids = catalogContentIds(items.map((i) => ({ id: i.product_id, components: i.components })))
     const num_items = items.reduce((s, i) => s + (Number(i.quantity) || 1), 0)
 
     const appUrl = siteUrl()

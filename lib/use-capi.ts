@@ -151,54 +151,64 @@ export function getFbSignals(): { fbc?: string; fbp?: string } {
   return { fbc: ensureFbc(), fbp: getCookie('_fbp') }
 }
 
-function generateEventId(): string {
+export function generateEventId(): string {
   return `${Date.now()}_${Math.random().toString(36).slice(2)}`
 }
 
+/**
+ * Envía UN evento por los dos caminos con el MISMO event_id: píxel del
+ * navegador (fbq → todos los píxeles inicializados, ver lib/meta-pixels) y
+ * Conversions API (/api/capi → cada píxel con su token). Es una función
+ * normal (no hook) para que PixelManager y PixelRouteTracker la usen también
+ * con el PageView.
+ */
+export async function sendMetaEvent(payload: CAPIEventPayload) {
+  // Consentimiento (modelo opt-out, igual que PixelManager), por categoría:
+  // GA4 depende de "analytics" y Meta (Pixel+CAPI) de "marketing".
+  const consent = getConsent()
+  const analyticsOk = consent ? consent.analytics : true
+  const marketingOk = consent ? consent.marketing : true
+
+  const { event_name, custom_data, user_data } = payload
+  const event_id = payload.event_id || generateEventId()
+  const event_source_url = window.location.href
+
+  // 0. Espejo GA4 (embudo view_item → … → purchase)
+  if (analyticsOk) {
+    try { sendGA4(payload, event_id) } catch { /* nunca romper el flujo */ }
+  }
+
+  if (!marketingOk) return
+
+  // 1. Browser pixel (deduplication via event_id)
+  if (typeof window.fbq === 'function') {
+    if (event_name === 'PageView') {
+      window.fbq('track', 'PageView', {}, { eventID: event_id })
+    } else {
+      window.fbq('track', event_name, custom_data || {}, { eventID: event_id })
+    }
+  }
+
+  // 2. Server-side CAPI (same event_id for deduplication)
+  const fbc = ensureFbc()
+  const fbp = getCookie('_fbp')
+
+  await fetch('/api/capi', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    keepalive: true,
+    body: JSON.stringify({
+      event_name,
+      event_source_url,
+      event_id,
+      custom_data,
+      user_data: { fbc, fbp, ...user_data },
+    }),
+  }).catch(() => {/* silent fail — pixel already fired */})
+}
+
 export function useCAPI() {
-  const track = useCallback(async (payload: CAPIEventPayload) => {
-    // Consentimiento (modelo opt-out, igual que PixelManager), por categoría:
-    // GA4 depende de "analytics" y Meta (Pixel+CAPI) de "marketing".
-    const consent = getConsent()
-    const analyticsOk = consent ? consent.analytics : true
-    const marketingOk = consent ? consent.marketing : true
-
-    const { event_name, custom_data, user_data } = payload
-    const event_id = payload.event_id || generateEventId()
-    const event_source_url = window.location.href
-
-    // 0. Espejo GA4 (embudo view_item → … → purchase)
-    if (analyticsOk) {
-      try { sendGA4(payload, event_id) } catch { /* nunca romper el flujo */ }
-    }
-
-    if (!marketingOk) return
-
-    // 1. Browser pixel (deduplication via event_id)
-    if (typeof window.fbq === 'function') {
-      if (event_name === 'PageView') {
-        window.fbq('track', 'PageView', {}, { eventID: event_id })
-      } else {
-        window.fbq('track', event_name, custom_data || {}, { eventID: event_id })
-      }
-    }
-
-    // 2. Server-side CAPI (same event_id for deduplication)
-    const fbc = ensureFbc()
-    const fbp = getCookie('_fbp')
-
-    await fetch('/api/capi', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        event_name,
-        event_source_url,
-        event_id,
-        custom_data,
-        user_data: { fbc, fbp, ...user_data },
-      }),
-    }).catch(() => {/* silent fail — pixel already fired */})
-  }, [])
+  const track = useCallback((payload: CAPIEventPayload) => sendMetaEvent(payload), [])
 
   return { track }
 }

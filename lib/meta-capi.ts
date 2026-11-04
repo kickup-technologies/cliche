@@ -1,6 +1,9 @@
 /**
  * Meta Conversions API — server-side helper
- * Pixel ID: 1083378614065362 | Dataset: Cliché Web - Píxel
+ * Envía cada evento a TODOS los píxeles de lib/meta-pixels que tengan token:
+ *   1083378614065362 (Cliché Web - Píxel)      → META_CAPI_TOKEN
+ *   1193836337717040 (Píxel de Cliché OFICIAL)  → META_CAPI_TOKEN_OFICIAL
+ * Mismo event_id en ambos → cada píxel deduplica contra su evento de navegador.
  *
  * Advanced Matching: hashing de email/teléfono con SHA-256 según spec de Meta.
  * El hashing ocurre SIEMPRE en el servidor — el email/teléfono crudo nunca
@@ -9,10 +12,12 @@
 
 import crypto from 'crypto'
 
-const PIXEL_ID = '1083378614065362'
-// SECRETO: solo desde variable de entorno. Nunca hardcodear el token aquí
-// (queda en git y es robable). Si falta, los eventos CAPI se omiten en silencio.
-const CAPI_TOKEN = process.env.META_CAPI_TOKEN
+// SECRETOS: solo desde variables de entorno. Nunca hardcodear un token aquí
+// (queda en git y es robable). Un píxel sin token simplemente no recibe CAPI.
+const DESTINATIONS: Array<{ pixelId: string; token: string | undefined }> = [
+  { pixelId: '1083378614065362', token: process.env.META_CAPI_TOKEN },
+  { pixelId: '1193836337717040', token: process.env.META_CAPI_TOKEN_OFICIAL },
+]
 const API_VERSION = 'v23.0'
 
 /**
@@ -64,30 +69,37 @@ export interface CAPIEvent {
 }
 
 export async function sendCAPIEvents(events: CAPIEvent[]) {
-  if (!CAPI_TOKEN) {
-    // Sin token configurado en el entorno → no se envían eventos server-side.
+  const targets = DESTINATIONS.filter((d) => d.token)
+  if (!targets.length) {
+    // Sin tokens configurados en el entorno → no se envían eventos server-side.
     return null
   }
-  try {
-    const url = `https://graph.facebook.com/${API_VERSION}/${PIXEL_ID}/events?access_token=${CAPI_TOKEN}`
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data: events }),
-    })
-    const json = await res.json()
-    // Sin esto, un token caducado (el actual vence 2026-11-03) o un payload
-    // rechazado mataría los eventos server-side EN SILENCIO: Meta responde 200
-    // el fetch pero con un objeto error. Queda en los logs de Vercel.
-    if (!res.ok || json?.error) {
-      console.error(
-        `[CAPI] Meta rechazó ${events.map((e) => e.event_name).join(',')}:`,
-        json?.error?.message || `HTTP ${res.status}`,
-      )
-    }
-    return json
-  } catch (err) {
-    console.error('[CAPI] Error sending event:', err)
-    return null
-  }
+  const results = await Promise.all(
+    targets.map(async ({ pixelId, token }) => {
+      try {
+        const url = `https://graph.facebook.com/${API_VERSION}/${pixelId}/events?access_token=${token}`
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data: events }),
+          signal: AbortSignal.timeout(10_000),
+        })
+        const json = await res.json()
+        // Sin esto, un token caducado (el de META_CAPI_TOKEN venció el
+        // 2026-11-03) o un payload rechazado mataría los eventos server-side
+        // EN SILENCIO: Meta responde con un objeto error. Queda en los logs.
+        if (!res.ok || json?.error) {
+          console.error(
+            `[CAPI ${pixelId}] Meta rechazó ${events.map((e) => e.event_name).join(',')}:`,
+            json?.error?.message || `HTTP ${res.status}`,
+          )
+        }
+        return [pixelId, json] as const
+      } catch (err) {
+        console.error(`[CAPI ${pixelId}] Error sending event:`, err)
+        return [pixelId, null] as const
+      }
+    }),
+  )
+  return Object.fromEntries(results)
 }

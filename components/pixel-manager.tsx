@@ -3,7 +3,8 @@
 import { useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { getConsent } from "@/components/cookie-consent"
-import { getFbSignals } from "@/lib/use-capi"
+import { generateEventId, getFbSignals } from "@/lib/use-capi"
+import { META_PIXEL_IDS } from "@/lib/meta-pixels"
 
 /**
  * PixelManager — carga Meta Pixel, TikTok, GA4 y Clarity.
@@ -19,9 +20,9 @@ import { getFbSignals } from "@/lib/use-capi"
  * Analíticas → GA4 + Clarity
  */
 
-// Píxel "Cliché Web - Píxel" (cuenta de Andrés, 2026-09-01). Hardcodeado a propósito:
-// el env NEXT_PUBLIC_META_PIXEL_ID en Vercel aún apunta al dataset viejo (1574258694440791).
-const META_PIXEL_ID = "1083378614065362"
+// Píxeles de Meta: ver lib/meta-pixels (el histórico + el OFICIAL del portafolio
+// de Cliché). Hardcodeados a propósito: el env NEXT_PUBLIC_META_PIXEL_ID en
+// Vercel aún apunta al dataset viejo (1574258694440791) y se ignora.
 const GA4_ID = process.env.NEXT_PUBLIC_GA4_ID || "G-TLBP0W75MF"
 const TIKTOK_PIXEL_ID = process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID || ""
 const CLARITY_ID = process.env.NEXT_PUBLIC_CLARITY_ID || "x02j83u050"
@@ -33,6 +34,29 @@ function injectScript(src: string, id: string) {
   s.src = src
   s.async = true
   document.head.appendChild(s)
+}
+
+/**
+ * PageView de la carga inicial, emparejado: el navegador (fbq, diferido) y el
+ * servidor (/api/capi, inmediato) comparten este event_id para que cada píxel
+ * deduplique. `serverSent` evita mandarlo dos veces al servidor.
+ */
+const initialPageView = { id: "", serverSent: false }
+
+function sendServerPageView() {
+  if (initialPageView.serverSent) return
+  initialPageView.serverSent = true
+  fetch("/api/capi", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    keepalive: true,
+    body: JSON.stringify({
+      event_name: "PageView",
+      event_source_url: window.location.href,
+      event_id: initialPageView.id,
+      user_data: getFbSignals(),
+    }),
+  }).catch(() => {/* señal extra; nunca romper la carga */})
 }
 
 function loadMetaPixel() {
@@ -49,8 +73,10 @@ function loadMetaPixel() {
   w.fbq.version = "2.0"
   w.fbq.queue = []
   injectScript("https://connect.facebook.net/en_US/fbevents.js", "meta-pixel-sdk")
-  w.fbq("init", META_PIXEL_ID)
-  w.fbq("track", "PageView")
+  META_PIXEL_IDS.forEach((id) => w.fbq("init", id))
+  // fbq('track') va a TODOS los píxeles inicializados con el mismo eventID.
+  w.fbq("track", "PageView", {}, { eventID: initialPageView.id })
+  sendServerPageView()
 }
 
 function loadGA4() {
@@ -123,31 +149,18 @@ export function PixelManager() {
     // con la navegación interna del administrador.
     if (isAdminArea) return
 
-    // Rescate INMEDIATO del fbclid (antes del defer de 3.5s): los anuncios
-    // aterrizan en /catalogo y /arma-tu-kit, que no disparan eventos de embudo,
-    // y en la primera navegación SPA la URL pierde el fbclid. Sin esto, con
-    // adblock (que impide que fbevents.js cree la cookie _fbc) el clic del
-    // anuncio se perdía y Meta no podía atribuir NINGUNA compra a la pauta.
-    // ensureFbc (vía getFbSignals) persiste el fbclid como cookie _fbc de 90
-    // días. Además, si el aterrizaje trae fbclid, se avisa a Meta por CAPI:
-    // así el clic queda registrado server-side aunque el píxel nunca cargue.
+    // PageView de servidor INMEDIATO (antes del defer de 3.5s), con el mismo
+    // event_id que usará el píxel del navegador al cargar. Además rescata el
+    // fbclid: los anuncios aterrizan en /catalogo y /arma-tu-kit, que no
+    // disparan eventos de embudo, y en la primera navegación SPA la URL pierde
+    // el fbclid. Con adblock (fbevents.js no crea la cookie _fbc) el clic se
+    // perdía; ensureFbc (vía getFbSignals) lo persiste como cookie _fbc de 90
+    // días y el PageView del servidor deja el clic registrado aunque el píxel
+    // nunca cargue.
+    initialPageView.id = initialPageView.id || `pv_${generateEventId()}`
     const consentNow = getConsent()
     if (!consentNow || consentNow.marketing) {
-      try {
-        const signals = getFbSignals()
-        if (signals.fbc && new URLSearchParams(window.location.search).has("fbclid")) {
-          fetch("/api/capi", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              event_name: "PageView",
-              event_source_url: window.location.href,
-              event_id: `landing_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-              user_data: signals,
-            }),
-          }).catch(() => {/* señal extra; nunca romper la carga */})
-        }
-      } catch { /* nunca romper la carga de la página */ }
+      try { sendServerPageView() } catch { /* nunca romper la carga de la página */ }
     }
     const apply = () => {
       const consent = getConsent()
@@ -160,7 +173,7 @@ export function PixelManager() {
         if (CLARITY_ID) loadClarity() // mapas de calor + grabaciones de sesión
       }
       if (marketing) {
-        if (META_PIXEL_ID) loadMetaPixel()
+        loadMetaPixel()
         if (TIKTOK_PIXEL_ID) loadTikTok()
       }
 
