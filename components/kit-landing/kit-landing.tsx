@@ -40,10 +40,10 @@ const perBottle = (t: PriceTier) => Math.round(t.price / t.units)
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many)
 
 /**
- * Etiqueta de cada tamaño. El x4 dice "Recomendado" y no "Más popular" (el
- * badge de lib/pricing): no hay datos de ventas que respalden "más popular".
+ * Etiqueta de cada tamaño: la misma de lib/pricing ("Recomendado" en el x4;
+ * no hay datos de ventas que respalden "más popular").
  */
-const flagFor = (t: PriceTier) => (t.id === "x4" ? "Recomendado" : t.badge)
+const flagFor = (t: PriceTier) => t.badge
 
 /** Testimonios de la maqueta de kits, en su orden. */
 const TESTS: readonly TestimonioId[] = ["mariana", "catalina", "andres", "laura", "daniela", "camila", "valentina"]
