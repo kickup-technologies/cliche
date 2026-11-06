@@ -5,7 +5,7 @@ import { withSeoOverride } from "@/lib/seo"
 // metadata SEO debe exportarse desde este layout (server component).
 // El texto de abajo es el POR DEFECTO: si la dueña escribió algo en el panel
 // admin (sección SEO), ese texto manda.
-export const revalidate = 300
+export const revalidate = 3600
 
 const BASE: Metadata = {
   title: "Catálogo de Aromas para el Hogar y la Ropa",

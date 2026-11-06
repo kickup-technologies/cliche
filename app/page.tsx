@@ -45,7 +45,7 @@ import { SocialProofBar } from "@/components/editorial/social-proof-bar"
  */
 // ISR: la portada se regenera cada 5 min, así el SEO editado en el panel
 // admin entra sin necesidad de un deploy.
-export const revalidate = 300
+export const revalidate = 3600
 
 /**
  * SEO de la portada. Por defecto manda el metadata del layout raíz; si la

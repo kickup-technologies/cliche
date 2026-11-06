@@ -20,7 +20,7 @@ import {
  * reales de la BD; el armador interactivo vive en <KitLanding/>.
  * ISR cada 5 min (igual que el layout) para no consultar la BD por visita.
  */
-export const revalidate = 300
+export const revalidate = 3600
 
 const DEFAULT_WHATSAPP = "573122838844"
 

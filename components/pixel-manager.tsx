@@ -37,27 +37,12 @@ function injectScript(src: string, id: string) {
 }
 
 /**
- * PageView de la carga inicial, emparejado: el navegador (fbq, diferido) y el
- * servidor (/api/capi, inmediato) comparten este event_id para que cada píxel
- * deduplique. `serverSent` evita mandarlo dos veces al servidor.
+ * PageView de la carga inicial: SOLO por el píxel del navegador. Antes también
+ * salía por /api/capi en cada visita — una función de Vercel por página vista
+ * que agotó el cupo de CPU del plan Hobby (pausa del 5-nov-2026). Por el
+ * servidor solo van los eventos de intención (ver SERVER_EVENTS en use-capi).
  */
-const initialPageView = { id: "", serverSent: false }
-
-function sendServerPageView() {
-  if (initialPageView.serverSent) return
-  initialPageView.serverSent = true
-  fetch("/api/capi", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    keepalive: true,
-    body: JSON.stringify({
-      event_name: "PageView",
-      event_source_url: window.location.href,
-      event_id: initialPageView.id,
-      user_data: getFbSignals(),
-    }),
-  }).catch(() => {/* señal extra; nunca romper la carga */})
-}
+const initialPageView = { id: "" }
 
 function loadMetaPixel() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -76,7 +61,6 @@ function loadMetaPixel() {
   META_PIXEL_IDS.forEach((id) => w.fbq("init", id))
   // fbq('track') va a TODOS los píxeles inicializados con el mismo eventID.
   w.fbq("track", "PageView", {}, { eventID: initialPageView.id })
-  sendServerPageView()
 }
 
 function loadGA4() {
@@ -149,18 +133,15 @@ export function PixelManager() {
     // con la navegación interna del administrador.
     if (isAdminArea) return
 
-    // PageView de servidor INMEDIATO (antes del defer de 3.5s), con el mismo
-    // event_id que usará el píxel del navegador al cargar. Además rescata el
-    // fbclid: los anuncios aterrizan en /catalogo y /arma-tu-kit, que no
-    // disparan eventos de embudo, y en la primera navegación SPA la URL pierde
-    // el fbclid. Con adblock (fbevents.js no crea la cookie _fbc) el clic se
-    // perdía; ensureFbc (vía getFbSignals) lo persiste como cookie _fbc de 90
-    // días y el PageView del servidor deja el clic registrado aunque el píxel
-    // nunca cargue.
+    // Rescate del fbclid INMEDIATO (antes del defer de 3.5s): en la primera
+    // navegación SPA la URL lo pierde, y con adblock fbevents.js no crea la
+    // cookie _fbc. ensureFbc (vía getFbSignals) la persiste 90 días, así los
+    // eventos de servidor posteriores (AddToCart, InitiateCheckout, Purchase)
+    // siguen atribuidos al clic del anuncio.
     initialPageView.id = initialPageView.id || `pv_${generateEventId()}`
     const consentNow = getConsent()
     if (!consentNow || consentNow.marketing) {
-      try { sendServerPageView() } catch { /* nunca romper la carga de la página */ }
+      try { getFbSignals() } catch { /* nunca romper la carga de la página */ }
     }
     const apply = () => {
       const consent = getConsent()
