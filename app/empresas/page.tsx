@@ -281,7 +281,7 @@ export default async function EmpresasPage() {
               </div>
             </article>
             <article className="svc">
-              <Image src="/images/category-kits-marca.png" alt="Caja de regalo con tres sprays de aroma" width={1024} height={1536} sizes="(min-width: 900px) 360px, 100vw" />
+              <Image src="/images/segments/hogar.jpg" alt="Aroma Cliché sobre un escritorio" width={1024} height={1536} sizes="(min-width: 900px) 360px, 100vw" />
               <div className="txt">
                 <h3>Regalos corporativos</h3>
                 <p>Kits de aromas para tus clientes y tu equipo en la temporada de fin de año.</p>
@@ -307,7 +307,7 @@ export default async function EmpresasPage() {
         {temporada && (
           <section className="block" aria-labelledby="t-fin">
             <div className="season">
-              <Image src="/images/category-kits-marca.png" alt="Caja de regalo con sprays de aroma" width={1024} height={1536} sizes="(min-width: 900px) 560px, 100vw" />
+              <Image src="/images/landing/kit-aromas-cliche.jpg" alt="Cuatro aromas Cliché listos para regalar" width={1200} height={1500} sizes="(min-width: 900px) 560px, 100vw" />
               <div className="txt">
                 <span className="eyebrow">Regalos de fin de año</span>
                 <h2 id="t-fin">Regala un aroma a tus clientes y a tu equipo</h2>

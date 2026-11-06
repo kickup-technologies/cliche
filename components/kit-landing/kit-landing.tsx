@@ -353,10 +353,10 @@ export function KitLanding({
         <section className="hero" aria-label="Kits de aromas">
           <Image
             className="hero-img"
-            src="/images/category-kits-marca.png"
-            alt="Caja de regalo con tres sprays de aroma Cliché"
-            width={1024}
-            height={1536}
+            src="/images/landing/kit-aromas-cliche.jpg"
+            alt="Cuatro aromas Cliché: Brillos de Seda, Calor de Lana, Eternamente Índigo y Sello de Dios"
+            width={1200}
+            height={1500}
             priority
             sizes="(min-width: 900px) 520px, 100vw"
           />
