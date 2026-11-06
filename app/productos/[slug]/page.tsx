@@ -7,7 +7,7 @@ import type { Metadata } from "next"
 
 // ISR: páginas estáticas servidas desde CDN, regeneradas cada 5 min. Escala a
 // miles de peticiones sin golpear Supabase en cada visita (solo en build/revalidación).
-export const revalidate = 300
+export const revalidate = 3600
 export const dynamicParams = true
 
 // Pre-genera en build las páginas de los productos activos.

@@ -65,6 +65,11 @@ function sendGA4(payload: CAPIEventPayload, event_id: string) {
   }
 }
 
+const SERVER_EVENTS = new Set<CAPIEventPayload['event_name']>([
+  'AddToCart', 'InitiateCheckout', 'AddPaymentInfo', 'Purchase',
+  'Lead', 'Contact', 'Subscribe', 'CompleteRegistration',
+])
+
 export interface CAPIEventPayload {
   event_name:
     | 'PageView'
@@ -190,7 +195,10 @@ export async function sendMetaEvent(payload: CAPIEventPayload) {
     }
   }
 
-  // 2. Server-side CAPI (same event_id for deduplication)
+  // 2. Server-side CAPI (same event_id for deduplication) — SOLO eventos de
+  // intención. PageView/ViewContent/Search por el servidor eran una función de
+  // Vercel por cada visita y agotaron el cupo de CPU (pausa del 5-nov-2026).
+  if (!SERVER_EVENTS.has(event_name)) return
   const fbc = ensureFbc()
   const fbp = getCookie('_fbp')
 

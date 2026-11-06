@@ -9,7 +9,7 @@ import { supabase, isSupabaseConfigured, type BlogPost } from "@/lib/supabase"
 import { withSeoOverride } from "@/lib/seo"
 
 // ISR + revalidación al instante desde el panel (revalidateBlogPages).
-export const revalidate = 300
+export const revalidate = 3600
 
 export async function generateMetadata(): Promise<Metadata> {
   return withSeoOverride("/blog", {

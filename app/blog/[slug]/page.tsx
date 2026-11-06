@@ -10,7 +10,7 @@ import { supabase, isSupabaseConfigured, type BlogPost } from "@/lib/supabase"
 import { withSeoOverride } from "@/lib/seo"
 
 // ISR: el panel revalida esta ruta al guardar (publicación inmediata).
-export const revalidate = 300
+export const revalidate = 3600
 export const dynamicParams = true
 
 export async function generateStaticParams() {

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { revalidatePath } from "next/cache"
 import { sendOrderConfirmation, sendAdminOrderAlert, sendStockAlertEmail } from "@/lib/mailer"
 import { sendPurchaseCAPI } from "@/lib/capi-server"
 
@@ -107,6 +108,14 @@ export async function confirmPaidOrder(
     // No abortamos: el pago ya se hizo. Registramos para que el dueño lo revise.
     console.error(`[confirm] fallo descontando stock del pedido ${reference}:`, err)
   }
+  // Las fichas y el armador de kits muestran stock ("Quedan N unidades") y son
+  // estáticas (ISR de 1 h): se marcan obsoletas tras cada venta para que el
+  // stock nuevo se vea en la siguiente visita sin re-renderizar cada 5 min.
+  try {
+    revalidatePath("/productos/[slug]", "page")
+    revalidatePath("/arma-tu-kit")
+    revalidatePath("/catalogo")
+  } catch { /* fuera de un request de Next (scripts): el ISR de 1 h lo cubre */ }
   if (oversold.length > 0) {
     // Señal clara en logs (Vercel) para reconciliar inventario manualmente.
     console.error(
