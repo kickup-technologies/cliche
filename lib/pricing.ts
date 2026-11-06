@@ -29,7 +29,7 @@ export function parseFreeShippingThreshold(raw: unknown): number {
 export const PRICE_TIERS: PriceTier[] = [
   { id: "unit", units: 1, price: 78000,  label: "1 unidad" },
   { id: "x3",   units: 3, price: 145000, label: "Kit x3" },
-  { id: "x4",   units: 4, price: 190000, label: "Kit x4", badge: "Más popular" },
+  { id: "x4",   units: 4, price: 190000, label: "Kit x4", badge: "Recomendado" },
   { id: "x6",   units: 6, price: 280000, label: "Kit x6", badge: "Mejor precio" },
 ]
 

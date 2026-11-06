@@ -1,6 +1,11 @@
 /**
  * Contenido y tipos de la landing /arma-tu-kit que usa el CLIENTE. Sin
  * imports a propósito: así el bundle del navegador no arrastra el catálogo.
+ *
+ * La landing copia la maqueta de Cliché (landings/kits-cliche) tal cual; los
+ * DATOS (aromas, notas, fotos, insignias, stock, precios, envío) salen de la
+ * BD y de las fuentes del repo. Lo que viene de la maqueta y no es un dato
+ * (filtros por uso, combinación de Navidad, textos) vive aquí.
  */
 
 /** Aroma listo para el armador (serializable: viaja del server al cliente). */
@@ -16,66 +21,55 @@ export interface KitAroma {
   stock: number
   badge: string | null
   notes: string[]
-  /** etiqueta de familia olfativa (misma que /catalogo) */
-  family: string | null
-  /** "Ideal para…" (documento de distribuidores / segmentos) */
-  idealFor: string | null
-  /** segmentos B2B (lib/segments) para los filtros de "¿para qué lo quieres?" */
-  segments: string[]
+  /** "Ideal para · familia", la línea gris de la tarjeta de la maqueta */
+  idealLine: string | null
+  /** usos de la maqueta (USOS) para el filtro "¿Para qué lo quieres?" */
+  uses: string[]
   /** insignia de la BD "Más vendido"/"Top Ventas" */
   bestSeller: boolean
-}
-
-/** Reseña real aprobada (tabla `reviews`) para el bloque de testimonios. */
-export interface KitReview {
-  id: string
-  name: string
-  rating: number
-  comment: string
-  aroma: string | null
+  /** calificación SOLO con reseñas reales aprobadas (tabla `reviews`) */
+  rating: number | null
+  ratingCount: number
 }
 
 /**
- * Cómo se usa — MISMO texto que la ficha de producto
- * (components/product-detail.tsx, acordeón "¿Cómo usarlo?").
- * Si cambia allá, actualizarlo aquí.
+ * Filtro "¿Para qué lo quieres?" — mismos chips y en el mismo orden que la
+ * maqueta. Un chip sin aromas activos no se muestra.
  */
-export const USAGE_TIPS = [
-  { title: "En espacios", desc: "Aplica 3-5 puf en habitaciones de hasta 20m²." },
-  { title: "En la ropa", desc: "3 puf en prendas superiores, 5 en jeans e inferiores." },
-  { title: "Duración", desc: "Efecto olfativo hasta 8 horas en espacios cerrados." },
-  { title: "Precauciones", desc: "Evitar contacto con ojos. Alejar de menores de edad." },
+export const USOS = [
+  { key: "todos", label: "Todos" },
+  { key: "boutique", label: "Boutique y ropa femenina" },
+  { key: "deportiva", label: "Deportiva y unisex" },
+  { key: "infantil", label: "Infantil" },
+  { key: "playa", label: "Playa y vestidos de baño" },
+  { key: "mascotas", label: "Mascotas" },
+  { key: "hotel", label: "Hoteles y spas" },
+  { key: "accesorios", label: "Accesorios y calzado" },
+  { key: "hogar", label: "Casa y ropa" },
 ] as const
 
 /**
- * Atajo "Sugerencia de Navidad" de la maqueta de la agencia (curaduría, no un
- * dato). Solo se muestra si el Aroma Navidad está activo; los aromas que no
- * estén activos se omiten. Confirmar la combinación con la clienta.
+ * Atajo "Sugerencia de Navidad" de la maqueta. Solo se muestra si el Aroma
+ * Navidad está activo; los aromas que no estén activos se omiten.
  */
 export const CHRISTMAS_COMBO = ["navidad", "calor-de-lana", "tierra"] as const
 
 /**
- * Contenido de la maqueta que NO se publica porque no está comprobado en el
- * repo ni en la BD. Queda aquí desactivado para que la clienta lo confirme;
- * cuando lo confirme, se mueve a la página con su fuente.
+ * Fecha límite de Navidad de la maqueta ("Pide hasta el jueves 10 de
+ * diciembre"): con la entrega oficial de 7 a 9 días hábiles, un pedido de ese
+ * día llega a más tardar el 23. Pasada la fecha, la frase y la pregunta
+ * "¿Llega para Navidad?" se ocultan solas (nada de urgencia vencida).
  */
-export const PENDING_MOCKUP_CONTENT = {
-  enabled: false,
-  testimonialsWithNames: [
-    "Mariana G. · Boutique · Bogotá (Brillos de Seda)",
-    "Catalina R. · Ropa infantil · Medellín (Vientos de Lino)",
-    "Andrés P. · Hotel boutique · Cali (Tierra)",
-    "Laura V. · Accesorios · Barranquilla (Romeo y Julieta)",
-    "Daniela M. · Spa · Bogotá (Sello de Dios)",
-    "Camila T. · Marca deportiva · Bucaramanga (Eternamente Índigo)",
-    "Valentina H. · Marca premium · Cartagena (Luxury)",
-  ],
-  claims: [
-    "Calificación y número de reseñas por aroma (★ 4,3 · 9 reseñas…)",
-    "Despacho al día siguiente",
-    "30 días para cambios o devoluciones (los términos dicen otra cosa: garantía con condiciones y sin devolución por preferencia de olor)",
-    "Fecha límite de Navidad: «pide hasta el jueves 10 de diciembre»",
-    "Hecho en Medellín (el sitio dice «Hecho en Colombia»)",
-    "Pago contra entrega / en efectivo (Cliché no lo ofrece)",
-  ],
-} as const
+export const CHRISTMAS_DEADLINE = "2026-12-10T23:59:59-05:00"
+export const CHRISTMAS_DEADLINE_LABEL = "el jueves 10 de diciembre"
+
+/**
+ * Cómo se usa — textos de la maqueta. Los datos son los mismos de la ficha de
+ * producto (components/product-detail.tsx, acordeón "¿Cómo usarlo?"): si
+ * cambian allá, actualizarlos aquí.
+ */
+export const USAGE_TIPS = [
+  { title: "En espacios", desc: "De 3 a 5 puf en habitaciones de hasta 20 m²." },
+  { title: "En la ropa", desc: "3 puf en prendas superiores y 5 en jeans e inferiores." },
+  { title: "Duración", desc: "El aroma se siente hasta 8 horas en espacios cerrados." },
+] as const

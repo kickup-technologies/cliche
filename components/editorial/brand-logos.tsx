@@ -5,16 +5,11 @@
  * logotipos que se desplaza horizontalmente en loop infinito, sin fondo (los
  * logos se funden con la sección vía mix-blend). Logos oficiales de
  * clichecolombia.com. Respeta prefers-reduced-motion (queda estático centrado).
+ * La lista vive en lib/brands.ts (la usan también componentes de servidor).
  */
-export const BRANDS = [
-  { src: "/images/brands/agua-bendita.webp", alt: "Agua Bendita" },
-  { src: "/images/brands/seven-seven.webp", alt: "Seven Seven" },
-  { src: "/images/brands/entreaguas.webp", alt: "Entreaguas" },
-  { src: "/images/brands/clemont.webp", alt: "Clemont" },
-  { src: "/images/brands/wild-and-pacific.webp", alt: "Wild & Pacific" },
-  { src: "/images/brands/action-wear.webp", alt: "Action Wear" },
-  { src: "/images/brands/ancora.png", alt: "Áncora" },
-]
+import { BRANDS } from "@/lib/brands"
+
+export { BRANDS }
 
 function Logo({ src, alt }: { src: string; alt: string }) {
   return (

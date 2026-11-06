@@ -976,6 +976,8 @@ export function ProductDetail({ product, related }: Props) {
       <div
         className="fixed inset-x-0 bottom-0 z-40 transition-all duration-300"
         style={{
+          // Sube sobre la barra de cookies mientras está visible (--cookie-bar-h).
+          marginBottom: 'var(--cookie-bar-h, 0px)',
           transform: showSticky ? 'translateY(0)' : 'translateY(120%)',
           opacity: showSticky ? 1 : 0,
         }}

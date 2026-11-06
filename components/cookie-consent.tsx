@@ -1,9 +1,8 @@
 "use client"
 
-import { useEffect, useLayoutEffect, useState } from "react"
+import { useLayoutEffect, useRef, useState } from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { ShieldCheck } from "lucide-react"
 
 /**
  * Cookie Consent — Cliché Aromas
@@ -13,7 +12,8 @@ import { ShieldCheck } from "lucide-react"
  *              Decreto 1377 de 2013
  *  - México: LFPDPPP · Brasil: LGPD · Argentina: Ley 25.326
  *
- * Diseño: banner minimalista, premium y poco invasivo. Solo dos acciones
+ * Diseño: barra compacta pegada al borde inferior (publica su altura en
+ * --cookie-bar-h para que las barras fijas suban). Solo dos acciones
  * (Aceptar / Rechazar) + un enlace "Saber más" a /cookies, donde (y solo ahí)
  * el usuario puede personalizar cada categoría de forma granular. El
  * consentimiento se guarda en localStorage bajo "cliche_cookie_consent" y se
@@ -83,6 +83,7 @@ export function CookieConsent() {
   // medido 2026-08-26). Para quien ya decidió, el <script> inline de abajo lo
   // oculta ANTES del primer paint y useLayoutEffect lo desmonta sin flash.
   const [visible, setVisible] = useState(true)
+  const barRef = useRef<HTMLDivElement>(null)
 
   // No mostrar en el panel de administración ni en el checkout: en el checkout
   // móvil el banner quedaba encima del botón "Pagar" (barra sticky inferior) y
@@ -102,7 +103,30 @@ export function CookieConsent() {
     }
   }, [])
 
-  if (isHiddenRoute || !visible) return null
+  // Altura de la barra publicada como --cookie-bar-h en <html> mientras se ve:
+  // las barras fijas de compra (bandeja del kit, barra de /empresas, barra
+  // de la ficha) y los botones flotantes suben esa altura, así la barra de
+  // cookies nunca tapa un botón ni queda tapada. Sin barra, la variable no
+  // existe y todos vuelven a su sitio (fallback 0px).
+  const shown = visible && !isHiddenRoute
+  useLayoutEffect(() => {
+    const root = document.documentElement
+    const el = barRef.current
+    if (!shown || !el) {
+      root.style.removeProperty("--cookie-bar-h")
+      return
+    }
+    const publish = () => root.style.setProperty("--cookie-bar-h", `${el.offsetHeight}px`)
+    publish()
+    const ro = new ResizeObserver(publish)
+    ro.observe(el)
+    return () => {
+      ro.disconnect()
+      root.style.removeProperty("--cookie-bar-h")
+    }
+  }, [shown])
+
+  if (!shown) return null
 
   const decide = (accepted: boolean) => {
     saveConsent({
@@ -118,53 +142,43 @@ export function CookieConsent() {
   }
 
   return (
-    // bottom-24 deja libre la franja inferior donde viven las barras fijas de
-    // compra (producto z-40, ~72px de alto): el banner queda SIEMPRE clickeable
-    // sin tapar jamás un CTA de pago (por eso también z-30, debajo de ellas).
+    // Barra compacta pegada al borde inferior (antes: tarjeta flotante a
+    // 96px del borde que en el celular quedaba a media pantalla y tapaba el
+    // botón principal de las landings). Respeta el área segura del teléfono.
+    // z-30: por debajo de las barras de compra (z-40/z-50) y de los paneles;
+    // como esas barras suben con --cookie-bar-h, no se superponen.
     <div
       id="cliche-cookie-banner"
+      ref={barRef}
       role="dialog"
       aria-modal="false"
       aria-label="Aviso de cookies"
-      className="fixed bottom-24 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-2rem)] max-w-md px-1"
-      style={{ fontFamily: "system-ui, sans-serif" }}
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-[#ece2dc] bg-white/95 shadow-[0_-8px_24px_-14px_rgba(45,26,20,0.3)] backdrop-blur-md"
+      style={{ fontFamily: "system-ui, sans-serif", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       // El script inline de abajo puede tocar style.display antes de hidratar;
       // no es un mismatch real, así que silenciamos la advertencia.
       suppressHydrationWarning
     >
-      <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_8px_40px_-8px_rgba(45,26,20,0.25)] border border-[#ece2dc] px-5 py-4">
-        <div className="flex items-start gap-3">
-          <span className="flex-shrink-0 mt-0.5 w-8 h-8 rounded-full bg-[#f6ede9] flex items-center justify-center">
-            <ShieldCheck className="w-4 h-4 text-[#A67163]" strokeWidth={2.2} />
-          </span>
-          <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-semibold text-[#2D1A14] leading-snug">
-              Tu experiencia, a tu medida
-            </p>
-            <p className="text-[12px] text-[#7a6a63] mt-1 leading-relaxed">
-              Usamos cookies para recordar tu carrito, mostrarte lo que amas y
-              mejorar cada visita. Al seguir navegando aceptas su uso; puedes
-              rechazarlas cuando quieras.{" "}
-              <Link
-                href="/cookies"
-                className="text-[#A67163] underline underline-offset-2 hover:text-[#8f5e51] font-medium"
-              >
-                Saber más
-              </Link>
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 mt-4">
+      <div className="mx-auto flex max-w-5xl items-center gap-2 px-4 py-2 sm:gap-5 sm:py-2.5">
+        <p className="min-w-0 flex-1 text-[11px] leading-snug text-[#7a6a63] sm:text-[12.5px]">
+          Usamos cookies para tu carrito y para mejorar tu visita; al seguir navegando las aceptas.{" "}
+          <Link
+            href="/cookies"
+            className="font-medium text-[#A67163] underline underline-offset-2 hover:text-[#8f5e51]"
+          >
+            Saber más
+          </Link>
+        </p>
+        <div className="flex flex-none items-center gap-0.5 sm:gap-1">
           <button
             onClick={() => decide(false)}
-            className="px-5 py-2.5 rounded-full text-[12px] font-medium text-[#9e8a84] hover:text-[#2D1A14] transition-colors"
+            className="rounded-full px-2 py-2 text-[11.5px] font-medium text-[#9e8a84] transition-colors hover:text-[#2D1A14] sm:px-3 sm:text-[12px]"
           >
             Rechazar
           </button>
           <button
             onClick={() => decide(true)}
-            className="flex-1 py-2.5 rounded-full text-[13px] font-semibold bg-[#A67163] text-white shadow-sm hover:bg-[#8f5e51] transition-colors"
+            className="rounded-full bg-[#A67163] px-3.5 py-2 text-[12px] font-semibold text-white shadow-sm transition-colors hover:bg-[#8f5e51] sm:px-5 sm:text-[12.5px]"
           >
             Aceptar
           </button>
