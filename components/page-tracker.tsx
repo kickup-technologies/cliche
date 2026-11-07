@@ -8,7 +8,8 @@ import { getConsent } from "@/components/cookie-consent"
  * Registra vistas de página en /api/track SOLO si el usuario aceptó cookies
  * analíticas (conforme a Ley 1581/2012, Colombia).
  *
- * - Si aún no dio consentimiento: no trackea (espera el evento)
+ * - Opt-out, igual que el pixel: registra salvo que apague las analíticas
+ *   en /cookies (el aviso de cookies se quitó el 7-nov-2026)
  * - Si aceptó analíticas: trackea
  * - Si rechazó: silencio total
  */
@@ -20,8 +21,8 @@ export function PageTracker() {
 
     const track = () => {
       const consent = getConsent()
-      // Sin consentimiento explícito o con analíticas rechazadas → no trackear
-      if (!consent || !consent.analytics) return
+      // Solo se calla si apagó las analíticas en /cookies
+      if (consent && !consent.analytics) return
       fetch("/api/track", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -52,7 +53,7 @@ export function PageTracker() {
 
     const onClick = (e: MouseEvent) => {
       const consent = getConsent()
-      if (!consent || !consent.analytics) return
+      if (consent && !consent.analytics) return
       const vw = window.innerWidth || 1
       const vh = window.innerHeight || 1
       fetch("/api/track/click", {
@@ -85,7 +86,7 @@ export function PageTracker() {
     const sendDepth = () => {
       if (depthSent) return
       const consent = getConsent()
-      if (!consent || !consent.analytics) return
+      if (consent && !consent.analytics) return
       depthSent = true
       const vw = window.innerWidth || 1
       const vh = window.innerHeight || 1

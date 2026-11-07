@@ -1,8 +1,6 @@
 "use client"
 
-import { useLayoutEffect, useRef, useState } from "react"
-import { usePathname } from "next/navigation"
-import Link from "next/link"
+import { useLayoutEffect } from "react"
 
 /**
  * Cookie Consent — Cliché Aromas
@@ -75,125 +73,20 @@ export function getConsent(): ConsentState | null {
   return loadConsent()
 }
 
+/**
+ * Sin aviso (pedido de la marca, 7-nov-2026: nada debe interrumpir la
+ * compra). El sitio sigue en el modelo opt-out de siempre ("al navegar
+ * aceptas"): todo activo salvo que la persona lo apague en /cookies (enlace
+ * en el pie). Este componente solo replica una decisión ya guardada en la
+ * cookie del servidor, para que /api/capi la siga respetando.
+ */
 export function CookieConsent() {
-  const pathname = usePathname()
-  // ARRANCA VISIBLE: el banner viaja en el HTML del servidor y pinta con el
-  // primer paint. Antes arrancaba oculto y aparecía tras la hidratación — esa
-  // pintura tardía era el elemento LCP de la página en PSI móvil (17s→6s,
-  // medido 2026-08-26). Para quien ya decidió, el <script> inline de abajo lo
-  // oculta ANTES del primer paint y useLayoutEffect lo desmonta sin flash.
-  const [visible, setVisible] = useState(true)
-  const barRef = useRef<HTMLDivElement>(null)
-
-  // No mostrar en el panel de administración ni en el checkout: en el checkout
-  // móvil el banner quedaba encima del botón "Pagar" (barra sticky inferior) y
-  // bloqueaba el pago hasta que el usuario decidiera sobre las cookies.
-  const isHiddenRoute = pathname?.startsWith("/admin") || pathname?.startsWith("/checkout")
-
-  // useLayoutEffect corre ANTES de que el navegador pinte el render hidratado:
-  // si ya hay consentimiento guardado, el banner se desmonta sin llegar a verse.
   useLayoutEffect(() => {
     const existing = loadConsent()
     if (existing) {
       ;(window as unknown as Record<string, unknown>).__cookieConsent = existing
-      // Usuarios que decidieron antes de existir la cookie server-side:
-      // sincronizamos su elección para que /api/capi también la respete.
       syncConsentCookie(existing)
-      setVisible(false)
     }
   }, [])
-
-  // Altura de la barra publicada como --cookie-bar-h en <html> mientras se ve:
-  // las barras fijas de compra (bandeja del kit, barra de /empresas, barra
-  // de la ficha) y los botones flotantes suben esa altura, así la barra de
-  // cookies nunca tapa un botón ni queda tapada. Sin barra, la variable no
-  // existe y todos vuelven a su sitio (fallback 0px).
-  const shown = visible && !isHiddenRoute
-  useLayoutEffect(() => {
-    const root = document.documentElement
-    const el = barRef.current
-    if (!shown || !el) {
-      root.style.removeProperty("--cookie-bar-h")
-      return
-    }
-    const publish = () => root.style.setProperty("--cookie-bar-h", `${el.offsetHeight}px`)
-    publish()
-    const ro = new ResizeObserver(publish)
-    ro.observe(el)
-    return () => {
-      ro.disconnect()
-      root.style.removeProperty("--cookie-bar-h")
-    }
-  }, [shown])
-
-  if (!shown) return null
-
-  const decide = (accepted: boolean) => {
-    saveConsent({
-      necessary: true,
-      analytics: accepted,
-      marketing: accepted,
-      timestamp: new Date().toISOString(),
-    })
-    setVisible(false)
-    // Al RECHAZAR recargamos para garantizar que ninguna analítica/pixel que ya
-    // se hubiera cargado (modelo opt-out) siga ejecutándose en esta sesión.
-    if (!accepted) window.location.reload()
-  }
-
-  return (
-    // Barra compacta pegada al borde inferior (antes: tarjeta flotante a
-    // 96px del borde que en el celular quedaba a media pantalla y tapaba el
-    // botón principal de las landings). Respeta el área segura del teléfono.
-    // z-30: por debajo de las barras de compra (z-40/z-50) y de los paneles;
-    // como esas barras suben con --cookie-bar-h, no se superponen.
-    <div
-      id="cliche-cookie-banner"
-      ref={barRef}
-      role="dialog"
-      aria-modal="false"
-      aria-label="Aviso de cookies"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-[#ece2dc] bg-white/95 shadow-[0_-8px_24px_-14px_rgba(45,26,20,0.3)] backdrop-blur-md"
-      style={{ fontFamily: "system-ui, sans-serif", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-      // El script inline de abajo puede tocar style.display antes de hidratar;
-      // no es un mismatch real, así que silenciamos la advertencia.
-      suppressHydrationWarning
-    >
-      <div className="mx-auto flex max-w-5xl items-center gap-2 px-4 py-2 sm:gap-5 sm:py-2.5">
-        <p className="min-w-0 flex-1 text-[11px] leading-snug text-[#7a6a63] sm:text-[12.5px]">
-          Usamos cookies para tu carrito y para mejorar tu visita; al seguir navegando las aceptas.{" "}
-          <Link
-            href="/cookies"
-            className="font-medium text-[#A67163] underline underline-offset-2 hover:text-[#8f5e51]"
-          >
-            Saber más
-          </Link>
-        </p>
-        <div className="flex flex-none items-center gap-0.5 sm:gap-1">
-          <button
-            onClick={() => decide(false)}
-            className="rounded-full px-2 py-2 text-[11.5px] font-medium text-[#9e8a84] transition-colors hover:text-[#2D1A14] sm:px-3 sm:text-[12px]"
-          >
-            Rechazar
-          </button>
-          <button
-            onClick={() => decide(true)}
-            className="rounded-full bg-[#A67163] px-3.5 py-2 text-[12px] font-semibold text-white shadow-sm transition-colors hover:bg-[#8f5e51] sm:px-5 sm:text-[12.5px]"
-          >
-            Aceptar
-          </button>
-        </div>
-      </div>
-
-      {/* Anti-flash pre-hidratación: el banner viaja visible en el HTML del
-          servidor; este script corre apenas el parser lo alcanza (antes del
-          primer paint del banner) y lo oculta si el visitante ya decidió.
-          Tras hidratar, useLayoutEffect toma el control y lo desmonta. */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `try{if(localStorage.getItem("${STORAGE_KEY}"))document.getElementById("cliche-cookie-banner").style.display="none"}catch(e){}`,
-        }}
-      />
-    </div>
-  )
+  return null
 }

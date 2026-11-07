@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import type { Review } from "@/lib/supabase"
-import { seededReviews } from "@/lib/seed-reviews"
 
 export interface ReviewStats {
   count: number
@@ -16,26 +15,22 @@ function computeStats(rs: { rating: number }[]): ReviewStats {
 }
 
 /**
- * Fuente única de verdad para promedio y conteo de reseñas de un producto.
- * Combina las reseñas semilla (deterministas) con las reales de la BD, igual
- * que la sección de reseñas — así el rating del tope y el de la sección SIEMPRE
- * coinciden. El valor inicial (solo semilla) es determinista → sin hydration
- * mismatch; al llegar las reales se recalcula.
+ * Fuente única de verdad para promedio y conteo de reseñas de un producto:
+ * SOLO las reales de la BD, igual que la sección de reseñas, así el rating del
+ * tope y el de la sección siempre coinciden. Arranca en cero (sin estrellas)
+ * y se completa al llegar las reales.
  */
 export function useReviewStats(productId: string): ReviewStats {
-  const [stats, setStats] = useState<ReviewStats>(() =>
-    computeStats(seededReviews(productId)),
-  )
+  const [stats, setStats] = useState<ReviewStats>({ count: 0, avg: 0 })
 
   useEffect(() => {
     let active = true
-    setStats(computeStats(seededReviews(productId)))
+    setStats({ count: 0, avg: 0 })
     fetch(`/api/reviews?product_id=${productId}`)
       .then((r) => r.json())
       .then((real: Review[]) => {
         if (!active) return
-        const all = [...(Array.isArray(real) ? real : []), ...seededReviews(productId)]
-        setStats(computeStats(all))
+        setStats(computeStats(Array.isArray(real) ? real : []))
       })
       .catch(() => {})
     return () => { active = false }

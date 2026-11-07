@@ -9,7 +9,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import type { Review } from "@/lib/supabase"
-import { seededReviews } from "@/lib/seed-reviews"
 
 const MAX_FILES = 6
 // Vercel corta el cuerpo de la petición en ~4.5 MB, así que prometer más sería
@@ -320,9 +319,9 @@ export function ReviewsSection({ productId, productName, productImage }: Props) 
 
   useEffect(() => { fetchReviews() }, [fetchReviews])
 
-  // Reseñas reales (BD) + semilla (prueba social) combinadas para todo lo visible
-  const seeds = useMemo(() => seededReviews(productId), [productId])
-  const combined = useMemo(() => [...reviews, ...seeds], [reviews, seeds])
+  // Solo reseñas reales de la BD (7-nov-2026: se quitaron las semilla de
+  // lib/seed-reviews, que no venían de clientes; el archivo se borró).
+  const combined = reviews
 
   const avgRating = combined.length
     ? combined.reduce((s, r) => s + r.rating, 0) / combined.length
