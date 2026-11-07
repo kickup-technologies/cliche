@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Heart, ShoppingCart, Star, ArrowLeft, Sparkles } from "lucide-react"
+import { Heart, ShoppingCart, ArrowLeft, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useFavorites } from "@/context/favorites-context"
 import { useCart } from "@/context/cart-context"
@@ -64,12 +64,6 @@ function FavoriteCard({ product }: { product: Product }) {
           </h3>
         </Link>
 
-        <div className="flex items-center gap-1">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Star key={i} className={`w-3.5 h-3.5 ${i < Math.floor(product.rating) ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`} />
-          ))}
-          <span className="text-xs text-muted-foreground ml-1">({product.reviews})</span>
-        </div>
 
         <div className="flex items-center gap-2">
           <span className="text-lg font-bold text-foreground">{formatPrice(product.price)}</span>

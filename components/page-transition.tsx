@@ -23,7 +23,9 @@ const EXIT_MS = 480
 /** Dispara la cortina de transición por código y navega a `href`. */
 export function navigateWithCurtain(href: string) {
   if (typeof window === "undefined") return
-  window.dispatchEvent(new CustomEvent("cliche:nav", { detail: { href } }))
+  // La cortina ya no está montada (7-nov-2026): se navega directo, para que
+  // quien la llame (p. ej. /cuenta tras iniciar sesión) siga funcionando.
+  window.location.assign(href)
 }
 
 export function PageTransition() {

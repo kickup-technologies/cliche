@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ShoppingCart, Heart, ArrowLeft, Zap, Star, Truck, Shield, CheckCircle } from "lucide-react"
+import { ShoppingCart, Heart, ArrowLeft, Zap, Truck, Shield, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/header"
 import { AnnouncementBar } from "@/components/announcement-bar"
@@ -134,15 +134,7 @@ function OfferRow({ product, index }: { product: Product; index: number }) {
             {product.name}
           </h2>
 
-          {/* Stars */}
-          <div className="flex items-center gap-2">
-            <div className="flex">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Star key={i} className={`w-4 h-4 ${i < Math.floor(product.rating) ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
-              ))}
-            </div>
-            <span className="text-sm text-muted-foreground">{product.rating.toFixed(1)} · {product.reviews} reseñas</span>
-          </div>
+          {/* Sin estrellas: las cifras de rating de la tabla products no son reseñas reales. */}
 
           {/* Description */}
           <p className="text-lg text-muted-foreground leading-relaxed">

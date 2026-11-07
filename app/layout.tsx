@@ -13,8 +13,6 @@ import { CookieConsent } from '@/components/cookie-consent'
 import { PixelManager } from '@/components/pixel-manager'
 import { PixelRouteTracker } from '@/components/pixel-route-tracker'
 import { SmoothScroll } from '@/components/smooth-scroll'
-import { PageTransition } from '@/components/page-transition'
-import { LeadPopup } from '@/components/lead-popup'
 import { CartSync } from '@/components/cart-sync'
 import { StickyCta } from '@/components/sticky-cta'
 import { FilmGrain } from '@/components/editorial/film-grain'
@@ -126,14 +124,14 @@ export default function RootLayout({
             {children}
             <KickupCredit />
             <CartDrawer />
-            <LeadPopup />
+            {/* Sin popup de correo (7-nov-2026): interrumpía la compra. */}
             <CartSync />
             <StickyCta />
           </FavoritesProvider>
         </CartProvider>
         </AuthProvider>
         <FilmGrain />
-        <PageTransition />
+        {/* Sin cortina de transición al abrir productos (7-nov-2026). */}
         <EditOverlay />
         <CookieConsent />
         <PixelManager />

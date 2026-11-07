@@ -68,7 +68,7 @@ async function loadSettings(): Promise<{ freeShippingThreshold: number; whatsapp
 /**
  * Calificación por aroma (la línea "★ 4,8 · 12 reseñas" de la maqueta) SOLO
  * con reseñas reales aprobadas de la tabla `reviews`. Nunca las semilla de
- * lib/seed-reviews ni las columnas rating/reviews de `products`: la maqueta
+ * reseñas semilla (ya borradas) ni las columnas rating/reviews de `products`: la maqueta
  * traía cifras de referencia y aquí no se publica un número que no exista.
  * Un aroma sin reseñas reales no muestra la línea.
  */
