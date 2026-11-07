@@ -8,15 +8,12 @@ import { WhatsAppButton } from "@/components/whatsapp-button"
 // ── Capa editorial (estructura estilo renesmehair, marca Cliché) ──
 import { EditorialHero } from "@/components/editorial/editorial-hero"
 import { getHeroOverrides } from "@/lib/editorial-hero-server"
-import { Marquee } from "@/components/editorial/marquee"
-import { EditorialStory } from "@/components/editorial/editorial-story"
 import { ImageTextOverlay } from "@/components/editorial/image-text-overlay"
 import { ValuesColumns } from "@/components/editorial/values-columns"
 import { EditorialNewsletter } from "@/components/editorial/editorial-newsletter"
 import { ScrollReveal } from "@/components/editorial/scroll-reveal"
-import { BigTextScroll } from "@/components/editorial/big-text-scroll"
 import { FavoritosInicio } from "@/components/favoritos-inicio"
-import { OfferBand } from "@/components/editorial/offer-band"
+import { ParaQueCliche, PortadaCliche } from "@/components/inicio-cliche"
 import { Guarantees } from "@/components/editorial/guarantees"
 import { Faq } from "@/components/editorial/faq"
 import { ProductShowcase3D } from "@/components/editorial/product-showcase-3d"
@@ -82,86 +79,70 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
+/**
+ * Portada propia (7-nov-2026, como Bienestar): foto real de los frascos y el
+ * texto en HTML. En false vuelven las diapositivas del panel (EditorialHero).
+ */
+const PORTADA_PROPIA = true
+
 export default async function Home() {
-  // Diapositivas del hero editadas desde el panel (sección Portada); la API
-  // revalida "/" al guardar, así que el cambio entra al instante.
-  const heroOverrides = await getHeroOverrides()
+  // Diapositivas del hero editadas desde el panel (sección Portada); solo se
+  // usan si PORTADA_PROPIA está en false.
+  const heroOverrides = PORTADA_PROPIA ? null : await getHeroOverrides()
+
+  /*
+   * Inicio v2 (7-nov-2026), con el orden del de Bienestar: portada, prueba
+   * social, favoritos, "¿Para qué lo buscas?", arma tu kit; después la
+   * confianza B2B (logos, segmentos, 3D), razones, garantías, preguntas y la
+   * banda para empresas. Salen la banda de atributos, la pausa con texto
+   * gigante, la historia editorial y la banda de oferta (repetían lo mismo).
+   */
   return (
     <main className="min-h-screen">
       <AnnouncementBar />
       <Header />
 
-      {/* 1. ATENCIÓN — hero con CTA y confianza inmediata */}
-      <EditorialHero overrides={heroOverrides} />
+      {/* 1. ATENCIÓN — portada propia con foto real (o las del panel) */}
+      {PORTADA_PROPIA ? <PortadaCliche /> : <EditorialHero overrides={heroOverrides ?? undefined} />}
 
-      {/* 1b. CONFIANZA INMEDIATA — reseñas + nº de marcas pegado al hero
-          (pedido del cliente 2026-08-26: prueba social más arriba) */}
+      {/* 1b. CONFIANZA INMEDIATA — marcas, envíos y pago protegido */}
       <SocialProofBar />
 
-      {/* 2. CONFIANZA — atributos de marca en movimiento */}
-      <ScrollReveal>
-        <Marquee />
-      </ScrollReveal>
-
-      {/* 2a. DESEO — favoritos en cuadrícula con filtro por familia (como
-          la vitrina de Bienestar, 7-nov-2026): el producto, arriba. */}
+      {/* 2. DESEO — favoritos en cuadrícula con filtro por familia */}
       <FavoritosInicio />
 
-      {/* 2b. VALIDACIÓN INMEDIATA — pasarela de logos de marcas reales justo
-          tras el hero (pedido del cliente: que la confianza se vea de una) */}
-      <BrandLogos />
+      {/* 3. CAMINOS — casa, ropa, tienda o marca y regalo */}
+      <ParaQueCliche />
 
-      {/* 3. SEGMENTACIÓN B2B — categorías (layout original + "ver más") */}
+      {/* 4. PERSONALIZACIÓN — arma tu propio kit combinando aromas */}
+      <CustomPackCTA />
+
+      {/* 5. VALIDACIÓN B2B — logos de marcas reales y segmentos */}
+      <BrandLogos />
       <SegmentShowcase />
 
-      {/* 3b. OBJETO DE DESEO — vitrina rotativa de renders 3D reales */}
+      {/* 6. OBJETO DE DESEO — vitrina rotativa de renders 3D reales */}
       <ProductShowcase3D />
 
       {/* (Sin testimonios: no hay forma de verificar que sean reales; se
           ocultan como las reseñas hasta tener varios reales, 7-nov-2026.) */}
 
-      {/* 4b. PERSONALIZACIÓN — arma tu propio kit combinando aromas */}
-      <CustomPackCTA />
-
-      {/* 4. CREENCIA — razones para confiar (stagger interno) */}
+      {/* 7. CREENCIA Y RIESGO — razones, garantías y preguntas */}
       <ValuesColumns />
-
-      {/* 5. EMOCIÓN — banda full-bleed con parallax */}
-      <ImageTextOverlay
-        image="/images/lifestyle-bedroom.jpg"
-        eyebrow="Experiencia de marca"
-        title="El aroma que hace que quieran quedarse"
-        text="Un ambiente que enamora a tus clientes desde que entran. Unos pufs duran todo el día —100% natural, no mancha."
-        cta={{ label: "Ver aromas", href: "/catalogo" }}
-        height="tall"
-      />
-
-      {/* 6. Pausa editorial — titular gigante sobre humo WebGL */}
-      <BigTextScroll text="Aromas que transforman marcas" />
-
-      {/* 7. SEGMENTACIÓN — cada visitante a su camino (stagger interno) */}
-      <EditorialStory />
-
-      {/* 9. OFERTA — incentivo concreto con CTA único */}
-      <OfferBand />
-
-      {/* 11. REVERSIÓN DE RIESGO — garantías concretas */}
       <Guarantees />
-
-      {/* 12. OBJECIONES — FAQ acordeón */}
       <Faq />
 
-      {/* 13. B2B — audiencia secundaria, al final del embudo */}
+      {/* 8. B2B — audiencia secundaria, al final del embudo */}
       <ImageTextOverlay
         image="/images/lifestyle-living.jpg"
         eyebrow="Para empresas y marcas"
         title="Creamos la identidad olfativa de tu marca"
         text="Hoteles, spas y tiendas confían en nosotros para diseñar su aroma exclusivo."
-        cta={{ label: "Solicitar cotización", href: "/catalogo" }}
+        cta={{ label: "Solicitar cotización", href: "/empresas" }}
         align="left"
       />
 
-      {/* 14. CAPTURA — último intento con gancho de descuento */}
+      {/* 9. CAPTURA — newsletter */}
       <ScrollReveal>
         <EditorialNewsletter />
       </ScrollReveal>

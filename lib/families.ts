@@ -21,17 +21,39 @@ export type FamilyValue = (typeof FAMILIES)[number]["value"]
  */
 export const SIN_FAMILIA = "ninguna"
 
-/** Mapeo histórico por slug, para productos sin categoría asignada. */
+/**
+ * Familia por slug, para productos sin categoría asignada en el panel (hoy
+ * los 25). Corregida el 7-nov-2026 según lo que dice la ETIQUETA del frasco
+ * (y el documento de distribuidores cuando coincide con ella). Donde la
+ * etiqueta solo trae una frase, manda lo que esa frase describe; Lycra de
+ * Verano, Seda del Lejano Oriente y Navidad no traen pistas en la etiqueta y
+ * quedan por sus notas de la BD hasta que la marca confirme la fórmula.
+ */
 export const FAMILY_MAP: Record<string, string> = {
-  "dulce-lana": "citricos", "brillos-de-seda": "citricos", "agua": "citricos",
-  "aire": "citricos", "frescura-de-lino": "citricos",
-  "vientos-de-lino": "florales", "sello-de-dios": "florales", "lycra-de-verano": "florales",
-  "tao": "florales", "romeo-y-julieta": "florales", "hilos-de-seda": "florales",
-  "seda-del-lejano-oriente": "florales",
-  "eternamente-indigo": "amaderados", "indigo-profundo": "amaderados",
-  "luxury": "amaderados", "tierra": "amaderados",
-  "calor-de-lana": "dulces", "mahai": "dulces", "coconut": "dulces", "watermelon": "dulces",
-  "best-friends": "frescos", "air-fresh": "frescos",
+  // Cítricos — Agua: clementina, chabacano, lirio del valle · Índigo Profundo:
+  // naranja, artemisa, lavanda · Brillos de Seda: "aromáticas, cítricas y
+  // florales" · Lycra de Verano: por la BD
+  "agua": "citricos", "indigo-profundo": "citricos", "brillos-seda": "citricos",
+  "brillos-de-seda": "citricos", "lycra-de-verano": "citricos",
+  // Frescos — Aire: té verde, lima, almizcle · Air Fresh: vainilla, té verde,
+  // bambú · Frescura de Lino: manzano, mandarina, fresia · Vientos de Lino:
+  // "cítricas y suaves, brisa ligera como el lino" · Best Friends: toronja,
+  // melón, jazmín (etiqueta anterior)
+  "aire": "frescos", "air-fresh": "frescos", "frescura-de-lino": "frescos",
+  "vientos-de-lino": "frescos", "best-friends": "frescos",
+  // Florales — Tierra: "Florales" · Sello de Dios: rosas blancas · Hilos de
+  // Seda: "árbol de cerezo" · Romeo y Julieta: rosa, jazmín
+  "tierra": "florales", "sello-de-dios": "florales", "hilos-de-seda": "florales",
+  "romeo-y-julieta": "florales",
+  // Dulces — Dulce Lana: "tonos dulces" · Calor de Lana: frutales y almizcles ·
+  // Mahai: frutas exóticas · Happiness: almendra, rosa, vainilla · Coconut,
+  // Watermelon y Sugar Pop
+  "dulce-lana": "dulces", "calor-de-lana": "dulces", "mahai": "dulces", "happiness": "dulces",
+  "coconut": "dulces", "watermelon": "dulces", "sugar-pop": "dulces",
+  // Amaderados — Eternamente Índigo: "denim, bosque y naturaleza" · Tao:
+  // "orientales" · Luxury · Navidad: "navideñas" · Seda del Lejano Oriente: por la BD
+  "eternamente-indigo": "amaderados", "tao": "amaderados", "luxury": "amaderados",
+  "navidad": "amaderados", "seda-del-lejano-oriente": "amaderados",
 }
 
 /**

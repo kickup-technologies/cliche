@@ -5,7 +5,9 @@
  * cuando la fuente lo sugiere, una línea para marcas y tiendas) y el cierre
  * "Notas: … Familia olfativa: …".
  *
- * Solo datos que ya estaban en la descripción de la BD: sin promesas de salud
+ * Sello de Dios e Índigo Profundo siguen la etiqueta del frasco (que coincide
+ * con el documento de distribuidores), no la BD. El resto: solo datos que ya
+ * estaban en la descripción de la BD: sin promesas de salud
  * ("calma la mente", "regula el cortisol", "reduce la ansiedad"…), sin
  * superlativos que no se puedan sostener ("más vendido", "la más cara del
  * mundo") y sin cifras nuevas. Si una nota choca con lib/catalog-data.ts,
@@ -114,11 +116,11 @@ Notas: seda blanca, polvos suaves y almizcle cremoso. Familia olfativa: suave, p
   },
   "aroma-indigo-profundo": {
     antes: "Lavanda francesa, violeta y cedro oscuro",
-    texto: `Una sala amplia, techos altos, un espacio que pide un aroma con presencia. Índigo Profundo es la versión intensa de Índigo. La lavanda francesa abre aromática y limpia, la violeta le da un corazón elegante y el cedro oscuro lo asienta con un fondo amaderado y firme.
+    texto: `Una sala amplia, techos altos, un espacio que pide un aroma con presencia. Índigo Profundo abre con naranja, sigue con la artemisa, verde y aromática, y se asienta en la lavanda, limpia y serena.
 
-Se queda más tiempo en el ambiente y en las telas, así que rinde en salas amplias y estudios. En una tienda, llena el espacio con una presencia aromática equilibrada, en su justa medida.
+Se queda en el ambiente y en las telas, así que rinde en salas amplias, estudios y clósets. En una tienda de marca masculina o unisex, deja una estela fresca y con carácter.
 
-Notas: lavanda francesa, violeta y cedro oscuro. Familia olfativa: aromática, floral y amaderada.`,
+Notas: naranja, artemisa y lavanda. Familia olfativa: cítrica, aromática y fresca.`,
   },
   "aroma-luxury": {
     antes: "Oud árabe, ámbar oriental y especias exó",
@@ -170,11 +172,11 @@ Notas: vainilla cremosa, cedro y cardamomo. Familia olfativa: oriental, especiad
   },
   "aroma-sello-de-dios": {
     antes: "Incienso sagrado, mirra árabe y madera d",
-    texto: `Antes de que empiece el ruido del día hay un momento de silencio: una oración, la lectura de la mañana, unos minutos de meditación. Sello de Dios acompaña ese ritual. El incienso sagrado abre solemne, la mirra árabe le da un corazón resinoso y profundo, y la madera de oud lo asienta con un fondo cálido.
+    texto: `Antes de que empiece el ruido del día hay un momento de silencio: una oración, la lectura de la mañana, unos minutos de meditación. Sello de Dios acompaña ese ritual con un aroma de rosas blancas, fresco y suave, que se queda flotando en el ambiente.
 
-En segundos el ambiente gana profundidad y presencia. Úsalo en tu espacio espiritual, en el rincón de meditación o al iniciar el día. En una tienda, transmite misticismo y distinción a quien entra.
+Úsalo en tu espacio espiritual, en el rincón de meditación, en el spa o al empezar el día en casa. En una tienda, recibe a quien entra con una sensación limpia y delicada.
 
-Notas: incienso sagrado, mirra árabe y madera de oud. Familia olfativa: amaderada, resinosa y profunda.`,
+Notas: rosas blancas. Familia olfativa: floral, fresca y suave.`,
   },
   "aroma-sugar-pop": {
     antes: "Pitaya, lychée, flor de Jamaica y vainil",
