@@ -30,7 +30,7 @@ const QA = [
   },
   {
     q: "¿Hacen envíos a todo el país?",
-    a: "Despachamos a toda Colombia con transportadoras aliadas: flete de $20.500 (entrega de 7 a 9 días hábiles) y gratis en pedidos desde $300.000.",
+    a: "Despachamos a toda Colombia con transportadoras aliadas: flete de $20.500 (llega en 2 a 3 días hábiles) y gratis en pedidos desde $300.000.",
   },
   {
     q: "¿Cómo puedo pagar?",

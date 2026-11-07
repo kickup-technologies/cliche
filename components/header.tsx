@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { ShoppingBag, ChevronDown, ChevronRight, Heart, Instagram, User, Package, LogOut, LogIn, Crown, Leaf, Gift, Users, X, ShieldCheck, Newspaper } from "lucide-react"
+import { ShoppingBag, ChevronDown, ChevronRight, Heart, Instagram, User, Package, LogOut, LogIn, Crown, Leaf, Gift, Users, X, ShieldCheck, Newspaper, Building2 } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet"
 import {
   DropdownMenu,
@@ -13,38 +13,38 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
-import { ProductSearch } from "@/components/product-search"
+import { useOcultarAlBajar } from "@/lib/ocultar-al-bajar"
 import { useCart } from "@/context/cart-context"
 import { useFavorites } from "@/context/favorites-context"
 import { useAuth } from "@/context/auth-context"
 import { getSupabaseBrowser } from "@/lib/supabase/client"
 import { tierOf, SPENT_STATUSES, formatCOP } from "@/lib/loyalty"
 
-// Navegación depurada: cada enlace tiene un destino DISTINTO (sin redundancias).
-const navigation = [
+// Menú de tienda (7-nov-2026, como Bienestar): la tienda y sus familias
+// directo, Arma tu kit y Empresas. Blog y Nosotros viven en el pie.
+const navigation: { name: string; href: string; highlight?: boolean; submenu?: { name: string; href: string }[] }[] = [
   {
-    name: "Aromas",
+    name: "Tienda",
     href: "/catalogo",
-    // Las familias olfativas REALES del catálogo (categoria=<familia>). Antes
-    // enlazaba a hogar/ropa/kit, valores que el filtro no conoce → página vacía.
+    // Las familias olfativas REALES del catálogo (categoria=<familia>).
     submenu: [
+      { name: "Todos los aromas", href: "/catalogo" },
       { name: "Cítricos", href: "/catalogo?categoria=citricos" },
       { name: "Florales", href: "/catalogo?categoria=florales" },
       { name: "Amaderados", href: "/catalogo?categoria=amaderados" },
       { name: "Dulces", href: "/catalogo?categoria=dulces" },
       { name: "Frescos", href: "/catalogo?categoria=frescos" },
-      { name: "Ver todo el catálogo", href: "/catalogo" },
     ],
   },
   { name: "Arma tu kit", href: "/arma-tu-kit", highlight: true },
-  { name: "Blog", href: "/blog" },
-  { name: "Nosotros", href: "/nosotros" },
+  { name: "Para empresas", href: "/empresas" },
 ]
 
 // Menú móvil — listas planas, editoriales (sin acordeones ni tarjetas).
 const MOBILE_EXPLORE = [
-  { name: "Aromas", href: "/catalogo", icon: Leaf },
+  { name: "Tienda", href: "/catalogo", icon: Leaf },
   { name: "Arma tu kit", href: "/arma-tu-kit", icon: Gift, dot: true },
+  { name: "Para empresas", href: "/empresas", icon: Building2 },
   { name: "Blog", href: "/blog", icon: Newspaper },
   { name: "Nosotros", href: "/nosotros", icon: Users },
 ]
@@ -57,6 +57,9 @@ const MOBILE_ACCOUNT = [
 export function Header() {
   const [isOpen, setIsOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
+  // Se esconde al bajar y vuelve al subir (lib/ocultar-al-bajar), salvo con
+  // el menú abierto.
+  const ocultoAlBajar = useOcultarAlBajar()
   // Cursor deslizante (hover) para el nav de escritorio.
   const [deskPos, setDeskPos] = useState({ left: 0, width: 0, opacity: 0 })
   const SLIDE = "left 0.3s cubic-bezier(0.22,1,0.36,1), width 0.3s cubic-bezier(0.22,1,0.36,1), opacity 0.2s ease"
@@ -143,7 +146,7 @@ export function Header() {
       className={`fixed left-0 right-0 z-50 transition-all duration-300 ${
         useSolid ? "bg-background/90 backdrop-blur-xl border-b border-foreground/[0.06]" : "bg-transparent"
       }`}
-      style={{ top: useSolid ? 0 : "40px" }}
+      style={{ top: useSolid ? 0 : "40px", transform: ocultoAlBajar && !isOpen && !accountOpen ? "translateY(-110%)" : "translateY(0)" }}
     >
       <nav className="container mx-auto px-4 sm:px-6">
         <div className="grid h-16 lg:h-[72px] grid-cols-[1fr_auto_1fr] items-center">
@@ -306,7 +309,7 @@ export function Header() {
             <img
               src="/images/logo-cliche.png"
               alt="Cliché — Marketing Olfativo"
-              className={`h-12 w-auto object-contain transition-all duration-300 lg:h-14 ${
+              className={`h-10 w-auto object-contain transition-all duration-300 lg:h-12 ${
                 useSolid ? "" : "brightness-0 invert"
               }`}
             />
@@ -314,10 +317,6 @@ export function Header() {
 
           {/* ── Right: actions ── */}
           <div className="flex items-center justify-end gap-1">
-            <Link href="/catalogo" className={navLink("hidden lg:inline-flex mr-3")}>
-              Catálogo
-            </Link>
-            <ProductSearch buttonClassName={iconBtn} />
             <Link href="/favoritos" className={`${iconBtn} hidden sm:flex`} aria-label="Favoritos">
               <Heart className={`h-[18px] w-[18px] ${favCount > 0 ? "fill-red-500 text-red-500" : ""}`} />
               {favCount > 0 && (

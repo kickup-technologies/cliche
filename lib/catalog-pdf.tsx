@@ -149,7 +149,7 @@ export function CatalogDocument({
           <Text style={s.coverMeta}>
             Catálogo de aromas y sprays para hogar, textiles y marca.{"\n"}
             {products.length} fragancias artesanales · Colombia{"\n"}
-            Envío {cop(20500)} · gratis desde {cop(300000)} · entrega 7 a 9 días hábiles{"\n"}
+            Envío {cop(20500)} · gratis desde {cop(300000)} · entrega 2 a 3 días hábiles{"\n"}
             {whatsapp ? `WhatsApp ${whatsapp}` : ""}{web ? `   ·   ${web}` : ""}
           </Text>
         </View>

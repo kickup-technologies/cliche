@@ -56,8 +56,8 @@ export const CHRISTMAS_COMBO = ["navidad", "calor-de-lana", "tierra"] as const
 
 /**
  * Fecha límite de Navidad de la maqueta ("Pide hasta el jueves 10 de
- * diciembre"): con la entrega oficial de 7 a 9 días hábiles, un pedido de ese
- * día llega a más tardar el 23. Pasada la fecha, la frase y la pregunta
+ * diciembre"): con la entrega de 7 a 9 días hábiles de entonces, un pedido de ese
+ * día llegaba a más tardar el 23 (hoy llega en 2 a 3: la fecha queda con margen). Pasada la fecha, la frase y la pregunta
  * "¿Llega para Navidad?" se ocultan solas (nada de urgencia vencida).
  */
 export const CHRISTMAS_DEADLINE = "2026-12-10T23:59:59-05:00"

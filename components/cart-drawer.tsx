@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { X, Plus, Minus, ShoppingBag, Trash2, ArrowRight, Truck, Check, ChevronDown } from "lucide-react"
+import { X, Plus, Minus, ShoppingBag, Trash2, Truck, Check, ChevronDown, Gift, CreditCard } from "lucide-react"
 import { useCart } from "@/context/cart-context"
 import { useSiteSettings } from "@/lib/use-site-settings"
 import { parseFreeShippingThreshold } from "@/lib/pricing"
 import type { Product } from "@/lib/supabase"
 import { PRODUCT_PLACEHOLDER } from "@/lib/placeholder"
+import { ENTREGA_EN_LINEA, SOUVENIR_EN_LINEA } from "@/lib/entrega"
 
 // Paleta de marca (fiel al landing / checkout)
 const CREAM = "#FAF8F5"
@@ -96,6 +97,28 @@ export function CartDrawer() {
             <X className="w-4 h-4" style={{ color: BROWN }} />
           </button>
         </div>
+
+        {/* Envío gratis arriba, a la vista apenas se abre (como en Bienestar). */}
+        {items.length > 0 && (
+          <div className="px-7 py-4 border-b" style={{ borderColor: `${BROWN}12`, background: "#FBF6F3" }}>
+            {/* Barra envío gratis */}
+            <div className="space-y-2">
+              {remaining > 0 ? (
+                <p className="text-[13px] text-center" style={{ color: `${BROWN}55` }}>
+                  Agrega <span className="font-semibold" style={{ color: BROWN }}>{formatPrice(remaining)}</span> más y el envío es{" "}
+                  <span className="font-semibold inline-flex items-center gap-0.5" style={{ color: TERRA }}><Truck className="w-3 h-3" />gratis</span>
+                </p>
+              ) : (
+                <p className="text-[13px] text-center font-semibold inline-flex items-center justify-center gap-1 w-full" style={{ color: TERRA }}>
+                  <Check className="w-3.5 h-3.5" /> ¡Tienes envío gratis!
+                </p>
+              )}
+              <div className="h-[3px] w-full overflow-hidden rounded-full" style={{ background: `${BROWN}10` }}>
+                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${progress}%`, background: TERRA }} />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Content — data-lenis-prevent: Lenis ignora la rueda aquí y deja el scroll nativo */}
         <div className="flex-1 overflow-y-auto overscroll-contain" data-lenis-prevent>
@@ -228,25 +251,8 @@ export function CartDrawer() {
         {/* Footer */}
         {items.length > 0 && (
           <div className="border-t px-7 py-6 space-y-4" style={{ borderColor: `${BROWN}12`, background: CREAM }}>
-            {/* Barra envío gratis */}
-            <div className="space-y-2">
-              {remaining > 0 ? (
-                <p className="text-[11px] text-center" style={{ color: `${BROWN}55` }}>
-                  Agrega <span className="font-semibold" style={{ color: BROWN }}>{formatPrice(remaining)}</span> más y el envío es{" "}
-                  <span className="font-semibold inline-flex items-center gap-0.5" style={{ color: TERRA }}><Truck className="w-3 h-3" />gratis</span>
-                </p>
-              ) : (
-                <p className="text-[11px] text-center font-semibold inline-flex items-center justify-center gap-1 w-full" style={{ color: TERRA }}>
-                  <Check className="w-3.5 h-3.5" /> ¡Tienes envío gratis!
-                </p>
-              )}
-              <div className="h-[3px] w-full overflow-hidden rounded-full" style={{ background: `${BROWN}10` }}>
-                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${progress}%`, background: TERRA }} />
-              </div>
-            </div>
-
             <div className="flex justify-between items-baseline pt-1">
-              <span className="text-[11px] tracking-[0.2em] uppercase" style={{ color: `${BROWN}45` }}>Subtotal</span>
+              <span className="text-[12px] tracking-[0.2em] uppercase" style={{ color: `${BROWN}70` }}>Subtotal</span>
               <span className="font-serif text-2xl font-light" style={{ color: BROWN }}>{formatPrice(total)}</span>
             </div>
 
@@ -259,11 +265,12 @@ export function CartDrawer() {
               onMouseLeave={(e) => (e.currentTarget.style.background = TERRA)}
             >
               {isCheckingOut ? "Procesando..." : (
-                <>Proceder al pago <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" /></>
+                <><CreditCard className="w-4 h-4" /> FINALIZAR COMPRA · {formatPrice(total)}</>
               )}
             </button>
-            <p className="text-[10px] text-center tracking-wide" style={{ color: `${BROWN}30` }}>
-              Pago cifrado · Envío a todo Colombia
+            <p className="text-[12px] text-center inline-flex w-full items-center justify-center gap-1.5" style={{ color: `${BROWN}99` }}>
+              {SOUVENIR_EN_LINEA && <Gift className="w-3.5 h-3.5" style={{ color: TERRA }} />}
+              {SOUVENIR_EN_LINEA ? "Souvenir de regalo al pagar en línea · " : ""}llega en {ENTREGA_EN_LINEA}
             </p>
           </div>
         )}

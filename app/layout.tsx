@@ -14,9 +14,7 @@ import { PixelManager } from '@/components/pixel-manager'
 import { PixelRouteTracker } from '@/components/pixel-route-tracker'
 import { SmoothScroll } from '@/components/smooth-scroll'
 import { CartSync } from '@/components/cart-sync'
-import { StickyCta } from '@/components/sticky-cta'
 import { FilmGrain } from '@/components/editorial/film-grain'
-import { KickupCredit } from '@/components/kickup-credit'
 import Script from 'next/script'
 import './globals.css'
 
@@ -122,11 +120,11 @@ export default function RootLayout({
         <CartProvider>
           <FavoritesProvider>
             {children}
-            <KickupCredit />
+            {/* Sin crédito del desarrollador al pie (7-nov-2026, igual que Bienestar). */}
             <CartDrawer />
             {/* Sin popup de correo (7-nov-2026): interrumpía la compra. */}
             <CartSync />
-            <StickyCta />
+            {/* Sin píldora flotante "Comprar": las fichas ya tienen su barra de compra. */}
           </FavoritesProvider>
         </CartProvider>
         </AuthProvider>
