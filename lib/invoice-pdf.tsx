@@ -197,7 +197,7 @@ export function InvoiceDocument({ order: o }: { order: Order }) {
         {dir?.notes ? <Text style={s.notes}>Notas del pedido: {dir.notes}</Text> : null}
 
         <Text style={s.legal}>
-          Valores en pesos colombianos (COP), impuestos incluidos. Entrega estimada de 7 a 9 días
+          Valores en pesos colombianos (COP), impuestos incluidos. Entrega estimada de 2 a 3 días
           hábiles; envío gratuito en compras desde $300.000. Documento generado electrónicamente;
           es válido sin firma ni sello.
         </Text>

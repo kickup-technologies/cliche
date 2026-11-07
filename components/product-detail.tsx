@@ -9,8 +9,10 @@ import { useFavorites } from "@/context/favorites-context"
 import { useCAPI } from "@/lib/use-capi"
 import { useSiteSettings } from "@/lib/use-site-settings"
 import { parseFreeShippingThreshold } from "@/lib/pricing"
-import { usePersonalizedUrgency } from "@/lib/personalized-urgency"
 import { getCatalogProduct } from "@/lib/catalog-data"
+import { historiaDe } from "@/lib/historias"
+import { ENTREGA_EN_LINEA, SOUVENIR_EN_LINEA } from "@/lib/entrega"
+import { CuentaRegresiva } from "@/components/cuenta-regresiva"
 
 const SprayBottle3D = dynamic(
   () => import("@/components/spray-bottle-3d").then((m) => m.SprayBottle3D),
@@ -35,28 +37,19 @@ import { PRODUCT_MODELS, sin3D } from "@/lib/product-models"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
-  ShoppingBag, Star, ShieldCheck, Truck, BadgeCheck,
+  ShoppingBag, ShieldCheck, Truck, BadgeCheck,
   ChevronRight, Plus, Minus, Share2, Heart, CheckCircle,
   Wind, Shirt, Home, AlertTriangle, Package, Gift, RotateCcw,
-  Timer, Check, Sparkles, Zap, Flame
+  Check, Sparkles, Zap, Flame, HelpCircle, CreditCard
 } from "lucide-react"
 
-// Día de despacho del próximo pedido: salen el siguiente día hábil (lun-vie).
-// Se calcula con el día de la semana de Bogotá para que "mañana" sea cierto.
-function nextDispatchLabel(): string {
-  const weekday = new Date().toLocaleDateString("en-US", { weekday: "short", timeZone: "America/Bogota" })
-  if (weekday === "Fri" || weekday === "Sat") return "el lunes"
-  return "mañana"
-}
 import type { Product } from "@/lib/supabase"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { WhatsAppButton } from "@/components/whatsapp-button"
 import { PackBuilder } from "@/components/pack-builder"
-import { ReviewsSection } from "@/components/reviews-section"
 import { ProductRecommendations } from "@/components/product-recommendations"
 import { recordView } from "@/lib/recently-viewed"
-import { useReviewStats } from "@/lib/use-review-stats"
 import { PRICE_TIERS, TIER_BY_ID, UNIT_PRICE, makeVariantId, tierSavings } from "@/lib/pricing"
 import { PRODUCT_PLACEHOLDER } from "@/lib/placeholder"
 
@@ -131,11 +124,11 @@ export function ProductDetail({ product, related }: Props) {
   const siteSettings = useSiteSettings()
   const { toggleFavorite, isFavorite } = useFavorites()
   const fav = isFavorite(product.id)
-  // Rating y conteo unificados (semilla + reales) — misma fuente que la sección
-  const reviewStats = useReviewStats(product.id)
   const [qty, setQty] = useState(1)
-  // Tier de compra: unidad / kit x3 / x4 / x6 (mismo aroma)
-  const [tierId, setTierId] = useState("unit")
+  // Tier de compra: unidad / kit x3 / x4 / x6 (mismo aroma). Arranca en el
+  // RECOMENDADO, como los packs de Bienestar (pedido de la marca 7-nov-2026);
+  // el producto de prueba solo se vende por unidad.
+  const [tierId, setTierId] = useState(() => (product.slug === "prueba" ? "unit" : PRICE_TIERS.find((t) => t.badge === "Recomendado")?.id ?? "unit"))
   const tier = TIER_BY_ID[tierId] ?? TIER_BY_ID["unit"]
   // Precio mostrado/cobrado: la UNIDAD usa el precio real del producto (BD) —
   // igual que cobra el servidor —; los kits usan el precio fijo del tier.
@@ -149,20 +142,6 @@ export function ProductDetail({ product, related }: Props) {
   const [packOpen, setPackOpen] = useState(false)
   // Acordeón de info — qué sección está abierta (una a la vez; null = todas cerradas por defecto)
   const [openSection, setOpenSection] = useState<string | null>(null)
-  // Urgencia PERSONALIZADA por sesión (se activa solo si el visitante muestra
-  // interés en ESTE producto).
-  const pUrg = usePersonalizedUrgency(product.slug)
-  const [offerLeft, setOfferLeft] = useState<{ m: number; s: number } | null>(null)
-  useEffect(() => {
-    if (!pUrg?.active) { setOfferLeft(null); return }
-    const tick = () => {
-      const diff = Math.max(0, pUrg.offerEndsAt - Date.now())
-      setOfferLeft({ m: Math.floor(diff / 60000), s: Math.floor((diff % 60000) / 1000) })
-    }
-    tick()
-    const t = setInterval(tick, 1000)
-    return () => clearInterval(t)
-  }, [pUrg])
   // Gallery: null = vista principal (intro/3D), string = foto elegida por el cliente.
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
 
@@ -305,7 +284,9 @@ export function ProductDetail({ product, related }: Props) {
    * Los textos del código quedan solo como respaldo para productos sin
    * descripción propia (o cuando Supabase no está disponible).
    */
-  const descripcion = product.description?.trim() || catalogItem?.description || VALUE_MAP[product.slug] || ""
+  // Las historias reescritas (lib/historias, 7-nov-2026) se aplican solo si
+  // el panel conserva el texto anterior; si la dueña escribe otro, manda el suyo.
+  const descripcion = historiaDe(product.slug, product.description) || catalogItem?.description || VALUE_MAP[product.slug] || ""
   const isKit = product.slug.startsWith("kit-")
   const savings = product.original_price ? product.original_price - product.price : 0
 
@@ -537,23 +518,6 @@ export function ProductDetail({ product, related }: Props) {
                 {product.name}
               </h1>
 
-              {/* Rating — unificado con la sección de reseñas */}
-              {reviewStats.count > 0 && (
-                <a href="#resenas" className="flex items-center gap-2 -mt-1 group">
-                  <div className="flex items-center gap-0.5">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <Star
-                        key={i}
-                        className={`w-3.5 h-3.5 ${i <= Math.round(reviewStats.avg) ? "fill-primary text-primary" : "text-muted-foreground/30"}`}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
-                    {reviewStats.avg.toFixed(1)} · {reviewStats.count} reseña{reviewStats.count !== 1 ? "s" : ""}
-                  </span>
-                </a>
-              )}
-
               {/* Notas aromáticas — teaser olfativo bajo el título */}
               {notes.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2 -mt-1">
@@ -574,18 +538,12 @@ export function ProductDetail({ product, related }: Props) {
                 </span>
                 {tier.units > 1 ? (
                   <>
-                    <span className="text-base text-muted-foreground/70 line-through">
-                      ${(tier.units * UNIT_PRICE).toLocaleString("es-CO")}
-                    </span>
                     <span className="text-xs font-medium text-primary bg-primary/8 border border-primary/15 rounded-full px-2.5 py-0.5">
                       Ahorras ${tierSavings(tier).toLocaleString("es-CO")}
                     </span>
                   </>
                 ) : product.original_price ? (
                   <>
-                    <span className="text-base text-muted-foreground/70 line-through">
-                      ${product.original_price.toLocaleString("es-CO")}
-                    </span>
                     <span className="text-xs font-medium text-primary bg-primary/8 border border-primary/15 rounded-full px-2.5 py-0.5">
                       Ahorras ${savings.toLocaleString("es-CO")}
                     </span>
@@ -646,24 +604,28 @@ export function ProductDetail({ product, related }: Props) {
                 </button>
               </div>
 
-              {/* Oferta PERSONALIZADA por tiempo limitado — solo si el visitante
-                  muestra interés en este producto (enlace directo o vista repetida). */}
-              {pUrg?.active && offerLeft && (
-                <div className="flex items-center gap-3 bg-secondary/60 border border-primary/15 rounded-2xl px-4 py-3">
-                  <Timer className="w-4 h-4 text-primary flex-shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-[11px] font-semibold text-foreground/80 uppercase tracking-[0.12em]">{pUrg.headline}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Termina en{" "}
-                      <span className="font-mono font-semibold text-foreground">{pad(offerLeft.m)}:{pad(offerLeft.s)}</span>
-                    </p>
+              {/* Lo que trae la presentación elegida (como "Con tu pack" de
+                  Bienestar): ahorro real del kit, envío, souvenir y garantía. */}
+              {!isTestProduct && (() => {
+                const umbral = parseFreeShippingThreshold(siteSettings.free_shipping_threshold)
+                return (
+                  <div className="pdp-incluye-cl">
+                    <p className="pdp-incluye-cl-titulo">{tier.units > 1 ? `Con tu ${tier.label.toLowerCase()} recibes` : "Con tu pedido recibes"}</p>
+                    <ul>
+                      {tier.units > 1 && <li><Sparkles className="h-4 w-4" aria-hidden="true" /> {tier.units} frascos de {product.name.replace(/^Aroma\s+/i, "").split(" — ")[0]} · ahorras ${tierSavings(tier).toLocaleString("es-CO")}</li>}
+                      <li><Zap className="h-4 w-4" aria-hidden="true" /> Despacho prioritario: llega en {ENTREGA_EN_LINEA}</li>
+                      <li><Truck className="h-4 w-4" aria-hidden="true" /> {tierPrice * qty >= umbral ? "Envío gratis" : `Envío gratis desde $${umbral.toLocaleString("es-CO")}`}</li>
+                      {SOUVENIR_EN_LINEA && <li><Gift className="h-4 w-4" aria-hidden="true" /> Souvenir de regalo al pagar en línea</li>}
+                      <li><RotateCcw className="h-4 w-4" aria-hidden="true" /> Garantía de 30 días</li>
+                    </ul>
                   </div>
-                  {product.original_price && (
-                    <span className="text-xs font-medium text-foreground/60 bg-foreground/[0.05] border border-foreground/10 px-2.5 py-1 rounded-lg">
-                      -{Math.round((1 - product.price / product.original_price) * 100)}%
-                    </span>
-                  )}
-                </div>
-              )}
+                )
+              })()}
+
+              {/* Cuenta regresiva REAL (último día para recibir antes de Navidad):
+                  reemplaza la "oferta especial para ti" de 30 minutos que se
+                  reiniciaba en cada visita. */}
+              <CuentaRegresiva className="pdp-cuenta" />
 
               {/* Free shipping progress bar — only shown when cart has items */}
               {(() => {
@@ -704,22 +666,8 @@ export function ProductDetail({ product, related }: Props) {
                 {descripcion}
               </p>
 
-              {/* ¿Para quién es este aroma? — mercado recomendado del catálogo */}
-              {catalogItem?.recommendedFor && (
-                <div className="border-l-2 border-primary/60 bg-secondary/50 px-5 py-4">
-                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-primary mb-1.5">
-                    Ideal para
-                  </p>
-                  <p className="font-serif text-base text-foreground leading-snug">
-                    {catalogItem.recommendedFor}
-                  </p>
-                  {catalogItem.tagline && (
-                    <p className="mt-1.5 text-sm italic text-muted-foreground">
-                      “{catalogItem.tagline}”
-                    </p>
-                  )}
-                </div>
-              )}
+              {/* (Sin la caja "Ideal para": su texto venía del catálogo local y
+                  chocaba con las notas reales de la BD en 19 de 22 aromas.) */}
 
               {/* Quantity + Add to cart */}
               <div className="space-y-4 border-t border-foreground/[0.06] pt-6">
@@ -757,42 +705,36 @@ export function ProductDetail({ product, related }: Props) {
                       </p>
                     </div>
                   )}
+                  {/* Botón principal: comprar ahora (lleva al checkout de un paso),
+                      con el souvenir y la entrega en la segunda línea, como el
+                      formulario de Bienestar. Agregar al carrito queda segundo. */}
+                  <button
+                    type="button"
+                    data-heat="Comprar ahora"
+                    className="cod-cta pdp-comprar"
+                    onClick={handleBuyNow}
+                    disabled={product.stock === 0 || isCheckingOut}
+                  >
+                    <CreditCard size={19} aria-hidden="true" />
+                    <span className="cod-cta-txt">
+                      <span>{isCheckingOut ? "Procesando…" : `Comprar ahora · $${(tierPrice * qty).toLocaleString("es-CO")}`}</span>
+                      {!isCheckingOut && <small>{SOUVENIR_EN_LINEA ? "Souvenir de regalo · " : ""}llega en {ENTREGA_EN_LINEA.replace(" a ", "-")}</small>}
+                    </span>
+                  </button>
                   <Button
                     size="lg"
+                    variant="outline"
                     data-heat="Agregar al carrito"
-                    className="w-full h-14 text-[15px] font-semibold rounded-xl transition-all active:scale-[0.99]"
+                    className="w-full h-12 text-sm font-medium rounded-xl border-foreground/20 text-foreground hover:bg-foreground hover:text-background transition-colors"
                     onClick={handleAdd}
                     disabled={product.stock === 0}
                   >
                     {added ? (
-                      <><CheckCircle className="w-5 h-5 mr-2" /> ¡Agregado al carrito!</>
+                      <><CheckCircle className="w-4 h-4 mr-2" /> ¡Agregado al carrito!</>
                     ) : (
-                      <><ShoppingBag className="w-5 h-5 mr-2" /> Agregar al carrito</>
+                      <><ShoppingBag className="w-4 h-4 mr-2" /> Agregar al carrito</>
                     )}
                   </Button>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    data-heat="Comprar ahora"
-                    className="w-full h-12 text-sm font-medium rounded-xl border-foreground/20 text-foreground hover:bg-foreground hover:text-background transition-colors"
-                    onClick={handleBuyNow}
-                    disabled={product.stock === 0 || isCheckingOut}
-                  >
-                    {isCheckingOut ? (
-                      <><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" /> Procesando...</>
-                    ) : (
-                      <><Zap className="w-4 h-4 mr-2" /> Comprar ahora</>
-                    )}
-                  </Button>
-                  {/* Promesa de despacho real: los pedidos salen el siguiente
-                      día hábil. El texto calcula el día para hacerla concreta
-                      ("mañana"/"el lunes"), que convierte más que un genérico. */}
-                  {product.stock > 0 && (
-                    <p className="flex items-center justify-center gap-1.5 text-[12.5px] text-foreground/60">
-                      <Truck className="h-3.5 w-3.5 text-primary" />
-                      Pídelo hoy y lo despachamos <span className="font-semibold text-foreground/80">{nextDispatchLabel()}</span>
-                    </p>
-                  )}
                 </div>
 
                 {/* Acciones secundarias — discretas, estilo editorial */}
@@ -818,9 +760,9 @@ export function ProductDetail({ product, related }: Props) {
               {/* Trust signals — fila refinada con divisores */}
               <div className="grid grid-cols-3 pt-5 mt-1 border-t border-foreground/[0.06] divide-x divide-foreground/[0.06]">
                 {[
-                  { Icon: Truck, label: "Envío gratis +$300k", cls: "trust-truck" },
+                  { Icon: Truck, label: "Llega en 2-3 días", cls: "trust-truck" },
                   { Icon: ShieldCheck, label: "Pago 100% seguro", cls: "trust-shield" },
-                  { Icon: BadgeCheck, label: "30 días garantía", cls: "trust-badge" },
+                  { Icon: SOUVENIR_EN_LINEA ? Gift : BadgeCheck, label: SOUVENIR_EN_LINEA ? "Souvenir de regalo" : "30 días garantía", cls: "trust-badge" },
                 ].map(({ Icon, label, cls }) => (
                   <div key={label} className="flex flex-col items-center text-center gap-2 px-2 py-1">
                     <Icon className={`w-[18px] h-[18px] text-primary ${cls}`} />
@@ -903,7 +845,7 @@ export function ProductDetail({ product, related }: Props) {
                 content: (
                   <div className="space-y-3 text-muted-foreground">
                     {[
-                      { icon: Truck,    title: "Envío estándar", desc: "7 a 9 días hábiles. Costo según zona." },
+                      { icon: Truck,    title: "Envío prioritario", desc: `Al pagar en línea, llega en ${ENTREGA_EN_LINEA}. Costo según zona.` },
                       { icon: Gift,     title: "Envío gratis",   desc: "En compras mayores a $300.000 COP a todo Colombia." },
                       { icon: Package,  title: "Empaque",        desc: "Embalaje protegido y sellado para garantizar la calidad." },
                       { icon: RotateCcw,title: "Devoluciones",   desc: "30 días para cambios o devoluciones sin preguntas." },
@@ -917,6 +859,27 @@ export function ProductDetail({ product, related }: Props) {
                       </div>
                     ))}
                   </div>
+                ),
+              },
+              {
+                id: "faq",
+                label: "Preguntas frecuentes",
+                Icon: HelpCircle,
+                content: (
+                  <dl className="space-y-4 text-muted-foreground">
+                    {[
+                      { q: "¿Cuánto dura el aroma?", a: "Hasta 8 horas en espacios cerrados con 3 a 5 pufs." },
+                      { q: "¿Mancha la ropa?", a: "No mancha: puedes aplicarlo en prendas, sábanas y cortinas." },
+                      { q: "¿Cuándo llega mi pedido?", a: `Al pagar en línea, llega en ${ENTREGA_EN_LINEA}${SOUVENIR_EN_LINEA ? ", con un souvenir de regalo en la caja" : ""}.` },
+                      { q: "¿Puedo mezclar aromas?", a: "Sí: en Arma tu kit eliges x3, x4 o x6 con los aromas que quieras." },
+                      { q: "¿Sirve para mi marca o negocio?", a: "Sí. Si quieres un aroma para tu tienda o tu marca, en Empresas te asesoramos." },
+                    ].map((f) => (
+                      <div key={f.q}>
+                        <dt className="font-semibold text-foreground text-sm">{f.q}</dt>
+                        <dd className="text-sm mt-0.5">{f.a}</dd>
+                      </div>
+                    ))}
+                  </dl>
                 ),
               },
             ].map(({ id, label, Icon, content }) => {
@@ -959,10 +922,8 @@ export function ProductDetail({ product, related }: Props) {
           {/* Te puede gustar / Vistos recientemente — recomendación inteligente + historial */}
           <ProductRecommendations product={product} fallback={related} />
 
-          {/* Reseñas — debajo de las recomendaciones */}
-          <div className="mt-24 lg:mt-28">
-            <ReviewsSection productId={product.id} productName={product.name} productImage={product.image_url} />
-          </div>
+          {/* Reseñas ocultas por ahora (decisión de la marca, 7-nov-2026): se
+              vuelven a mostrar cuando haya varias reales. */}
         </div>
       </main>
       <Footer />
@@ -983,7 +944,7 @@ export function ProductDetail({ product, related }: Props) {
         }}
       >
         <div
-          className="flex w-full items-center gap-3 border-t border-border bg-card px-4 py-3 lg:px-10"
+          className="flex w-full items-center gap-3 border-t border-border bg-card py-3 pl-4 pr-[84px] lg:pl-10 lg:pr-28"
           style={{
             paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)',
             boxShadow: '0 -8px 32px rgba(0,0,0,0.12)',
@@ -999,11 +960,11 @@ export function ProductDetail({ product, related }: Props) {
           <Button
             size="sm"
             className="flex-shrink-0 h-11 px-6 rounded-xl font-semibold"
-            onClick={() => { handleAdd(); setTimeout(() => openDrawer(), 300) }}
-            disabled={product.stock === 0}
+            onClick={handleBuyNow}
+            disabled={product.stock === 0 || isCheckingOut}
           >
-            {added ? <CheckCircle className="w-4 h-4 mr-1" /> : <ShoppingBag className="w-4 h-4 mr-1" />}
-            {added ? "¡Agregado!" : "Agregar"}
+            <CreditCard className="w-4 h-4 mr-1" />
+            Comprar ahora
           </Button>
         </div>
       </div>

@@ -87,7 +87,7 @@ export default function TerminosPage() {
               <div className="space-y-3 text-muted-foreground leading-relaxed">
                 <p>Los envíos se realizan a todo el territorio nacional colombiano mediante operadores logísticos autorizados.</p>
                 <ul className="list-disc list-inside space-y-2">
-                  <li><strong>Todo el país:</strong> de 7 a 9 días hábiles</li>
+                  <li><strong>Todo el país:</strong> de 2 a 3 días hábiles (despacho prioritario de los pedidos pagados en línea)</li>
                   <li><strong>Municipios y zonas apartadas:</strong> puede tomar algunos días más</li>
                   <li><strong>Envío gratis</strong> en compras mayores a $300.000 COP</li>
                 </ul>

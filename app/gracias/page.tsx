@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
-  CheckCircle, ShoppingBag, Mail,
+  ShoppingBag, Mail, MessageCircle, Truck,
   Tag, Share2, Copy, Check, XCircle, RefreshCw, Clock
 } from "lucide-react"
 import dynamic from "next/dynamic"
@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button"
 import { useCart } from "@/context/cart-context"
 import { useCAPI } from "@/lib/use-capi"
 import { catalogContentIds } from "@/lib/content-ids"
+import { ENTREGA_EN_LINEA, SOUVENIR_EN_LINEA, WHATSAPP_CLICHE } from "@/lib/entrega"
 
 // Carrusel 3D "Seguir comprando" — solo cliente (WebGL), se carga aparte.
 const Gracias3DCarousel = dynamic(() => import("@/components/gracias-carousel"), {
@@ -49,6 +50,9 @@ function GraciasContent() {
   const [loading, setLoading] = useState(true)
   const [refCopied, setRefCopied] = useState(false)
   const [referral, setReferral] = useState<ReferralData | null>(null)
+  // Lo que se compró, para mostrarlo en "Tu pedido" (la misma API que usa
+  // "Seguir mi pedido"; si no responde, la página sale igual sin el detalle).
+  const [pedido, setPedido] = useState<{ total: number; items: Array<{ name: string; quantity: number; price: number }> } | null>(null)
 
   // Mercado Pago manda status / collection_status en la URL de retorno.
   const isFailed = [status, collectionStatus].some((s) => s && FAILED_STATUSES.includes(s.toUpperCase()))
@@ -187,6 +191,14 @@ function GraciasContent() {
     return () => { cancelled = true }
   }, [sessionId, isFailed]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    if (loading || isFailed || pending || !sessionId) return
+    fetch(`/api/orders/${sessionId}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((o) => { if (o) setPedido({ total: Number(o.total) || 0, items: Array.isArray(o.items) ? o.items : [] }) })
+      .catch(() => {})
+  }, [loading, isFailed, pending, sessionId])
+
   function copyReferral() {
     if (!referral) return
     navigator.clipboard.writeText(referral.code)
@@ -278,7 +290,7 @@ function GraciasContent() {
 
   return (
     <main className="min-h-screen bg-background py-16 px-4 overflow-x-hidden">
-      <div className="max-w-lg w-full mx-auto">
+      <div className="max-w-4xl w-full mx-auto">
         {loading ? (
           <div className="animate-pulse text-center">
             <div className="w-20 h-20 bg-primary/20 rounded-full mx-auto mb-6" />
@@ -287,44 +299,61 @@ function GraciasContent() {
           </div>
         ) : (
           <>
-            {/* Confirmation */}
-            <div className="text-center mb-8">
-              <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle className="w-12 h-12 text-green-600" />
+            {/* Confirmación con la forma de la de Bienestar by Cliché: la
+                referencia, lo que se compró y lo que sigue, lado a lado. */}
+            <div className="gracias">
+              <div className="gracias-ico"><Check size={28} aria-hidden="true" /></div>
+              {sessionId && <p className="gracias-ref">Pedido #{sessionId.slice(-8).toUpperCase()}</p>}
+              <h1>¡Gracias por tu compra!</h1>
+              {/* Sin prometer "número de seguimiento": la guía llega después,
+                  cuando el pedido se despacha. Aquí solo llega el recibo. */}
+              <p className="gracias-lead">Tu pago quedó confirmado. Te enviamos el recibo con los detalles a tu correo.</p>
+              <div className="gracias-grid">
+                <section className="gracias-card">
+                  <h2>Tu pedido</h2>
+                  {pedido && pedido.items.length > 0 ? (
+                    <>
+                      <ul className="gracias-items">
+                        {pedido.items.map((it, i) => (
+                          <li key={i}><span>{it.name} <small>×{it.quantity}</small></span>{it.price > 0 && <strong>${(it.price * it.quantity).toLocaleString("es-CO")}</strong>}</li>
+                        ))}
+                      </ul>
+                      <dl className="gracias-totales">
+                        <div className="gracias-total"><dt>Total pagado</dt><dd>${pedido.total.toLocaleString("es-CO")}</dd></div>
+                      </dl>
+                    </>
+                  ) : (
+                    <p className="gracias-lead" style={{ margin: 0 }}>El detalle completo está en el correo de confirmación.</p>
+                  )}
+                  <dl className="gracias-datos">
+                    <div><dt>Pago</dt><dd>En línea · Mercado Pago</dd></div>
+                    <div><dt>Entrega</dt><dd>Llega en {ENTREGA_EN_LINEA}</dd></div>
+                    {SOUVENIR_EN_LINEA && <div><dt>Regalo</dt><dd>Souvenir en tu caja</dd></div>}
+                  </dl>
+                </section>
+                <section className="gracias-card">
+                  <h2>Lo que sigue</h2>
+                  <ol className="gracias-pasos">
+                    <li>
+                      <span aria-hidden><Mail size={17} /></span>
+                      <div><b>Revisa tu correo</b><small>Te llega la confirmación con el recibo.</small></div>
+                    </li>
+                    <li>
+                      <span aria-hidden><MessageCircle size={17} /></span>
+                      <div><b>Te escribimos por WhatsApp</b><small>Para confirmar la dirección y coordinar la entrega.</small></div>
+                    </li>
+                    <li>
+                      <span aria-hidden><Truck size={17} /></span>
+                      <div><b>Despachamos tu pedido</b><small>Despacho prioritario: llega en {ENTREGA_EN_LINEA}.</small></div>
+                    </li>
+                  </ol>
+                </section>
               </div>
-              <h1 className="text-3xl font-serif font-bold text-foreground mb-3">
-                ¡Gracias por tu compra!
-              </h1>
-              <p className="text-muted-foreground mb-6">
-                {/* Sin prometer "número de seguimiento": la guía llega después,
-                    cuando el pedido se despacha. Aquí solo llega el recibo. */}
-                Tu pedido fue confirmado. Revisa tu correo — te enviamos el recibo con los detalles.
-              </p>
-
-              <div className="bg-muted/50 rounded-2xl p-5 mb-6 space-y-3 text-left">
-                <div className="flex items-center gap-3">
-                  <Mail className="w-5 h-5 text-primary flex-shrink-0" />
-                  <p className="text-sm text-foreground">Confirmación enviada a tu correo</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <ShoppingBag className="w-5 h-5 text-primary flex-shrink-0" />
-                  <p className="text-sm text-foreground">Tu pedido está siendo preparado con amor</p>
-                </div>
+              <div className="gracias-acciones">
+                {sessionId && <Link className="gracias-btn is-primario" href={`/pedido/${sessionId}`}>Seguir mi pedido</Link>}
+                <Link className="gracias-btn" href="/catalogo">Seguir comprando</Link>
               </div>
-
-              {sessionId && (
-                <div className="flex flex-col sm:flex-row gap-3 justify-center mb-2">
-                  <p className="text-xs text-muted-foreground">
-                    Pedido #{sessionId.slice(-8).toUpperCase()}
-                  </p>
-                  <Link
-                    href={`/pedido/${sessionId}`}
-                    className="text-xs font-semibold text-primary hover:underline underline-offset-2"
-                  >
-                    Seguir mi pedido →
-                  </Link>
-                </div>
-              )}
+              <p className="gracias-ayuda">¿Dudas con tu pedido? <a href={`https://wa.me/${WHATSAPP_CLICHE}`} target="_blank" rel="noreferrer">Escríbenos por WhatsApp · 312 283 8844</a></p>
             </div>
 
             {/* CTA de reseña de Google ELIMINADO: el enlace usaba el placeholder
@@ -388,13 +417,11 @@ function GraciasContent() {
               <Gracias3DCarousel />
             </div>
 
-            <Button asChild size="lg" className="w-full h-12 font-semibold mb-4">
-              <Link href="/catalogo">Ver todos los aromas</Link>
-            </Button>
-
-            <Button asChild variant="outline" size="lg" className="w-full">
-              <Link href="/">Seguir explorando</Link>
-            </Button>
+            <div className="max-w-lg mx-auto">
+              <Button asChild size="lg" className="w-full h-12 font-semibold">
+                <Link href="/catalogo">Ver todos los aromas</Link>
+              </Button>
+            </div>
           </>
         )}
       </div>

@@ -129,7 +129,7 @@ const PASOS = [
 const TESTS: readonly TestimonioId[] = ["mariana", "andres", "daniela", "camila", "catalina", "valentina"]
 
 // Respuestas de la maqueta; las condiciones de envío son las de los términos
-// (despacho el siguiente día hábil, entrega de 7 a 9 días hábiles).
+// (despacho el siguiente día hábil, entrega de 2 a 3 días hábiles desde el 7-nov-2026).
 const FAQS: { q: string; a: string }[] = [
   {
     q: "¿Qué es el marketing olfativo?",
@@ -149,7 +149,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "¿Envían a toda Colombia?",
-    a: "Sí. Despachamos desde Medellín el siguiente día hábil del pedido y el envío tarda de 7 a 9 días hábiles.",
+    a: "Sí. Despachamos desde Medellín el siguiente día hábil del pedido y llega en 2 a 3 días hábiles.",
   },
   ...(OFRECER_DISTRIBUIDORES
     ? [{
@@ -312,7 +312,7 @@ export default async function EmpresasPage() {
                 <span className="eyebrow">Regalos de fin de año</span>
                 <h2 id="t-fin">Regala un aroma a tus clientes y a tu equipo</h2>
                 <p>
-                  Para entregar antes de la prima del 18 de diciembre, cotiza en noviembre: el envío tarda de 7 a 9 días
+                  Para entregar antes de la prima del 18 de diciembre, cotiza en noviembre: el envío tarda de 2 a 3 días
                   hábiles más el tiempo de preparación.
                 </p>
                 <CotizarLink need="regalos" className="btn btn-light">Cotizar regalos de fin de año</CotizarLink>

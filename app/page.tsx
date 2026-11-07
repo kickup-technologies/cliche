@@ -15,7 +15,7 @@ import { ValuesColumns } from "@/components/editorial/values-columns"
 import { EditorialNewsletter } from "@/components/editorial/editorial-newsletter"
 import { ScrollReveal } from "@/components/editorial/scroll-reveal"
 import { BigTextScroll } from "@/components/editorial/big-text-scroll"
-import { Testimonials } from "@/components/editorial/testimonials"
+import { FavoritosInicio } from "@/components/favoritos-inicio"
 import { OfferBand } from "@/components/editorial/offer-band"
 import { Guarantees } from "@/components/editorial/guarantees"
 import { Faq } from "@/components/editorial/faq"
@@ -103,6 +103,10 @@ export default async function Home() {
         <Marquee />
       </ScrollReveal>
 
+      {/* 2a. DESEO — favoritos en cuadrícula con filtro por familia (como
+          la vitrina de Bienestar, 7-nov-2026): el producto, arriba. */}
+      <FavoritosInicio />
+
       {/* 2b. VALIDACIÓN INMEDIATA — pasarela de logos de marcas reales justo
           tras el hero (pedido del cliente: que la confianza se vea de una) */}
       <BrandLogos />
@@ -113,9 +117,8 @@ export default async function Home() {
       {/* 3b. OBJETO DE DESEO — vitrina rotativa de renders 3D reales */}
       <ProductShowcase3D />
 
-      {/* 4. PRUEBA SOCIAL TEMPRANA — testimonios en el primer tercio del
-          embudo (antes vivían debajo del pliegue, ~8º lugar) */}
-      <Testimonials />
+      {/* (Sin testimonios: no hay forma de verificar que sean reales; se
+          ocultan como las reseñas hasta tener varios reales, 7-nov-2026.) */}
 
       {/* 4b. PERSONALIZACIÓN — arma tu propio kit combinando aromas */}
       <CustomPackCTA />
