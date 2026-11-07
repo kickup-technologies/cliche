@@ -69,8 +69,13 @@ export function Header() {
   const { user, signOut } = useAuth()
   const pathname = usePathname()
   const cartCount = items.reduce((acc, i) => acc + i.quantity, 0)
+  // El inicio tiene portada propia de fondo claro (7-nov-2026): el encabezado
+  // va sólido también allí; arriba del todo se queda debajo de la barra de
+  // anuncios en lugar de taparla.
+  const sobreAnuncio = pathname === "/" && !isScrolled
   const useSolid =
     isScrolled ||
+    pathname === "/" ||
     (pathname?.startsWith("/productos/") ?? false) ||
     pathname === "/checkout" ||
     pathname === "/catalogo" ||
@@ -146,7 +151,7 @@ export function Header() {
       className={`fixed left-0 right-0 z-50 transition-all duration-300 ${
         useSolid ? "bg-background/90 backdrop-blur-xl border-b border-foreground/[0.06]" : "bg-transparent"
       }`}
-      style={{ top: useSolid ? 0 : "40px", transform: ocultoAlBajar && !isOpen && !accountOpen ? "translateY(-110%)" : "translateY(0)" }}
+      style={{ top: useSolid && !sobreAnuncio ? 0 : "40px", transform: ocultoAlBajar && !isOpen && !accountOpen ? "translateY(-110%)" : "translateY(0)" }}
     >
       <nav className="container mx-auto px-4 sm:px-6">
         <div className="grid h-16 lg:h-[72px] grid-cols-[1fr_auto_1fr] items-center">

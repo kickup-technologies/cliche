@@ -1078,3 +1078,45 @@ aside { transition: background-color .35s ease, border-color .35s ease; }
 }
 @media (min-width:1200px) { .favoritos-cl .favoritos-cl-grid { grid-template-columns:repeat(4,minmax(0,1fr)); } }
 @media (min-width:1000px) { .favoritos-cl .favoritos-cl-chips { display:flex; } }
+/* ── Inicio v2 de Cliché (components/inicio-cliche) ──
+   Portada con foto real y texto en HTML, y "¿Para qué lo buscas?" en cuatro
+   mosaicos grandes, como el inicio de Bienestar. El encabezado es fijo y va
+   debajo de la barra de anuncios (que ya ocupa su lugar): la portada solo
+   deja el alto del encabezado. */
+.portada-cl { display:grid; grid-template-columns:minmax(0,1fr); margin-top:64px; background:#F3E9E3; }
+.portada-cl-foto { position:relative; aspect-ratio:4/5; max-height:52vh; width:100%; overflow:hidden; }
+.portada-cl-foto img { object-fit:cover; }
+.portada-cl-texto { display:flex; flex-direction:column; align-items:flex-start; gap:12px; padding:22px 6% 32px; color:var(--sage-dark); }
+.portada-cl-eyebrow { font-size:11px; font-weight:600; letter-spacing:.18em; text-transform:uppercase; color:#A67163; }
+.portada-cl-texto h1 { margin:0; max-width:16ch; font-family:var(--font-serif), Georgia, serif; font-size:clamp(2.1rem,7.6vw,3.9rem); font-weight:400; line-height:1.06; letter-spacing:-.01em; text-wrap:balance; }
+.portada-cl-texto p { margin:0; max-width:46ch; font-size:16px; line-height:1.65; color:var(--olive); }
+.portada-cl-botones { display:flex; flex-direction:column; gap:10px; width:100%; margin-top:4px; }
+.portada-cl-btn { display:flex; align-items:center; justify-content:center; min-height:54px; padding:12px 24px; border:1.5px solid var(--sage-dark); border-radius:999px; color:var(--sage-dark); font-size:13px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; transition:background .2s, color .2s, transform .2s; }
+.portada-cl-btn:hover { transform:translateY(-1px); }
+.portada-cl-btn.is-primario { background:var(--sage-dark); color:#fff; box-shadow:0 12px 26px -12px rgba(45,26,20,.6); }
+.portada-cl-nota { font-size:13px; color:var(--olive); }
+@media (min-width:820px) {
+  .portada-cl { grid-template-columns:minmax(0,1.05fr) minmax(0,1fr); min-height:min(80vh,780px); margin-top:72px; }
+  .portada-cl-foto { order:2; aspect-ratio:auto; max-height:none; height:100%; }
+  .portada-cl-texto { order:1; justify-content:center; gap:18px; padding:64px 7% 64px 9%; }
+  .portada-cl-botones { flex-direction:row; width:auto; }
+  .portada-cl-btn { min-width:220px; }
+}
+.paraque-cl { width:100%; max-width:1440px; margin:0 auto; padding:24px 5% 72px; }
+.paraque-cl-cabeza { display:flex; flex-direction:column; gap:8px; margin-bottom:22px; }
+.paraque-cl-cabeza h2 { margin:0; font-family:var(--font-serif), Georgia, serif; font-size:clamp(1.9rem,4.4vw,3rem); font-weight:400; color:var(--sage-dark); }
+.paraque-cl-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.paraque-cl-mosaico { position:relative; display:flex; align-items:flex-end; min-height:260px; overflow:hidden; border-radius:18px; background:#E8D5CB; color:#fff; isolation:isolate; }
+.paraque-cl-mosaico img { z-index:-2; object-fit:cover; transition:transform .7s cubic-bezier(.22,1,.36,1); }
+.paraque-cl-mosaico::after { content:""; position:absolute; inset:0; z-index:-1; background:linear-gradient(180deg,rgba(45,26,20,0) 30%,rgba(45,26,20,.75) 100%); }
+.paraque-cl-mosaico:hover img { transform:scale(1.05); }
+.paraque-cl-texto { display:flex; flex-direction:column; gap:6px; padding:16px 14px 18px; }
+.paraque-cl-texto b { font-family:var(--font-serif), Georgia, serif; font-size:clamp(1.25rem,4.6vw,2rem); font-weight:400; line-height:1.12; }
+.paraque-cl-texto small { display:none; font-size:15px; line-height:1.5; opacity:.9; }
+.paraque-cl-flecha { position:absolute; top:12px; right:12px; display:grid; place-items:center; width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,.9); color:var(--sage-dark); }
+@media (min-width:820px) {
+  .paraque-cl-grid { grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; }
+  .paraque-cl-mosaico { min-height:520px; border-radius:22px; }
+  .paraque-cl-texto { padding:26px; gap:8px; }
+  .paraque-cl-texto small { display:block; }
+}
