@@ -13,7 +13,8 @@ import {
   USOS,
   type KitAroma,
 } from "@/lib/kit-landing-content"
-import { MqBrands, MqFooter, MqTests, waDisplay, waHref, type TestimonioId } from "@/components/landing-maqueta/parts"
+import { MqBrands, MqFooter, waDisplay, waHref } from "@/components/landing-maqueta/parts"
+import { ENTREGA_EN_LINEA, SOUVENIR_EN_LINEA } from "@/lib/entrega"
 import "./kit-landing.css"
 
 /**
@@ -44,9 +45,6 @@ const plural = (n: number, one: string, many: string) => (n === 1 ? one : many)
  * no hay datos de ventas que respalden "más popular").
  */
 const flagFor = (t: PriceTier) => t.badge
-
-/** Testimonios de la maqueta de kits, en su orden. */
-const TESTS: readonly TestimonioId[] = ["mariana", "catalina", "andres", "laura", "daniela", "camila", "valentina"]
 
 /** Desplaza a una sección respetando el scroll suave de Lenis si está activo. */
 function scrollToId(id: string) {
@@ -323,12 +321,12 @@ export function KitLanding({
   return (
     <div className="mq-kits">
       <div className="wrap">
-        {/* Condiciones reales: sin pago contra entrega (la maqueta decía "Pagas al
-            recibir"); el despacho es al siguiente día hábil, como en la ficha.
+        {/* Condiciones reales: pago en línea y el mismo plazo de entrega que la
+            ficha y el checkout (lib/entrega), el que prometen los anuncios.
             Textos cortos para que la franja quepa en dos líneas en el celular. */}
         <div className="topbar" aria-label="Condiciones">
           <span>Tarjeta, PSE o Nequi</span>
-          <span>Despacho en 1 día hábil</span>
+          <span>Llega en {ENTREGA_EN_LINEA.replace(" a ", "-")}</span>
           <span>Gratis desde {fmt(freeShippingThreshold)}</span>
           <span>Hecho en Medellín</span>
         </div>
@@ -468,12 +466,7 @@ export function KitLanding({
                       <h3>{a.name}</h3>
                       {a.notes.length > 0 && <p className="notes">{a.notes.join(" · ")}</p>}
                       {a.idealLine && <p className="ideal">{a.idealLine}</p>}
-                      {a.rating !== null && a.ratingCount > 0 && (
-                        <span className="rt">
-                          <b>★</b> {String(a.rating).replace(".", ",")} · {a.ratingCount}{" "}
-                          {plural(a.ratingCount, "reseña", "reseñas")}
-                        </span>
-                      )}
+                      {/* Calificaciones ocultas por ahora, como en el resto del sitio. */}
                       <div className="ctrl">
                         {n === 0 ? (
                           <button
@@ -529,12 +522,6 @@ export function KitLanding({
               </dl>
             </div>
           </div>
-        </section>
-
-        <section className="block" aria-labelledby="t-tests">
-          <span className="eyebrow">Negocios que ya tienen su aroma</span>
-          <h2 id="t-tests">Lo que cuentan nuestros clientes</h2>
-          <MqTests ids={TESTS} />
         </section>
 
         <section className="block" aria-labelledby="t-propio">
@@ -648,7 +635,8 @@ export function KitLanding({
               <div className="grand"><span>Total</span><b>{fmt(subtotal + shipping)}</b></div>
             </div>
             <p className="pay-note">
-              Pagas en línea con tarjeta, PSE o Nequi. En el siguiente paso escribes tus datos de envío.
+              Pagas en línea con tarjeta, PSE o Nequi y llega en {ENTREGA_EN_LINEA}
+              {SOUVENIR_EN_LINEA ? ", con un souvenir de regalo en tu caja" : ""}. En el siguiente paso escribes tus datos de envío.
             </p>
             <button
               ref={payRef}
