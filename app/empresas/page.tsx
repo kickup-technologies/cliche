@@ -6,7 +6,7 @@ import { CATALOG_AS_PRODUCTS } from "@/lib/catalog-data"
 import { PRICE_TIERS, UNIT_PRICE } from "@/lib/pricing"
 import { SEO_PAGES, withSeoOverride } from "@/lib/seo"
 import { OFRECER_DISTRIBUIDORES } from "@/lib/b2b-leads"
-import { DEFAULT_WHATSAPP, MqBrands, MqFooter, MqTests, type TestimonioId } from "@/components/landing-maqueta/parts"
+import { DEFAULT_WHATSAPP, MqBrands, MqFooter } from "@/components/landing-maqueta/parts"
 import { CotizarLink, EmpresasTracker, LeadForm, StickyBar, WaLink, WaNumberText } from "./empresas-client"
 import "./empresas.css"
 
@@ -124,9 +124,6 @@ const PASOS = [
   { t: "Definimos la cotización", d: "Aroma, presentación, cantidades y tiempos de entrega, por escrito." },
   { t: "Producimos y despachamos", d: "Hecho a mano en Medellín, con envío a toda Colombia." },
 ]
-
-/** Testimonios de la maqueta de empresas, TEXTUALES y en su orden. */
-const TESTS: readonly TestimonioId[] = ["mariana", "andres", "daniela", "camila", "catalina", "valentina"]
 
 // Respuestas de la maqueta; las condiciones de envío son las de los términos
 // (despacho el siguiente día hábil, entrega de 2 a 3 días hábiles desde el 7-nov-2026).
@@ -296,12 +293,6 @@ export default async function EmpresasPage() {
               <li key={p.t}><b>{p.t}</b><span>{p.d}</span></li>
             ))}
           </ol>
-        </section>
-
-        <section className="block" aria-labelledby="t-tests">
-          <span className="eyebrow">Negocios que ya tienen su aroma</span>
-          <h2 id="t-tests">Lo que cuentan nuestros clientes</h2>
-          <MqTests ids={TESTS} />
         </section>
 
         {temporada && (
