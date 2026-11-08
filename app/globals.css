@@ -1232,3 +1232,11 @@ aside { transition: background-color .35s ease, border-color .35s ease; }
 .ficha-atajos a { flex:none; padding:8px 14px; border-radius:999px; font-size:13px; font-weight:500; color:var(--olive); white-space:nowrap; }
 .ficha-atajos a.is-activa { background:var(--sage-dark); color:#fff; }
 @media (min-width:1024px) { .ficha-atajos { justify-content:center; } }
+/* Formulario de pedido de la ficha (components/pedido-rapido): cuatro
+   presentaciones en 2x2 (4 en fila desde 420 px) y el logo de Cliché. */
+.cod-overlay .pr-packs { grid-template-columns:repeat(2,minmax(0,1fr)); padding-top:12px; }
+.cod-overlay .pr-packs .cod-pack { padding:14px 6px 10px; }
+.cod-overlay .pr-packs .cod-pack-radio { position:absolute; top:8px; left:8px; width:15px; height:15px; }
+.cod-overlay .pr-packs .cod-pack small { color:var(--es-ok); }
+@media (min-width:420px) { .cod-overlay .pr-packs { grid-template-columns:repeat(4,minmax(0,1fr)); } }
+.cod-sello img.cod-sello-logo { height:34px; width:auto; }

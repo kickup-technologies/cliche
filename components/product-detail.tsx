@@ -15,6 +15,7 @@ import { NOTES_MAP } from "@/lib/aroma-notes"
 import { ENTREGA_EN_LINEA, SOUVENIR_EN_LINEA } from "@/lib/entrega"
 import { CuentaRegresiva } from "@/components/cuenta-regresiva"
 import { AtajosFicha, KitsFicha, LAMINAS, LaminaFicha, SeccionesFicha } from "@/components/ficha-secciones"
+import { PedidoRapido } from "@/components/pedido-rapido"
 
 const SprayBottle3D = dynamic(
   () => import("@/components/spray-bottle-3d").then((m) => m.SprayBottle3D),
@@ -105,6 +106,8 @@ export function ProductDetail({ product, related }: Props) {
   useEffect(() => { setQty((q) => Math.min(q, maxQty)) }, [maxQty])
   const [added, setAdded] = useState(false)
   const [packOpen, setPackOpen] = useState(false)
+  // Formulario de pedido en la misma ficha (como "Pedir ahora" de Bienestar).
+  const [pedidoAbierto, setPedidoAbierto] = useState(false)
   // Gallery: null = vista principal (intro/3D), string = foto elegida por el cliente.
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
 
@@ -287,8 +290,9 @@ export function ProductDetail({ product, related }: Props) {
     setTimeout(() => setAdded(false), 2000)
   }
 
+  // "Comprar ahora" abre el formulario de pedido aquí mismo (antes metía el
+  // producto al carrito y saltaba al checkout). InitiateCheckout sale al abrir.
   function handleBuyNow() {
-    addItem(buildVariant(), qty)
     // ── Meta Pixel + CAPI: InitiateCheckout (compra directa) ──
     track({
       event_name: 'InitiateCheckout',
@@ -301,8 +305,7 @@ export function ProductDetail({ product, related }: Props) {
         num_items: qty * tier.units,
       },
     })
-    sessionStorage.setItem("checkout-back-url", window.location.pathname + window.location.search)
-    setTimeout(() => { window.location.href = "/checkout" }, 80)
+    setPedidoAbierto(true)
   }
 
   return (
@@ -758,6 +761,9 @@ export function ProductDetail({ product, related }: Props) {
       </main>
       <Footer />
       <WhatsAppButton />
+
+      {/* Formulario de pedido (Comprar ahora): datos, ciudad y pago sin salir de la ficha */}
+      <PedidoRapido abierto={pedidoAbierto} onClose={() => setPedidoAbierto(false)} product={product} tierId={tierId} onTierChange={setTierId} qty={qty} />
 
       {/* Constructor de kit personalizado (se abre desde "¿Prefieres mezclar aromas?") */}
       <PackBuilder open={packOpen} onClose={() => setPackOpen(false)} seedProductId={product.id} />
