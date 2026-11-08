@@ -1120,3 +1120,37 @@ aside { transition: background-color .35s ease, border-color .35s ease; }
   .paraque-cl-texto { padding:26px; gap:8px; }
   .paraque-cl-texto small { display:block; }
 }
+/* Inicio v3: compra por familia, kits con su precio y garantías en una fila. */
+.familias-cl { width:100%; max-width:1440px; margin:0 auto; padding:16px 5% 56px; }
+.familias-cl-grid { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(150px,42%); gap:12px; overflow-x:auto; scroll-snap-type:x mandatory; scroll-padding-inline:5vw; scrollbar-width:none; margin:0 -5vw; padding:0 5vw 4px; }
+.familias-cl-grid::-webkit-scrollbar { display:none; }
+.familias-cl-item { display:flex; flex-direction:column; gap:6px; scroll-snap-align:start; color:var(--sage-dark); }
+.familias-cl-foto { position:relative; display:block; aspect-ratio:4/5; overflow:hidden; border-radius:16px; background:#F5EDE8; }
+.familias-cl-foto img { object-fit:cover; transition:transform .6s cubic-bezier(.22,1,.36,1); }
+.familias-cl-item:hover .familias-cl-foto img { transform:scale(1.05); }
+.familias-cl-item b { margin-top:4px; font-family:var(--font-serif), Georgia, serif; font-size:22px; font-weight:400; }
+.familias-cl-item small { font-size:13.5px; line-height:1.45; color:var(--olive); }
+@media (min-width:820px) { .familias-cl-grid { grid-auto-flow:row; grid-template-columns:repeat(5,minmax(0,1fr)); overflow:visible; margin:0; padding:0; gap:18px; } }
+.kits-cl { background:var(--sage-dark); color:#FAF8F5; padding:64px 5%; }
+.kits-cl-cabeza { max-width:640px; margin:0 auto 28px; text-align:center; }
+.kits-cl-cabeza .portada-cl-eyebrow { color:#E0B9A9; }
+.kits-cl-cabeza h2 { margin:8px 0 10px; font-family:var(--font-serif), Georgia, serif; font-size:clamp(1.9rem,4.4vw,3rem); font-weight:400; line-height:1.1; }
+.kits-cl-cabeza p { margin:0; font-size:16px; line-height:1.6; color:rgba(250,248,245,.75); }
+.kits-cl-grid { display:grid; grid-template-columns:minmax(0,1fr); gap:12px; max-width:980px; margin:0 auto; }
+.kits-cl-kit { position:relative; display:flex; flex-direction:column; gap:4px; padding:22px 22px 20px; border:1px solid rgba(250,248,245,.22); border-radius:18px; background:rgba(250,248,245,.04); color:#FAF8F5; transition:background .2s, border-color .2s, transform .2s; }
+.kits-cl-kit:hover { background:rgba(250,248,245,.08); transform:translateY(-2px); }
+.kits-cl-kit.is-destacado { border-color:#E0B9A9; background:rgba(224,185,169,.1); }
+.kits-cl-kit b { font-size:15px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; }
+.kits-cl-kit strong { font-family:var(--font-serif), Georgia, serif; font-size:34px; font-weight:400; font-variant-numeric:tabular-nums; }
+.kits-cl-kit small { font-size:14px; color:rgba(250,248,245,.75); font-variant-numeric:tabular-nums; }
+.kits-cl-cta { display:inline-flex; align-items:center; gap:6px; margin-top:12px; font-size:13px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:#E0B9A9; }
+.kits-cl-cinta { position:absolute; top:-11px; right:18px; padding:3px 10px; border-radius:999px; background:#E0B9A9; color:#2D1A14; font-size:11px; font-weight:700; letter-spacing:.06em; }
+@media (min-width:820px) { .kits-cl { padding:88px 5%; } .kits-cl-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; } }
+.garantias-cl { border-block:1px solid rgba(122,92,82,.18); background:#FBF6F3; padding:28px 5%; }
+.garantias-cl ul { list-style:none; margin:0 auto; padding:0; max-width:1240px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:22px 16px; }
+.garantias-cl li:last-child:nth-child(odd) { grid-column:1 / -1; }
+.garantias-cl li { display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; color:var(--sage-dark); }
+.garantias-cl svg { color:#A67163; }
+.garantias-cl b { font-size:15px; font-weight:600; }
+.garantias-cl small { font-size:13px; line-height:1.4; color:var(--olive); }
+@media (min-width:820px) { .garantias-cl ul { grid-template-columns:repeat(5,minmax(0,1fr)); } .garantias-cl li:last-child:nth-child(odd) { grid-column:auto; } }

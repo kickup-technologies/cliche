@@ -9,17 +9,12 @@ import { WhatsAppButton } from "@/components/whatsapp-button"
 import { EditorialHero } from "@/components/editorial/editorial-hero"
 import { getHeroOverrides } from "@/lib/editorial-hero-server"
 import { ImageTextOverlay } from "@/components/editorial/image-text-overlay"
-import { ValuesColumns } from "@/components/editorial/values-columns"
 import { EditorialNewsletter } from "@/components/editorial/editorial-newsletter"
 import { ScrollReveal } from "@/components/editorial/scroll-reveal"
 import { FavoritosInicio } from "@/components/favoritos-inicio"
-import { ParaQueCliche, PortadaCliche } from "@/components/inicio-cliche"
-import { Guarantees } from "@/components/editorial/guarantees"
+import { FamiliasCliche, GarantiasCliche, KitsCliche, ParaQueCliche, PortadaCliche } from "@/components/inicio-cliche"
 import { Faq } from "@/components/editorial/faq"
-import { ProductShowcase3D } from "@/components/editorial/product-showcase-3d"
-import { SegmentShowcase } from "@/components/editorial/segment-showcase"
 import { BrandLogos } from "@/components/editorial/brand-logos"
-import { CustomPackCTA } from "@/components/editorial/custom-pack-cta"
 import { SocialProofBar } from "@/components/editorial/social-proof-bar"
 
 /**
@@ -91,11 +86,12 @@ export default async function Home() {
   const heroOverrides = PORTADA_PROPIA ? null : await getHeroOverrides()
 
   /*
-   * Inicio v2 (7-nov-2026), con el orden del de Bienestar: portada, prueba
-   * social, favoritos, "¿Para qué lo buscas?", arma tu kit; después la
-   * confianza B2B (logos, segmentos, 3D), razones, garantías, preguntas y la
-   * banda para empresas. Salen la banda de atributos, la pausa con texto
-   * gigante, la historia editorial y la banda de oferta (repetían lo mismo).
+   * Inicio v3 (7-nov-2026): el producto primero y todo a la vista, como las
+   * tiendas que mejor venden. Portada, beneficios, favoritos, compra por
+   * familia, para qué lo buscas, kits con su precio, marcas que ya lo usan,
+   * garantías en una fila, preguntas y la banda para empresas. Salen las
+   * secciones largas que se llenaban al deslizar (segmentos de 4.000 px,
+   * garantías de 3.600 px, el visor 3D y los valores).
    */
   return (
     <main className="min-h-screen">
@@ -105,31 +101,24 @@ export default async function Home() {
       {/* 1. ATENCIÓN — portada propia con foto real (o las del panel) */}
       {PORTADA_PROPIA ? <PortadaCliche /> : <EditorialHero overrides={heroOverrides ?? undefined} />}
 
-      {/* 1b. CONFIANZA INMEDIATA — marcas, envíos y pago protegido */}
+      {/* 2. CONFIANZA INMEDIATA — marcas, envíos y pago protegido */}
       <SocialProofBar />
 
-      {/* 2. DESEO — favoritos en cuadrícula con filtro por familia */}
+      {/* 3. DESEO — favoritos en cuadrícula con filtro por familia */}
       <FavoritosInicio />
 
-      {/* 3. CAMINOS — casa, ropa, tienda o marca y regalo */}
+      {/* 4. CAMINOS — por familia olfativa y por uso */}
+      <FamiliasCliche />
       <ParaQueCliche />
 
-      {/* 4. PERSONALIZACIÓN — arma tu propio kit combinando aromas */}
-      <CustomPackCTA />
+      {/* 5. OFERTA — kits con su precio real y lo que se ahorra */}
+      <KitsCliche />
 
-      {/* 5. VALIDACIÓN B2B — logos de marcas reales y segmentos */}
+      {/* 6. PRUEBA — marcas que ya tienen su aroma (logos reales) */}
       <BrandLogos />
-      <SegmentShowcase />
 
-      {/* 6. OBJETO DE DESEO — vitrina rotativa de renders 3D reales */}
-      <ProductShowcase3D />
-
-      {/* (Sin testimonios: no hay forma de verificar que sean reales; se
-          ocultan como las reseñas hasta tener varios reales, 7-nov-2026.) */}
-
-      {/* 7. CREENCIA Y RIESGO — razones, garantías y preguntas */}
-      <ValuesColumns />
-      <Guarantees />
+      {/* 7. RIESGO — garantías en una fila y preguntas frecuentes */}
+      <GarantiasCliche />
       <Faq />
 
       {/* 8. B2B — audiencia secundaria, al final del embudo */}
