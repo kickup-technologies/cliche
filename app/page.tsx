@@ -12,10 +12,9 @@ import { ImageTextOverlay } from "@/components/editorial/image-text-overlay"
 import { EditorialNewsletter } from "@/components/editorial/editorial-newsletter"
 import { ScrollReveal } from "@/components/editorial/scroll-reveal"
 import { FavoritosInicio } from "@/components/favoritos-inicio"
-import { FamiliasCliche, GarantiasCliche, KitsCliche, ParaQueCliche, PortadaCliche } from "@/components/inicio-cliche"
+import { GarantiasCliche, KitsCliche, ParaQueCliche, PortadaCliche } from "@/components/inicio-cliche"
 import { Faq } from "@/components/editorial/faq"
 import { BrandLogos } from "@/components/editorial/brand-logos"
-import { SocialProofBar } from "@/components/editorial/social-proof-bar"
 
 /**
  * Landing — arquitectura de embudo de ventas (AIDA + objeciones + riesgo):
@@ -86,12 +85,14 @@ export default async function Home() {
   const heroOverrides = PORTADA_PROPIA ? null : await getHeroOverrides()
 
   /*
-   * Inicio v3 (7-nov-2026): el producto primero y todo a la vista, como las
-   * tiendas que mejor venden. Portada, beneficios, favoritos, compra por
-   * familia, para qué lo buscas, kits con su precio, marcas que ya lo usan,
-   * garantías en una fila, preguntas y la banda para empresas. Salen las
-   * secciones largas que se llenaban al deslizar (segmentos de 4.000 px,
-   * garantías de 3.600 px, el visor 3D y los valores).
+   * Inicio v4 (7-nov-2026), con los patrones de las tiendas de aromas que
+   * mejor venden (Snif, Otherland, Voluspa, Boy Smells, BBW; estudio en
+   * bienestar-cliche/referentes/homes): portada con el botón visible sin
+   * bajar, logos de las marcas que ya lo usan, favoritos con pestañas por
+   * familia, kits con su precio, para qué lo buscas, promesa en una banda,
+   * preguntas y la banda para empresas. Salen las secciones largas que se
+   * llenaban al deslizar (segmentos de 4.000 px, garantías de 3.600 px, el
+   * visor 3D y los valores).
    */
   return (
     <main className="min-h-screen">
@@ -101,23 +102,19 @@ export default async function Home() {
       {/* 1. ATENCIÓN — portada propia con foto real (o las del panel) */}
       {PORTADA_PROPIA ? <PortadaCliche /> : <EditorialHero overrides={heroOverrides ?? undefined} />}
 
-      {/* 2. CONFIANZA INMEDIATA — marcas, envíos y pago protegido */}
-      <SocialProofBar />
-
-      {/* 3. DESEO — favoritos en cuadrícula con filtro por familia */}
-      <FavoritosInicio />
-
-      {/* 4. CAMINOS — por familia olfativa y por uso */}
-      <FamiliasCliche />
-      <ParaQueCliche />
-
-      {/* 5. OFERTA — kits con su precio real y lo que se ahorra */}
-      <KitsCliche />
-
-      {/* 6. PRUEBA — marcas que ya tienen su aroma (logos reales) */}
+      {/* 2. PRUEBA — las marcas que ya tienen su aroma, justo bajo la portada */}
       <BrandLogos />
 
-      {/* 7. RIESGO — garantías en una fila y preguntas frecuentes */}
+      {/* 3. DESEO — favoritos con pestañas por familia */}
+      <FavoritosInicio />
+
+      {/* 4. OFERTA — kits con su precio real y lo que se ahorra */}
+      <KitsCliche />
+
+      {/* 5. CAMINOS — casa, ropa, tienda o marca y regalo */}
+      <ParaQueCliche />
+
+      {/* 6. RIESGO — promesa en una banda y preguntas frecuentes */}
       <GarantiasCliche />
       <Faq />
 
@@ -125,8 +122,8 @@ export default async function Home() {
       <ImageTextOverlay
         image="/images/lifestyle-living.jpg"
         eyebrow="Para empresas y marcas"
-        title="Creamos la identidad olfativa de tu marca"
-        text="Hoteles, spas y tiendas confían en nosotros para diseñar su aroma exclusivo."
+        title="¿Tienes una tienda, un hotel o una marca?"
+        text="Creamos su aroma propio y te ayudamos a elegir el que va con tu público."
         cta={{ label: "Solicitar cotización", href: "/empresas" }}
         align="left"
       />

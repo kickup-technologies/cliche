@@ -1,8 +1,7 @@
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight, Gift, RotateCcw, ShieldCheck, Shirt, Zap } from "lucide-react"
+import { ArrowRight, Gift, RotateCcw, ShieldCheck, Truck, Zap } from "lucide-react"
 import { ENTREGA_EN_LINEA, SOUVENIR_EN_LINEA } from "@/lib/entrega"
-import { FAMILIES } from "@/lib/families"
 import { PRICE_TIERS, tierSavings } from "@/lib/pricing"
 
 /**
@@ -18,14 +17,14 @@ export function PortadaCliche() {
         <Image src="/images/landing/kit-aromas-cliche.jpg" alt="Cuatro aromas Cliché en spray de 250 ml: Eternamente Índigo, Brillos de Seda, Calor de Lana y Sello de Dios" fill priority sizes="(max-width:820px) 100vw, 50vw" />
       </div>
       <div className="portada-cl-texto">
-        <span className="portada-cl-eyebrow">Aromas para espacios, prendas y marcas · Hechos en Colombia</span>
-        <h1 id="portada-titulo">El aroma que hace que tu espacio y tu marca se recuerden</h1>
-        <p>25 aromas en spray de 250 ml para la casa, la ropa y tu tienda. Elige el tuyo y recíbelo en {ENTREGA_EN_LINEA} en toda Colombia.</p>
+        <span className="portada-cl-eyebrow">Hechos en Colombia · Llega en {ENTREGA_EN_LINEA}</span>
+        <h1 id="portada-titulo">Aromas en spray para tu casa, tu ropa y tu marca</h1>
+        <p>25 aromas en 5 familias · 250 ml · $78.000</p>
         <div className="portada-cl-botones">
-          <Link className="portada-cl-btn is-primario" href="/catalogo">Ver la tienda</Link>
-          <Link className="portada-cl-btn" href="/arma-tu-kit">Arma tu kit</Link>
+          <Link className="portada-cl-btn is-primario" href="/catalogo">Elegir mi aroma</Link>
+          <Link className="portada-cl-btn" href="/arma-tu-kit">Armar mi kit</Link>
         </div>
-        <small className="portada-cl-nota">Desde $78.000 · Envío gratis desde $300.000{SOUVENIR_EN_LINEA ? " · Souvenir de regalo al pagar en línea" : ""}</small>
+        <small className="portada-cl-nota">Envío gratis desde $300.000{SOUVENIR_EN_LINEA ? " · Souvenir de regalo al pagar en línea" : ""}</small>
       </div>
     </section>
   )
@@ -55,36 +54,6 @@ export function ParaQueCliche() {
               <small>{m.texto}</small>
             </span>
             <span className="paraque-cl-flecha" aria-hidden="true"><ArrowRight size={16} /></span>
-          </Link>
-        ))}
-      </div>
-    </section>
-  )
-}
-
-/** Una foto real por familia (el frasco de un aroma de esa familia). */
-const FOTO_FAMILIA: Record<string, string> = {
-  citricos: "/images/products/agua-foto.jpg",
-  frescos: "/images/products/frescura-de-lino.jpg",
-  florales: "/images/products/romeo-y-julieta.jpg",
-  dulces: "/images/products/dulce-lana-foto.jpg",
-  amaderados: "/images/products/eternamente-indigo-foto.jpg",
-}
-
-/** "Compra por familia": las cinco familias olfativas, cada una a su tienda. */
-export function FamiliasCliche() {
-  return (
-    <section className="familias-cl" aria-labelledby="familias-titulo">
-      <div className="paraque-cl-cabeza">
-        <span className="portada-cl-eyebrow">Compra por familia</span>
-        <h2 id="familias-titulo">¿Qué aroma te gusta?</h2>
-      </div>
-      <div className="familias-cl-grid">
-        {FAMILIES.map((f) => (
-          <Link key={f.value} className="familias-cl-item" href={`/catalogo?categoria=${f.value}`}>
-            <span className="familias-cl-foto"><Image src={FOTO_FAMILIA[f.value]} alt="" fill sizes="(max-width:820px) 40vw, 18vw" /></span>
-            <b>{f.label}</b>
-            <small>{f.tag}</small>
           </Link>
         ))}
       </div>
@@ -126,7 +95,7 @@ export function GarantiasCliche() {
   const items = [
     { Icono: Zap, titulo: `Llega en ${ENTREGA_EN_LINEA}`, texto: "Despacho prioritario al pagar en línea." },
     ...(SOUVENIR_EN_LINEA ? [{ Icono: Gift, titulo: "Souvenir de regalo", texto: "Va en tu caja cuando pagas en línea." }] : []),
-    { Icono: Shirt, titulo: "No mancha", texto: "Úsalo en prendas, sábanas y cortinas." },
+    { Icono: Truck, titulo: "Envío gratis", texto: "En compras desde $300.000 a toda Colombia." },
     { Icono: RotateCcw, titulo: "Garantía de 30 días", texto: "Para cambios y devoluciones." },
     { Icono: ShieldCheck, titulo: "Pago protegido", texto: "Tarjeta, PSE o Nequi con Mercado Pago." },
   ]

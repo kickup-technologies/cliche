@@ -1120,17 +1120,7 @@ aside { transition: background-color .35s ease, border-color .35s ease; }
   .paraque-cl-texto { padding:26px; gap:8px; }
   .paraque-cl-texto small { display:block; }
 }
-/* Inicio v3: compra por familia, kits con su precio y garantías en una fila. */
-.familias-cl { width:100%; max-width:1440px; margin:0 auto; padding:16px 5% 56px; }
-.familias-cl-grid { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(150px,42%); gap:12px; overflow-x:auto; scroll-snap-type:x mandatory; scroll-padding-inline:5vw; scrollbar-width:none; margin:0 -5vw; padding:0 5vw 4px; }
-.familias-cl-grid::-webkit-scrollbar { display:none; }
-.familias-cl-item { display:flex; flex-direction:column; gap:6px; scroll-snap-align:start; color:var(--sage-dark); }
-.familias-cl-foto { position:relative; display:block; aspect-ratio:4/5; overflow:hidden; border-radius:16px; background:#F5EDE8; }
-.familias-cl-foto img { object-fit:cover; transition:transform .6s cubic-bezier(.22,1,.36,1); }
-.familias-cl-item:hover .familias-cl-foto img { transform:scale(1.05); }
-.familias-cl-item b { margin-top:4px; font-family:var(--font-serif), Georgia, serif; font-size:22px; font-weight:400; }
-.familias-cl-item small { font-size:13.5px; line-height:1.45; color:var(--olive); }
-@media (min-width:820px) { .familias-cl-grid { grid-auto-flow:row; grid-template-columns:repeat(5,minmax(0,1fr)); overflow:visible; margin:0; padding:0; gap:18px; } }
+/* Inicio: kits con su precio y garantías en una fila. */
 .kits-cl { background:var(--sage-dark); color:#FAF8F5; padding:64px 5%; }
 .kits-cl-cabeza { max-width:640px; margin:0 auto 28px; text-align:center; }
 .kits-cl-cabeza .portada-cl-eyebrow { color:#E0B9A9; }
@@ -1154,3 +1144,14 @@ aside { transition: background-color .35s ease, border-color .35s ease; }
 .garantias-cl b { font-size:15px; font-weight:600; }
 .garantias-cl small { font-size:13px; line-height:1.4; color:var(--olive); }
 @media (min-width:820px) { .garantias-cl ul { grid-template-columns:repeat(5,minmax(0,1fr)); } .garantias-cl li:last-child:nth-child(odd) { grid-column:auto; } }
+/* Portada en celular: el botón se ve sin bajar (foto más baja, título más
+   corto y los dos botones en una fila), como las tiendas de referencia. */
+@media (max-width:819px) {
+  .portada-cl-foto { aspect-ratio:auto; height:32vh; max-height:none; }
+  .portada-cl-foto img { object-position:center 40%; }
+  .portada-cl-texto { gap:10px; padding:18px 5% 22px; }
+  .portada-cl-texto h1 { font-size:clamp(1.85rem,8vw,2.4rem); max-width:18ch; }
+  .portada-cl-texto p { font-size:15px; }
+  .portada-cl-botones { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .portada-cl-btn { min-height:50px; padding:10px 12px; font-size:12px; letter-spacing:.1em; }
+}

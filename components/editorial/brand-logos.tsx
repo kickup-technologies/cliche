@@ -27,10 +27,10 @@ function Logo({ src, alt }: { src: string; alt: string }) {
 
 export function BrandLogos() {
   return (
-    <section className="overflow-hidden border-y border-border/50 bg-background py-12 md:py-16">
+    <section className="overflow-hidden border-y border-border/50 bg-background py-8 md:py-10">
       <div className="container mx-auto px-4">
-        <p className="mb-9 text-center text-base font-semibold tracking-tight text-primary md:mb-12 md:text-xl">
-          Marcas que ya tienen su aroma propio
+        <p className="mb-6 text-center text-base font-semibold tracking-tight text-primary md:mb-8 md:text-xl">
+          Más de 40 marcas ya tienen su aroma Cliché
         </p>
       </div>
 
