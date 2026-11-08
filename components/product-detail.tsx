@@ -14,6 +14,7 @@ import { historiaDe } from "@/lib/historias"
 import { NOTES_MAP } from "@/lib/aroma-notes"
 import { ENTREGA_EN_LINEA, SOUVENIR_EN_LINEA } from "@/lib/entrega"
 import { CuentaRegresiva } from "@/components/cuenta-regresiva"
+import { AtajosFicha, KitsFicha, LAMINAS, LaminaFicha, SeccionesFicha } from "@/components/ficha-secciones"
 
 const SprayBottle3D = dynamic(
   () => import("@/components/spray-bottle-3d").then((m) => m.SprayBottle3D),
@@ -38,10 +39,7 @@ import { PRODUCT_MODELS, sin3D } from "@/lib/product-models"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
-  ShoppingBag, ShieldCheck, Truck, BadgeCheck,
-  ChevronRight, Plus, Minus, Share2, Heart, CheckCircle,
-  Wind, Shirt, Home, AlertTriangle, Package, Gift, RotateCcw,
-  Check, Sparkles, Zap, Flame, HelpCircle, CreditCard
+  ShoppingBag, ShieldCheck, Truck, BadgeCheck, ChevronRight, Plus, Minus, Share2, Heart, CheckCircle, Gift, RotateCcw, Check, Sparkles, Zap, Flame, CreditCard
 } from "lucide-react"
 
 import type { Product } from "@/lib/supabase"
@@ -51,7 +49,7 @@ import { WhatsAppButton } from "@/components/whatsapp-button"
 import { PackBuilder } from "@/components/pack-builder"
 import { ProductRecommendations } from "@/components/product-recommendations"
 import { recordView } from "@/lib/recently-viewed"
-import { PRICE_TIERS, TIER_BY_ID, UNIT_PRICE, makeVariantId, tierSavings } from "@/lib/pricing"
+import { PRICE_TIERS, TIER_BY_ID, makeVariantId, tierSavings } from "@/lib/pricing"
 import { PRODUCT_PLACEHOLDER } from "@/lib/placeholder"
 
 interface Props {
@@ -107,8 +105,6 @@ export function ProductDetail({ product, related }: Props) {
   useEffect(() => { setQty((q) => Math.min(q, maxQty)) }, [maxQty])
   const [added, setAdded] = useState(false)
   const [packOpen, setPackOpen] = useState(false)
-  // Acordeón de info — qué sección está abierta (una a la vez; null = todas cerradas por defecto)
-  const [openSection, setOpenSection] = useState<string | null>(null)
   // Gallery: null = vista principal (intro/3D), string = foto elegida por el cliente.
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
 
@@ -337,7 +333,10 @@ export function ProductDetail({ product, related }: Props) {
               <div className="sticky top-24">
                 {/* Main viewer — photo mode or 3D render */}
                 <div className="relative">
-                  {selectedImage ? (
+                  {selectedImage?.startsWith("lamina:") ? (
+                    /* Lámina: a qué huele, cómo se usa o cuándo llega, en HTML */
+                    <LaminaFicha tipo={selectedImage} product={product} notes={notes} />
+                  ) : selectedImage ? (
                     /* Photo selected: la foto llena el marco (4:5, sin huecos) */
                     <div className="relative aspect-[4/5] rounded-3xl overflow-hidden bg-muted/20">
                       <Image
@@ -458,6 +457,18 @@ export function ProductDetail({ product, related }: Props) {
                         </div>
                       ))
                   }
+                  {/* Láminas (como en la ficha de Bienestar) */}
+                  {LAMINAS.map(({ id, label, Icono }) => (
+                    <button
+                      key={id}
+                      onClick={() => { galleryTouched.current = true; setSelectedImage(id) }}
+                      className={`ficha-lamina-mini ${selectedImage === id ? "is-on" : ""}`}
+                      title={label}
+                    >
+                      <Icono className="h-4 w-4" aria-hidden="true" />
+                      <span>{label}</span>
+                    </button>
+                  ))}
                 </div>
 
                 {/* Contenido libre escrito desde el editor visual del panel
@@ -521,36 +532,7 @@ export function ProductDetail({ product, related }: Props) {
               {/* Selector de presentación — unidad o kit (mismo aroma).
                   Oculto para el producto de prueba: solo se vende la unidad. */}
               <div className={isTestProduct ? "hidden" : undefined}>
-                <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70">
-                  Presentación
-                </p>
-                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-                  {PRICE_TIERS.map((t) => {
-                    const active = t.id === tierId
-                    return (
-                      <button
-                        key={t.id}
-                        onClick={() => setTierId(t.id)}
-                        className={`relative flex flex-col items-start rounded-xl border px-3 py-2.5 text-left transition-all ${
-                          active
-                            ? "border-primary bg-primary/[0.06] ring-1 ring-primary/30"
-                            : "border-foreground/12 hover:border-foreground/30"
-                        }`}
-                      >
-                        {t.badge && (
-                          <span className="absolute -top-2 right-2 rounded-full bg-foreground px-2 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-background">
-                            {t.badge}
-                          </span>
-                        )}
-                        <span className={`text-[13px] font-semibold ${active ? "text-primary" : "text-foreground"}`}>{t.label}</span>
-                        <span className="mt-0.5 text-[13px] text-foreground/80">${t.price.toLocaleString("es-CO")}</span>
-                        {t.units > 1 && (
-                          <span className="text-[10px] text-muted-foreground">${Math.round(t.price / t.units).toLocaleString("es-CO")} c/u</span>
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
+                <KitsFicha product={product} tierId={tierId} onChange={setTierId} />
 
                 {/* Entrada al kit personalizado: combina aromas distintos */}
                 <button
@@ -625,13 +607,14 @@ export function ProductDetail({ product, related }: Props) {
                 )
               })()}
 
-              {/* Description — con título opcional definido por el admin */}
-              {product.description_title && (
-                <p className="font-serif text-lg text-foreground leading-snug">{product.description_title}</p>
+              {/* La primera parte de la historia; la completa va en "La historia",
+                  más abajo (antes salía entera dos veces). */}
+              {descripcion && (
+                <p className="text-[15.5px] text-muted-foreground leading-[1.75]">
+                  {descripcion.split(/\n\s*\n/)[0]}{" "}
+                  <a href="#historia" className="font-medium text-foreground underline underline-offset-4">Leer la historia</a>
+                </p>
               )}
-              <p className="text-[15px] text-muted-foreground leading-[1.75]">
-                {descripcion}
-              </p>
 
               {/* (Sin la caja "Ideal para": su texto venía del catálogo local y
                   chocaba con las notas reales de la BD en 19 de 22 aromas.) */}
@@ -749,142 +732,22 @@ export function ProductDetail({ product, related }: Props) {
             />
           )}
 
-          {/* Info en acordeón — cada botón guarda/despliega su contenido (ancho completo) */}
-          <div className="w-full mb-20">
-            {[
-              {
-                id: "descripcion",
-                label: "Descripción",
-                Icon: Sparkles,
-                content: (
-                  <div className="text-muted-foreground">
-                    {product.description_title && (
-                      <p className="font-serif text-lg text-foreground mb-2">{product.description_title}</p>
-                    )}
-                    <p className="text-base leading-relaxed mb-4">{descripcion}</p>
-                    {isKit && (
-                      <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 mt-4 flex gap-3">
-                        <Gift className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                        <div>
-                          <p className="font-semibold text-foreground text-sm">Kit incluye:</p>
-                          <p className="text-muted-foreground text-sm mt-1">Varios frascos de 250ml — aromatiza hasta 160 prendas o espacios por frasco. Ideal como regalo.</p>
-                        </div>
-                      </div>
-                    )}
-                    <div className="grid sm:grid-cols-2 gap-4 mt-6">
-                      {["Alta concentración", "No mancha", "Sin parabenos", "Hecho en Colombia"].map((feat) => (
-                        <div key={feat} className="flex items-center gap-2">
-                          <CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />
-                          <span className="text-sm">{feat}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ),
-              },
-              {
-                id: "uso",
-                label: "¿Cómo usarlo?",
-                Icon: Wind,
-                content: (
-                  <div className="grid sm:grid-cols-2 gap-4 text-muted-foreground">
-                    {[
-                      { icon: Wind,         title: "Para espacios",  desc: "Aplica 3-5 puf en habitaciones de hasta 20m²." },
-                      { icon: Shirt,        title: "Para ropa",      desc: "3 puf en prendas superiores, 5 en jeans e inferiores." },
-                      { icon: Home,         title: "Duración",       desc: "Efecto olfativo hasta 8 horas en espacios cerrados." },
-                      { icon: AlertTriangle,title: "Precauciones",   desc: "Evitar contacto con ojos. Alejar de menores de edad." },
-                    ].map((step) => (
-                      <div key={step.title} className="flex gap-3 p-4 bg-muted/30 rounded-xl">
-                        <step.icon className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                        <div>
-                          <p className="font-semibold text-foreground text-sm">{step.title}</p>
-                          <p className="text-sm mt-0.5">{step.desc}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ),
-              },
-              {
-                id: "envio",
-                label: "Envíos & devoluciones",
-                Icon: Truck,
-                content: (
-                  <div className="space-y-3 text-muted-foreground">
-                    {[
-                      { icon: Truck,    title: "Envío prioritario", desc: `Al pagar en línea, llega en ${ENTREGA_EN_LINEA}. Costo según zona.` },
-                      { icon: Gift,     title: "Envío gratis",   desc: "En compras mayores a $300.000 COP a todo Colombia." },
-                      { icon: Package,  title: "Empaque",        desc: "Embalaje protegido y sellado para garantizar la calidad." },
-                      { icon: RotateCcw,title: "Devoluciones",   desc: "30 días para cambios o devoluciones sin preguntas." },
-                    ].map((item) => (
-                      <div key={item.title} className="flex gap-3 p-4 bg-muted/30 rounded-xl">
-                        <item.icon className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                        <div>
-                          <p className="font-semibold text-foreground text-sm">{item.title}</p>
-                          <p className="text-sm mt-0.5">{item.desc}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ),
-              },
-              {
-                id: "faq",
-                label: "Preguntas frecuentes",
-                Icon: HelpCircle,
-                content: (
-                  <dl className="space-y-4 text-muted-foreground">
-                    {[
+          {/* Secciones abiertas (ficha v2, como la de Bienestar): por qué te va a
+              gustar, cómo se usa, envío y garantía, preguntas y la historia.
+              Reemplazan el acordeón que arrancaba cerrado. */}
+          <SeccionesFicha
+            product={product}
+            historia={descripcion}
+            titulo={product.description_title}
+            isKit={isKit}
+            faq={[
                       { q: "¿Cuánto dura el aroma?", a: "Hasta 8 horas en espacios cerrados con 3 a 5 pufs." },
                       { q: "¿Mancha la ropa?", a: "No mancha: puedes aplicarlo en prendas, sábanas y cortinas." },
                       { q: "¿Cuándo llega mi pedido?", a: `Al pagar en línea, llega en ${ENTREGA_EN_LINEA}${SOUVENIR_EN_LINEA ? ", con un souvenir de regalo en la caja" : ""}.` },
                       { q: "¿Puedo mezclar aromas?", a: "Sí: en Arma tu kit eliges x3, x4 o x6 con los aromas que quieras." },
                       { q: "¿Sirve para mi marca o negocio?", a: "Sí. Si quieres un aroma para tu tienda o tu marca, en Empresas te asesoramos." },
-                    ].map((f) => (
-                      <div key={f.q}>
-                        <dt className="font-semibold text-foreground text-sm">{f.q}</dt>
-                        <dd className="text-sm mt-0.5">{f.a}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                ),
-              },
-            ].map(({ id, label, Icon, content }) => {
-              const open = openSection === id
-              return (
-                <div key={id} className="border-b border-border">
-                  <button
-                    onClick={() => setOpenSection(open ? null : id)}
-                    aria-expanded={open}
-                    className="group flex w-full items-center justify-between gap-4 py-5 text-left"
-                  >
-                    <span className="flex items-center gap-3">
-                      <Icon className="w-4 h-4 text-primary" />
-                      <span className="font-medium text-foreground">{label}</span>
-                    </span>
-                    <span
-                      className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border transition-all duration-300 ${
-                        open
-                          ? "border-primary bg-primary text-white"
-                          : "border-border text-muted-foreground group-hover:border-primary group-hover:text-primary"
-                      }`}
-                    >
-                      {open ? <Minus className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-                    </span>
-                  </button>
-                  <div
-                    className={`grid transition-all duration-300 ease-out ${
-                      open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-                    }`}
-                  >
-                    <div className="overflow-hidden">
-                      <div className="pb-6">{content}</div>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+            ]}
+          />
 
           {/* Te puede gustar / Vistos recientemente — recomendación inteligente + historial */}
           <ProductRecommendations product={product} fallback={related} />
@@ -898,6 +761,9 @@ export function ProductDetail({ product, related }: Props) {
 
       {/* Constructor de kit personalizado (se abre desde "¿Prefieres mezclar aromas?") */}
       <PackBuilder open={packOpen} onClose={() => setPackOpen(false)} seedProductId={product.id} />
+
+      {/* Atajos a cada sección, arriba (aparecen al pasar el botón de compra). */}
+      <AtajosFicha visible={showSticky} />
 
       {/* Sticky CTA bar — barra de ancho COMPLETO (punta a punta) anclada abajo.
           Respeta el safe-area para no quedar bajo la barra del sistema. */}
