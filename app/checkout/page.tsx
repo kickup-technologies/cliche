@@ -1,22 +1,17 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useCart } from "@/context/cart-context"
-import { useAuth } from "@/context/auth-context"
 import { useCAPI, getFbSignals } from "@/lib/use-capi"
 import { catalogContentIds } from "@/lib/content-ids"
 import { useSiteSettings } from "@/lib/use-site-settings"
 import { SHIPPING_COST, parseFreeShippingThreshold } from "@/lib/pricing"
-import { CIUDADES_PRINCIPALES, CIUDADES_RESTO, DEPARTAMENTOS, OTRA_CIUDAD, ciudadPorClave, claveCiudad, enLista, etiquetaCiudad } from "@/lib/ciudades-co"
+import { Autorizacion, CamposEntrega, OpcionEnvio, ZonaPago, useEntrega } from "@/components/campos-entrega"
 import { ENTREGA_EN_LINEA, SOUVENIR_EN_LINEA, WHATSAPP_CLICHE } from "@/lib/entrega"
 import { CuentaRegresiva } from "@/components/cuenta-regresiva"
 import { Footer } from "@/components/footer"
-import {
-  ArrowLeft, Building2, CreditCard, Gift, House, IdCard, Lock, Mail, Map as MapIcon, MapPin, MessageCircle,
-  Minus, Package, PenLine, Phone, Plus, RotateCcw, ShieldCheck, Sparkles, Tag, Trash2, Truck, User, Zap,
-  type LucideIcon,
-} from "lucide-react"
+import { ArrowLeft, CreditCard, Gift, MessageCircle, Minus, Package, Plus, RotateCcw, ShieldCheck, Sparkles, Tag, Trash2, Truck, Zap } from "lucide-react"
 
 const fmt = (n: number) => `$${n.toLocaleString("es-CO")}`
 
@@ -29,22 +24,12 @@ const fmt = (n: number) => `$${n.toLocaleString("es-CO")}`
  * dudas por WhatsApp. El pago sigue siendo el de siempre: /api/checkout crea
  * la preferencia de Mercado Pago (con cupón y cédula, que el banco pide).
  */
-type CampoForm = "nombre" | "telefono" | "email" | "documento" | "departamento" | "ciudad" | "direccion" | "barrio" | "notas"
-/** Orden de los campos para llevar el foco al primero con error. */
-const ORDEN = ["nombre", "telefono", "email", "documento", "departamento", "ciudad", "direccion", "accepted"]
-
 export default function CheckoutPage() {
   const { items, removeItem, updateQuantity } = useCart()
-  const { user } = useAuth()
   const { track } = useCAPI()
   const siteSettings = useSiteSettings()
-  const [form, setForm] = useState<Record<CampoForm, string>>({ nombre: "", telefono: "", email: "", documento: "", departamento: "", ciudad: "", direccion: "", barrio: "", notas: "" })
-  // "Otra ciudad o municipio": aparecen el departamento y el municipio a mano.
-  const [otraCiudad, setOtraCiudad] = useState(false)
-  const [touched, setTouched] = useState<Record<string, boolean>>({})
-  // Ley 1581/Decreto 1377: la autorización de tratamiento de datos debe ser
-  // previa y expresa — sin marcar el checkbox no se puede pagar.
-  const [accepted, setAccepted] = useState(false)
+  // Datos de entrega: los mismos campos y reglas del formulario de la ficha.
+  const entrega = useEntrega("ck")
   const [paying, setPaying] = useState(false)
   const [payError, setPayError] = useState("")
   const [backUrl, setBackUrl] = useState("/catalogo")
@@ -57,19 +42,6 @@ export default function CheckoutPage() {
   const [appliedDiscount, setAppliedDiscount] = useState<{ type: string; value: number } | null>(null)
   const [appliedCode, setAppliedCode] = useState<string | null>(null)
   const [livePrices, setLivePrices] = useState<Record<string, number>>({})
-
-  // Con sesión: el correo se fija al de la cuenta (los códigos se validan y
-  // cuentan contra ESE correo, así el "un solo uso por cuenta" es infalsificable).
-  useEffect(() => {
-    if (!user) return
-    const meta = (user.user_metadata || {}) as Record<string, string | undefined>
-    setForm((f) => ({
-      ...f,
-      email: user.email || f.email,
-      nombre: f.nombre || meta.full_name || [meta.first_name, meta.last_name].filter(Boolean).join(" ") || "",
-      telefono: f.telefono || meta.phone || "",
-    }))
-  }, [user])
 
   // Precios VIGENTES desde la BD, por si cambiaron después de que el ítem entró
   // al carrito. El servidor ya cobra el precio real; esto alinea lo que se ve.
@@ -114,46 +86,7 @@ export default function CheckoutPage() {
   // Los kits personalizados llegan en su caja: se menciona solo si hay uno.
   const llevaKit = items.some((i) => i.pack || i.product.id.includes("::"))
 
-  const set = (k: CampoForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setForm((f) => ({ ...f, [k]: e.target.value }))
-  const blur = (k: string) => () => setTouched((t) => ({ ...t, [k]: true }))
-
-  // Selector de ciudad: la opción elegida llena ciudad y departamento juntos.
-  const ciudadElegida = enLista(form.ciudad, form.departamento)
-  const valorCiudad = otraCiudad ? OTRA_CIUDAD : ciudadElegida ? claveCiudad(ciudadElegida) : ""
-  const elegirCiudad = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const v = e.target.value
-    const c = v === OTRA_CIUDAD ? undefined : ciudadPorClave(v)
-    setOtraCiudad(v === OTRA_CIUDAD)
-    setForm((f) => ({ ...f, ciudad: c?.ciudad || "", departamento: c?.departamento || "" }))
-    if (v === OTRA_CIUDAD) window.setTimeout(() => document.getElementById("ck-departamento")?.focus(), 30)
-  }
-
-  // Validación campo a campo (los mismos mínimos que pedía el checkout anterior).
-  const errores = useMemo(() => {
-    const e: Record<string, string> = {}
-    if (!form.nombre.trim()) e.nombre = "Escribe tu nombre completo"
-    if (form.telefono.replace(/\D/g, "").length < 7) e.telefono = "Escribe un celular válido"
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(form.email.trim())) e.email = "Escribe un correo válido (ahí llega tu factura)"
-    // Cédula obligatoria: Mercado Pago la cruza con el banco emisor y sin ella
-    // su antifraude bloquea pagos reales (auditoría 2026-08-03). Va en la factura.
-    if (form.documento.replace(/\D/g, "").length < 5) e.documento = "Escribe tu cédula o NIT: el banco la pide para aprobar el pago"
-    if (form.direccion.trim().length < 5) e.direccion = "Dirección completa de entrega"
-    if (otraCiudad) {
-      if (!form.departamento) e.departamento = "Elige tu departamento"
-      if (form.ciudad.trim().length < 2) e.ciudad = "Escribe tu municipio"
-    } else if (!form.ciudad || !form.departamento) e.ciudad = "Elige tu ciudad o municipio"
-    if (!accepted) e.accepted = "Necesitamos tu autorización para gestionar el pedido"
-    return e
-  }, [form, otraCiudad, accepted])
-  const valid = Object.keys(errores).length === 0 && items.length > 0
-  const errorDe = (k: string) => (touched[k] && errores[k]) || ""
-
-  // Marca todo y lleva el foco al primer campo con error.
-  const marcarTodo = () => {
-    setTouched(Object.fromEntries(ORDEN.map((k) => [k, true])))
-    const primero = ORDEN.find((k) => errores[k])
-    if (primero) window.setTimeout(() => document.getElementById(`ck-${primero}`)?.focus(), 30)
-  }
+  const valid = entrega.valido && items.length > 0
 
   async function aplicarCupon() {
     if (!couponCode.trim()) return
@@ -162,7 +95,7 @@ export default function CheckoutPage() {
       const res = await fetch("/api/discount/validate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: couponCode, email: form.email, subtotal }),
+        body: JSON.stringify({ code: couponCode, email: entrega.form.email, subtotal }),
       })
       const data = await res.json()
       if (data.valid) {
@@ -181,7 +114,7 @@ export default function CheckoutPage() {
   }
 
   async function pagar() {
-    if (!valid) { marcarTodo(); return }
+    if (!valid) { entrega.marcarTodo(); return }
     setPaying(true); setPayError("")
     // ── Meta Pixel + CAPI: AddPaymentInfo (datos completos, va a pagar) ──
     track({
@@ -193,7 +126,7 @@ export default function CheckoutPage() {
         content_type: "product",
         num_items: items.reduce((n, i) => n + i.quantity, 0),
       },
-      user_data: { raw_email: form.email.trim(), ...(form.telefono.trim() && { raw_phone: form.telefono.trim() }) },
+      user_data: { raw_email: entrega.form.email.trim(), ...(entrega.form.telefono.trim() && { raw_phone: entrega.form.telefono.trim() }) },
     })
     try {
       const res = await fetch("/api/checkout", {
@@ -206,21 +139,10 @@ export default function CheckoutPage() {
               : { product_id: i.product.id, quantity: i.quantity, unit_price: priceOf(i), name: i.product.name },
           ),
           total,
-          email: form.email.trim(),
+          ...entrega.datosPedido(),
           discount_code: appliedCode,
           discount_amount: descuento,
-          customer_name: form.nombre.trim(),
-          customer_phone: form.telefono.trim(),
-          customer_id_number: form.documento.trim() || null,
           fb_signals: getFbSignals(),
-          // Lo que viaja al pedido, como lo lee quien despacha: la dirección
-          // con el barrio y la ciudad con su departamento.
-          shipping_address: {
-            address: `${form.direccion.trim()}${form.barrio.trim() ? ` · ${form.barrio.trim()}` : ""}`,
-            city: form.ciudad.trim(),
-            department: form.departamento,
-            notes: form.notas.trim() || null,
-          },
         }),
       })
       const data = await res.json()
@@ -239,34 +161,6 @@ export default function CheckoutPage() {
     }
     setPaying(false)
   }
-
-  // Campos con la forma del formulario de pedido (EasySell): ícono a la
-  // izquierda y el nombre dentro del campo; la etiqueta queda para el lector
-  // de pantalla. Se INVOCAN como función (no como <Campo/>): un componente
-  // definido dentro del render se remontaría en cada tecla y perdería el foco.
-  const envoltorio = (k: string, label: string, Icono: LucideIcon, control: React.ReactNode, opts: { pista?: string; visible?: boolean; area?: boolean } = {}) => (
-    <div className={`cod-campo ${errorDe(k) ? "has-error" : ""}`}>
-      <label htmlFor={`ck-${k}`} className={opts.visible ? undefined : "cod-oculto"}>{label}</label>
-      <div className={`cod-input${opts.area ? " cod-input-area" : ""}`}>
-        <span className="cod-ico" aria-hidden="true"><Icono size={17} /></span>
-        {control}
-      </div>
-      {errorDe(k) ? <em id={`ck-${k}-msg`}>{errorDe(k)}</em> : opts.pista ? <em id={`ck-${k}-msg`} className="cod-pista">{opts.pista}</em> : null}
-    </div>
-  )
-  const campo = (k: CampoForm, label: string, Icono: LucideIcon, props: React.InputHTMLAttributes<HTMLInputElement> = {}, opts: { pista?: string } = {}) =>
-    envoltorio(k, label, Icono, (
-      <input
-        id={`ck-${k}`}
-        value={form[k]}
-        onChange={set(k)}
-        onBlur={blur(k)}
-        placeholder={label}
-        aria-invalid={!!errorDe(k)}
-        aria-describedby={errorDe(k) || opts.pista ? `ck-${k}-msg` : undefined}
-        {...props}
-      />
-    ), opts)
 
   if (items.length === 0) {
     return (
@@ -390,78 +284,17 @@ export default function CheckoutPage() {
             {/* ── Datos de entrega y pago ── */}
             <form className="ck-datos" onSubmit={(e) => { e.preventDefault(); pagar() }} noValidate aria-labelledby="ck-t-datos">
               <h2 id="ck-t-datos">Datos de entrega</h2>
-              <div className="cod-campos">
-                {campo("nombre", "Nombre completo *", User, { autoComplete: "name", maxLength: 120 })}
-                {campo("telefono", "Celular (WhatsApp) *", Phone, { type: "tel", inputMode: "tel", autoComplete: "tel", maxLength: 30 })}
-                {campo("email", "Correo electrónico *", Mail, { type: "email", autoComplete: "email", maxLength: 120, readOnly: !!user?.email }, { pista: "Ahí llegan tu confirmación y tu factura" })}
-                {campo("documento", "Cédula o NIT *", IdCard, { inputMode: "numeric", maxLength: 20 }, { pista: "El banco la pide para aprobar tu pago" })}
-                {/* Ciudad: el mismo selector del formulario de pedido. */}
-                {envoltorio(otraCiudad ? "ciudad-lista" : "ciudad", "Ciudad o municipio", Building2, (
-                  <select
-                    id={otraCiudad ? "ck-ciudad-lista" : "ck-ciudad"}
-                    className={valorCiudad ? undefined : "is-vacio"}
-                    value={valorCiudad}
-                    onChange={elegirCiudad}
-                    onBlur={otraCiudad ? undefined : blur("ciudad")}
-                    aria-invalid={!otraCiudad && !!errorDe("ciudad")}
-                  >
-                    <option value="" disabled>Ciudad o municipio *</option>
-                    <optgroup label="Ciudades principales">
-                      {CIUDADES_PRINCIPALES.map((c) => <option key={claveCiudad(c)} value={claveCiudad(c)}>{etiquetaCiudad(c)}</option>)}
-                    </optgroup>
-                    <optgroup label="¿No está tu ciudad?">
-                      <option value={OTRA_CIUDAD}>Otra ciudad o municipio (escríbela)</option>
-                    </optgroup>
-                    <optgroup label="Más ciudades y municipios">
-                      {CIUDADES_RESTO.map((c) => <option key={claveCiudad(c)} value={claveCiudad(c)}>{etiquetaCiudad(c)}</option>)}
-                    </optgroup>
-                  </select>
-                ))}
-                {otraCiudad && (
-                  <div className="cod-otra-ciudad">
-                    {envoltorio("departamento", "Departamento", MapIcon, (
-                      <select id="ck-departamento" className={form.departamento ? undefined : "is-vacio"} value={form.departamento} onChange={set("departamento")} onBlur={blur("departamento")} autoComplete="address-level1" aria-invalid={!!errorDe("departamento")}>
-                        <option value="" disabled>Departamento *</option>
-                        {DEPARTAMENTOS.map((d) => <option key={d} value={d}>{d}</option>)}
-                      </select>
-                    ))}
-                    {campo("ciudad", "Municipio *", Building2, { autoComplete: "address-level2", maxLength: 60 })}
-                  </div>
-                )}
-                {campo("direccion", "Dirección completa *", MapPin, { autoComplete: "address-line1", maxLength: 160 })}
-                {campo("barrio", "Barrio, apto o indicaciones", House, { autoComplete: "address-line2", maxLength: 60 })}
-              </div>
-              {envoltorio("notas", "Notas para tu pedido (opcional)", PenLine, (
-                <textarea id="ck-notas" rows={2} maxLength={500} value={form.notas} onChange={set("notas")} placeholder="Ej.: horario para recibir o un mensaje para la tarjeta" />
-              ), { visible: true, area: true })}
+              <CamposEntrega e={entrega} conNotas />
 
-              <div className="cod-envio">
-                <span className="cod-envio-titulo">Opciones de envío</span>
-                <div className="cod-envio-op">
-                  <span className="cod-envio-radio" aria-hidden="true" />
-                  <span>Envío prioritario · llega en {ENTREGA_EN_LINEA}</span>
-                  <strong>{freeShipping ? "Gratis" : fmt(envio)}</strong>
-                </div>
-              </div>
+              <OpcionEnvio gratis={freeShipping} costo={envio} />
 
-              <label className={`cod-legal ${touched.accepted && !accepted ? "has-error" : ""}`}>
-                <input id="ck-accepted" type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} />
-                <span>Autorizo el <Link href="/privacidad" target="_blank">tratamiento de mis datos personales</Link> y acepto los <Link href="/terminos" target="_blank">términos y condiciones</Link>.</span>
-              </label>
+              <Autorizacion e={entrega} />
 
-              <div className="cod-pago">
-                <div className="cod-pago-marcas" aria-label="Medios de pago: Visa, Mastercard, PSE y Nequi">
-                  <span className="cod-marca cod-visa">VISA</span>
-                  <span className="cod-marca cod-mc" aria-hidden="true"><i /><i /></span>
-                  <span className="cod-marca cod-pse">PSE</span>
-                  <span className="cod-marca cod-nequi">Nequi</span>
-                </div>
-                <p><Lock size={16} aria-hidden="true" /><span><b>Zona de pago segura</b><small>Tarjeta, PSE o Nequi · procesado por Mercado Pago</small></span></p>
-              </div>
+              <ZonaPago />
 
               <div className="cod-foot ck-foot">
                 {payError && <p className="account-msg is-error" role="alert">{payError}</p>}
-                {!payError && Object.values(touched).some(Boolean) && !valid && (
+                {!payError && entrega.algoTocado && !valid && (
                   <p className="account-msg is-error" role="alert">Revisa los campos marcados.</p>
                 )}
                 <button type="submit" className="cod-cta" disabled={paying}>
