@@ -237,7 +237,7 @@ function GraciasContent() {
             {/* Rescate humano: si la pasarela no deja pagar, que el cliente no
                 se vaya en silencio — un WhatsApp con la referencia lista. */}
             <a
-              href={`https://wa.me/573122838844?text=${encodeURIComponent(
+              href={`https://wa.me/573223745187?text=${encodeURIComponent(
                 `Hola, intenté pagar mi pedido${sessionId ? ` #${sessionId.slice(-8).toUpperCase()}` : ""} en la tienda y el pago no pasó. ¿Me ayudan a completarlo?`
               )}`}
               target="_blank"
@@ -353,7 +353,7 @@ function GraciasContent() {
                 {sessionId && <Link className="gracias-btn is-primario" href={`/pedido/${sessionId}`}>Seguir mi pedido</Link>}
                 <Link className="gracias-btn" href="/catalogo">Seguir comprando</Link>
               </div>
-              <p className="gracias-ayuda">¿Dudas con tu pedido? <a href={`https://wa.me/${WHATSAPP_CLICHE}`} target="_blank" rel="noreferrer">Escríbenos por WhatsApp · 312 283 8844</a></p>
+              <p className="gracias-ayuda">¿Dudas con tu pedido? <a href={`https://wa.me/${WHATSAPP_CLICHE}`} target="_blank" rel="noreferrer">Escríbenos por WhatsApp · 322 374 5187</a></p>
             </div>
 
             {/* CTA de reseña de Google ELIMINADO: el enlace usaba el placeholder

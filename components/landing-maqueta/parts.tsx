@@ -11,9 +11,9 @@ import { BRANDS } from "@/lib/brands"
  * copiados de su maqueta con las mismas clases (.brands, .tests, footer…).
  */
 
-export const DEFAULT_WHATSAPP = "573122838844"
+export const DEFAULT_WHATSAPP = "573223745187"
 
-/** "573122838844" → "312 283 8844" (como lo escribe la maqueta). */
+/** "573223745187" → "322 374 5187" (como lo escribe la maqueta). */
 export function waDisplay(num: string): string {
   const d = num.replace(/\D/g, "").replace(/^57(?=3\d{9}$)/, "")
   return /^\d{10}$/.test(d) ? `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}` : d

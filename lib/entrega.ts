@@ -6,4 +6,4 @@
 export const ENTREGA_EN_LINEA = "2 a 3 días hábiles"
 export const SOUVENIR_EN_LINEA = true
 /** WhatsApp de atención de Cliché (el mismo del pie y del botón flotante). */
-export const WHATSAPP_CLICHE = "573122838844"
+export const WHATSAPP_CLICHE = "573223745187"
