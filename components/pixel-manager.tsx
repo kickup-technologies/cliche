@@ -3,7 +3,7 @@
 import { useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { getConsent } from "@/components/cookie-consent"
-import { generateEventId, getFbSignals } from "@/lib/use-capi"
+import { generateEventId, getFbSignals, GOOGLE_ADS_ID, googleAdsConversion } from "@/lib/use-capi"
 import { META_PIXEL_IDS } from "@/lib/meta-pixels"
 
 /**
@@ -63,12 +63,12 @@ function loadMetaPixel() {
   w.fbq("track", "PageView", {}, { eventID: initialPageView.id })
 }
 
-function loadGA4() {
-  if (!GA4_ID) return
+/** gtag.js se carga UNA vez y sirve a GA4 (analytics) y a Google Ads
+ *  (marketing); cada destino recibe su propio `config` según el consentimiento. */
+function ensureGtag(id: string) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const w = window as any
-  if (w.__ga4Loaded) return
-  w.__ga4Loaded = true
+  if (w.gtag) return
   w.dataLayer = w.dataLayer || []
   // OJO: gtag.js SOLO interpreta como comando lo que se empuja como objeto
   // `arguments`. Con `(...args) => dataLayer.push(args)` se empuja un Array y
@@ -78,8 +78,32 @@ function loadGA4() {
   // eslint-disable-next-line prefer-rest-params
   w.gtag = function gtag() { w.dataLayer.push(arguments) }
   w.gtag("js", new Date())
+  injectScript(`https://www.googletagmanager.com/gtag/js?id=${id}`, "ga4-sdk")
+}
+
+function loadGoogleAds() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const w = window as any
+  if (w.__googleAdsReady) return
+  ensureGtag(GOOGLE_ADS_ID)
+  w.gtag("config", GOOGLE_ADS_ID)
+  w.__googleAdsReady = true
+  // Conversiones que use-capi encoló antes de que la etiqueta cargara.
+  const queued = w.__googleAdsQueue as Record<string, unknown>[] | undefined
+  if (queued?.length) {
+    queued.forEach((payload) => w.gtag("event", "conversion", payload))
+    w.__googleAdsQueue = []
+  }
+}
+
+function loadGA4() {
+  if (!GA4_ID) return
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const w = window as any
+  if (w.__ga4Loaded) return
+  w.__ga4Loaded = true
+  ensureGtag(GA4_ID)
   w.gtag("config", GA4_ID)
-  injectScript(`https://www.googletagmanager.com/gtag/js?id=${GA4_ID}`, "ga4-sdk")
   // Drenar los eventos de embudo que use-capi encoló mientras gtag no existía
   // (gtag carga diferido; un view_item temprano llegaría antes que este init).
   const queued = w.__ga4Queue as Array<[string, Record<string, unknown>]> | undefined
@@ -155,6 +179,7 @@ export function PixelManager() {
       }
       if (marketing) {
         loadMetaPixel()
+        loadGoogleAds()
         if (TIKTOK_PIXEL_ID) loadTikTok()
       }
 
@@ -186,6 +211,10 @@ export function PixelManager() {
     }
     events.forEach((e) => window.addEventListener(e, start, { passive: true, once: true }))
     const timer = window.setTimeout(start, 3500)
+    // Visita desde un anuncio de Google: la etiqueta carga YA, mientras el gclid
+    // sigue en la URL (la primera navegación interna lo borra y el clic quedaría
+    // sin atribuir).
+    if (/[?&](gclid|gbraid|wbraid)=/.test(window.location.search)) start()
 
     window.addEventListener("cliche-consent-change", apply)
     return () => {
@@ -193,6 +222,19 @@ export function PixelManager() {
       window.removeEventListener("cliche-consent-change", apply)
     }
   }, [isAdminArea])
+
+  // Clic a WhatsApp (conversión secundaria de Google Ads): un solo oyente para
+  // todos los enlaces wa.me del sitio. El panel queda fuera porque sus enlaces
+  // abren el chat de los clientes, no el de la tienda.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (window.location.pathname.startsWith("/admin")) return
+      const a = (e.target as Element | null)?.closest?.('a[href*="wa.me/"], a[href*="api.whatsapp.com/"]')
+      if (a) googleAdsConversion("whatsapp")
+    }
+    document.addEventListener("click", onClick, true)
+    return () => document.removeEventListener("click", onClick, true)
+  }, [])
 
   return null
 }

@@ -276,7 +276,7 @@ export default function CheckoutPage() {
                 <div>
                   <h2 id="ck-t-dudas">¿Tienes dudas antes de pagar?</h2>
                   <p>Escríbenos y te ayudamos a elegir o a terminar tu pedido.</p>
-                  <a href={`https://wa.me/${WHATSAPP_CLICHE}?text=${encodeURIComponent("¡Hola Cliché! Tengo una duda antes de pagar mi pedido")}`} target="_blank" rel="noreferrer">Escribir por WhatsApp · 312 283 8844</a>
+                  <a href={`https://wa.me/${WHATSAPP_CLICHE}?text=${encodeURIComponent("¡Hola Cliché! Tengo una duda antes de pagar mi pedido")}`} target="_blank" rel="noreferrer">Escribir por WhatsApp · 322 374 5187</a>
                 </div>
               </section>
             </aside>

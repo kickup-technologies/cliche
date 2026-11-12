@@ -130,7 +130,7 @@ export function WaLink({
   )
 }
 
-/** Texto del número de WhatsApp vigente ("312 283 8844"), del panel admin. */
+/** Texto del número de WhatsApp vigente ("322 374 5187"), del panel admin. */
 export function WaNumberText() {
   return <>{waDisplay(useWaNumber())}</>
 }

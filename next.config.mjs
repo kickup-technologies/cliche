@@ -27,6 +27,9 @@ const SCRIPT_SRC = [
   "https://connect.facebook.net",
   "https://www.googletagmanager.com",
   "https://*.google-analytics.com",
+  "https://www.googleadservices.com",       // Google Ads (conversiones)
+  "https://googleads.g.doubleclick.net",
+  "https://www.google.com",
   "https://analytics.tiktok.com",
   "https://*.clarity.ms",
   "https://cdn.prooffactor.com",

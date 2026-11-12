@@ -179,7 +179,7 @@ export default async function SegmentLanding({ params }: { params: Promise<{ seg
           </p>
           <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
             <a
-              href="https://wa.me/573122838844?text=Hola%2C%20quiero%20una%20recomendaci%C3%B3n%20de%20aroma%20para%20mi%20marca"
+              href="https://wa.me/573223745187?text=Hola%2C%20quiero%20una%20recomendaci%C3%B3n%20de%20aroma%20para%20mi%20marca"
               className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[#A67163] text-white text-sm font-semibold"
             >
               Hablar con una asesora

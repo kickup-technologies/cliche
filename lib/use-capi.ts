@@ -65,6 +65,44 @@ function sendGA4(payload: CAPIEventPayload, event_id: string) {
   }
 }
 
+/**
+ * Google Ads (cuenta 983-610-1764 de la agencia, la misma de Bienestar): las
+ * campañas de Búsqueda de nov-dic-2026 miden aquí compras y cotizaciones de
+ * empresas. La compra lleva transaction_id = referencia del pedido para que
+ * recargar /gracias no la cuente dos veces. Los clics a WhatsApp los mide
+ * PixelManager con un solo oyente (no el evento Contact, para no contarlos doble).
+ */
+export const GOOGLE_ADS_ID = "AW-18569790626"
+const GOOGLE_ADS_SEND_TO = {
+  compra: `${GOOGLE_ADS_ID}/V4JLCJuP1bYdEKKJ4pZF`,
+  cotizacion: `${GOOGLE_ADS_ID}/ijy9CJ6P1bYdEKKJ4pZF`,
+  whatsapp: `${GOOGLE_ADS_ID}/yU5PCKGP1bYdEKKJ4pZF`,
+} as const
+
+/** Conversión de Google Ads. gtag carga diferido: si aún no está, la
+ *  conversión espera en cola y PixelManager la manda tras el config. */
+export function googleAdsConversion(accion: keyof typeof GOOGLE_ADS_SEND_TO, params: Record<string, unknown> = {}) {
+  if (typeof window === "undefined") return
+  const consent = getConsent()
+  if (consent && !consent.marketing) return
+  const payload = { send_to: GOOGLE_ADS_SEND_TO[accion], ...params }
+  const w = window as unknown as { __googleAdsReady?: boolean; __googleAdsQueue?: Record<string, unknown>[] }
+  if (w.__googleAdsReady && typeof window.gtag === "function") window.gtag("event", "conversion", payload)
+  else (w.__googleAdsQueue = w.__googleAdsQueue || []).push(payload)
+}
+
+function sendGoogleAds(payload: CAPIEventPayload, event_id: string) {
+  if (payload.event_name === "Purchase") {
+    googleAdsConversion("compra", {
+      value: Number(payload.custom_data?.value) || 0,
+      currency: "COP",
+      transaction_id: event_id,
+    })
+  } else if (payload.event_name === "Lead" && payload.custom_data?.content_name === "Cliché para empresas") {
+    googleAdsConversion("cotizacion")
+  }
+}
+
 const SERVER_EVENTS = new Set<CAPIEventPayload['event_name']>([
   'AddToCart', 'InitiateCheckout', 'AddPaymentInfo', 'Purchase',
   'Lead', 'Contact', 'Subscribe', 'CompleteRegistration',
@@ -185,6 +223,9 @@ export async function sendMetaEvent(payload: CAPIEventPayload) {
   }
 
   if (!marketingOk) return
+
+  // 0b. Google Ads (compras y cotizaciones de empresas)
+  try { sendGoogleAds(payload, event_id) } catch { /* nunca romper el flujo */ }
 
   // 1. Browser pixel (deduplication via event_id)
   if (typeof window.fbq === 'function') {

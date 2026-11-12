@@ -24,12 +24,12 @@ const footerLinks = {
     { name: "Blog", href: "/blog" },
     { name: "Marcas aliadas", href: "/#marcas" },
     { name: "Crea tu aroma", href: "/arma-tu-kit" },
-    { name: "Distribuidores", href: "https://wa.me/573122838844?text=Hola!+Quiero+info+sobre+distribuidores" },
+    { name: "Distribuidores", href: "https://wa.me/573223745187?text=Hola!+Quiero+info+sobre+distribuidores" },
     // Backlink cruzado con la tienda hermana (SEO: ambas marcas se refuerzan)
     { name: "Bienestar by Cliché", href: "https://www.bienestarbycliche.com" },
   ],
   soporte: [
-    { name: "WhatsApp: +57 312 283 8844", href: "https://wa.me/573122838844" },
+    { name: "WhatsApp: +57 322 374 5187", href: "https://wa.me/573223745187" },
     { name: "monica@clichecolombia.com", href: "mailto:monica@clichecolombia.com" },
     { name: "Seguimiento de pedido", href: "/pedido" },
     { name: "Preguntas Frecuentes", href: "/#faq" },
@@ -46,7 +46,7 @@ const footerLinks = {
 const socialLinks = [
   { name: "Instagram", icon: Instagram,    href: "https://www.instagram.com/clichearomasoficial" },
   { name: "TikTok",    icon: TikTokIcon,   href: "https://www.tiktok.com/@clichearomasoficial" },
-  { name: "WhatsApp",  icon: MessageCircle, href: "https://wa.me/573122838844?text=Hola!+Vi+sus+productos+y+quiero+más+información" },
+  { name: "WhatsApp",  icon: MessageCircle, href: "https://wa.me/573223745187?text=Hola!+Vi+sus+productos+y+quiero+más+información" },
   { name: "Email",     icon: Mail,         href: "mailto:monica@clichecolombia.com" },
 ]
 
