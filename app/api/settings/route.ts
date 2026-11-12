@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabase, createServerClient } from '@/lib/supabase'
 import { parseUrgencyConfig, URGENCY_DEFAULTS } from '@/lib/urgency'
 import { isAdmin } from '@/lib/admin-auth'
+import { WHATSAPP_CLICHE } from '@/lib/entrega'
 
 // Claves públicas que el sitio (hero, barra, footer, whatsapp) puede leer.
 // Texto/toggles que el admin edita en la sección "Tienda".
@@ -34,7 +35,7 @@ const DEFAULTS = {
   discount_code: '',
   announcement_text: '',
   free_shipping_threshold: 300000,
-  whatsapp_number: '',
+  whatsapp_number: WHATSAPP_CLICHE,
   whatsapp_message: '',
   hero_title: '',
   hero_subtitle: '',
@@ -83,7 +84,8 @@ export async function GET() {
       discount_code: raw.discount_code ?? DEFAULTS.discount_code,
       announcement_text: raw.announcement_text ?? DEFAULTS.announcement_text,
       free_shipping_threshold: Number(raw.free_shipping_threshold ?? DEFAULTS.free_shipping_threshold),
-      whatsapp_number: raw.whatsapp_number ?? DEFAULTS.whatsapp_number,
+      // Número fijo en código (lib/entrega); el valor del panel se ignora.
+      whatsapp_number: WHATSAPP_CLICHE,
       whatsapp_message: raw.whatsapp_message ?? DEFAULTS.whatsapp_message,
       hero_title: raw.hero_title ?? DEFAULTS.hero_title,
       hero_subtitle: raw.hero_subtitle ?? DEFAULTS.hero_subtitle,

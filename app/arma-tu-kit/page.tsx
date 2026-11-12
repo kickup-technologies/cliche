@@ -43,25 +43,21 @@ async function loadAromas(): Promise<KitAroma[]> {
 
 async function loadSettings(): Promise<{ freeShippingThreshold: number; whatsappNumber: string }> {
   let threshold: unknown = null
-  let whatsapp: unknown = null
   if (isSupabaseConfigured) {
     try {
       const { data } = await supabase
         .from("site_settings")
         .select("key, value")
-        .in("key", ["free_shipping_threshold", "whatsapp_number"])
-      for (const row of data ?? []) {
-        if (row.key === "free_shipping_threshold") threshold = row.value
-        if (row.key === "whatsapp_number") whatsapp = row.value
-      }
+        .eq("key", "free_shipping_threshold")
+      for (const row of data ?? []) threshold = row.value
     } catch {
       /* defaults */
     }
   }
-  const digits = typeof whatsapp === "string" ? whatsapp.replace(/\D/g, "") : ""
   return {
     freeShippingThreshold: parseFreeShippingThreshold(threshold),
-    whatsappNumber: digits.length >= 10 ? digits : DEFAULT_WHATSAPP,
+    // Número oficial fijo (lib/entrega): el campo del panel se ignora.
+    whatsappNumber: DEFAULT_WHATSAPP,
   }
 }
 

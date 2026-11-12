@@ -5,8 +5,8 @@ import { MessageCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCart } from "@/context/cart-context"
 import { useSiteSettings } from "@/lib/use-site-settings"
+import { WHATSAPP_CLICHE } from "@/lib/entrega"
 
-const DEFAULT_PHONE = "573223745187"
 const DEFAULT_MESSAGE = "Hola! Vi sus productos en la tienda online y me gustaría saber más"
 
 /**
@@ -17,9 +17,8 @@ export function WhatsAppButton({ raisedClass }: { raisedClass?: string } = {}) {
   const settings = useSiteSettings()
   const [isHovered, setIsHovered] = useState(false)
   const { itemCount, isDrawerOpen } = useCart()
-  const phoneNumber = settings.whatsapp_number
-    ? String(settings.whatsapp_number).replace(/\D/g, "")
-    : DEFAULT_PHONE
+  // El número es siempre el oficial (lib/entrega); el panel solo edita el mensaje.
+  const phoneNumber = WHATSAPP_CLICHE
   const message = settings.whatsapp_message || DEFAULT_MESSAGE
 
   // Se oculta cuando el drawer del carrito está abierto para no interferir

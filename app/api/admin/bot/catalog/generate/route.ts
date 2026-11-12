@@ -3,6 +3,7 @@ import { isAdmin } from "@/lib/admin-auth"
 import { createServerClient } from "@/lib/supabase"
 import { CATALOG, getCatalogProduct, type CatalogProduct } from "@/lib/catalog-data"
 import type { Product } from "@/lib/supabase"
+import { WHATSAPP_CLICHE } from "@/lib/entrega"
 import { CatalogDocument } from "@/lib/catalog-pdf"
 import { renderToBuffer } from "@react-pdf/renderer"
 
@@ -31,11 +32,8 @@ export async function POST(req: NextRequest) {
       }
     })
 
-    // Datos de contacto desde site_settings.
-    const { data: setts } = await sb.from("site_settings").select("key, value")
-    const settings: Record<string, string> = {}
-    ;(setts || []).forEach((s: { key: string; value: string }) => (settings[s.key] = s.value))
-    const whatsapp = settings.whatsapp_number ? `+${settings.whatsapp_number}` : ""
+    // Contacto: número oficial fijo (lib/entrega).
+    const whatsapp = `+${WHATSAPP_CLICHE}`
 
     const buffer = await renderToBuffer(
       CatalogDocument({ products, whatsapp, web: "clichecolombia.com" }),
