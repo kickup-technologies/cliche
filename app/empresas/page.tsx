@@ -76,15 +76,12 @@ async function loadData(): Promise<{ aromas: Aroma[]; whatsappNumber: string }> 
   if (!isSupabaseConfigured) return { aromas: CATALOG_AROMAS.filter(isAroma), whatsappNumber: DEFAULT_WHATSAPP }
   try {
     const db = createServerClient()
-    const [{ data: products }, { data: settings }] = await Promise.all([
-      db.from("products").select("slug, name, image_url").eq("is_active", true),
-      db.from("site_settings").select("value").eq("key", "whatsapp_number").maybeSingle(),
-    ])
+    const { data: products } = await db.from("products").select("slug, name, image_url").eq("is_active", true)
     const fromDb = ((products || []) as Aroma[]).filter(isAroma)
-    const digits = typeof settings?.value === "string" ? settings.value.replace(/\D/g, "") : ""
     return {
       aromas: fromDb.length ? fromDb : CATALOG_AROMAS.filter(isAroma),
-      whatsappNumber: digits.length >= 10 ? digits : DEFAULT_WHATSAPP,
+      // Número oficial fijo (lib/entrega): el campo del panel se ignora.
+      whatsappNumber: DEFAULT_WHATSAPP,
     }
   } catch {
     return { aromas: CATALOG_AROMAS.filter(isAroma), whatsappNumber: DEFAULT_WHATSAPP }

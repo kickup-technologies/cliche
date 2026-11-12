@@ -2,6 +2,7 @@ import { createServerClient } from "@/lib/supabase"
 import { CATALOG, getCatalogProduct } from "@/lib/catalog-data"
 import { PRICE_TIERS, tierSavings, SHIPPING_COST, parseFreeShippingThreshold } from "@/lib/pricing"
 import { botReply, type AIMessage } from "@/lib/bot/ai"
+import { WHATSAPP_CLICHE } from "@/lib/entrega"
 import type { Product } from "@/lib/supabase"
 
 // ── Cerebro del asesor virtual de Cliché ──────────────────────────────────────
@@ -129,7 +130,7 @@ export async function loadBotContext(): Promise<BotContext> {
     config.store_hours && `Horario: ${config.store_hours}`,
     config.store_city && `Ciudad: ${config.store_city}`,
     config.store_maps_url && `Ubicación (mapa): ${config.store_maps_url}`,
-    settings.whatsapp_number && `WhatsApp tienda: ${settings.whatsapp_number}`,
+    `WhatsApp tienda: ${WHATSAPP_CLICHE}`,
   ].filter(Boolean)
 
   // Umbral de envío gratis: MISMA fuente y parser que el checkout, para que el

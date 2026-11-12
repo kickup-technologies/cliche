@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { useCAPI, generateEventId, getFbSignals } from "@/lib/use-capi"
-import { useSiteSettings } from "@/lib/use-site-settings"
 import { DEFAULT_WHATSAPP, waDisplay, waHref } from "@/components/landing-maqueta/parts"
 import {
   BUSINESS_TYPES,
@@ -68,10 +67,9 @@ function captureOrigin(): LeadOrigin {
   return o
 }
 
+/** Número oficial fijo (lib/entrega); el campo del panel se ignora. */
 function useWaNumber(): string {
-  const settings = useSiteSettings()
-  const n = settings.whatsapp_number ? String(settings.whatsapp_number).replace(/\D/g, "") : ""
-  return n || DEFAULT_WHATSAPP
+  return DEFAULT_WHATSAPP
 }
 
 /** Desplaza al formulario (respeta el scroll suave de Lenis si está activo). */

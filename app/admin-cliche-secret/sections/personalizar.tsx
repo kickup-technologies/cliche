@@ -8,6 +8,7 @@ import {
 import { adminFetch } from "@/lib/admin-client"
 import { IMAGE_ACCEPT, IMAGE_FORMATS_TEXTO, MAX_IMAGE_MB } from "@/lib/upload-limits"
 import { subirImagen } from "@/lib/admin-upload"
+import { WHATSAPP_CLICHE } from "@/lib/entrega"
 
 interface PersonalizarSectionProps {
   settings: Record<string, string>
@@ -87,9 +88,8 @@ const GROUPS: Group[] = [
     id: "whatsapp",
     title: "WhatsApp",
     icon: MessageCircle,
-    desc: "Botón flotante de contacto",
+    desc: "Botón flotante de contacto · número oficial fijo: +57 322 374 5187",
     fields: [
-      { key: "whatsapp_number", label: "Número (con código país)", placeholder: "573223745187" },
       { key: "whatsapp_message", label: "Mensaje predeterminado", placeholder: "Hola, me interesa...", area: true },
     ],
   },
@@ -154,7 +154,7 @@ export function PersonalizarSection({ settings, onSettingsUpdate }: Personalizar
     free_shipping_threshold: Number(local.free_shipping_threshold || 300000),
     discount_code: local.discount_code || "",
     discount_percentage: Number(local.discount_percentage || 10),
-    whatsapp_number: local.whatsapp_number || "",
+    whatsapp_number: WHATSAPP_CLICHE,
     whatsapp_message: local.whatsapp_message || "",
     hero_slides: slides,
     urgency_bar_enabled: local.urgency_bar_enabled !== "false",

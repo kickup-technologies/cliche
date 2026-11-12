@@ -1,4 +1,5 @@
 import { BRANDS } from "@/lib/brands"
+import { WHATSAPP_CLICHE } from "@/lib/entrega"
 
 /**
  * Piezas que comparten las dos landings de pauta hechas con las maquetas de
@@ -11,7 +12,7 @@ import { BRANDS } from "@/lib/brands"
  * copiados de su maqueta con las mismas clases (.brands, .tests, footer…).
  */
 
-export const DEFAULT_WHATSAPP = "573223745187"
+export const DEFAULT_WHATSAPP = WHATSAPP_CLICHE
 
 /** "573223745187" → "322 374 5187" (como lo escribe la maqueta). */
 export function waDisplay(num: string): string {
