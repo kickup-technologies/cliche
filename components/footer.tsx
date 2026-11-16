@@ -169,6 +169,16 @@ export function Footer() {
               {/* Identificación del vendedor (art. 50 lit. b Ley 1480): razón social y
                   NIT verificados en el RUES (matrícula 68456412, CC Medellín). */}
               © 2026 Cliché S.A.S. · NIT 901.432.536-8 · Calle 5A # 43B-25, Local 101, Medellín, Colombia · Todos los derechos reservados.
+              {/* Crédito discreto del desarrollador, en la misma línea (16-nov-2026). */}
+              <span className="text-background/35"> · </span>
+              <a
+                href="https://kickuptech.com"
+                target="_blank"
+                rel="noopener"
+                className="whitespace-nowrap text-xs text-background/35 transition-colors hover:text-background/70"
+              >
+                Desarrollado por KickUp Technologies
+              </a>
             </p>
             <div className="flex items-center gap-4 flex-wrap justify-center sm:justify-end">
               {/* Visa */}
