@@ -14,7 +14,7 @@ import {
   type KitAroma,
 } from "@/lib/kit-landing-content"
 import { MqBrands, MqFooter, waDisplay, waHref } from "@/components/landing-maqueta/parts"
-import { ENTREGA_EN_LINEA, SOUVENIR_EN_LINEA } from "@/lib/entrega"
+import { ENTREGA_EN_LINEA } from "@/lib/entrega"
 import "./kit-landing.css"
 
 /**
@@ -635,8 +635,8 @@ export function KitLanding({
               <div className="grand"><span>Total</span><b>{fmt(subtotal + shipping)}</b></div>
             </div>
             <p className="pay-note">
-              Pagas en línea con tarjeta, PSE o Nequi y llega en {ENTREGA_EN_LINEA}
-              {SOUVENIR_EN_LINEA ? ", con un souvenir de regalo en tu caja" : ""}. En el siguiente paso escribes tus datos de envío.
+              Pagas en línea con tarjeta, PSE o Nequi y llega en {ENTREGA_EN_LINEA}. En el siguiente paso escribes tus
+              datos de envío.
             </p>
             <button
               ref={payRef}

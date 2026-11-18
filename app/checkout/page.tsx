@@ -8,10 +8,10 @@ import { catalogContentIds } from "@/lib/content-ids"
 import { useSiteSettings } from "@/lib/use-site-settings"
 import { SHIPPING_COST, parseFreeShippingThreshold } from "@/lib/pricing"
 import { Autorizacion, CamposEntrega, OpcionEnvio, ZonaPago, useEntrega } from "@/components/campos-entrega"
-import { ENTREGA_EN_LINEA, SOUVENIR_EN_LINEA, WHATSAPP_CLICHE } from "@/lib/entrega"
+import { ENTREGA_EN_LINEA, WHATSAPP_CLICHE } from "@/lib/entrega"
 import { CuentaRegresiva } from "@/components/cuenta-regresiva"
 import { Footer } from "@/components/footer"
-import { ArrowLeft, CreditCard, Gift, MessageCircle, Minus, Package, Plus, RotateCcw, ShieldCheck, Sparkles, Tag, Trash2, Truck, Zap } from "lucide-react"
+import { ArrowLeft, CreditCard, MessageCircle, Minus, Package, Plus, RotateCcw, ShieldCheck, Sparkles, Tag, Trash2, Truck, Zap } from "lucide-react"
 
 const fmt = (n: number) => `$${n.toLocaleString("es-CO")}`
 
@@ -254,7 +254,6 @@ export default function CheckoutPage() {
                 <div className="ck-incluye">
                   <span className="ck-incluye-titulo">Incluido en tu pedido</span>
                   <ul>
-                    {SOUVENIR_EN_LINEA && <li><Gift size={16} aria-hidden="true" /><span>Souvenir de regalo en tu caja</span></li>}
                     <li><Zap size={16} aria-hidden="true" /><span>Llega en {ENTREGA_EN_LINEA}</span></li>
                     {llevaKit && <li><Package size={16} aria-hidden="true" /><span>Tu kit llega armado en su caja</span></li>}
                     <li><RotateCcw size={16} aria-hidden="true" /><span>Garantía de <Link href="/terminos" target="_blank">30 días</Link></span></li>
@@ -267,7 +266,7 @@ export default function CheckoutPage() {
                 <ol>
                   <li><b>Pagas seguro</b><small>Tarjeta, PSE o Nequi en Mercado Pago. La confirmación llega a tu correo.</small></li>
                   <li><b>Te escribimos por WhatsApp</b><small>Para confirmar la dirección y coordinar la entrega.</small></li>
-                  <li><b>Llega a tu puerta</b><small>En {ENTREGA_EN_LINEA}{SOUVENIR_EN_LINEA ? ", con tu souvenir de regalo" : ""}.</small></li>
+                  <li><b>Llega a tu puerta</b><small>En {ENTREGA_EN_LINEA}.</small></li>
                 </ol>
               </section>
 
@@ -301,7 +300,7 @@ export default function CheckoutPage() {
                   <CreditCard size={19} aria-hidden="true" />
                   <span className="cod-cta-txt">
                     <span>{paying ? "Te llevamos al pago…" : `Pagar en línea - ${fmt(total)}`}</span>
-                    {!paying && <small>{SOUVENIR_EN_LINEA ? `Souvenir de regalo · llega en ${ENTREGA_EN_LINEA.replace(" a ", "-")}` : `Tarjeta, PSE o Nequi · llega en ${ENTREGA_EN_LINEA}`}</small>}
+                    {!paying && <small>Tarjeta, PSE o Nequi · llega en {ENTREGA_EN_LINEA}</small>}
                   </span>
                 </button>
               </div>

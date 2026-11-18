@@ -1,7 +1,7 @@
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight, Gift, RotateCcw, ShieldCheck, Truck, Zap } from "lucide-react"
-import { ENTREGA_EN_LINEA, SOUVENIR_EN_LINEA } from "@/lib/entrega"
+import { ArrowRight, RotateCcw, ShieldCheck, Truck, Zap } from "lucide-react"
+import { ENTREGA_EN_LINEA } from "@/lib/entrega"
 import { PRICE_TIERS, tierSavings } from "@/lib/pricing"
 
 /**
@@ -24,7 +24,7 @@ export function PortadaCliche() {
           <Link className="portada-cl-btn is-primario" href="/catalogo">Elegir mi aroma</Link>
           <Link className="portada-cl-btn" href="/arma-tu-kit">Armar mi kit</Link>
         </div>
-        <small className="portada-cl-nota">Envío gratis desde $300.000{SOUVENIR_EN_LINEA ? " · Souvenir de regalo al pagar en línea" : ""}</small>
+        <small className="portada-cl-nota">Envío gratis desde $300.000</small>
       </div>
     </section>
   )
@@ -94,7 +94,6 @@ export function KitsCliche() {
 export function GarantiasCliche() {
   const items = [
     { Icono: Zap, titulo: `Llega en ${ENTREGA_EN_LINEA}`, texto: "Desde Medellín a toda Colombia." },
-    ...(SOUVENIR_EN_LINEA ? [{ Icono: Gift, titulo: "Souvenir de regalo", texto: "Va en tu caja cuando pagas en línea." }] : []),
     { Icono: Truck, titulo: "Envío gratis", texto: "En compras desde $300.000 a toda Colombia." },
     { Icono: RotateCcw, titulo: "Garantía de 30 días", texto: "Para cambios y devoluciones." },
     { Icono: ShieldCheck, titulo: "Pago protegido", texto: "Tarjeta, PSE o Nequi con Mercado Pago." },

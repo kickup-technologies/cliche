@@ -3,14 +3,14 @@
 import { Suspense, useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { Check, ChevronDown, Gift, MessageCircle, Truck, X, Zap } from "lucide-react"
+import { Check, ChevronDown, MessageCircle, Truck, X, Zap } from "lucide-react"
 import { useCart } from "@/context/cart-context"
 import { Header } from "@/components/header"
 import { AnnouncementBar } from "@/components/announcement-bar"
 import { Footer } from "@/components/footer"
 import { SEGMENTS, segmentsForSlug } from "@/lib/segments"
 import { FAMILIES, familyOf } from "@/lib/families"
-import { ENTREGA_EN_LINEA, SOUVENIR_EN_LINEA, WHATSAPP_CLICHE } from "@/lib/entrega"
+import { ENTREGA_EN_LINEA, WHATSAPP_CLICHE } from "@/lib/entrega"
 import { AVISO_NAVIDAD } from "@/lib/aviso-navidad"
 import { TiendaCard, nombreCorto } from "@/components/tienda-card"
 import type { Product } from "@/lib/supabase"
@@ -187,7 +187,6 @@ function TiendaInner() {
               {/* Beneficios reales del pedido (los mismos del checkout). */}
               <ul className="tienda-banda">
                 <li><Zap size={17} aria-hidden="true" /><span>Llega en {ENTREGA_EN_LINEA}</span></li>
-                {SOUVENIR_EN_LINEA && <li><Gift size={17} aria-hidden="true" /><span>Souvenir de regalo al pagar en línea</span></li>}
                 <li><Truck size={17} aria-hidden="true" /><span>{navidad ? `Para Navidad, pide hasta el ${AVISO_NAVIDAD.fechaCorta}` : "Envío gratis desde $300.000"}</span></li>
               </ul>
 

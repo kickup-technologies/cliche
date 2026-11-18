@@ -12,7 +12,7 @@ import { parseFreeShippingThreshold } from "@/lib/pricing"
 import { getCatalogProduct } from "@/lib/catalog-data"
 import { historiaDe } from "@/lib/historias"
 import { NOTES_MAP } from "@/lib/aroma-notes"
-import { ENTREGA_EN_LINEA, SOUVENIR_EN_LINEA } from "@/lib/entrega"
+import { ENTREGA_EN_LINEA } from "@/lib/entrega"
 import { CuentaRegresiva } from "@/components/cuenta-regresiva"
 import { AtajosFicha, KitsFicha, LAMINAS, LaminaFicha, SeccionesFicha } from "@/components/ficha-secciones"
 import { PedidoRapido } from "@/components/pedido-rapido"
@@ -40,7 +40,7 @@ import { PRODUCT_MODELS, sin3D } from "@/lib/product-models"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
-  ShoppingBag, ShieldCheck, Truck, BadgeCheck, ChevronRight, Plus, Minus, Share2, Heart, CheckCircle, Gift, RotateCcw, Check, Sparkles, Zap, Flame, CreditCard
+  ShoppingBag, ShieldCheck, Truck, BadgeCheck, ChevronRight, Plus, Minus, Share2, Heart, CheckCircle, RotateCcw, Check, Sparkles, Zap, Flame, CreditCard
 } from "lucide-react"
 
 import type { Product } from "@/lib/supabase"
@@ -557,7 +557,7 @@ export function ProductDetail({ product, related }: Props) {
               </div>
 
               {/* Lo que trae la presentación elegida (como "Con tu pack" de
-                  Bienestar): ahorro real del kit, envío, souvenir y garantía. */}
+                  Bienestar): ahorro real del kit, entrega, envío y garantía. */}
               {!isTestProduct && (() => {
                 const umbral = parseFreeShippingThreshold(siteSettings.free_shipping_threshold)
                 return (
@@ -567,7 +567,6 @@ export function ProductDetail({ product, related }: Props) {
                       {tier.units > 1 && <li><Sparkles className="h-4 w-4" aria-hidden="true" /> {tier.units} frascos de {product.name.replace(/^Aroma\s+/i, "").split(" — ")[0]} · ahorras ${tierSavings(tier).toLocaleString("es-CO")}</li>}
                       <li><Zap className="h-4 w-4" aria-hidden="true" /> Llega en {ENTREGA_EN_LINEA}</li>
                       <li><Truck className="h-4 w-4" aria-hidden="true" /> {tierPrice * qty >= umbral ? "Envío gratis" : `Envío gratis desde $${umbral.toLocaleString("es-CO")}`}</li>
-                      {SOUVENIR_EN_LINEA && <li><Gift className="h-4 w-4" aria-hidden="true" /> Souvenir de regalo al pagar en línea</li>}
                       <li><RotateCcw className="h-4 w-4" aria-hidden="true" /> Garantía de 30 días</li>
                     </ul>
                   </div>
@@ -659,7 +658,7 @@ export function ProductDetail({ product, related }: Props) {
                     </div>
                   )}
                   {/* Botón principal: comprar ahora (lleva al checkout de un paso),
-                      con el souvenir y la entrega en la segunda línea, como el
+                      con la entrega en la segunda línea, como el
                       formulario de Bienestar. Agregar al carrito queda segundo. */}
                   <button
                     type="button"
@@ -671,7 +670,7 @@ export function ProductDetail({ product, related }: Props) {
                     <CreditCard size={19} aria-hidden="true" />
                     <span className="cod-cta-txt">
                       <span>{isCheckingOut ? "Procesando…" : `Comprar ahora · $${(tierPrice * qty).toLocaleString("es-CO")}`}</span>
-                      {!isCheckingOut && <small>{SOUVENIR_EN_LINEA ? "Souvenir de regalo · " : ""}llega en {ENTREGA_EN_LINEA.replace(" a ", "-")}</small>}
+                      {!isCheckingOut && <small>Llega en {ENTREGA_EN_LINEA.replace(" a ", "-")}</small>}
                     </span>
                   </button>
                   <Button
@@ -715,7 +714,7 @@ export function ProductDetail({ product, related }: Props) {
                 {[
                   { Icon: Truck, label: `Llega en ${ENTREGA_EN_LINEA.replace(" a ", "-").replace(" hábiles", "")}`, cls: "trust-truck" },
                   { Icon: ShieldCheck, label: "Pago 100% seguro", cls: "trust-shield" },
-                  { Icon: SOUVENIR_EN_LINEA ? Gift : BadgeCheck, label: SOUVENIR_EN_LINEA ? "Souvenir de regalo" : "30 días garantía", cls: "trust-badge" },
+                  { Icon: BadgeCheck, label: "30 días garantía", cls: "trust-badge" },
                 ].map(({ Icon, label, cls }) => (
                   <div key={label} className="flex flex-col items-center text-center gap-2 px-2 py-1">
                     <Icon className={`w-[18px] h-[18px] text-primary ${cls}`} />
@@ -746,7 +745,7 @@ export function ProductDetail({ product, related }: Props) {
             faq={[
                       { q: "¿Cuánto dura el aroma?", a: "Hasta 8 horas en espacios cerrados con 3 a 5 pufs." },
                       { q: "¿Mancha la ropa?", a: "No mancha: puedes aplicarlo en prendas, sábanas y cortinas." },
-                      { q: "¿Cuándo llega mi pedido?", a: `Al pagar en línea, llega en ${ENTREGA_EN_LINEA}${SOUVENIR_EN_LINEA ? ", con un souvenir de regalo en la caja" : ""}.` },
+                      { q: "¿Cuándo llega mi pedido?", a: `Al pagar en línea, llega en ${ENTREGA_EN_LINEA}.` },
                       { q: "¿Puedo mezclar aromas?", a: "Sí: en Arma tu kit eliges x3, x4 o x6 con los aromas que quieras." },
                       { q: "¿Sirve para mi marca o negocio?", a: "Sí. Si quieres un aroma para tu tienda o tu marca, en Empresas te asesoramos." },
             ]}

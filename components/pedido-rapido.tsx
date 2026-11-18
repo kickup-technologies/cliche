@@ -2,11 +2,11 @@
 
 import { useEffect, useId, useRef, useState } from "react"
 import { createPortal } from "react-dom"
-import { CreditCard, Gift, Package, RotateCcw, ShieldCheck, Sparkles, Truck, X, Zap } from "lucide-react"
+import { CreditCard, Package, RotateCcw, ShieldCheck, Sparkles, Truck, X, Zap } from "lucide-react"
 import { useCAPI, getFbSignals } from "@/lib/use-capi"
 import { useSiteSettings } from "@/lib/use-site-settings"
 import { PRICE_TIERS, SHIPPING_COST, makeVariantId, parseFreeShippingThreshold, tierSavings } from "@/lib/pricing"
-import { ENTREGA_EN_LINEA, SOUVENIR_EN_LINEA } from "@/lib/entrega"
+import { ENTREGA_EN_LINEA } from "@/lib/entrega"
 import { Autorizacion, CamposEntrega, OpcionEnvio, ZonaPago, useEntrega } from "@/components/campos-entrega"
 import type { Product } from "@/lib/supabase"
 
@@ -179,7 +179,7 @@ export function PedidoRapido({ abierto, onClose, product, tierId, onTierChange, 
             <ul className="cod-razones">
               <li><Zap size={20} aria-hidden="true" /><span>Llega en {ENTREGA_EN_LINEA.replace(" a ", "-")}</span></li>
               <li><RotateCcw size={20} aria-hidden="true" /><span>Garantía de 30 días</span></li>
-              <li>{SOUVENIR_EN_LINEA ? <Gift size={20} aria-hidden="true" /> : <Package size={20} aria-hidden="true" />}<span>{SOUVENIR_EN_LINEA ? "Souvenir de regalo en tu caja" : "Caja protegida"}</span></li>
+              <li><Package size={20} aria-hidden="true" /><span>Caja protegida</span></li>
             </ul>
             <Autorizacion e={entrega} />
             <ZonaPago />
@@ -192,7 +192,7 @@ export function PedidoRapido({ abierto, onClose, product, tierId, onTierChange, 
               <CreditCard size={19} aria-hidden="true" />
               <span className="cod-cta-txt">
                 <span>{enviando ? "Te llevamos al pago…" : `Pagar en línea - ${fmt(total)}`}</span>
-                {!enviando && <small>{SOUVENIR_EN_LINEA ? "Souvenir de regalo · " : ""}llega en {ENTREGA_EN_LINEA.replace(" a ", "-")}</small>}
+                {!enviando && <small>Tarjeta, PSE o Nequi · llega en {ENTREGA_EN_LINEA.replace(" a ", "-")}</small>}
               </span>
             </button>
           </div>
