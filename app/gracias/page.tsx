@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button"
 import { useCart } from "@/context/cart-context"
 import { useCAPI } from "@/lib/use-capi"
 import { catalogContentIds } from "@/lib/content-ids"
-import { ENTREGA_EN_LINEA, SOUVENIR_EN_LINEA, WHATSAPP_CLICHE } from "@/lib/entrega"
+import { ENTREGA_EN_LINEA, WHATSAPP_CLICHE } from "@/lib/entrega"
 
 // Carrusel 3D "Seguir comprando" — solo cliente (WebGL), se carga aparte.
 const Gracias3DCarousel = dynamic(() => import("@/components/gracias-carousel"), {
@@ -328,7 +328,6 @@ function GraciasContent() {
                   <dl className="gracias-datos">
                     <div><dt>Pago</dt><dd>En línea · Mercado Pago</dd></div>
                     <div><dt>Entrega</dt><dd>Llega en {ENTREGA_EN_LINEA}</dd></div>
-                    {SOUVENIR_EN_LINEA && <div><dt>Regalo</dt><dd>Souvenir en tu caja</dd></div>}
                   </dl>
                 </section>
                 <section className="gracias-card">
@@ -344,7 +343,7 @@ function GraciasContent() {
                     </li>
                     <li>
                       <span aria-hidden><Truck size={17} /></span>
-                      <div><b>Despachamos tu pedido</b><small>Despacho prioritario: llega en {ENTREGA_EN_LINEA}.</small></div>
+                      <div><b>Despachamos tu pedido</b><small>Desde Medellín a toda Colombia: llega en {ENTREGA_EN_LINEA}.</small></div>
                     </li>
                   </ol>
                 </section>

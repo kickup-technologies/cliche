@@ -986,7 +986,7 @@ aside { transition: background-color .35s ease, border-color .35s ease; }
   .cat-hide-sm { display:none; }
   .tienda-sub { display:none; }
   /* Beneficios en tres cuadritos, como las razones del formulario. */
-  .tienda-banda { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; padding:10px 6px; font-size:12px; line-height:1.3; }
+  .tienda-banda { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); gap:4px; padding:10px 6px; font-size:12px; line-height:1.3; }
   .tienda-banda li { flex-direction:column; gap:5px; text-align:center; }
   .tienda-filtros { padding:8px 12px; }
   .tienda-filtro select { padding-right:20px; }
@@ -1143,7 +1143,7 @@ aside { transition: background-color .35s ease, border-color .35s ease; }
 .garantias-cl svg { color:#A67163; }
 .garantias-cl b { font-size:15px; font-weight:600; }
 .garantias-cl small { font-size:13px; line-height:1.4; color:var(--olive); }
-@media (min-width:820px) { .garantias-cl ul { grid-template-columns:repeat(5,minmax(0,1fr)); } .garantias-cl li:last-child:nth-child(odd) { grid-column:auto; } }
+@media (min-width:820px) { .garantias-cl ul { grid-template-columns:none; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); } .garantias-cl li:last-child:nth-child(odd) { grid-column:auto; } }
 /* Portada en celular: el botón se ve sin bajar (foto más baja, título más
    corto y los dos botones en una fila), como las tiendas de referencia. */
 @media (max-width:819px) {

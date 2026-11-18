@@ -14,7 +14,7 @@ import {
   type KitAroma,
 } from "@/lib/kit-landing-content"
 import { MqBrands, MqFooter, waDisplay, waHref } from "@/components/landing-maqueta/parts"
-import { ENTREGA_EN_LINEA, SOUVENIR_EN_LINEA } from "@/lib/entrega"
+import { ENTREGA_EN_LINEA } from "@/lib/entrega"
 import "./kit-landing.css"
 
 /**
@@ -29,7 +29,7 @@ import "./kit-landing.css"
  *   (dispara InitiateCheckout) → /checkout → Mercado Pago. Mismo flujo que el
  *   PackBuilder de la ficha; el pedido lleva los aromas elegidos.
  * - Medios y condiciones reales: tarjeta, PSE o Nequi; envío de SHIPPING_COST,
- *   gratis desde el umbral del panel; entrega de 2 a 3 días hábiles; garantía
+ *   gratis desde el umbral del panel; entrega de 7 a 9 días hábiles; garantía
  *   y retracto de los términos.
  * - Aromas, notas, fotos, insignias, stock y calificaciones salen de la BD.
  */
@@ -293,7 +293,7 @@ export function KitLanding({
     },
     {
       q: "¿Cuándo llega?",
-      a: `Lo despachamos el siguiente día hábil y llega en 2 a 3 días hábiles. El envío cuesta ${fmt(SHIPPING_COST)} y es gratis desde ${fmt(freeShippingThreshold)}.`,
+      a: `Lo despachamos desde Medellín y llega en ${ENTREGA_EN_LINEA}. El envío cuesta ${fmt(SHIPPING_COST)} y es gratis desde ${fmt(freeShippingThreshold)}.`,
     },
     ...(showChristmasDeadline
       ? [{ q: "¿Llega para Navidad?", a: `Sí, si lo pides hasta ${CHRISTMAS_DEADLINE_LABEL}.` }]
@@ -635,8 +635,8 @@ export function KitLanding({
               <div className="grand"><span>Total</span><b>{fmt(subtotal + shipping)}</b></div>
             </div>
             <p className="pay-note">
-              Pagas en línea con tarjeta, PSE o Nequi y llega en {ENTREGA_EN_LINEA}
-              {SOUVENIR_EN_LINEA ? ", con un souvenir de regalo en tu caja" : ""}. En el siguiente paso escribes tus datos de envío.
+              Pagas en línea con tarjeta, PSE o Nequi y llega en {ENTREGA_EN_LINEA}. En el siguiente paso escribes tus
+              datos de envío.
             </p>
             <button
               ref={payRef}

@@ -8,17 +8,17 @@ import { catalogContentIds } from "@/lib/content-ids"
 import { useSiteSettings } from "@/lib/use-site-settings"
 import { SHIPPING_COST, parseFreeShippingThreshold } from "@/lib/pricing"
 import { Autorizacion, CamposEntrega, OpcionEnvio, ZonaPago, useEntrega } from "@/components/campos-entrega"
-import { ENTREGA_EN_LINEA, SOUVENIR_EN_LINEA, WHATSAPP_CLICHE } from "@/lib/entrega"
+import { ENTREGA_EN_LINEA, WHATSAPP_CLICHE } from "@/lib/entrega"
 import { CuentaRegresiva } from "@/components/cuenta-regresiva"
 import { Footer } from "@/components/footer"
-import { ArrowLeft, CreditCard, Gift, MessageCircle, Minus, Package, Plus, RotateCcw, ShieldCheck, Sparkles, Tag, Trash2, Truck, Zap } from "lucide-react"
+import { ArrowLeft, CreditCard, MessageCircle, Minus, Package, Plus, RotateCcw, ShieldCheck, Sparkles, Tag, Trash2, Truck, Zap } from "lucide-react"
 
 const fmt = (n: number) => `$${n.toLocaleString("es-CO")}`
 
 /**
  * Checkout — un solo paso, con la forma del formulario de pedido de Bienestar
  * by Cliché (EasySell): franja de confianza, campos con ícono, ciudad en
- * selector (llena el departamento), envío prioritario, zona de pago segura y
+ * selector (llena el departamento), opción de envío, zona de pago segura y
  * botón pegado abajo. Arriba, la cuenta regresiva contra la fecha real de
  * Navidad; al lado, "Incluido en tu pedido", "Lo que pasa después" y las
  * dudas por WhatsApp. El pago sigue siendo el de siempre: /api/checkout crea
@@ -247,15 +247,14 @@ export default function CheckoutPage() {
                 <div className="cod-resumen" aria-live="polite">
                   <div><span>Subtotal</span><strong>{fmt(subtotal)}</strong></div>
                   {descuento > 0 && <div className="cod-desc"><span><Tag size={13} aria-hidden="true" /> Descuento {appliedCode}</span><strong>−{fmt(descuento)}</strong></div>}
-                  <div><span>Envío · despacho prioritario</span><strong>{freeShipping ? "Gratis" : fmt(envio)}</strong></div>
+                  <div><span>Envío</span><strong>{freeShipping ? "Gratis" : fmt(envio)}</strong></div>
                   <div className="cod-total"><span>Total</span><strong>{fmt(total)}</strong></div>
                 </div>
                 {/* Lo que va en la caja, sin valores tachados ni "bonos" inflados. */}
                 <div className="ck-incluye">
                   <span className="ck-incluye-titulo">Incluido en tu pedido</span>
                   <ul>
-                    {SOUVENIR_EN_LINEA && <li><Gift size={16} aria-hidden="true" /><span>Souvenir de regalo en tu caja</span></li>}
-                    <li><Zap size={16} aria-hidden="true" /><span>Despacho prioritario: llega en {ENTREGA_EN_LINEA}</span></li>
+                    <li><Zap size={16} aria-hidden="true" /><span>Llega en {ENTREGA_EN_LINEA}</span></li>
                     {llevaKit && <li><Package size={16} aria-hidden="true" /><span>Tu kit llega armado en su caja</span></li>}
                     <li><RotateCcw size={16} aria-hidden="true" /><span>Garantía de <Link href="/terminos" target="_blank">30 días</Link></span></li>
                   </ul>
@@ -267,7 +266,7 @@ export default function CheckoutPage() {
                 <ol>
                   <li><b>Pagas seguro</b><small>Tarjeta, PSE o Nequi en Mercado Pago. La confirmación llega a tu correo.</small></li>
                   <li><b>Te escribimos por WhatsApp</b><small>Para confirmar la dirección y coordinar la entrega.</small></li>
-                  <li><b>Llega a tu puerta</b><small>En {ENTREGA_EN_LINEA}{SOUVENIR_EN_LINEA ? ", con tu souvenir de regalo" : ""}.</small></li>
+                  <li><b>Llega a tu puerta</b><small>En {ENTREGA_EN_LINEA}.</small></li>
                 </ol>
               </section>
 
@@ -301,7 +300,7 @@ export default function CheckoutPage() {
                   <CreditCard size={19} aria-hidden="true" />
                   <span className="cod-cta-txt">
                     <span>{paying ? "Te llevamos al pago…" : `Pagar en línea - ${fmt(total)}`}</span>
-                    {!paying && <small>{SOUVENIR_EN_LINEA ? `Souvenir de regalo · llega en ${ENTREGA_EN_LINEA.replace(" a ", "-")}` : `Tarjeta, PSE o Nequi · llega en ${ENTREGA_EN_LINEA}`}</small>}
+                    {!paying && <small>Tarjeta, PSE o Nequi · llega en {ENTREGA_EN_LINEA}</small>}
                   </span>
                 </button>
               </div>

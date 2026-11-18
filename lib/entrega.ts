@@ -1,10 +1,12 @@
 /**
- * Promesa de entrega y beneficios de pagar en línea (decisión de la marca,
- * 7-nov-2026, igual que en Bienestar by Cliché): despacho prioritario que llega
- * en 2 a 3 días hábiles y un souvenir de regalo en la caja.
+ * Promesa de entrega (decisión de la marca, 18-nov-2026, igual que en Bienestar
+ * by Cliché): llega en 7 a 9 días hábiles. Antes se prometían 2 a 3, pero las
+ * referencias agotadas tardan más y los pedidos se demoraban.
+ *
+ * Ya no se ofrece souvenir de regalo (decisión de la marca, 18-nov-2026: los
+ * aromas no van en caja de regalo). Se quitó de todo el sitio.
  */
-export const ENTREGA_EN_LINEA = "2 a 3 días hábiles"
-export const SOUVENIR_EN_LINEA = true
+export const ENTREGA_EN_LINEA = "7 a 9 días hábiles"
 /** WhatsApp oficial de Cliché: ÚNICA fuente del número en todo el sitio y el bot.
  *  El campo "WhatsApp" del panel (site_settings.whatsapp_number) se ignora desde
  *  el 12-nov-2026: guardaba el número anterior (312 283 8844, hoy de Bienestar)

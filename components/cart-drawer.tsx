@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { X, Plus, Minus, ShoppingBag, Trash2, Truck, Check, ChevronDown, Gift, CreditCard } from "lucide-react"
+import { X, Plus, Minus, ShoppingBag, Trash2, Truck, Check, ChevronDown, CreditCard } from "lucide-react"
 import { useCart } from "@/context/cart-context"
 import { useSiteSettings } from "@/lib/use-site-settings"
 import { parseFreeShippingThreshold } from "@/lib/pricing"
 import type { Product } from "@/lib/supabase"
 import { PRODUCT_PLACEHOLDER } from "@/lib/placeholder"
-import { ENTREGA_EN_LINEA, SOUVENIR_EN_LINEA } from "@/lib/entrega"
+import { ENTREGA_EN_LINEA } from "@/lib/entrega"
 
 // Paleta de marca (fiel al landing / checkout)
 const CREAM = "#FAF8F5"
@@ -269,8 +269,7 @@ export function CartDrawer() {
               )}
             </button>
             <p className="text-[12px] text-center inline-flex w-full items-center justify-center gap-1.5" style={{ color: `${BROWN}99` }}>
-              {SOUVENIR_EN_LINEA && <Gift className="w-3.5 h-3.5" style={{ color: TERRA }} />}
-              {SOUVENIR_EN_LINEA ? "Souvenir de regalo al pagar en línea · " : ""}llega en {ENTREGA_EN_LINEA}
+              Llega en {ENTREGA_EN_LINEA}
             </p>
           </div>
         )}
