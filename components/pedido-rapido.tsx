@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react"
 import { createPortal } from "react-dom"
-import { CreditCard, Gift, RotateCcw, ShieldCheck, Sparkles, Truck, X, Zap } from "lucide-react"
+import { CreditCard, Gift, Package, RotateCcw, ShieldCheck, Sparkles, Truck, X, Zap } from "lucide-react"
 import { useCAPI, getFbSignals } from "@/lib/use-capi"
 import { useSiteSettings } from "@/lib/use-site-settings"
 import { PRICE_TIERS, SHIPPING_COST, makeVariantId, parseFreeShippingThreshold, tierSavings } from "@/lib/pricing"
@@ -17,7 +17,7 @@ const ENFOCABLES = 'a[href], button:not([disabled]), input:not([disabled]), sele
  * Formulario de pedido en la misma ficha (como el de Bienestar by Cliché,
  * estilo EasySell): "Comprar ahora" abre esta ventana con el aroma y la
  * presentación elegidos (se puede cambiar aquí), los datos de entrega con la
- * ciudad en selector, el envío prioritario, la zona de pago segura y el botón
+ * ciudad en selector, la opción de envío, la zona de pago segura y el botón
  * con el total. Al pagar va directo a Mercado Pago por /api/checkout, la misma
  * ruta del carrito, sin pasar por el carrito.
  *
@@ -170,7 +170,7 @@ export function PedidoRapido({ abierto, onClose, product, tierId, onTierChange, 
 
             <div className="cod-resumen" aria-live="polite">
               <div><span>Subtotal</span><strong>{fmt(subtotal)}</strong></div>
-              <div><span>Envío · despacho prioritario</span><strong>{gratis ? "Gratis" : fmt(envio)}</strong></div>
+              <div><span>Envío</span><strong>{gratis ? "Gratis" : fmt(envio)}</strong></div>
               <div className="cod-total"><span>Total</span><strong>{fmt(total)}</strong></div>
             </div>
 
@@ -179,7 +179,7 @@ export function PedidoRapido({ abierto, onClose, product, tierId, onTierChange, 
             <ul className="cod-razones">
               <li><Zap size={20} aria-hidden="true" /><span>Llega en {ENTREGA_EN_LINEA.replace(" a ", "-")}</span></li>
               <li><RotateCcw size={20} aria-hidden="true" /><span>Garantía de 30 días</span></li>
-              <li><Gift size={20} aria-hidden="true" /><span>{SOUVENIR_EN_LINEA ? "Souvenir de regalo en tu caja" : "Caja protegida"}</span></li>
+              <li>{SOUVENIR_EN_LINEA ? <Gift size={20} aria-hidden="true" /> : <Package size={20} aria-hidden="true" />}<span>{SOUVENIR_EN_LINEA ? "Souvenir de regalo en tu caja" : "Caja protegida"}</span></li>
             </ul>
             <Autorizacion e={entrega} />
             <ZonaPago />

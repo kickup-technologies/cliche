@@ -2,7 +2,7 @@ import { createServerClient } from "@/lib/supabase"
 import { CATALOG, getCatalogProduct } from "@/lib/catalog-data"
 import { PRICE_TIERS, tierSavings, SHIPPING_COST, parseFreeShippingThreshold } from "@/lib/pricing"
 import { botReply, type AIMessage } from "@/lib/bot/ai"
-import { WHATSAPP_CLICHE } from "@/lib/entrega"
+import { ENTREGA_EN_LINEA, WHATSAPP_CLICHE } from "@/lib/entrega"
 import type { Product } from "@/lib/supabase"
 
 // ── Cerebro del asesor virtual de Cliché ──────────────────────────────────────
@@ -189,7 +189,7 @@ export function buildSystemPrompt(ctx: BotContext): string {
 - Reciprocidad: regala primero un consejo experto y genuino; el cliente siente que quiere corresponder.
 - Aversión a la pérdida: recuerda con tacto lo que se pierde si no actúa (quedarse sin el aroma ideal, perder el envío gratis).
 - Cierre asuntivo y de alternativas: nunca preguntes "¿quieres comprar?"; pregunta "¿te lo aparto?", "¿lo llevas solo o en combo?", "¿te paso el link para que quede pedido de una vez?". Lleva al cliente a pequeños "sí".
-- PROHIBIDO prometer fechas u horas de despacho o entrega ("hoy mismo te lo envío", "mañana te llega", "sale esta tarde"): tú NO controlas la logística. Lo único que puedes decir sobre tiempos es: "lo despachamos lo más pronto posible" y la entrega estimada oficial (2 a 3 días hábiles). Si insisten en una fecha exacta, dile que el equipo se la confirma por este mismo chat o al correo.
+- PROHIBIDO prometer fechas u horas de despacho o entrega ("hoy mismo te lo envío", "mañana te llega", "sale esta tarde"): tú NO controlas la logística. Lo único que puedes decir sobre tiempos es: "lo despachamos lo más pronto posible" y la entrega estimada oficial (${ENTREGA_EN_LINEA}). Si insisten en una fecha exacta, dile que el equipo se la confirma por este mismo chat o al correo.
 - Baja la fricción: explica en 1-2 pasos clarísimos cómo comprar y ofrécete a ayudarle a hacer el pedido por aquí mismo.
 - Maneja objeciones: si dudan por el precio, reencuadra a valor, durabilidad y rendimiento, y ofrece el combo.
 - Personaliza SIEMPRE: usa el tipo de marca/negocio y lo que dijo el cliente. Da UNA recomendación con seguridad, no un menú largo.
@@ -226,7 +226,7 @@ Instagram (si lo piden o para que vean más): @clichearomasoficial — https://w
 
 # Precios y presentaciones (aplica a CADA aroma — mismo aroma en los kits)
 ${presentaciones}
-Envío: flete de ${cop(SHIPPING_COST)} a todo Colombia; GRATIS en compras desde ${cop(ctx.freeShippingThreshold)}. Entrega estimada 2 a 3 días hábiles. Si arman un kit o superan ese monto, el envío les sale gratis (úsalo para subir el pedido).
+Envío: flete de ${cop(SHIPPING_COST)} a todo Colombia; GRATIS en compras desde ${cop(ctx.freeShippingThreshold)}. Entrega estimada ${ENTREGA_EN_LINEA}. Si arman un kit o superan ese monto, el envío les sale gratis (úsalo para subir el pedido).
 
 # Catálogo en vivo (precios y disponibilidad reales)
 ${ctx.catalogText}

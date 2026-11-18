@@ -27,7 +27,7 @@ const PASOS: { Icono: LucideIcon; titulo: string; texto: string }[] = [
 ]
 
 const ENVIO: { Icono: LucideIcon; titulo: string; texto: string }[] = [
-  { Icono: Zap, titulo: `Llega en ${ENTREGA_EN_LINEA}`, texto: "Despacho prioritario de los pedidos pagados en línea, a toda Colombia." },
+  { Icono: Zap, titulo: `Llega en ${ENTREGA_EN_LINEA}`, texto: "Despachamos desde Medellín a toda Colombia." },
   { Icono: Truck, titulo: "Envío gratis desde $300.000", texto: "Por debajo, el flete se calcula en el pago." },
   ...(SOUVENIR_EN_LINEA ? [{ Icono: Gift, titulo: "Souvenir de regalo", texto: "Va en tu caja cuando pagas en línea." }] : []),
   { Icono: RotateCcw, titulo: "Garantía de 30 días", texto: "Para cambios y devoluciones." },

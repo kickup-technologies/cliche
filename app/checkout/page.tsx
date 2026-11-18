@@ -18,7 +18,7 @@ const fmt = (n: number) => `$${n.toLocaleString("es-CO")}`
 /**
  * Checkout — un solo paso, con la forma del formulario de pedido de Bienestar
  * by Cliché (EasySell): franja de confianza, campos con ícono, ciudad en
- * selector (llena el departamento), envío prioritario, zona de pago segura y
+ * selector (llena el departamento), opción de envío, zona de pago segura y
  * botón pegado abajo. Arriba, la cuenta regresiva contra la fecha real de
  * Navidad; al lado, "Incluido en tu pedido", "Lo que pasa después" y las
  * dudas por WhatsApp. El pago sigue siendo el de siempre: /api/checkout crea
@@ -247,7 +247,7 @@ export default function CheckoutPage() {
                 <div className="cod-resumen" aria-live="polite">
                   <div><span>Subtotal</span><strong>{fmt(subtotal)}</strong></div>
                   {descuento > 0 && <div className="cod-desc"><span><Tag size={13} aria-hidden="true" /> Descuento {appliedCode}</span><strong>−{fmt(descuento)}</strong></div>}
-                  <div><span>Envío · despacho prioritario</span><strong>{freeShipping ? "Gratis" : fmt(envio)}</strong></div>
+                  <div><span>Envío</span><strong>{freeShipping ? "Gratis" : fmt(envio)}</strong></div>
                   <div className="cod-total"><span>Total</span><strong>{fmt(total)}</strong></div>
                 </div>
                 {/* Lo que va en la caja, sin valores tachados ni "bonos" inflados. */}
@@ -255,7 +255,7 @@ export default function CheckoutPage() {
                   <span className="ck-incluye-titulo">Incluido en tu pedido</span>
                   <ul>
                     {SOUVENIR_EN_LINEA && <li><Gift size={16} aria-hidden="true" /><span>Souvenir de regalo en tu caja</span></li>}
-                    <li><Zap size={16} aria-hidden="true" /><span>Despacho prioritario: llega en {ENTREGA_EN_LINEA}</span></li>
+                    <li><Zap size={16} aria-hidden="true" /><span>Llega en {ENTREGA_EN_LINEA}</span></li>
                     {llevaKit && <li><Package size={16} aria-hidden="true" /><span>Tu kit llega armado en su caja</span></li>}
                     <li><RotateCcw size={16} aria-hidden="true" /><span>Garantía de <Link href="/terminos" target="_blank">30 días</Link></span></li>
                   </ul>

@@ -344,7 +344,7 @@ function GraciasContent() {
                     </li>
                     <li>
                       <span aria-hidden><Truck size={17} /></span>
-                      <div><b>Despachamos tu pedido</b><small>Despacho prioritario: llega en {ENTREGA_EN_LINEA}.</small></div>
+                      <div><b>Despachamos tu pedido</b><small>Desde Medellín a toda Colombia: llega en {ENTREGA_EN_LINEA}.</small></div>
                     </li>
                   </ol>
                 </section>

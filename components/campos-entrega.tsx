@@ -185,14 +185,14 @@ export function CamposEntrega({ e, conNotas = false }: { e: Entrega; conNotas?: 
   )
 }
 
-/** Envío prioritario marcado (como la opción de envío de EasySell). */
+/** Opción de envío marcada (como la de EasySell). */
 export function OpcionEnvio({ gratis, costo }: { gratis: boolean; costo: number }) {
   return (
     <div className="cod-envio">
       <span className="cod-envio-titulo">Opciones de envío</span>
       <div className="cod-envio-op">
         <span className="cod-envio-radio" aria-hidden="true" />
-        <span>Envío prioritario · llega en {ENTREGA_EN_LINEA}</span>
+        <span>Envío a toda Colombia · llega en {ENTREGA_EN_LINEA}</span>
         <strong>{gratis ? "Gratis" : `$${costo.toLocaleString("es-CO")}`}</strong>
       </div>
     </div>

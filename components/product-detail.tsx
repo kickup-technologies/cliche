@@ -565,7 +565,7 @@ export function ProductDetail({ product, related }: Props) {
                     <p className="pdp-incluye-cl-titulo">{tier.units > 1 ? `Con tu ${tier.label.toLowerCase()} recibes` : "Con tu pedido recibes"}</p>
                     <ul>
                       {tier.units > 1 && <li><Sparkles className="h-4 w-4" aria-hidden="true" /> {tier.units} frascos de {product.name.replace(/^Aroma\s+/i, "").split(" — ")[0]} · ahorras ${tierSavings(tier).toLocaleString("es-CO")}</li>}
-                      <li><Zap className="h-4 w-4" aria-hidden="true" /> Despacho prioritario: llega en {ENTREGA_EN_LINEA}</li>
+                      <li><Zap className="h-4 w-4" aria-hidden="true" /> Llega en {ENTREGA_EN_LINEA}</li>
                       <li><Truck className="h-4 w-4" aria-hidden="true" /> {tierPrice * qty >= umbral ? "Envío gratis" : `Envío gratis desde $${umbral.toLocaleString("es-CO")}`}</li>
                       {SOUVENIR_EN_LINEA && <li><Gift className="h-4 w-4" aria-hidden="true" /> Souvenir de regalo al pagar en línea</li>}
                       <li><RotateCcw className="h-4 w-4" aria-hidden="true" /> Garantía de 30 días</li>
@@ -713,7 +713,7 @@ export function ProductDetail({ product, related }: Props) {
               {/* Trust signals — fila refinada con divisores */}
               <div className="grid grid-cols-3 pt-5 mt-1 border-t border-foreground/[0.06] divide-x divide-foreground/[0.06]">
                 {[
-                  { Icon: Truck, label: "Llega en 2-3 días", cls: "trust-truck" },
+                  { Icon: Truck, label: `Llega en ${ENTREGA_EN_LINEA.replace(" a ", "-").replace(" hábiles", "")}`, cls: "trust-truck" },
                   { Icon: ShieldCheck, label: "Pago 100% seguro", cls: "trust-shield" },
                   { Icon: SOUVENIR_EN_LINEA ? Gift : BadgeCheck, label: SOUVENIR_EN_LINEA ? "Souvenir de regalo" : "30 días garantía", cls: "trust-badge" },
                 ].map(({ Icon, label, cls }) => (

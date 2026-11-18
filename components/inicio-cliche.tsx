@@ -93,7 +93,7 @@ export function KitsCliche() {
 /** Garantías en una sola fila (reemplaza las cuatro pantallas fijas). */
 export function GarantiasCliche() {
   const items = [
-    { Icono: Zap, titulo: `Llega en ${ENTREGA_EN_LINEA}`, texto: "Despacho prioritario al pagar en línea." },
+    { Icono: Zap, titulo: `Llega en ${ENTREGA_EN_LINEA}`, texto: "Desde Medellín a toda Colombia." },
     ...(SOUVENIR_EN_LINEA ? [{ Icono: Gift, titulo: "Souvenir de regalo", texto: "Va en tu caja cuando pagas en línea." }] : []),
     { Icono: Truck, titulo: "Envío gratis", texto: "En compras desde $300.000 a toda Colombia." },
     { Icono: RotateCcw, titulo: "Garantía de 30 días", texto: "Para cambios y devoluciones." },
