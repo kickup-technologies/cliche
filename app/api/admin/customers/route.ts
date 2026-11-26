@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
     // ── Actividad de compra + suscripción al correo ──
     // Los "pending" se excluyen: se crean al INICIAR el checkout, no son pedidos.
     const [{ data: orders }, { data: subs }] = await Promise.all([
-      db.from("orders").select("user_id, customer_email, total, status, created_at").neq("status", "pending"),
+      db.from("orders").select("user_id, customer_email, total, status, created_at").neq("status", "pending").neq("status", "cod_pending"),
       db.from("subscribers").select("email"),
     ])
 

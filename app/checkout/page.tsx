@@ -8,10 +8,11 @@ import { catalogContentIds } from "@/lib/content-ids"
 import { useSiteSettings } from "@/lib/use-site-settings"
 import { SHIPPING_COST, parseFreeShippingThreshold } from "@/lib/pricing"
 import { Autorizacion, CamposEntrega, OpcionEnvio, ZonaPago, useEntrega } from "@/components/campos-entrega"
+import { CONTRAENTREGA_ACTIVA } from "@/lib/contraentrega"
 import { ENTREGA_EN_LINEA, WHATSAPP_CLICHE } from "@/lib/entrega"
 import { CuentaRegresiva } from "@/components/cuenta-regresiva"
 import { Footer } from "@/components/footer"
-import { ArrowLeft, CreditCard, MessageCircle, Minus, Package, Plus, RotateCcw, ShieldCheck, Sparkles, Tag, Trash2, Truck, Zap } from "lucide-react"
+import { ArrowLeft, CreditCard, Banknote, MessageCircle, Minus, Package, Plus, RotateCcw, ShieldCheck, Sparkles, Tag, Trash2, Truck, Zap } from "lucide-react"
 
 const fmt = (n: number) => `$${n.toLocaleString("es-CO")}`
 
@@ -113,7 +114,10 @@ export default function CheckoutPage() {
     }
   }
 
-  async function pagar() {
+  // Con código de descuento solo se paga en línea (el uso se registra al cobrar).
+  const ofreceCod = CONTRAENTREGA_ACTIVA && !appliedCode
+
+  async function pagar(metodo: "contraentrega" | "en_linea") {
     if (!valid) { entrega.marcarTodo(); return }
     setPaying(true); setPayError("")
     // ── Meta Pixel + CAPI: AddPaymentInfo (datos completos, va a pagar) ──
@@ -143,6 +147,7 @@ export default function CheckoutPage() {
           discount_code: appliedCode,
           discount_amount: descuento,
           fb_signals: getFbSignals(),
+          metodo,
         }),
       })
       const data = await res.json()
@@ -264,7 +269,7 @@ export default function CheckoutPage() {
               <section className="ck-despues" aria-labelledby="ck-t-despues">
                 <h2 id="ck-t-despues">Lo que pasa después</h2>
                 <ol>
-                  <li><b>Pagas seguro</b><small>Tarjeta, PSE o Nequi en Mercado Pago. La confirmación llega a tu correo.</small></li>
+                  <li><b>Eliges cómo pagar</b><small>Al recibir, o en línea con tarjeta, PSE o Nequi. La confirmación llega a tu correo.</small></li>
                   <li><b>Te escribimos por WhatsApp</b><small>Para confirmar la dirección y coordinar la entrega.</small></li>
                   <li><b>Llega a tu puerta</b><small>En {ENTREGA_EN_LINEA}.</small></li>
                 </ol>
@@ -273,7 +278,7 @@ export default function CheckoutPage() {
               <section className="ck-dudas" aria-labelledby="ck-t-dudas">
                 <MessageCircle size={22} aria-hidden="true" />
                 <div>
-                  <h2 id="ck-t-dudas">¿Tienes dudas antes de pagar?</h2>
+                  <h2 id="ck-t-dudas">¿Tienes dudas antes de pedir?</h2>
                   <p>Escríbenos y te ayudamos a elegir o a terminar tu pedido.</p>
                   <a href={`https://wa.me/${WHATSAPP_CLICHE}?text=${encodeURIComponent("¡Hola Cliché! Tengo una duda antes de pagar mi pedido")}`} target="_blank" rel="noreferrer">Escribir por WhatsApp · 322 374 5187</a>
                 </div>
@@ -281,7 +286,7 @@ export default function CheckoutPage() {
             </aside>
 
             {/* ── Datos de entrega y pago ── */}
-            <form className="ck-datos" onSubmit={(e) => { e.preventDefault(); pagar() }} noValidate aria-labelledby="ck-t-datos">
+            <form className="ck-datos" onSubmit={(e) => { e.preventDefault(); pagar(ofreceCod ? "contraentrega" : "en_linea") }} noValidate aria-labelledby="ck-t-datos">
               <h2 id="ck-t-datos">Datos de entrega</h2>
               <CamposEntrega e={entrega} conNotas />
 
@@ -296,13 +301,20 @@ export default function CheckoutPage() {
                 {!payError && entrega.algoTocado && !valid && (
                   <p className="account-msg is-error" role="alert">Revisa los campos marcados.</p>
                 )}
-                <button type="submit" className="cod-cta" disabled={paying}>
-                  <CreditCard size={19} aria-hidden="true" />
-                  <span className="cod-cta-txt">
-                    <span>{paying ? "Te llevamos al pago…" : `Pagar en línea - ${fmt(total)}`}</span>
-                    {!paying && <small>Tarjeta, PSE o Nequi · llega en {ENTREGA_EN_LINEA}</small>}
-                  </span>
+                {ofreceCod && (
+                  <button type="submit" className="cod-cta" disabled={paying}>
+                    <Banknote size={19} aria-hidden="true" />
+                    <span className="cod-cta-txt">
+                      <span>{paying ? "Enviando tu pedido…" : `Pagar al recibir - ${fmt(total)}`}</span>
+                      {!paying && <small>Contra entrega · llega en {ENTREGA_EN_LINEA}</small>}
+                    </span>
+                  </button>
+                )}
+                <button type="button" className={ofreceCod ? "cod-cta-sec" : "cod-cta"} disabled={paying} onClick={() => pagar("en_linea")}>
+                  <CreditCard size={18} aria-hidden="true" />
+                  <span>Pagar en línea (tarjeta, PSE o Nequi) - {fmt(total)}</span>
                 </button>
+                {CONTRAENTREGA_ACTIVA && appliedCode && <p className="ck-solo-online">Los códigos de descuento aplican pagando en línea.</p>}
               </div>
             </form>
           </div>

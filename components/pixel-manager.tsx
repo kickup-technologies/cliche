@@ -150,7 +150,7 @@ function loadClarity() {
 
 export function PixelManager() {
   const pathname = usePathname()
-  const isAdminArea = pathname?.startsWith("/admin")
+  const isAdminArea = /^\/(admin|bodega)/.test(pathname ?? "")
 
   useEffect(() => {
     // No cargar pixels en el panel admin: evita ensuciar los datos de Meta
@@ -228,7 +228,7 @@ export function PixelManager() {
   // abren el chat de los clientes, no el de la tienda.
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
-      if (window.location.pathname.startsWith("/admin")) return
+      if (/^\/(admin|bodega)/.test(window.location.pathname ?? "")) return
       const a = (e.target as Element | null)?.closest?.('a[href*="wa.me/"], a[href*="api.whatsapp.com/"]')
       if (a) googleAdsConversion("whatsapp")
     }

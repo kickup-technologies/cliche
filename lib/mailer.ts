@@ -612,6 +612,7 @@ export async function sendAdminOrderAlert(order: {
   customer_phone: string | null
   shipping_address: { address: string; city: string; department: string; notes?: string | null } | null
   items: Array<{ name?: string; product_id: string; quantity: number; price?: number }>
+  contraentrega?: boolean
 }): Promise<void> {
   const transport = createTransport()
   const adminEmail = process.env.ADMIN_EMAIL || process.env.SMTP_USER
@@ -638,7 +639,7 @@ export async function sendAdminOrderAlert(order: {
 
   const content = `
     <div style="text-align:center;">
-      ${kicker("Nuevo pedido pagado")}
+      ${kicker(order.contraentrega ? "Pedido contra entrega: confirmar por WhatsApp" : "Nuevo pedido pagado")}
       <p style="margin:0 0 4px;font-family:Georgia,serif;font-size:34px;color:${C.ink};">${fmtCOP(order.total)}</p>
       <p style="margin:0 0 6px;font-family:'Courier New',monospace;font-size:13px;color:${C.faint};">#${orderId}</p>
     </div>
@@ -661,12 +662,39 @@ export async function sendAdminOrderAlert(order: {
     await transport.sendMail({
       from: FROM,
       to: adminEmail,
-      subject: `🛍️ Nuevo pedido #${orderId} — ${fmtCOP(order.total)} — ${order.customer_name ?? order.customer_email ?? "Cliente"}`,
-      html: shell(content, "Generado autom&aacute;ticamente al confirmarse el pago en Mercado Pago."),    })
+      subject: `${order.contraentrega ? "📦 Contra entrega POR CONFIRMAR" : "🛍️ Nuevo pedido"} #${orderId} — ${fmtCOP(order.total)} — ${order.customer_name ?? order.customer_email ?? "Cliente"}`,
+      html: shell(content, order.contraentrega ? "Se cobra al entregar. Conf&iacute;rmalo antes de despachar." : "Generado autom&aacute;ticamente al confirmarse el pago en Mercado Pago."),    })
     console.log("[mailer] Admin order alert sent for", orderId)
   } catch (err) {
     console.error("[mailer] Admin alert failed:", err)
   }
+}
+
+const esc = (v: string) => v.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] as string)
+
+/** Correo al cliente de un pedido contra entrega: aún no hay pago que confirmar. */
+export async function sendCodOrderReceived(
+  to: string,
+  order: { reference: string; total: number; customer_name: string; items: Array<{ name?: string; quantity: number; price?: number }> },
+): Promise<void> {
+  const transport = createTransport()
+  if (!transport || !to) return
+  const orderId = order.reference.slice(-8).toUpperCase()
+  const filas = order.items.map((it) => `
+    <tr>
+      <td style="padding:10px 0;border-bottom:1px solid ${C.line};font-family:Georgia,serif;font-size:14px;color:${C.ink};">${esc(it.name ?? "Producto")} &times;${it.quantity}</td>
+      <td align="right" style="padding:10px 0;border-bottom:1px solid ${C.line};font-family:Georgia,serif;font-size:14px;color:${C.sub};">${it.price ? fmtCOP(it.price * it.quantity) : ""}</td>
+    </tr>`).join("")
+  const content = `
+    <div style="text-align:center;">
+      ${kicker("Recibimos tu pedido")}
+      <p style="margin:0 0 4px;font-family:Georgia,serif;font-size:34px;color:${C.ink};">${fmtCOP(order.total)}</p>
+      <p style="margin:0 0 14px;font-family:'Courier New',monospace;font-size:13px;color:${C.faint};">#${orderId}</p>
+      <p style="margin:0;font-family:Georgia,serif;font-size:15px;color:${C.sub};">${esc(order.customer_name)}, pagas este valor al recibir. Te escribimos por WhatsApp para confirmar la direcci&oacute;n antes de despachar.</p>
+    </div>
+    ${hr}
+    <table width="100%" cellpadding="0" cellspacing="0">${filas}</table>`
+  await transport.sendMail({ from: FROM, to, subject: `Recibimos tu pedido #${orderId} — pagas al recibir`, html: shell(content, "Pedido contra entrega.") })
 }
 
 // ═════════════════════════════════════════════════════════════════════════════

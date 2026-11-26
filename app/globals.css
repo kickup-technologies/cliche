@@ -1240,3 +1240,9 @@ aside { transition: background-color .35s ease, border-color .35s ease; }
 .cod-overlay .pr-packs .cod-pack small { color:var(--es-ok); }
 @media (min-width:420px) { .cod-overlay .pr-packs { grid-template-columns:repeat(4,minmax(0,1fr)); } }
 .cod-sello img.cod-sello-logo { height:34px; width:auto; }
+
+/* Segundo medio de pago bajo «Pagar al recibir» (26-nov-2026). */
+.cod-cta-sec { display:flex; align-items:center; justify-content:center; gap:7px; width:100%; min-height:34px; padding:4px 10px; border:0; border-radius:8px; background:transparent; color:var(--es-accent-dark, #8b5e52); font:inherit; font-size:13.5px; font-weight:600; text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
+.cod-cta-sec:hover { background:color-mix(in srgb, var(--es-accent, #a67163) 8%, transparent); }
+.cod-cta-sec:disabled { opacity:.6; cursor:wait; }
+.ck-solo-online { margin:0; font-size:12px; text-align:center; opacity:.75; }

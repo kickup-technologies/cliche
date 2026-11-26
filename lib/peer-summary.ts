@@ -18,6 +18,7 @@ export async function buildSelfSummary(): Promise<PeerSummary> {
       .from("orders")
       .select("id, created_at, customer_name, customer_email, customer_phone, shipping_address, items, total, status")
       .neq("status", "pending")
+      .neq("status", "cod_pending")
       .order("created_at", { ascending: false })
       .limit(200),
     supabase.from("products").select("id, name, price, is_active, image_url").order("name").limit(300),

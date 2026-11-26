@@ -87,7 +87,7 @@ export async function GET(req: NextRequest) {
         const { data: paid } = await sb
           .from("orders")
           .select("id")
-          .in("status", ["paid", "confirmed", "preparing", "shipped", "delivered"])
+          .in("status", ["cod_pending", "paid", "confirmed", "preparing", "shipped", "delivered"])
           .ilike("customer_phone", `%${digits}`)
           .gte("created_at", new Date(Date.now() - 30 * 86_400_000).toISOString())
           .limit(1)

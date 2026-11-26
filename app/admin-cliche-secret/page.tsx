@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase"
 import { getSupabaseBrowser } from "@/lib/supabase/client"
 import {
   LayoutDashboard, TrendingUp, BarChart3, Star, ShoppingBag, Zap,
-  Package, Settings, Lock, RefreshCw, AlertCircle, Eye, LogOut, Menu, X, Paintbrush, Flame, Ticket, MessageCircle, Users, Briefcase, Search, Newspaper, LayoutGrid, Presentation, Store, Scale, ChevronDown,
+  Truck, Package, Settings, Lock, RefreshCw, AlertCircle, Eye, LogOut, Menu, X, Paintbrush, Flame, Ticket, MessageCircle, Users, Briefcase, Search, Newspaper, LayoutGrid, Presentation, Store, Scale, ChevronDown,
 } from "lucide-react"
 import type { Product } from "@/lib/supabase"
 import { Order, PageView } from "./types"
@@ -59,6 +59,11 @@ const VentasSection = lazy(() => import("./sections/ventas"), m => m.VentasSecti
 const TraficoSection = lazy(() => import("./sections/trafico"), m => m.TraficoSection)
 const ProductosStatsSection = lazy(() => import("./sections/productos-stats"), m => m.ProductosStatsSection)
 const PedidosSection = lazy(() => import("./sections/pedidos"), m => m.PedidosSection)
+// Despachos vive en la bodega (/bodega): el menú lleva allá.
+function IrABodega() {
+  useEffect(() => { if (document.getElementById("ir-a-bodega")?.offsetParent) window.location.assign("/bodega") })
+  return <p id="ir-a-bodega" className="text-sm text-[#2D1A14]/60">Abriendo la bodega… <a className="underline font-semibold" href="/bodega">Entrar a Despachos</a></p>
+}
 const InventarioSection = lazy(() => import("./sections/inventario"), m => m.InventarioSection)
 const HeatmapsSection = lazy(() => import("./sections/heatmaps"), m => m.HeatmapsSection)
 const DescuentosSection = lazy(() => import("./sections/descuentos"), m => m.DescuentosSection)
@@ -74,7 +79,7 @@ const CompararTiendasSection = lazy(() => import("./sections/tiendas"), m => m.C
 // esquina mientras baja su chunk (se veía un segundo loader descentrado).
 const ChatAyuda = lazy(() => import("./components/chat-ayuda"), m => m.ChatAyuda, { quiet: true })
 
-type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "heatmaps" | "pedidos" | "clientes" | "empresas" | "descuentos" | "blogs" | "inventario" | "catalogo" | "portada" | "seo" | "asistente"
+type SectionId = "resumen" | "ventas" | "trafico" | "productos-stats" | "heatmaps" | "despachos" | "pedidos" | "clientes" | "empresas" | "descuentos" | "blogs" | "inventario" | "catalogo" | "portada" | "seo" | "asistente"
 // Multi-tienda: qué tienda se está administrando desde este panel.
 type StoreView = "cliche" | "bienestar" | "comparar"
 
@@ -91,6 +96,7 @@ const SIDEBAR = [
     { id: "heatmaps",        label: "Mapas de Calor", icon: Flame },
   ]},
   { section: "OPERACIONES", items: [
+    { id: "despachos", label: "Despachos",            icon: Truck },
     { id: "pedidos",   label: "Pedidos",              icon: ShoppingBag },
     { id: "clientes",  label: "Clientes",             icon: Users },
     { id: "empresas",  label: "Empresas (B2B)",       icon: Briefcase },
@@ -563,6 +569,7 @@ export default function AdminPage() {
     trafico: <TraficoSection orders={orders} pageViews={pageViews} />,
     "productos-stats": <ProductosStatsSection orders={orders} products={products} pageViews={pageViews} />,
     heatmaps: <HeatmapsSection pageViews={pageViews} />,
+    despachos: <IrABodega />,
     pedidos: <PedidosSection orders={orders} products={products} onOrdersUpdate={handleOrderUpdate} />,
     clientes: <ClientesSection />,
     empresas: <EmpresasSection />,
@@ -708,6 +715,7 @@ export default function AdminPage() {
   const pendingFulfillment = orders.filter(o => ["confirmed", "preparing", "paid"].includes(o.status)).length
   const lowStock = products.filter(p => typeof p.stock === "number" && p.stock <= 5).length
   const navBadges: Record<string, { count: number; tone: "danger" | "accent" } | undefined> = {
+    despachos: orders.some(o => o.status === "cod_pending") ? { count: orders.filter(o => o.status === "cod_pending").length, tone: "danger" } : undefined,
     pedidos: pendingFulfillment > 0 ? { count: pendingFulfillment, tone: "accent" } : undefined,
     inventario: lowStock > 0 ? { count: lowStock, tone: "danger" } : undefined,
   }

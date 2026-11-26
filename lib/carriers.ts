@@ -8,7 +8,7 @@
  * página de rastreo (el número de guía va SIEMPRE visible en el correo para
  * pegarlo). Si el número está vacío, no hay link.
  */
-export type CarrierId = "servientrega" | "interrapidisimo" | "fedex" | "ups"
+export type CarrierId = "servientrega" | "interrapidisimo" | "coordinadora" | "envia" | "tcc" | "domina" | "veloces" | "fedex" | "ups"
 
 export interface Carrier {
   id: CarrierId
@@ -27,6 +27,11 @@ export const CARRIERS: Carrier[] = [
     name: "Interrapidísimo",
     track: () => "https://interrapidisimo.com/sigue-tu-envio/",
   },
+  { id: "coordinadora", name: "Coordinadora", track: () => "https://coordinadora.com/rastreo/rastreo-de-guia/" },
+  { id: "envia", name: "Envía", track: () => "https://envia.co/" },
+  { id: "tcc", name: "TCC", track: () => "https://tcc.com.co/rastreo/" },
+  { id: "domina", name: "Domina", track: () => "https://www.domina.com.co/" },
+  { id: "veloces", name: "Veloces", track: () => "https://veloces.app/" },
   {
     id: "fedex",
     name: "FedEx",

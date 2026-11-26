@@ -1,10 +1,13 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse, after } from "next/server"
 import { MercadoPagoConfig, Preference } from "mercadopago"
 import { supabase, createServerClient } from "@/lib/supabase"
 import { getSupabaseServer } from "@/lib/supabase/server"
 import { rateLimit } from "@/lib/rate-limit"
 import { parseVariantId, TIER_BY_ID, SHIPPING_COST, parseFreeShippingThreshold } from "@/lib/pricing"
 import { siteUrl } from "@/lib/site-url"
+import { CONTRAENTREGA_ACTIVA, ESTADO_COD_NUEVO, PREFIJO_COD, celularValido } from "@/lib/contraentrega"
+import { sendPurchaseCAPI } from "@/lib/capi-server"
+import { sendAdminOrderAlert, sendCodOrderReceived } from "@/lib/mailer"
 
 type IncomingItem = { product_id: string; quantity: number; name?: string }
 type IncomingPack = {
@@ -21,8 +24,29 @@ export async function POST(req: NextRequest) {
   if (limited) return limited
 
   try {
-    const { items, email, discount_code, customer_name, customer_phone, customer_id_number, shipping_address, fb_signals } =
+    const { items, email, discount_code, customer_name, customer_phone, customer_id_number, shipping_address, fb_signals, metodo, empresa } =
       await req.json()
+
+    // Contra entrega: mismo cálculo de precios y stock, sin pasarela.
+    const cod = metodo === "contraentrega"
+    if (cod) {
+      if (!CONTRAENTREGA_ACTIVA) {
+        return NextResponse.json({ error: "El pago contra entrega no está disponible ahora." }, { status: 400 })
+      }
+      // Sin pago de por medio hay que frenar pedidos falsos: pocos por IP,
+      // campo trampa para bots y celular real para poder confirmar.
+      const tope = rateLimit(req, { id: "checkout-cod", limit: 6, windowMs: 10 * 60_000 })
+      if (tope) return tope
+      if (typeof empresa === "string" && empresa.trim()) {
+        return NextResponse.json({ error: "No pudimos tomar tu pedido. Escríbenos por WhatsApp." }, { status: 400 })
+      }
+      if (typeof customer_phone !== "string" || !celularValido(customer_phone)) {
+        return NextResponse.json({ error: "Escribe un celular de 10 dígitos que empiece por 3: por ahí confirmamos tu pedido." }, { status: 400 })
+      }
+      if (discount_code) {
+        return NextResponse.json({ error: "Los códigos de descuento aplican pagando en línea." }, { status: 400 })
+      }
+    }
 
     // Respaldo de atribución de Meta enviado por el cliente (getFbSignals):
     // se usa SOLO si la cookie correspondiente no llegó en el request. Formato
@@ -66,7 +90,7 @@ export async function POST(req: NextRequest) {
     // de Mercado Pago recibía un 308 y NINGÚN pago asíncrono se confirmaba.
     const appUrl = siteUrl()
 
-    if (!accessToken) {
+    if (!accessToken && !cod) {
       return NextResponse.json({ error: "Configuración de pago incompleta" }, { status: 500 })
     }
 
@@ -289,19 +313,29 @@ export async function POST(req: NextRequest) {
     // al subtotal, el total SIEMPRE incluye el envío completo.
     const total = Math.max(0, subtotal - discount_amount) + shipping
 
-    const reference = `cliche_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
+    const reference = `${cod ? PREFIJO_COD : "cliche_"}${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
 
     // Guardar orden pendiente con montos AUTORITATIVOS del servidor.
     // Esto SÍ requiere service-role (RLS orders_service_only). Si el insert
     // falla (key mal rotada, RLS, columna nueva) NO seguimos al cobro: cobrar
     // sin pedido en la BD deja dinero sin rastro que ni el webhook ni el botón
     // Reconciliar pueden recuperar (solo recorren órdenes que EXISTEN).
+    // Señales del navegador para el Purchase server-side (solo con consentimiento).
+    const consentRechazado = req.cookies.get("cliche_marketing_consent")?.value === "0"
+    const navegador = consentRechazado
+      ? null
+      : {
+          fbp: req.cookies.get("_fbp")?.value || fbSignal(fb_signals?.fbp),
+          fbc: req.cookies.get("_fbc")?.value || fbSignal(fb_signals?.fbc),
+          ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null,
+          ua: req.headers.get("user-agent") || null,
+        }
+
     try {
-      const { error: orderErr } = await db.from("orders").insert({
+      const fila = {
         stripe_session_id: reference,
         user_id: userId,
         total: Math.round(total),
-        status: "pending",
         items: safeItems.map((i) =>
           i.kind === "pack"
             ? { kind: "pack", product_id: `pack-${i.tier}`, name: i.name, tier: i.tier, quantity: i.quantity, price: i.price, components: i.components }
@@ -318,16 +352,14 @@ export async function POST(req: NextRequest) {
         // _fbp/_fbc atan la venta al clic del anuncio aunque el comprador nunca
         // vuelva a /gracias (PSE / app de Mercado Pago). Solo con consentimiento
         // de marketing (mismo gate que /api/capi).
-        fb_browser_data:
-          req.cookies.get("cliche_marketing_consent")?.value === "0"
-            ? null
-            : {
-                fbp: req.cookies.get("_fbp")?.value || fbSignal(fb_signals?.fbp),
-                fbc: req.cookies.get("_fbc")?.value || fbSignal(fb_signals?.fbc),
-                ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null,
-                ua: req.headers.get("user-agent") || null,
-              },
-      })
+        fb_browser_data: navegador,
+      }
+      let { error: orderErr } = await db.from("orders").insert({ ...fila, status: cod ? ESTADO_COD_NUEVO : "pending" })
+      // Si la base tuviera restringidos los estados, el pedido no se pierde:
+      // entra como confirmado y el panel lo reconoce por la referencia.
+      if (cod && orderErr?.code === "23514") {
+        ;({ error: orderErr } = await db.from("orders").insert({ ...fila, status: "confirmed" }))
+      }
       if (orderErr) {
         console.error("[checkout] no se pudo guardar la orden pendiente:", orderErr.message,
           "— revisa SUPABASE_SERVICE_ROLE_KEY en Vercel")
@@ -336,6 +368,24 @@ export async function POST(req: NextRequest) {
     } catch (e) {
       console.error("[checkout] excepción guardando orden pendiente:", e)
       return NextResponse.json({ error: "No pudimos iniciar tu pedido. Intenta de nuevo." }, { status: 500 })
+    }
+
+    // ── Contra entrega: el pedido ya quedó; sin pasarela ──
+    if (cod) {
+      const lineas = safeItems.map((i) =>
+        i.kind === "pack"
+          ? { product_id: `pack-${i.tier}`, name: i.name, quantity: i.quantity, price: i.price, kind: "pack", components: i.components }
+          : { product_id: i.product_id, name: i.name, quantity: i.quantity, price: i.price }
+      )
+      const pedido = { reference, total: Math.round(total), items: lineas, customer_name: customer_name.trim(), customer_email: email, customer_phone }
+      after(async () => {
+        await Promise.all([
+          consentRechazado ? null : sendPurchaseCAPI({ ...pedido, browser: navegador }),
+          sendAdminOrderAlert({ ...pedido, shipping_address, contraentrega: true }).catch((e) => console.error("[checkout] alerta COD:", e)),
+          sendCodOrderReceived(email, pedido).catch((e) => console.error("[checkout] correo COD:", e)),
+        ])
+      })
+      return NextResponse.json({ url: `/gracias?reference=${reference}` })
     }
 
     // ── Datos del pagador para el antifraude de Mercado Pago ──
@@ -351,7 +401,7 @@ export async function POST(req: NextRequest) {
     // Cobramos el total AUTORITATIVO del servidor en UNA sola línea, así el
     // monto cobrado es exactamente el que calculamos (con envío y descuento).
     try {
-      const client = new MercadoPagoConfig({ accessToken })
+      const client = new MercadoPagoConfig({ accessToken: accessToken! })
       const pref = await new Preference(client).create({
         body: {
           items: [

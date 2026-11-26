@@ -99,7 +99,7 @@ export interface Order {
   customer_email: string
   customer_name: string
   total: number
-  status: "pending" | "confirmed" | "preparing" | "paid" | "shipped" | "delivered" | "cancelled"
+  status: "pending" | "cod_pending" | "confirmed" | "preparing" | "paid" | "shipped" | "delivered" | "cancelled"
   items: CartItem[]
   discount_code: string | null
   created_at: string

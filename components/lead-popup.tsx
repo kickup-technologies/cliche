@@ -55,7 +55,7 @@ export function LeadPopup() {
   const blocked = !!pathname && (
     pathname.startsWith("/checkout") ||
     pathname.startsWith("/gracias") ||
-    pathname.startsWith("/admin") ||
+    /^\/(admin|bodega)/.test(pathname ?? "") ||
     // Fichas de producto: el popup interrumpía justo cuando la persona está
     // decidiendo la compra (feedback del cliente, 2026-08-26).
     pathname.startsWith("/productos") ||

@@ -15,6 +15,7 @@ import { useCart } from "@/context/cart-context"
 import { useCAPI } from "@/lib/use-capi"
 import { catalogContentIds } from "@/lib/content-ids"
 import { ENTREGA_EN_LINEA, WHATSAPP_CLICHE } from "@/lib/entrega"
+import { esContraentrega } from "@/lib/contraentrega"
 
 // Carrusel 3D "Seguir comprando" — solo cliente (WebGL), se carga aparte.
 const Gracias3DCarousel = dynamic(() => import("@/components/gracias-carousel"), {
@@ -94,18 +95,25 @@ function GraciasContent() {
     // colgada en la pantalla de carga.
     let cancelled = false
     ;(async () => {
+      const cod = esContraentrega(sessionId)
+      // Contra entrega: no hay pasarela que verificar; el pedido ya quedó.
+      if (sessionId && cod) {
+        if (!cancelled) setPending(false)
+        const clave = `cart_cleared_${sessionId}`
+        if (!localStorage.getItem(clave)) { clearCart(); localStorage.setItem(clave, "1") }
+      }
       if (sessionId) {
         // ── Respaldo del webhook: confirmar el pago server-side al volver ──
         // Verifica el pago contra Mercado Pago y confirma el pedido si está
         // aprobado. Así el pedido queda confirmado aunque el webhook falle o
         // llegue tarde. Es idempotente y no confía en el cliente.
         try {
-          const verifyRes = await fetch("/api/orders/verify", {
+          const verifyRes = cod ? null : await fetch("/api/orders/verify", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ reference: sessionId }),
           })
-          if (verifyRes.ok) {
+          if (verifyRes?.ok) {
             // La respuesta de verify manda sobre los params de la URL:
             // {status: "pending" | "confirmed" | "already" | "not_found"}
             const v = await verifyRes.json()
@@ -141,7 +149,9 @@ function GraciasContent() {
               const order = await ordRes.json()
               // Solo contar como conversión si el pago está confirmado: evita
               // inflar el Purchase de Meta con pedidos pendientes/fallidos.
-              const PAID = ["confirmed", "paid", "preparing", "shipped", "delivered"]
+              // cod_pending: la compra contra entrega cuenta al registrarse (mismo
+              // event_id que el servidor, así que cuenta una sola vez).
+              const PAID = ["cod_pending", "confirmed", "paid", "preparing", "shipped", "delivered"]
               if (PAID.includes(order.status)) {
                 const items = (order.items as Array<{ product_id: string; quantity: number; components?: Array<{ product_id?: string }> }>) || []
                 track({
@@ -304,10 +314,12 @@ function GraciasContent() {
             <div className="gracias">
               <div className="gracias-ico"><Check size={28} aria-hidden="true" /></div>
               {sessionId && <p className="gracias-ref">Pedido #{sessionId.slice(-8).toUpperCase()}</p>}
-              <h1>¡Gracias por tu compra!</h1>
+              <h1>{esContraentrega(sessionId) ? "¡Recibimos tu pedido!" : "¡Gracias por tu compra!"}</h1>
               {/* Sin prometer "número de seguimiento": la guía llega después,
                   cuando el pedido se despacha. Aquí solo llega el recibo. */}
-              <p className="gracias-lead">Tu pago quedó confirmado. Te enviamos el recibo con los detalles a tu correo.</p>
+              <p className="gracias-lead">{esContraentrega(sessionId)
+                ? "Pagas al recibir. Te escribimos por WhatsApp para confirmar la dirección antes de despachar."
+                : "Tu pago quedó confirmado. Te enviamos el recibo con los detalles a tu correo."}</p>
               <div className="gracias-grid">
                 <section className="gracias-card">
                   <h2>Tu pedido</h2>
@@ -319,14 +331,14 @@ function GraciasContent() {
                         ))}
                       </ul>
                       <dl className="gracias-totales">
-                        <div className="gracias-total"><dt>Total pagado</dt><dd>${pedido.total.toLocaleString("es-CO")}</dd></div>
+                        <div className="gracias-total"><dt>{esContraentrega(sessionId) ? "Pagas al recibir" : "Total pagado"}</dt><dd>${pedido.total.toLocaleString("es-CO")}</dd></div>
                       </dl>
                     </>
                   ) : (
                     <p className="gracias-lead" style={{ margin: 0 }}>El detalle completo está en el correo de confirmación.</p>
                   )}
                   <dl className="gracias-datos">
-                    <div><dt>Pago</dt><dd>En línea · Mercado Pago</dd></div>
+                    <div><dt>Pago</dt><dd>{esContraentrega(sessionId) ? "Contra entrega" : "En línea · Mercado Pago"}</dd></div>
                     <div><dt>Entrega</dt><dd>Llega en {ENTREGA_EN_LINEA}</dd></div>
                   </dl>
                 </section>
@@ -335,7 +347,7 @@ function GraciasContent() {
                   <ol className="gracias-pasos">
                     <li>
                       <span aria-hidden><Mail size={17} /></span>
-                      <div><b>Revisa tu correo</b><small>Te llega la confirmación con el recibo.</small></div>
+                      <div><b>Revisa tu correo</b><small>{esContraentrega(sessionId) ? "Te llega el resumen de tu pedido." : "Te llega la confirmación con el recibo."}</small></div>
                     </li>
                     <li>
                       <span aria-hidden><MessageCircle size={17} /></span>
