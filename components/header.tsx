@@ -86,6 +86,7 @@ export function Header() {
     (pathname?.startsWith("/marcas") ?? false) ||
     (pathname?.startsWith("/empresas") ?? false) ||
     pathname === "/arma-tu-kit" ||
+    pathname === "/coleccion-navidad" ||
     // El blog es fondo crema: en modo transparente el menú quedaba invisible.
     (pathname?.startsWith("/blog") ?? false)
 

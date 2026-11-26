@@ -64,7 +64,8 @@ export function LeadPopup() {
     pathname.startsWith("/empresas") ||
     // Landing de pauta del kit: el popup tapaba el armador y la bandeja de
     // compra justo mientras la persona elige sus aromas.
-    pathname.startsWith("/arma-tu-kit")
+    pathname.startsWith("/arma-tu-kit") ||
+    pathname.startsWith("/coleccion-navidad")
   )
 
   const open = useCallback(() => {
