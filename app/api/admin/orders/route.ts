@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase"
 import { isAdmin } from "@/lib/admin-auth"
 import { sendOrderShippedEmail } from "@/lib/mailer"
+import { ESTADO_COD_NUEVO, esContraentrega } from "@/lib/contraentrega"
+import { CARRIERS } from "@/lib/carriers"
+import { descontarStockPedido } from "@/lib/orders/stock"
 
 export async function GET(req: NextRequest) {
   if (!isAdmin(req)) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
@@ -31,11 +34,11 @@ export async function PATCH(req: NextRequest) {
   if (!isAdmin(req)) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
 
   try {
-    const { id, status, tracking_number, carrier } = await req.json()
+    const { id, status, tracking_number, carrier, dropi_orden } = await req.json()
     if (!id) return NextResponse.json({ error: "Falta el id del pedido" }, { status: 400 })
 
     const ALLOWED_STATUS = ["pending", "confirmed", "preparing", "shipped", "delivered", "paid", "cancelled"]
-    const ALLOWED_CARRIERS = ["servientrega", "interrapidisimo", "fedex", "ups"]
+    const ALLOWED_CARRIERS: string[] = CARRIERS.map((c) => c.id)
     const update: Record<string, unknown> = {}
     if (status !== undefined) {
       if (!ALLOWED_STATUS.includes(status)) {
@@ -53,14 +56,21 @@ export async function PATCH(req: NextRequest) {
       }
       update.carrier = c || null
     }
-    if (Object.keys(update).length === 0) {
+    if (Object.keys(update).length === 0 && dropi_orden === undefined) {
       return NextResponse.json({ error: "Nada que actualizar" }, { status: 400 })
     }
 
     const supabase = createServerClient()
     // Estado previo: para enviar el correo de "en camino" SOLO cuando el pedido
     // pasa a "shipped" por primera vez (no en re-guardados del mismo estado).
-    const { data: before } = await supabase.from("orders").select("status").eq("id", id).single()
+    const { data: before } = await supabase
+      .from("orders").select("status, shipping_address, items, stripe_session_id").eq("id", id).single()
+
+    // El número de orden de Dropi viaja con los datos de entrega (sin columna nueva).
+    if (dropi_orden !== undefined && before) {
+      const dir = (before.shipping_address || {}) as Record<string, unknown>
+      update.shipping_address = { ...dir, dropi_orden: String(dropi_orden).trim().slice(0, 40) || null }
+    }
 
     // CANDADO: un pedido PAGADO nunca puede volver a "pending". Si volviera,
     // desaparecería de la vista de pagados (una venta real sin despachar) y
@@ -71,6 +81,10 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Un pedido pagado no puede volver a Pendiente" }, { status: 400 })
     }
 
+    // Contra entrega: al salir de "por confirmar" hacia despacho se descuenta el inventario.
+    const confirmaCod = esContraentrega(before?.stripe_session_id) && before?.status === ESTADO_COD_NUEVO &&
+      ["preparing", "shipped", "delivered"].includes(String(update.status))
+
     const { data, error } = await supabase
       .from("orders")
       .update(update)
@@ -79,6 +93,7 @@ export async function PATCH(req: NextRequest) {
       .single()
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (confirmaCod) await descontarStockPedido(supabase, before!.items || [], before!.stripe_session_id)
 
     // Correo automático al cliente: "tu pedido va en camino" (con guía +
     // transportadora + link de rastreo si los hay)

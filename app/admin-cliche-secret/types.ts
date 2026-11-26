@@ -60,6 +60,7 @@ export const PERIODS: { value: Period; label: string }[] = [
 export const CONFIRMED = ["confirmed", "preparing", "shipped", "delivered", "paid"]
 
 export const ORDER_STATUS_MAP: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  cod_pending: { label: "Por confirmar", color: "text-sky-700",    bg: "bg-sky-50",     border: "border-sky-200" },
   pending:   { label: "Pendiente",      color: "text-yellow-700", bg: "bg-yellow-50",  border: "border-yellow-200" },
   paid:      { label: "Pagado",         color: "text-teal-700",   bg: "bg-teal-50",    border: "border-teal-200" },
   confirmed: { label: "Confirmado",     color: "text-blue-700",   bg: "bg-blue-50",    border: "border-blue-200" },

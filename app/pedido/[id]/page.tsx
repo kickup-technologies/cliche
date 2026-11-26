@@ -7,6 +7,7 @@ import Image from "next/image"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Package, Truck, CheckCircle, Clock, MapPin, AlertCircle, ChevronRight } from "lucide-react"
+import { esContraentrega } from "@/lib/contraentrega"
 import { Button } from "@/components/ui/button"
 
 interface OrderItem {
@@ -64,7 +65,16 @@ export default function PedidoPage() {
       .finally(() => setLoading(false))
   }, [id])
 
-  const currentStep = order ? stepIndex(order.status) : -1
+  // Contra entrega: no hay pago que esperar; se cobra al entregar.
+  const cod = esContraentrega(order?.stripe_session_id)
+  const pasos = cod
+    ? STATUS_STEPS.filter((s) => s.key !== "confirmed").map((s) =>
+        s.key === "pending" ? { ...s, desc: "Te escribimos por WhatsApp para confirmarlo. Pagas al recibir" } : s)
+    : STATUS_STEPS
+  const estado = cod
+    ? order?.status === "cod_pending" ? "pending" : order?.status === "confirmed" ? "preparing" : order?.status
+    : order?.status
+  const currentStep = estado ? pasos.findIndex((s) => s.key === estado) : -1
 
   return (
     <>
@@ -117,7 +127,7 @@ export default function PedidoPage() {
                   </p>
                 </div>
                 <div className="sm:text-right">
-                  <p className="text-white/40 text-[10px] uppercase tracking-[0.2em] mb-1">Total pagado</p>
+                  <p className="text-white/40 text-[10px] uppercase tracking-[0.2em] mb-1">{cod ? (order.status === "delivered" ? "Total pagado" : "Pagas al recibir") : "Total pagado"}</p>
                   <p className="font-serif text-3xl font-light">{fmt(order.total)}</p>
                 </div>
               </div>
@@ -129,7 +139,7 @@ export default function PedidoPage() {
                   {/* Línea vertical */}
                   <div className="absolute left-5 top-5 bottom-5 w-0.5 bg-[#2D1A14]/6" />
                   <div className="space-y-5">
-                    {STATUS_STEPS.map((step, i) => {
+                    {pasos.map((step, i) => {
                       const done = i <= currentStep
                       const active = i === currentStep
                       const Icon = step.icon

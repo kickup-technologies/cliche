@@ -63,7 +63,7 @@ export function useEntrega(prefijo: string) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(form.email.trim())) e.email = "Escribe un correo válido (ahí llega tu factura)"
     // Cédula obligatoria: Mercado Pago la cruza con el banco emisor y sin ella
     // su antifraude bloquea pagos reales (auditoría 2026-08-03). Va en la factura.
-    if (form.documento.replace(/\D/g, "").length < 5) e.documento = "Escribe tu cédula o NIT: el banco la pide para aprobar el pago"
+    if (form.documento.replace(/\D/g, "").length < 5) e.documento = "Escribe tu cédula o NIT: va en tu factura y en la guía"
     if (form.direccion.trim().length < 5) e.direccion = "Dirección completa de entrega"
     if (otraCiudad) {
       if (!form.departamento) e.departamento = "Elige tu departamento"
@@ -141,7 +141,7 @@ export function CamposEntrega({ e, conNotas = false }: { e: Entrega; conNotas?: 
         {campo("nombre", "Nombre completo *", User, { autoComplete: "name", maxLength: 120 })}
         {campo("telefono", "Celular (WhatsApp) *", Phone, { type: "tel", inputMode: "tel", autoComplete: "tel", maxLength: 30 })}
         {campo("email", "Correo electrónico *", Mail, { type: "email", autoComplete: "email", maxLength: 120, readOnly: e.emailFijo }, { pista: "Ahí llegan tu confirmación y tu factura" })}
-        {campo("documento", "Cédula o NIT *", IdCard, { inputMode: "numeric", maxLength: 20 }, { pista: "El banco la pide para aprobar tu pago" })}
+        {campo("documento", "Cédula o NIT *", IdCard, { inputMode: "numeric", maxLength: 20 }, { pista: "Para tu factura y la guía de envío" })}
         {/* Ciudad: selector con las principales primero; "otra" abre dos campos. */}
         {envoltorio(e.otraCiudad ? "ciudad-lista" : "ciudad", "Ciudad o municipio", Building2, (
           <select

@@ -127,7 +127,7 @@ export async function GET(req: NextRequest) {
           const { data: pagoPosterior } = await sb
             .from("orders")
             .select("id")
-            .in("status", ["paid", "confirmed", "preparing", "shipped", "delivered"])
+            .in("status", ["cod_pending", "paid", "confirmed", "preparing", "shipped", "delivered"])
             .gt("created_at", order.created_at as string)
             .or(matchers.join(","))
             .limit(1)

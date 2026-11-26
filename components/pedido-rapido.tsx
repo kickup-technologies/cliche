@@ -2,11 +2,12 @@
 
 import { useEffect, useId, useRef, useState } from "react"
 import { createPortal } from "react-dom"
-import { CreditCard, Package, RotateCcw, ShieldCheck, Sparkles, Truck, X, Zap } from "lucide-react"
+import { Banknote, CreditCard, Package, RotateCcw, ShieldCheck, Sparkles, Truck, X, Zap } from "lucide-react"
 import { useCAPI, getFbSignals } from "@/lib/use-capi"
 import { useSiteSettings } from "@/lib/use-site-settings"
 import { PRICE_TIERS, SHIPPING_COST, makeVariantId, parseFreeShippingThreshold, tierSavings } from "@/lib/pricing"
 import { ENTREGA_EN_LINEA } from "@/lib/entrega"
+import { CONTRAENTREGA_ACTIVA } from "@/lib/contraentrega"
 import { Autorizacion, CamposEntrega, OpcionEnvio, ZonaPago, useEntrega } from "@/components/campos-entrega"
 import type { Product } from "@/lib/supabase"
 
@@ -40,6 +41,7 @@ export function PedidoRapido({ abierto, onClose, product, tierId, onTierChange, 
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState("")
   const cajaRef = useRef<HTMLDivElement>(null)
+  const trampaRef = useRef<HTMLInputElement>(null)
   useEffect(() => setMontado(true), [])
 
   const tier = PRICE_TIERS.find((t) => t.id === tierId) ?? PRICE_TIERS[0]
@@ -89,8 +91,7 @@ export function PedidoRapido({ abierto, onClose, product, tierId, onTierChange, 
 
   const cerrar = () => { if (!enviando) onClose() }
 
-  async function pagar(ev: React.FormEvent) {
-    ev.preventDefault()
+  async function pagar(metodo: "contraentrega" | "en_linea") {
     if (!entrega.valido) { entrega.marcarTodo(); return }
     setEnviando(true); setError("")
     // ── Meta Pixel + CAPI: AddPaymentInfo (datos completos, va a pagar) ──
@@ -108,6 +109,8 @@ export function PedidoRapido({ abierto, onClose, product, tierId, onTierChange, 
           total,
           ...entrega.datosPedido(),
           fb_signals: getFbSignals(),
+          metodo,
+          empresa: trampaRef.current?.value || "",
         }),
       })
       const data = await res.json()
@@ -138,7 +141,8 @@ export function PedidoRapido({ abierto, onClose, product, tierId, onTierChange, 
           <button type="button" className="cod-cerrar" onClick={cerrar} aria-label="Cerrar" disabled={enviando}><X size={20} /></button>
         </div>
 
-        <form className="cod-form" onSubmit={pagar} noValidate>
+        <form className="cod-form" onSubmit={(ev) => { ev.preventDefault(); pagar(CONTRAENTREGA_ACTIVA ? "contraentrega" : "en_linea") }} noValidate>
+          <input ref={trampaRef} type="text" name="empresa" tabIndex={-1} autoComplete="off" aria-hidden="true" className="cod-oculto" />
           <div className="cod-body">
             {/* ── Qué se pide ── */}
             <div className="cod-item">
@@ -188,12 +192,18 @@ export function PedidoRapido({ abierto, onClose, product, tierId, onTierChange, 
           <div className="cod-foot">
             {error && <p className="account-msg is-error" role="alert">{error}</p>}
             {!error && entrega.algoTocado && !entrega.valido && <p className="account-msg is-error" role="alert">Revisa los campos marcados.</p>}
-            <button type="submit" className="cod-cta" disabled={enviando}>
-              <CreditCard size={19} aria-hidden="true" />
-              <span className="cod-cta-txt">
-                <span>{enviando ? "Te llevamos al pago…" : `Pagar en línea - ${fmt(total)}`}</span>
-                {!enviando && <small>Tarjeta, PSE o Nequi · llega en {ENTREGA_EN_LINEA.replace(" a ", "-")}</small>}
-              </span>
+            {CONTRAENTREGA_ACTIVA && (
+              <button type="submit" className="cod-cta" disabled={enviando}>
+                <Banknote size={19} aria-hidden="true" />
+                <span className="cod-cta-txt">
+                  <span>{enviando ? "Enviando tu pedido…" : `Pagar al recibir - ${fmt(total)}`}</span>
+                  {!enviando && <small>Contra entrega · llega en {ENTREGA_EN_LINEA.replace(" a ", "-")}</small>}
+                </span>
+              </button>
+            )}
+            <button type="button" className={CONTRAENTREGA_ACTIVA ? "cod-cta-sec" : "cod-cta"} disabled={enviando} onClick={() => pagar("en_linea")}>
+              <CreditCard size={18} aria-hidden="true" />
+              <span>Pagar en línea (tarjeta, PSE o Nequi)</span>
             </button>
           </div>
         </form>
