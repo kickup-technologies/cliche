@@ -59,7 +59,11 @@ const VentasSection = lazy(() => import("./sections/ventas"), m => m.VentasSecti
 const TraficoSection = lazy(() => import("./sections/trafico"), m => m.TraficoSection)
 const ProductosStatsSection = lazy(() => import("./sections/productos-stats"), m => m.ProductosStatsSection)
 const PedidosSection = lazy(() => import("./sections/pedidos"), m => m.PedidosSection)
-const DespachosSection = lazy(() => import("./sections/despachos"), m => m.DespachosSection)
+// Despachos vive en la bodega (/bodega): el menú lleva allá.
+function IrABodega() {
+  useEffect(() => { if (document.getElementById("ir-a-bodega")?.offsetParent) window.location.assign("/bodega") })
+  return <p id="ir-a-bodega" className="text-sm text-[#2D1A14]/60">Abriendo la bodega… <a className="underline font-semibold" href="/bodega">Entrar a Despachos</a></p>
+}
 const InventarioSection = lazy(() => import("./sections/inventario"), m => m.InventarioSection)
 const HeatmapsSection = lazy(() => import("./sections/heatmaps"), m => m.HeatmapsSection)
 const DescuentosSection = lazy(() => import("./sections/descuentos"), m => m.DescuentosSection)
@@ -527,7 +531,7 @@ export default function AdminPage() {
     const warm = () => {
       void import("./sections/overview"); void import("./sections/ventas")
       void import("./sections/trafico"); void import("./sections/productos-stats")
-      void import("./sections/despachos"); void import("./sections/pedidos"); void import("./sections/inventario")
+      void import("./sections/pedidos"); void import("./sections/inventario")
       void import("./sections/heatmaps"); void import("./sections/descuentos")
       void import("./sections/asistente"); void import("./sections/clientes"); void import("./sections/empresas")
       void import("./sections/seo"); void import("./sections/blogs")
@@ -565,7 +569,7 @@ export default function AdminPage() {
     trafico: <TraficoSection orders={orders} pageViews={pageViews} />,
     "productos-stats": <ProductosStatsSection orders={orders} products={products} pageViews={pageViews} />,
     heatmaps: <HeatmapsSection pageViews={pageViews} />,
-    despachos: <DespachosSection products={products} />,
+    despachos: <IrABodega />,
     pedidos: <PedidosSection orders={orders} products={products} onOrdersUpdate={handleOrderUpdate} />,
     clientes: <ClientesSection />,
     empresas: <EmpresasSection />,

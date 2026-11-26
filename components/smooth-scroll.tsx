@@ -17,7 +17,7 @@ import Lenis from "lenis"
  */
 export function SmoothScroll() {
   const pathname = usePathname()
-  const isAdminArea = pathname?.startsWith("/admin") ?? false
+  const isAdminArea = /^\/(admin|bodega)/.test(pathname ?? "")
 
   useEffect(() => {
     if (isAdminArea) return

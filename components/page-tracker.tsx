@@ -17,7 +17,7 @@ export function PageTracker() {
   const pathname = usePathname()
 
   useEffect(() => {
-    if (pathname?.startsWith("/admin")) return
+    if (/^\/(admin|bodega)/.test(pathname ?? "")) return
 
     const track = () => {
       const consent = getConsent()

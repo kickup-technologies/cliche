@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation"
 // Footer). Mismo fondo que el footer para que se lea como su continuación.
 export function KickupCredit() {
   const pathname = usePathname()
-  if (pathname?.startsWith("/admin")) return null
+  if (/^\/(admin|bodega)/.test(pathname ?? "")) return null
 
   return (
     <div className="bg-foreground">

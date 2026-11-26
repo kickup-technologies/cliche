@@ -28,7 +28,7 @@ export function StickyCta() {
     pathname.startsWith("/checkout") ||
     pathname.startsWith("/pedido") ||
     pathname.startsWith("/gracias") ||
-    pathname.startsWith("/admin") ||
+    /^\/(admin|bodega)/.test(pathname ?? "") ||
     // /empresas tiene su propia barra fija (WhatsApp + Pedir cotización).
     pathname.startsWith("/empresas")
   )

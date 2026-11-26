@@ -25,7 +25,7 @@ export function PixelRouteTracker() {
       isFirstRender.current = false
       return
     }
-    if (!pathname || pathname.startsWith("/admin")) return
+    if (!pathname || /^\/(admin|bodega)/.test(pathname ?? "")) return
 
     const consent = getConsent()
 
