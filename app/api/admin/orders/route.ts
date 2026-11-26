@@ -83,7 +83,7 @@ export async function PATCH(req: NextRequest) {
 
     // Contra entrega: al salir de "por confirmar" hacia despacho se descuenta el inventario.
     const confirmaCod = esContraentrega(before?.stripe_session_id) && before?.status === ESTADO_COD_NUEVO &&
-      ["preparing", "shipped", "delivered"].includes(String(update.status))
+      ["confirmed", "paid", "preparing", "shipped", "delivered"].includes(String(update.status))
 
     const { data, error } = await supabase
       .from("orders")
