@@ -12,7 +12,7 @@ import { SEGMENTS, segmentsForSlug } from "@/lib/segments"
 import { FAMILIES, familyOf } from "@/lib/families"
 import { ENTREGA_EN_LINEA, WHATSAPP_CLICHE } from "@/lib/entrega"
 import { AVISO_NAVIDAD } from "@/lib/aviso-navidad"
-import { TiendaCard, nombreCorto } from "@/components/tienda-card"
+import { TiendaCard, TarjetaColeccion, nombreCorto } from "@/components/tienda-card"
 import type { Product } from "@/lib/supabase"
 
 type Segmento = (typeof SEGMENTS)[number]
@@ -237,6 +237,7 @@ function TiendaInner() {
                 </div>
               ) : lista.length > 0 ? (
                 <div className="tienda-productos">
+                  {!hayFiltros && <TarjetaColeccion />}
                   {lista.map((p) => <TiendaCard key={p.id} product={p} onAdd={agregar} />)}
                 </div>
               ) : (

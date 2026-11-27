@@ -142,6 +142,9 @@ const nextConfig = {
       // adivina, así que mejor llevarla al catálogo. El redirect es exacto y
       // no toca las fichas.
       { source: "/productos", destination: "/catalogo", permanent: true },
+      // La landing de diciembre pasó a ser una ficha de la tienda; los anuncios
+      // que apuntan a la dirección corta siguen funcionando (las UTM viajan).
+      { source: "/coleccion-navidad", destination: "/productos/coleccion-navidad", permanent: false },
     ]
   },
 }

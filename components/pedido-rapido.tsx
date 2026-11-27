@@ -10,6 +10,7 @@ import { ENTREGA_EN_LINEA } from "@/lib/entrega"
 import { CONTRAENTREGA_ACTIVA } from "@/lib/contraentrega"
 import { Autorizacion, CamposEntrega, OpcionEnvio, ZonaPago, useEntrega } from "@/components/campos-entrega"
 import type { Product } from "@/lib/supabase"
+import { COLECCION_CANTIDADES, COLECCION_FOTO, COLECCION_NOMBRE, separadoColecciones, totalColecciones } from "@/lib/coleccion"
 
 const fmt = (n: number) => `$${n.toLocaleString("es-CO")}`
 const ENFOCABLES = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
@@ -24,13 +25,15 @@ const ENFOCABLES = 'a[href], button:not([disabled]), input:not([disabled]), sele
  *
  * Accesible: role="dialog", foco atrapado, Esc cierra y el fondo no se mueve.
  */
-export function PedidoRapido({ abierto, onClose, product, tierId, onTierChange, qty }: {
+export function PedidoRapido({ abierto, onClose, product, tierId, onTierChange, qty, coleccion }: {
   abierto: boolean
   onClose: () => void
   product: Product
   tierId: string
   onTierChange: (id: string) => void
   qty: number
+  /** «Colección de Navidad»: sus 4 aromas fijos; aquí solo se elige cuántas. */
+  coleccion?: { aromas: Product[]; cantidad: number; onCantidad: (n: number) => void; bf: boolean }
 }) {
   const uid = useId().replace(/:/g, "")
   const tituloId = `${uid}-titulo`
@@ -46,13 +49,15 @@ export function PedidoRapido({ abierto, onClose, product, tierId, onTierChange, 
 
   const tier = PRICE_TIERS.find((t) => t.id === tierId) ?? PRICE_TIERS[0]
   const precio = tier.id === "unit" ? product.price : tier.price
-  const subtotal = precio * qty
+  const subtotal = coleccion ? totalColecciones(coleccion.cantidad, coleccion.bf) : precio * qty
   const umbral = parseFreeShippingThreshold(siteSettings.free_shipping_threshold)
   const gratis = subtotal >= umbral
   const envio = gratis ? 0 : SHIPPING_COST
   const total = subtotal + envio
-  const foto = (Array.isArray(product.image_urls) ? product.image_urls.find(Boolean) : null) || product.image_url || ""
-  const nombre = tier.units > 1 ? `${product.name} — Kit x${tier.units}` : product.name
+  const foto = coleccion ? COLECCION_FOTO : (Array.isArray(product.image_urls) ? product.image_urls.find(Boolean) : null) || product.image_url || ""
+  const nombre = coleccion ? COLECCION_NOMBRE : tier.units > 1 ? `${product.name} — Kit x${tier.units}` : product.name
+  const idsPedido = coleccion ? coleccion.aromas.map((a) => a.id) : [product.id]
+  const frascos = coleccion ? coleccion.cantidad * coleccion.aromas.length : qty * tier.units
 
   // Abrir: fondo quieto, foco en la ventana, Esc cierra y Tab no se escapa.
   const cerrarRef = useRef(onClose)
@@ -97,7 +102,7 @@ export function PedidoRapido({ abierto, onClose, product, tierId, onTierChange, 
     // ── Meta Pixel + CAPI: AddPaymentInfo (datos completos, va a pagar) ──
     track({
       event_name: "AddPaymentInfo",
-      custom_data: { currency: "COP", value: total, content_ids: [product.id], content_type: "product", num_items: qty * tier.units },
+      custom_data: { currency: "COP", value: total, content_ids: idsPedido, content_type: "product", num_items: frascos },
       user_data: { raw_email: entrega.form.email.trim(), ...(entrega.form.telefono.trim() && { raw_phone: entrega.form.telefono.trim() }) },
     })
     try {
@@ -105,7 +110,9 @@ export function PedidoRapido({ abierto, onClose, product, tierId, onTierChange, 
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: [{ product_id: makeVariantId(product.id, tier.id), quantity: qty, unit_price: precio, name: nombre }],
+          items: coleccion
+            ? [{ type: "pack", tier: "x4", coleccion: true, quantity: coleccion.cantidad, name: nombre, components: coleccion.aromas.map((a) => ({ product_id: a.id, quantity: 1 })) }]
+            : [{ product_id: makeVariantId(product.id, tier.id), quantity: qty, unit_price: precio, name: nombre }],
           total,
           ...entrega.datosPedido(),
           fb_signals: getFbSignals(),
@@ -148,12 +155,38 @@ export function PedidoRapido({ abierto, onClose, product, tierId, onTierChange, 
             <div className="cod-item">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={foto} alt="" width={52} height={60} />
-              <div><b>{product.name}</b><small>{qty > 1 ? `${qty} × ` : ""}{tier.label}{tier.units > 1 ? ` · ${tier.units * qty} frascos` : ""}</small></div>
+              {coleccion
+                ? <div><b>{coleccion.cantidad > 1 ? `${coleccion.cantidad} × ` : ""}{nombre}</b><small>{coleccion.aromas.map((a) => a.name.replace(/^Aroma\s+/i, "").split(" — ")[0]).join(", ")} · {frascos} frascos de 250 ml</small></div>
+                : <div><b>{product.name}</b><small>{qty > 1 ? `${qty} × ` : ""}{tier.label}{tier.units > 1 ? ` · ${tier.units * qty} frascos` : ""}</small></div>}
               <strong>{fmt(subtotal)}</strong>
             </div>
 
+            {/* Colección: cuántas, con las mismas tarjetas de la ficha. */}
+            {coleccion && (
+              <fieldset className="cod-packs pr-packs pr-packs-3">
+                <legend className="cod-oculto">Cuántas Colecciones</legend>
+                {COLECCION_CANTIDADES.map((n) => {
+                  const on = n === coleccion.cantidad
+                  const t = totalColecciones(n, coleccion.bf)
+                  const sep = separadoColecciones(coleccion.aromas, n)
+                  const cinta = coleccion.bf ? (n === 2 ? "Recomendado" : n === 3 ? "Mejor precio" : "") : ""
+                  return (
+                    <label key={n} className={`cod-pack ${on ? "is-on" : ""}`}>
+                      <input type="radio" name={`${uid}-col`} value={n} checked={on} onChange={() => coleccion.onCantidad(n)} className="cod-oculto" />
+                      {cinta && <span className="cod-pack-cinta">{cinta}</span>}
+                      <span className="cod-pack-radio" aria-hidden="true" />
+                      <b>{n} {n === 1 ? "Colección" : "Colecciones"}</b>
+                      <strong>{fmt(t)}</strong>
+                      <s className="pr-tachado"><span className="cod-oculto">Por separado </span>{fmt(sep)}</s>
+                      <small>Ahorras {fmt(sep - t)}</small>
+                    </label>
+                  )
+                })}
+              </fieldset>
+            )}
+
             {/* Presentación: la misma elección de la ficha, cambiable aquí. */}
-            {product.slug !== "prueba" && (
+            {!coleccion && product.slug !== "prueba" && (
               <fieldset className="cod-packs pr-packs">
                 <legend className="cod-oculto">Presentación</legend>
                 {PRICE_TIERS.map((t) => {

@@ -4,6 +4,24 @@ import { ProductDetail } from "@/components/product-detail"
 import { CATALOG_AS_PRODUCTS, getCatalogProduct } from "@/lib/catalog-data"
 import { withSeoOverride, productSeoPath } from "@/lib/seo"
 import type { Metadata } from "next"
+import type { Product } from "@/lib/supabase"
+import { FichaColeccion } from "@/components/ficha-coleccion"
+import { COLECCION_FOTO, COLECCION_SLUG, COLECCION_SLUGS, aromasColeccion, productoColeccion } from "@/lib/coleccion"
+
+/** Los 4 aromas de la Colección (BD; si falla, el catálogo local) y la Colección como producto. */
+async function cargarColeccion(): Promise<{ product: Product; aromas: Product[] } | null> {
+  let productos: Product[] = []
+  if (isSupabaseConfigured) {
+    try {
+      const { data } = await supabase.from("products").select("*").in("slug", [...COLECCION_SLUGS]).eq("is_active", true)
+      if (data?.length) productos = data as Product[]
+    } catch { /* respaldo abajo */ }
+  }
+  if (!productos.length) productos = CATALOG_AS_PRODUCTS.filter((p) => COLECCION_SLUGS.includes(p.slug) || COLECCION_SLUGS.includes(`aroma-${p.slug}`)).map((p) => ({ ...p, slug: p.slug.startsWith("aroma-") ? p.slug : `aroma-${p.slug}` }))
+  const aromas = aromasColeccion(productos)
+  const product = productoColeccion(aromas)
+  return product ? { product, aromas } : null
+}
 
 // ISR: páginas estáticas servidas desde CDN, regeneradas cada 5 min. Escala a
 // miles de peticiones sin golpear Supabase en cada visita (solo en build/revalidación).
@@ -15,7 +33,7 @@ export async function generateStaticParams() {
   try {
     if (isSupabaseConfigured) {
       const { data } = await supabase.from("products").select("slug").eq("is_active", true)
-      if (data && data.length) return data.map((p) => ({ slug: p.slug }))
+      if (data && data.length) return [...data.map((p) => ({ slug: p.slug })), { slug: COLECCION_SLUG }]
     }
   } catch {
     /* fallback al catálogo local */
@@ -29,6 +47,17 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
+  if (slug === COLECCION_SLUG) {
+    const col = await cargarColeccion()
+    if (!col) return { title: "Producto no encontrado" }
+    const description = "Navidad, Calor de Lana, Tierra y Sello de Dios: 4 aromas de 250 ml para la casa y la ropa. Pagas al recibir."
+    return withSeoOverride(productSeoPath(slug), {
+      title: `${col.product.name}: 4 aromas de Cliché`,
+      description,
+      alternates: { canonical: productSeoPath(slug) },
+      openGraph: { title: col.product.name, description, images: [{ url: COLECCION_FOTO }] },
+    })
+  }
   const { data: dbProduct } = isSupabaseConfigured
     ? await supabase
         .from("products")
@@ -60,6 +89,27 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params
+
+  // «Colección de Navidad»: ficha propia con sus 4 aromas fijos (lib/coleccion).
+  if (slug === COLECCION_SLUG) {
+    const col = await cargarColeccion()
+    if (!col) notFound()
+    const ld = {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: col.product.name,
+      description: col.product.description,
+      image: [COLECCION_FOTO],
+      brand: { "@type": "Brand", name: "Cliché Aromas" },
+      offers: { "@type": "Offer", priceCurrency: "COP", price: col.product.price, availability: col.product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock", seller: { "@type": "Organization", name: "Cliché Aromas" } },
+    }
+    return (
+      <>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, "\\u003c") }} />
+        <FichaColeccion product={col.product} aromas={col.aromas} />
+      </>
+    )
+  }
 
   const { data: dbProduct } = isSupabaseConfigured
     ? await supabase

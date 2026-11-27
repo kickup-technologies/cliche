@@ -1246,3 +1246,53 @@ aside { transition: background-color .35s ease, border-color .35s ease; }
 .cod-cta-sec:hover { background:color-mix(in srgb, var(--es-accent, #a67163) 8%, transparent); }
 .cod-cta-sec:disabled { opacity:.6; cursor:wait; }
 .ck-solo-online { margin:0; font-size:12px; text-align:center; opacity:.75; }
+
+/* ── Botón de comprar verde, como en Black Accord (todas las fichas) ── */
+.pdp-comprar { --es-accent:#00875a; --es-accent-dark:#00714b; }
+
+/* ── Colección de Navidad (/productos/coleccion-navidad) ── */
+.col-bf { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:7px 12px; border-radius:10px; background:#2D1A14; color:#fff; }
+.col-bf p { margin:0; }
+.col-bf-titulo { display:flex; flex-direction:column; line-height:1.15; }
+.col-bf-titulo b { font-size:14px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; }
+.col-bf-titulo small { font-size:11px; color:#E3CFC6; }
+.col-bf-reloj { display:flex; gap:4px; font-variant-numeric:tabular-nums; font-size:11px; color:#F6DDD4; }
+.col-bf-reloj span { display:flex; align-items:baseline; gap:1px; padding:3px 6px; border-radius:6px; background:#B8402A; }
+.col-bf-reloj strong { font-size:16px; font-weight:700; color:#fff; }
+.col-precio { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px; margin:0; font-variant-numeric:tabular-nums; }
+.col-precio strong { font-size:34px; line-height:1.1; font-weight:700; color:#00875a; }
+.col-precio s { font-size:20px; color:#7A5C52; text-decoration-thickness:1.5px; }
+.col-precio em { font-style:normal; font-size:13px; color:#7A5C52; }
+.col-oferta, .col-trae { --es-ink:#2D1A14; --es-muted:#7A5C52; --es-line:#E8D5CB; --es-tint:#F8F2EE; --es-card:#fff; --es-accent:#A67163; --es-accent-dark:#8B5A4A; --es-badge:#2D1A14; --es-ok:#3C5A36; color:var(--es-ink); }
+.col-oferta-titulo { margin:0 0 4px; font-size:11px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:#7A5C52; }
+.col-packs { padding-top:10px; }
+.col-packs .cod-pack { gap:2px; padding:10px 4px 8px; }
+.col-packs .cod-pack-radio { position:absolute; top:7px; left:7px; z-index:3; width:16px; height:16px; }
+.col-pack-fotos { position:relative; display:flex; justify-content:center; width:100%; height:46px; }
+.col-pack-fotos img { width:40px; height:40px; flex:none; object-fit:cover; border-radius:8px; border:2px solid #fff; box-shadow:0 3px 10px rgba(45,26,20,.18); background:var(--es-tint); }
+.col-pack-fotos.n2 img { width:36px; height:36px; }
+.col-pack-fotos.n2 img:first-child { transform:rotate(-7deg) translateX(7px); }
+.col-pack-fotos.n2 img:last-child { transform:rotate(6deg) translate(-7px, 5px); }
+.col-pack-fotos.n3 img { width:32px; height:32px; }
+.col-pack-fotos.n3 img:nth-child(1) { transform:rotate(-9deg) translate(12px, 5px); }
+.col-pack-fotos.n3 img:nth-child(2) { position:relative; z-index:1; }
+.col-pack-fotos.n3 img:nth-child(3) { transform:rotate(9deg) translate(-12px, 5px); }
+.col-packs .cod-pack strong { margin-top:0; font-size:15.5px; }
+.pr-tachado { font-size:12px; color:var(--es-muted, #7A5C52); font-variant-numeric:tabular-nums; }
+.col-nota { margin:6px 0 0; font-size:11.5px; color:#7A5C52; }
+.col-trae { margin-top:6px; }
+.col-trae ul:first-of-type { list-style:none; margin:4px 0 0; padding:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.col-trae li a { display:flex; align-items:center; gap:8px; padding:6px 8px 6px 6px; border:1px solid var(--es-line); border-radius:12px; background:var(--es-card); min-width:0; color:inherit; text-decoration:none; }
+.col-trae li a:hover { border-color:var(--es-accent); }
+.col-trae img { flex:none; width:40px; height:52px; object-fit:cover; border-radius:8px; }
+.col-trae b { display:block; font-size:13.5px; color:var(--es-ink); }
+.col-trae small { display:block; margin-top:2px; font-size:11.5px; line-height:1.3; color:var(--es-muted); }
+.col-condiciones { list-style:none; margin:10px 0 0; padding:0; display:grid; gap:4px; font-size:13px; color:#7A5C52; }
+.col-condiciones li { display:flex; align-items:flex-start; gap:8px; }
+.col-condiciones svg { flex:none; margin-top:2px; color:#3C5A36; }
+.col-navidad { margin:10px 0 0; font-size:13px; line-height:1.45; color:#7A5C52; }
+.col-barra-cta { flex-shrink:0; height:44px; padding:0 18px; border:0; border-radius:12px; background:#00875a; color:#fff; font:inherit; font-size:13px; font-weight:700; letter-spacing:.04em; cursor:pointer; }
+.col-barra-cta:hover { background:#00714b; }
+.cod-overlay .pr-packs-3 { grid-template-columns:repeat(3,minmax(0,1fr)); }
+@media (min-width:420px) { .cod-overlay .pr-packs-3 { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+a.tienda-agregar { text-decoration:none; }
