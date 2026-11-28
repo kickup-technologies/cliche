@@ -8,6 +8,7 @@ import { siteUrl } from "@/lib/site-url"
 import { CONTRAENTREGA_ACTIVA, ESTADO_COD_NUEVO, PREFIJO_COD, celularValido } from "@/lib/contraentrega"
 import { sendPurchaseCAPI } from "@/lib/capi-server"
 import { sendAdminOrderAlert, sendCodOrderReceived } from "@/lib/mailer"
+import { COLECCION_NOMBRE, COLECCION_SLUGS, enBlackFriday, precioColeccion } from "@/lib/coleccion"
 
 type IncomingItem = { product_id: string; quantity: number; name?: string }
 type IncomingPack = {
@@ -15,6 +16,8 @@ type IncomingPack = {
   tier: string
   quantity: number
   name?: string
+  /** «Colección de Navidad»: kit x4 con sus 4 aromas fijos y su propio precio (lib/coleccion). */
+  coleccion?: boolean
   components: Array<{ product_id: string; quantity: number }>
 }
 
@@ -116,6 +119,7 @@ export async function POST(req: NextRequest) {
         tier: String(p.tier),
         quantity: Math.max(1, Math.min(99, Math.floor(Number(p.quantity) || 1))),
         name: p.name,
+        coleccion: p.coleccion === true,
         components: Array.isArray(p.components)
           ? p.components
               .map((c) => ({
@@ -212,16 +216,30 @@ export async function POST(req: NextRequest) {
         addNeed(p.id, c.quantity * pack.quantity)
         components.push({ product_id: p.id, name: p.name, quantity: c.quantity })
       }
+      // Colección de Navidad: exactamente sus 4 aromas, 1 de cada uno, de 1 a 3
+      // Colecciones; precio de lib/coleccion con el reloj del servidor.
+      let precioPack = tier.price
+      let nombrePack = `Kit personalizado x${tier.units}`
+      if (pack.coleccion) {
+        const slugs = pack.components.map((c) => String(productMap.get(c.product_id)?.slug || "")).sort().join()
+        const esColeccion = tier.id === "x4" && pack.quantity <= 3 && pack.components.every((c) => c.quantity === 1)
+          && slugs === [...COLECCION_SLUGS].sort().join()
+        if (!esColeccion) {
+          return NextResponse.json({ error: "La Colección cambió. Recarga la página y vuelve a pedirla." }, { status: 400 })
+        }
+        precioPack = precioColeccion(pack.quantity, enBlackFriday())
+        nombrePack = COLECCION_NOMBRE
+      }
       safeItems.push({
         kind: "pack",
         tier: tier.id,
         quantity: pack.quantity,
-        name: `Kit personalizado x${tier.units}`,
-        price: tier.price,
+        name: nombrePack,
+        price: precioPack,
         components,
       })
-      // El precio del pack es FIJO por tier, sin importar los aromas escogidos.
-      subtotal += tier.price * pack.quantity
+      // El precio del pack es FIJO por tier (o el de la Colección), sin importar los aromas.
+      subtotal += precioPack * pack.quantity
     }
 
     // ── Validación de stock AGREGADA ──

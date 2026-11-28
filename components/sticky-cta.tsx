@@ -25,6 +25,7 @@ export function StickyCta() {
     pathname.startsWith("/productos") ||
     pathname.startsWith("/catalogo") ||
     pathname.startsWith("/arma-tu-kit") ||
+    pathname.startsWith("/coleccion-navidad") ||
     pathname.startsWith("/checkout") ||
     pathname.startsWith("/pedido") ||
     pathname.startsWith("/gracias") ||

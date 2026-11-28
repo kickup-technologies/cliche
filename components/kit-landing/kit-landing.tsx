@@ -15,6 +15,7 @@ import {
 } from "@/lib/kit-landing-content"
 import { MqBrands, MqFooter, waDisplay, waHref } from "@/components/landing-maqueta/parts"
 import { ENTREGA_EN_LINEA } from "@/lib/entrega"
+import { CONTRAENTREGA_ACTIVA } from "@/lib/contraentrega"
 import "./kit-landing.css"
 
 /**
@@ -23,8 +24,8 @@ import "./kit-landing.css"
  * bandeja fija). Decisión del cliente: ese diseño vende más que el rediseño.
  *
  * Lo que cambia frente a la maqueta es lo que la maqueta simulaba:
- * - El pedido NO es contra entrega (Cliché no lo ofrece): el panel "Confirma
- *   tu pedido" resume el kit y lleva al pago real. El kit entra al carrito con
+ * - El panel "Confirma tu pedido" resume el kit y lleva al checkout, donde se
+ *   elige pagar al recibir (lib/contraentrega) o en línea. El kit entra al carrito con
  *   `addPack` (dispara AddToCart) y se paga con el `checkout()` del carrito
  *   (dispara InitiateCheckout) → /checkout → Mercado Pago. Mismo flujo que el
  *   PackBuilder de la ficha; el pedido lleva los aromas elegidos.
@@ -63,6 +64,8 @@ interface Props {
   christmasAromaName: string | null
   /** false después de la fecha límite de Navidad (la calcula el servidor) */
   showChristmasDeadline: boolean
+  /** /coleccion-navidad: kit x4 fijo y textos de la temporada. */
+  coleccion?: boolean
 }
 
 export function KitLanding({
@@ -72,11 +75,14 @@ export function KitLanding({
   christmasAromaId,
   christmasAromaName,
   showChristmasDeadline,
+  coleccion = false,
 }: Props) {
   const { addPack, openDrawer, checkout, items, total: cartTotal } = useCart()
   const { track } = useCAPI()
 
-  const [tierId, setTierId] = useState(DEFAULT_TIER.id)
+  const base = coleccion ? TIER_BY_ID.x4 : DEFAULT_TIER
+  const nombreKit = coleccion ? "Colección de Navidad" : null
+  const [tierId, setTierId] = useState(base.id)
   const [picks, setPicks] = useState<string[]>([])
   const [filter, setFilter] = useState("todos")
   const [toast, setToast] = useState<string | null>(null)
@@ -132,13 +138,13 @@ export function KitLanding({
       event_name: "ViewContent",
       custom_data: {
         content_ids: aromas.map((a) => a.id),
-        content_name: "Kit personalizado",
+        content_name: coleccion ? "Colección de Navidad" : "Kit personalizado",
         content_type: "product_group",
         currency: "COP",
-        value: DEFAULT_TIER.price,
+        value: base.price,
       },
     })
-  }, [aromas, track])
+  }, [aromas, track, base.price, coleccion])
 
   // ── Selección ──
   const addPick = (id: string) => {
@@ -289,7 +295,9 @@ export function KitLanding({
     { q: "¿Puedo mezclar aromas?", a: "Sí. Combina los que quieras, incluso repetidos, y el precio del kit se mantiene." },
     {
       q: "¿Cómo pago?",
-      a: "Pagas en línea al confirmar tu pedido, con tarjeta, PSE o Nequi, a través de Mercado Pago.",
+      a: CONTRAENTREGA_ACTIVA
+        ? "Pagas cuando recibes tu pedido. Si prefieres, también puedes pagar en línea con tarjeta, PSE o Nequi."
+        : "Pagas en línea al confirmar tu pedido, con tarjeta, PSE o Nequi, a través de Mercado Pago.",
     },
     {
       q: "¿Cuándo llega?",
@@ -300,7 +308,9 @@ export function KitLanding({
       : []),
     {
       q: "¿Se puede usar sobre la ropa?",
-      a: "Sí. La fórmula es sin aceites grasos ni colorantes, así que puedes aplicarla sobre telas y muebles claros.",
+      a: coleccion
+        ? "Sí. Rocía a unos 30 cm y prueba antes en una parte poco visible de la tela."
+        : "Sí. La fórmula es sin aceites grasos ni colorantes, así que puedes aplicarla sobre telas y muebles claros.",
     },
     {
       q: "¿Y si quiero cambiarlo?",
@@ -325,7 +335,7 @@ export function KitLanding({
             ficha y el checkout (lib/entrega), el que prometen los anuncios.
             Textos cortos para que la franja quepa en dos líneas en el celular. */}
         <div className="topbar" aria-label="Condiciones">
-          <span>Tarjeta, PSE o Nequi</span>
+          <span>{CONTRAENTREGA_ACTIVA ? "Pagas al recibir" : "Tarjeta, PSE o Nequi"}</span>
           <span>Llega en {ENTREGA_EN_LINEA.replace(" a ", "-")}</span>
           <span>Gratis desde {fmt(freeShippingThreshold)}</span>
           <span>Hecho en Medellín</span>
@@ -338,7 +348,12 @@ export function KitLanding({
             WhatsApp {waDisplay(waNum)}
           </a>
         </header>
-        {christmasAromaId && (
+        {coleccion ? showChristmasDeadline && (
+          <div className="season">
+            <span className="dot" aria-hidden />
+            <span><b>Navidad:</b> pide hasta {CHRISTMAS_DEADLINE_LABEL} y llega antes del 24.</span>
+          </div>
+        ) : christmasAromaId && (
           <div className="season">
             <span className="dot" aria-hidden />
             <span>
@@ -359,23 +374,26 @@ export function KitLanding({
             sizes="(min-width: 900px) 520px, 100vw"
           />
           <div className="info">
-            <span className="eyebrow">Kits de aromas · Cliché Colombia</span>
-            <h1>Arma tu kit con los aromas que tú eliges</h1>
+            <span className="eyebrow">{coleccion ? "Edición de diciembre · Cliché Colombia" : "Kits de aromas · Cliché Colombia"}</span>
+            <h1>{coleccion ? "Colección de Navidad" : "Arma tu kit con los aromas que tú eliges"}</h1>
             <p className="sub" style={{ fontSize: 18 }}>
-              Combina {KIT_TIERS.map((t) => t.units).join(", ").replace(/, (\d+)$/, " o $1")} aromas para tu tienda, tu
-              casa o tu ropa. Sprays de 250 ml de alta concentración, hechos en Medellín.
+              {coleccion
+                ? "Cuatro aromas de 250 ml, los que tú elijas, para la casa y la ropa en diciembre. Hechos en Medellín."
+                : <>Combina {KIT_TIERS.map((t) => t.units).join(", ").replace(/, (\d+)$/, " o $1")} aromas para tu tienda, tu
+              casa o tu ropa. Sprays de 250 ml de alta concentración, hechos en Medellín.</>}
             </p>
             <div className="price">
-              <b>{fmt(DEFAULT_TIER.price)}</b>
-              <span className="per">{DEFAULT_TIER.label} · {fmt(perBottle(DEFAULT_TIER))} por frasco</span>
+              <b>{fmt(base.price)}</b>
+              <span className="per">{base.label} · {fmt(perBottle(base))} por frasco</span>
             </div>
             <p className="cta-note" style={{ textAlign: "left", marginTop: -8 }}>
-              Por separado, {DEFAULT_TIER.units} aromas cuestan {fmt(DEFAULT_TIER.units * UNIT_PRICE)}.
+              Por separado, {base.units} aromas cuestan {fmt(base.units * UNIT_PRICE)}.
+              {coleccion && <> Envío {fmt(SHIPPING_COST)}, gratis desde {fmt(freeShippingThreshold)}.</>}
             </p>
             <ul className="assure">
-              <li>Pagas en línea con tarjeta, PSE o Nequi</li>
-              <li>Mezcla los aromas que quieras al mismo precio</li>
-              <li>Se aplica sobre telas y muebles: fórmula sin aceites grasos ni colorantes</li>
+              <li>{CONTRAENTREGA_ACTIVA ? "Pagas al recibir, o en línea si prefieres" : "Pagas en línea con tarjeta, PSE o Nequi"}</li>
+              <li>{coleccion ? "Combina cuatro aromas distintos o repite tu favorito" : "Mezcla los aromas que quieras al mismo precio"}</li>
+              <li>{coleccion ? "Para el ambiente, la ropa y los textiles de la casa" : "Se aplica sobre telas y muebles: fórmula sin aceites grasos ni colorantes"}</li>
               <li>30 días de garantía desde que lo recibes</li>
             </ul>
             <a
@@ -383,7 +401,7 @@ export function KitLanding({
               href="#armar"
               onClick={(e) => { e.preventDefault(); scrollToId("armar") }}
             >
-              Armar mi kit
+              {coleccion ? "Elegir mis 4 aromas" : "Armar mi kit"}
             </a>
             <p className="cta-note">Elige tus aromas y pide en un minuto.</p>
           </div>
@@ -392,9 +410,9 @@ export function KitLanding({
         <MqBrands label="Marcas colombianas que usan aromas Cliché" />
 
         <section className="block" id="armar" ref={armarRef} aria-labelledby="t-armar">
-          <span className="eyebrow">Paso 1 · Tamaño</span>
-          <h2 id="t-armar">Arma tu kit</h2>
-          <div className="sizes" role="group" aria-label="Tamaño del kit">
+          <span className="eyebrow">{coleccion ? "Colección de Navidad · 4 aromas" : "Paso 1 · Tamaño"}</span>
+          <h2 id="t-armar">{coleccion ? "Elige tus 4 aromas" : "Arma tu kit"}</h2>
+          {!coleccion && <div className="sizes" role="group" aria-label="Tamaño del kit">
             {KIT_TIERS.map((t) => {
               const flag = flagFor(t)
               const separado = t.units * UNIT_PRICE
@@ -414,9 +432,9 @@ export function KitLanding({
                 </button>
               )
             })}
-          </div>
+          </div>}
 
-          <span className="eyebrow" style={{ marginTop: 8 }}>Paso 2 · ¿Para qué lo quieres?</span>
+          <span className="eyebrow" style={{ marginTop: 8 }}>{coleccion ? "¿Para qué lo quieres?" : "Paso 2 · ¿Para qué lo quieres?"}</span>
           <div className="chips" role="group" aria-label="Filtrar aromas por uso">
             {usos.map((u) => (
               <button
@@ -441,7 +459,7 @@ export function KitLanding({
             <button className="linkish" type="button" onClick={() => setPicks([])}>Vaciar kit</button>
           </div>
 
-          <span className="eyebrow" style={{ marginTop: 8 }}>Paso 3 · Elige tus aromas</span>
+          <span className="eyebrow" style={{ marginTop: 8 }}>{coleccion ? "Toca cuatro aromas" : "Paso 3 · Elige tus aromas"}</span>
           <div className="grid" aria-live="polite">
             {visible.length === 0 ? (
               <p className="empty">Sin aromas en este filtro.</p>
@@ -524,7 +542,7 @@ export function KitLanding({
           </div>
         </section>
 
-        <section className="block" aria-labelledby="t-propio">
+        {!coleccion && <section className="block" aria-labelledby="t-propio">
           <div className="custom">
             <Image
               src="/images/category-hoteles.png"
@@ -550,7 +568,7 @@ export function KitLanding({
               </a>
             </div>
           </div>
-        </section>
+        </section>}
 
         <section className="block" aria-labelledby="t-faq">
           <h2 id="t-faq">Preguntas frecuentes</h2>
@@ -571,7 +589,7 @@ export function KitLanding({
       <div className={`tray${trayOn ? " on" : ""}`} role="region" aria-label="Resumen de tu kit" inert={!trayOn}>
         <div className="tray-in">
           <div className="st">
-            <b>{tier.label} · {fmt(tier.price)}</b>
+            <b>{nombreKit ?? tier.label} · {fmt(tier.price)}</b>
             <small aria-live="polite">{hint}</small>
             <div className="dots" aria-hidden>
               {Array.from({ length: tier.units }).map((_, i) => {
@@ -604,7 +622,7 @@ export function KitLanding({
               <button className="x" type="button" aria-label="Cerrar" onClick={closePanel}>×</button>
             </div>
             <div className="sum">
-              <div className="row"><b>{tier.label}</b><b>{fmt(tier.price)}</b></div>
+              <div className="row"><b>{nombreKit ?? tier.label}</b><b>{fmt(tier.price)}</b></div>
               <ul>
                 {[...counts].map(([id, n]) => {
                   const a = byId.get(id)
@@ -635,8 +653,8 @@ export function KitLanding({
               <div className="grand"><span>Total</span><b>{fmt(subtotal + shipping)}</b></div>
             </div>
             <p className="pay-note">
-              Pagas en línea con tarjeta, PSE o Nequi y llega en {ENTREGA_EN_LINEA}. En el siguiente paso escribes tus
-              datos de envío.
+              {CONTRAENTREGA_ACTIVA ? "Pagas al recibir o en línea" : "Pagas en línea con tarjeta, PSE o Nequi"} y llega en{" "}
+              {ENTREGA_EN_LINEA}. En el siguiente paso escribes tus datos de envío.
             </p>
             <button
               ref={payRef}
@@ -645,7 +663,7 @@ export function KitLanding({
               disabled={busy}
               onClick={() => handleAdd(true)}
             >
-              {busy ? "Procesando…" : "Continuar al pago"}
+              {busy ? "Procesando…" : "Continuar con mi pedido"}
             </button>
             <button className="btn btn-ghost btn-wide" type="button" disabled={busy} onClick={() => handleAdd(false)}>
               Agregar al carrito y seguir viendo

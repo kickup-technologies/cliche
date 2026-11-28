@@ -8,6 +8,7 @@ import { useFavorites } from "@/context/favorites-context"
 import { familyOf } from "@/lib/families"
 import { PRODUCT_PLACEHOLDER } from "@/lib/placeholder"
 import type { Product } from "@/lib/supabase"
+import { COLECCION_FOTO, COLECCION_NOMBRE, COLECCION_PATH, PRECIO_COLECCION, enBlackFriday } from "@/lib/coleccion"
 
 const fmt = (n: number) => `$${n.toLocaleString("es-CO")}`
 
@@ -58,3 +59,25 @@ export function TiendaCard({ product, onAdd }: { product: Product; onAdd: (p: Pr
   )
 }
 
+
+/** La «Colección de Navidad» en la tienda: lleva a su ficha (ahí se elige cuántas y se pide). */
+export function TarjetaColeccion() {
+  const [bf, setBf] = useState(false)
+  useEffect(() => setBf(enBlackFriday()), [])
+  return (
+    <article className="tienda-card">
+      <div className="tienda-foto">
+        <Link href={COLECCION_PATH} aria-label={`Ver ${COLECCION_NOMBRE}`} tabIndex={-1}>
+          <Image src={COLECCION_FOTO} alt={`${COLECCION_NOMBRE}: Navidad, Calor de Lana, Tierra y Sello de Dios`} fill quality={85} sizes="(max-width:700px) 46vw, (max-width:1100px) 30vw, 260px" />
+        </Link>
+        <span className="tienda-sello">{bf ? "BLACK FRIDAY" : "NAVIDAD"}</span>
+      </div>
+      <div className="tienda-info">
+        <h3><Link href={COLECCION_PATH}>{COLECCION_NOMBRE}</Link></h3>
+        <span className="tienda-tipo">4 aromas · 250 ml</span>
+        <strong>{fmt(PRECIO_COLECCION)}</strong>
+        <Link href={COLECCION_PATH} className="tienda-agregar">VER LA COLECCIÓN</Link>
+      </div>
+    </article>
+  )
+}
